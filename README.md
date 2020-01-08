@@ -1,5 +1,15 @@
-# nnabla_nas
+# Neural Architechture Search
+
+# Install `nnabla_nas`
+```python
+pip install -r requirements.txt
+```
+
+# Experiments
+
+See `jobs.sh`
 
 # TODO
- * [ ] Implement `Module`
- * [ ] 
+ * [ ] MobileNet
+ * [ ] Visualization
+ * [ ] Expected constraints
