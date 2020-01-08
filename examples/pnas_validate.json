@@ -1,0 +1,23 @@
+{
+    "control_variate": 0.001,
+    "model_weight_decay": 4e-05,
+    "print_frequency": 50,
+    "arch_with_grad_clip": true,
+    "model_optim": "Momentum",
+    "model_save_path": "log/pnas",
+    "warmup": 0,
+    "epoch": 300,
+    "arch_lr": 0.01,
+    "arch_optim": "Adam",
+    "model_lr_control": true,
+    "model_with_grad_clip": true,
+    "batch_size": 128,
+    "model_lr": 0.025,
+    "model_lr_scheduler": "CosineScheduler",
+    "model_name": "pnas.h5",
+    "model_grad_clip_value": 5.0,
+    "arch_grad_clip_value": 5.0,
+    "arch_weight_decay": 0.001,
+    "monitor_path": "log/pnas",
+    "arch": "log/pnas/arch.h5"
+}
