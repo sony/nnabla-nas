@@ -65,6 +65,7 @@ class Trainer(object):
             model.load_parameters(conf['arch'] + '.h5')
 
         self.model = model
+        self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
         self.conf = conf
 
     def run(self):
@@ -72,96 +73,88 @@ class Trainer(object):
         conf = self.conf
         model = self.model
         model_optim = self.model_optim
+        criteria = self.criteria
 
-        one_epoch = len(self.train_loader) // conf['batch_size']
+        n_micros = conf['batch_size'] // conf['minibatch_size']
+        one_train_epoch = len(self.train_loader) // conf['batch_size']
         one_valid_epoch = len(self.valid_loader) // conf['minibatch_size']
         # monitor the training process
-        monitor = ut.ProgressMeter(
-            num_batches=one_epoch,
-            meters=[
-                ut.AverageMeter('train_loss', fmt=':5.3f'),
-                ut.AverageMeter('valid_loss', fmt=':5.3f'),
-                ut.AverageMeter('train_err', fmt=':5.3f'),
-                ut.AverageMeter('valid_err', fmt=':5.3f')
-            ],
-            tb_writer=SummaryWriter(
-                os.path.join(conf['monitor_path'], 'tensorboard')
-            )
-        )
-        n_micros = conf['batch_size'] // conf['minibatch_size']
+        monitor = ut.get_standard_monitor(
+            one_train_epoch, conf['monitor_path'])
 
         # write out the configuration
-        path = os.path.join(conf['monitor_path'], 'train_config.json')
-        with open(path, 'w+') as file:
-            json.dump(conf, file,  ensure_ascii=False,
-                      indent=4, default=lambda o: '<not serializable>')
+        ut.write_to_json_file(
+            content=conf,
+            file_path=os.path.join(conf['monitor_path'], 'train_config.json')
+        )
 
         ctx = get_extension_context(
             conf['context'], device_id=conf['device_id'])
         nn.set_default_context(ctx)
 
         # input and target variables
-        x_var = nn.Variable(model.input_shape)
-        image = F.random_crop(F.pad(x_var, (4, 4, 4, 4)), shape=(x_var.shape))
-        image = F.image_augmentation(image, flip_lr=True)
-        t_var = nn.Variable((conf['minibatch_size'], 1))
+        train_input = nn.Variable(model.input_shape)
+        train_target = nn.Variable((conf['minibatch_size'], 1))
 
         model.train()
-        for m in model.get_arch_modues():
-            m._mode = 'max'
-            m._update_active_idx()
-
-        def criteria(o, t):
-            return F.mean(F.softmax_cross_entropy(o, t))/n_micros
+        for module in model.get_arch_modues():
+            module._mode = 'max'
+            module._update_active_idx()
 
         # sample one graph for training
-        out, aux = model(image)
-        loss = criteria(out, t_var)
+        train_out, auxilary_out = model(ut.image_augmentation(train_input))
+        train_loss = criteria(train_out, train_target) / n_micros
         if conf['auxiliary']:
-            loss += conf['auxiliary_weight'] * criteria(aux, t_var)
+            train_loss += conf['auxiliary_weight'] * \
+                criteria(auxilary_out, train_target) / n_micros
+
+        train_loss.persistent = True
+        train_out.persistent = True
 
         params = model.get_net_parameters(grad_only=True)
         model_optim.set_parameters(params)
 
         # sample a graph for validating
         model.eval()
-        val_tar = nn.Variable((conf['minibatch_size'], 1))
-        val_var = nn.Variable(model.input_shape)
-        val_out, _ = model(val_var)
-        val_loss = F.mean(F.softmax_cross_entropy(val_out, val_tar))
+        valid_input = nn.Variable(model.input_shape)
+        valid_target = nn.Variable((conf['minibatch_size'], 1))
+        valid_output, _ = model(valid_input)
+        valid_loss = criteria(valid_output, valid_target)
+
+        valid_output.persistent = True
+        valid_loss.persistent = True
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-            for i in range(one_epoch):
-                curr_iter = i + one_epoch * cur_epoch
+            for i in range(one_train_epoch):
+                curr_iter = i + one_train_epoch * cur_epoch
 
                 # training model parameters
                 model_optim.zero_grad()
-
-                v_err = v_loss = 0
+                error = loss = 0
                 # mini batches update
                 for _ in range(n_micros):
-                    x_var.d, t_var.d = self.train_loader.next()
-                    loss.forward()
-                    loss.backward()
-                    v_err += ut.categorical_error(out.d, t_var.d)
-                    v_loss += loss.d
+                    train_input.d, train_target.d = self.train_loader.next()
+                    train_loss.forward(clear_no_need_grad=True)
+                    train_loss.backward(clear_buffer=True)
+                    error += ut.categorical_error(train_out.d, train_target.d)
+                    loss += train_loss.d
 
                 model_optim.update(curr_iter)
                 # add info to the monitor
-                monitor['train_loss'].update(v_loss)
-                monitor['train_err'].update(v_err/n_micros)
+                monitor['train_loss'].update(loss)
+                monitor['train_err'].update(error/n_micros)
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i, ['train_loss', 'train_err'])
 
             # mini batches update
             for i in tqdm(range(one_valid_epoch)):
-                val_var.d, val_tar.d = self.valid_loader.next()
-                val_loss.forward()
-                err = ut.categorical_error(val_out.d, val_tar.d)
+                valid_input.d, valid_target.d = self.valid_loader.next()
+                valid_loss.forward(clear_buffer=True)
+                err = ut.categorical_error(valid_output.d, valid_target.d)
                 # add info to the monitor
-                monitor['valid_loss'].update(val_loss.d)
+                monitor['valid_loss'].update(valid_loss.d)
                 monitor['valid_err'].update(err)
 
             # write losses and save model after each epoch
@@ -174,4 +167,5 @@ class Trainer(object):
             )
 
         monitor.close()
+
         return self

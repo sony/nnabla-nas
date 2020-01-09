@@ -22,7 +22,6 @@ class Searcher(object):
         # list of transformers
         train_transform, valid_transform = ut.dataset_transformer()
         split = int(conf['train_portion'] * data.size)
-
         self.train_loader = DataLoader(
             data.slice(rng=None, slice_start=0, slice_end=split),
             train_transform
@@ -42,7 +41,6 @@ class Searcher(object):
             conf['model_lr'],
             max_iter=max_iter
         )
-
         self.model_optim = Optimizer(
             solver=model_solver,
             grad_clip=conf['model_grad_clip_value'] if
@@ -58,6 +56,7 @@ class Searcher(object):
         )
 
         self.model = model
+        self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
         self.conf = conf
 
     def run(self):
@@ -66,29 +65,16 @@ class Searcher(object):
         model = self.model
         model_optim = self.model_optim
         arch_optim = self.arch_optim
-
-        one_epoch = len(self.train_loader) // conf['batch_size']
+        one_train_epoch = len(self.train_loader) // conf['batch_size']
 
         # monitor the training process
-        monitor = ut.ProgressMeter(
-            num_batches=one_epoch,
-            meters=[
-                ut.AverageMeter('train_loss', fmt=':5.3f'),
-                ut.AverageMeter('valid_loss', fmt=':5.3f'),
-                ut.AverageMeter('train_err', fmt=':5.3f'),
-                ut.AverageMeter('valid_err', fmt=':5.3f')
-            ],
-            tb_writer=SummaryWriter(
-                os.path.join(conf['monitor_path'], 'tensorboard')
-            )
-        )
-
+        monitor = ut.get_standard_monitor(
+            one_train_epoch, conf['monitor_path'])
         # write out the configuration
-        path = os.path.join(conf['monitor_path'], 'search_config.json')
-        with open(path, 'w+') as file:
-            json.dump(conf, file,
-                      ensure_ascii=False, indent=4,
-                      default=lambda o: '<not serializable>')
+        ut.write_to_json_file(
+            content=conf,
+            file_path=os.path.join(conf['monitor_path'], 'search_config.json')
+        )
 
         ctx = get_extension_context(
             conf['context'], device_id=conf['device_id'])
@@ -105,7 +91,7 @@ class Searcher(object):
         arch_modules = model.get_arch_modues()  # avoid run through all modules
 
         out = model(x_var)
-        loss = F.mean(F.softmax_cross_entropy(out, t_var)) / n_micros
+        loss = self.criteria(out, t_var) / n_micros
         # assigning parameters
         model_optim.set_parameters(model.get_net_parameters())
         arch_optim.set_parameters(model.get_arch_parameters())
@@ -115,8 +101,8 @@ class Searcher(object):
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-            for i in range(one_epoch):
-                curr_iter = i + one_epoch * cur_epoch
+            for i in range(one_train_epoch):
+                curr_iter = i + one_train_epoch * cur_epoch
 
                 if requires_sample:
                     # update the arch modues

@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from collections import OrderedDict
@@ -73,6 +74,21 @@ class AverageMeter(object):
     def __str__(self):
         fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
         return fmtstr.format(**self.__dict__)
+
+
+def get_standard_monitor(one_epoch, path):
+    return ProgressMeter(
+        num_batches=one_epoch,
+        meters=[
+            AverageMeter('train_loss', fmt=':5.3f'),
+            AverageMeter('valid_loss', fmt=':5.3f'),
+            AverageMeter('train_err', fmt=':5.3f'),
+            AverageMeter('valid_err', fmt=':5.3f')
+        ],
+        tb_writer=SummaryWriter(
+            os.path.join(path, 'tensorboard')
+        )
+    )
 
 
 def sample(pvals, mode='sample'):
@@ -153,3 +169,15 @@ def drop_path(x, drop_prob):
     x = F.mul_scalar(x, 1.0 / (1 - drop_prob))
     x = F.mul2(x, mask)
     return x
+
+
+def write_to_json_file(content, file_path):
+    with open(file_path, 'w+') as file:
+        json.dump(content, file,
+                  ensure_ascii=False, indent=4,
+                  default=lambda o: '<not serializable>')
+
+
+def image_augmentation(image):
+    out = F.random_crop(F.pad(image, (4, 4, 4, 4)), shape=(image.shape))
+    return F.image_augmentation(out, flip_lr=True)
