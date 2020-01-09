@@ -1,4 +1,6 @@
+import nnabla as nn
 import nnabla.functions as F
+import numpy as np
 
 
 class Optimizer(object):
@@ -26,7 +28,7 @@ class Optimizer(object):
             lr = self._lr_scheduler.get_learning_rate(n_iter)
             self.solver.set_learning_rate(lr)
 
-        if self._grad_clip is not None:
+        if self._grad_clip is not None: # warning: this is really slow
             params = self.solver.get_parameters()
             for v in params.values():
                 v.grad.copy_from(F.clip_by_norm(v.grad, self._grad_clip))

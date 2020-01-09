@@ -74,6 +74,7 @@ class Trainer(object):
         model = self.model
         model_optim = self.model_optim
         criteria = self.criteria
+        drop_prob = self.model._drop_prob
 
         n_micros = conf['batch_size'] // conf['minibatch_size']
         one_train_epoch = len(self.train_loader) // conf['batch_size']
@@ -126,6 +127,13 @@ class Trainer(object):
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
+
+            # adjusting the drop path rate
+            if drop_prob:
+                drop_rate = conf['drop_path_prob'] * \
+                    (cur_epoch / conf['epoch']) + 1e-8
+                drop_prob.d = np.array([drop_rate]).reshape(drop_prob.d.shape)
+
             for i in range(one_train_epoch):
                 curr_iter = i + one_train_epoch * cur_epoch
 
@@ -152,10 +160,10 @@ class Trainer(object):
             for i in tqdm(range(one_valid_epoch)):
                 valid_input.d, valid_target.d = self.valid_loader.next()
                 valid_loss.forward(clear_buffer=True)
-                err = ut.categorical_error(valid_output.d, valid_target.d)
+                error = ut.categorical_error(valid_output.d, valid_target.d)
                 # add info to the monitor
                 monitor['valid_loss'].update(valid_loss.d)
-                monitor['valid_err'].update(err)
+                monitor['valid_err'].update(error)
 
             # write losses and save model after each epoch
             monitor.write(cur_epoch)

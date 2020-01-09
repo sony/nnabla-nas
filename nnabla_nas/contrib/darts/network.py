@@ -1,17 +1,18 @@
 from collections import OrderedDict
 
+import nnabla as nn
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
 from ... import utils as ut
-from ...module import MixedOp
+from ...module import MixedOp, Parameter
 from .modules import ChoiceBlock, StemConv
 
 
 class Cell(Mo.Module):
     def __init__(self, num_choices, multiplier, channels, reductions,
-                 mode='full', alpha=None, drop_prob=0.2):
+                 mode='full', alpha=None, drop_prob=None):
         super().__init__()
         self._multiplier = multiplier
         self._num_choices = num_choices
@@ -45,7 +46,7 @@ class Cell(Mo.Module):
                 if idx != 7:  # check if it's zero op
                     x = op(h)
                     # if it's not identity op
-                    if self._drop_prob > 0 and (op._is_reduced or idx != 6):
+                    if self._drop_prob is not None and (op._is_reduced or idx != 6):
                         x = ut.drop_path(x, self._drop_prob)
                     aux.append(x)
             s = sum(aux)
@@ -88,7 +89,7 @@ class NetworkCIFAR(Mo.Model):
         self._multiplier = multiplier
         self._init_channels = init_channels
         self._mode = mode
-        self._drop_prob = drop_prob
+        self._drop_prob = nn.Variable((1, 1, 1, 1), need_grad=False) if drop_prob > 0 else None
         self._num_cells = num_cells
         self._auxiliary = auxiliary
 

@@ -165,8 +165,8 @@ def get_darts_arch(dart_model):
 def drop_path(x, drop_prob):
     """Drop path function."""
     mask = F.rand(shape=(x.shape[0], 1, 1, 1))
-    mask = F.greater_equal_scalar(mask, drop_prob)
-    x = F.mul_scalar(x, 1.0 / (1 - drop_prob))
+    mask = F.greater_equal(mask, drop_prob)
+    x = F.div2(x, 1 - drop_prob)
     x = F.mul2(x, mask)
     return x
 

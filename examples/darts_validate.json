@@ -7,7 +7,7 @@
     "warmup": 0,
     "epoch": 600,
     "model_lr_control": true,
-    "model_with_grad_clip": true,
+    "model_with_grad_clip": false,
     "batch_size": 96,
     "model_lr": 0.025,
     "model_lr_scheduler": "StepScheduler",
