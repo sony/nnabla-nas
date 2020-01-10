@@ -33,11 +33,11 @@ class Trainer(object):
 
         # solver configurations
         model_solver = Solver(conf['model_optim'], conf['model_lr'])
-        max_iter = conf['epoch'] * len(self.train_loader) // conf['batch_size']
+        one_train_epoch = len(self.train_loader) // conf['batch_size']
         lr_scheduler = LRS.__dict__[conf['model_lr_scheduler']](
             conf['model_lr'],
             gamma=0.97,
-            iter_steps=[max_iter*i for i in range(1, conf['epoch'] + 1)]
+            iter_steps=[one_train_epoch*i for i in range(1, conf['epoch'] + 1)]
         )  # this is for StepScheduler
 
         self.model_optim = Optimizer(
