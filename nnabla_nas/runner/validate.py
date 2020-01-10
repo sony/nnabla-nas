@@ -124,6 +124,7 @@ class Trainer(object):
 
         valid_output.persistent = True
         valid_loss.persistent = True
+        best_error = 1.0
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
@@ -167,12 +168,14 @@ class Trainer(object):
 
             # write losses and save model after each epoch
             monitor.write(cur_epoch)
-
-            # saving the architecture parameters
-            model.save_parameters(
-                path=os.path.join(
-                    conf['model_save_path'], conf['model_name'])
-            )
+            
+            if monitor['valid_err'].avg < best_error:
+                best_error = monitor['valid_err'].avg
+                # saving the architecture parameters
+                model.save_parameters(
+                    path=os.path.join(
+                        conf['model_save_path'], conf['model_name'])
+                )
 
         monitor.close()
 
