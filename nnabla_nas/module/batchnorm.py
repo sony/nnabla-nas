@@ -1,5 +1,6 @@
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
+import nnabla as nn
 
 from .module import Module
 from .parameter import Parameter
@@ -24,8 +25,8 @@ class BatchNormalization(Module):
 
         self.beta = Parameter(shape_stat, initializer=beta_init)
         self.gamma = Parameter(shape_stat, initializer=gamma_init)
-        self.mean = Parameter(shape_stat, initializer=mean_init)
-        self.var = Parameter(shape_stat, initializer=var_init)
+        self.mean = nn.Variable.from_numpy_array(mean_init(shape_stat))
+        self.var = nn.Variable.from_numpy_array(var_init(shape_stat))
         self.axes = axes
         self.decay_rate = decay_rate
         self.eps = eps

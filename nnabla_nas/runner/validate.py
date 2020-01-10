@@ -172,10 +172,13 @@ class Trainer(object):
             if monitor['valid_err'].avg < best_error:
                 best_error = monitor['valid_err'].avg
                 # saving the architecture parameters
+                logger.info('Found a better model at epoch {}'.format(cur_epoch))
                 model.save_parameters(
                     path=os.path.join(
                         conf['model_save_path'], conf['model_name'])
                 )
+
+            print("LR is ", model_optim._lr_scheduler.get_learning_rate(curr_iter))
 
         monitor.close()
 

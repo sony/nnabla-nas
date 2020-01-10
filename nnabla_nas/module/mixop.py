@@ -19,8 +19,8 @@ class MixedOp(Module):
 
     def __call__(self, input):
         if self._mode == 'full':
-            return sum([op(input)*p for op, p in
-                        zip(self._ops, F.softmax(self._alpha, axis=0))])
+            out = F.mul2(self._ops(input), F.softmax(self._alpha, axis=0))
+            return F.sum(out, axis=0)
         self._update_active_idx()
         return self._ops[self._active](input)
 

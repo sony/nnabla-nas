@@ -81,8 +81,8 @@ class Searcher(object):
         nn.set_default_context(ctx)
 
         # input and target variables
-        x_var = nn.Variable(model.input_shape)
-        t_var = nn.Variable((conf['minibatch_size'], 1))
+        train_input = nn.Variable(model.input_shape)
+        train_target = nn.Variable((conf['minibatch_size'], 1))
 
         warmup = conf['warmup']
         n_micros = conf['batch_size'] // conf['minibatch_size']
@@ -90,8 +90,11 @@ class Searcher(object):
         model.train()
         arch_modules = model.get_arch_modues()  # avoid run through all modules
 
-        out = model(x_var)
-        loss = self.criteria(out, t_var) / n_micros
+        train_out = model(train_input)
+        train_loss = self.criteria(train_out, train_target) / n_micros
+        train_out.persistent = True
+        train_loss.persistent = True
+
         # assigning parameters
         model_optim.set_parameters(model.get_net_parameters())
         arch_optim.set_parameters(model.get_arch_parameters())
@@ -101,6 +104,7 @@ class Searcher(object):
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
+            
             for i in range(one_train_epoch):
                 curr_iter = i + one_train_epoch * cur_epoch
 
@@ -110,9 +114,8 @@ class Searcher(object):
                         m._update_active_idx()
 
                     # sample one graph
-                    out = model(x_var)
-                    loss = F.mean(F.softmax_cross_entropy(
-                        out, t_var)) / n_micros
+                    train_out = model(train_input)
+                    train_loss = self.criteria(train_out, train_target) / n_micros
 
                     # training model parameters
                     params = model.get_net_parameters(grad_only=True)
@@ -121,19 +124,19 @@ class Searcher(object):
                 # clear grad
                 model_optim.zero_grad()
 
-                v_err = v_loss = 0
+                error = loss = 0
                 # mini batches update
                 for _ in range(n_micros):
-                    x_var.d, t_var.d = self.train_loader.next()
-                    loss.forward()
-                    loss.backward()
-                    v_err += ut.categorical_error(out.d, t_var.d)
-                    v_loss += loss.d
+                    train_input.d, train_target.d = self.train_loader.next()
+                    train_loss.forward(clear_no_need_grad=True)
+                    train_loss.backward(clear_buffer=True)
+                    error += ut.categorical_error(train_out.d, train_target.d)
+                    loss += train_loss.d
 
                 model_optim.update(curr_iter)
                 # add info to the monitor
-                monitor['train_loss'].update(v_loss)
-                monitor['train_err'].update(v_err / n_micros)
+                monitor['train_loss'].update(loss)
+                monitor['train_err'].update(error/n_micros)
 
                 if requires_sample:
                     # training the arch parameters
@@ -143,27 +146,27 @@ class Searcher(object):
                 # clear grad
                 arch_optim.zero_grad()
 
-                v_err = v_loss = 0
+                error = loss = 0
                 # mini batches update
                 for _ in range(n_micros):
-                    x_var.d, t_var.d = self.valid_loader.next()
-                    loss.forward()
-                    v_err += ut.categorical_error(out.d, t_var.d)
-                    v_loss += loss.d
+                    train_input.d, train_target.d = self.valid_loader.next()
+                    train_loss.forward(clear_no_need_grad=True)
+                    error += ut.categorical_error(train_out.d, train_target.d)
+                    loss += train_loss.d
                     if warmup == 0 and model._mode == 'full':
-                        loss.backward()
+                        train_loss.backward(clear_buffer=True)
 
                 if warmup == 0 and model._mode != 'full':
                     # perform control variate
                     for v in arch_optim.get_parameters().values():
-                        v.g = v.g*(v_loss - conf['control_variate'])
+                        v.g = v.g*(loss - conf['control_variate'])
 
                 if warmup == 0:
                     arch_optim.update(curr_iter)
 
                 # add info to the monitor
-                monitor['valid_loss'].update(v_loss)
-                monitor['valid_err'].update(v_err / n_micros)
+                monitor['valid_loss'].update(loss)
+                monitor['valid_err'].update(error/n_micros)
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i)
