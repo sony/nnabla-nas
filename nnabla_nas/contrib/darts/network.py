@@ -6,7 +6,7 @@ from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
 from ... import utils as ut
-from ...module import MixedOp, Parameter
+from ...module import MixedOp
 from .modules import ChoiceBlock, StemConv
 
 
@@ -18,9 +18,14 @@ class Cell(Mo.Module):
         self._num_choices = num_choices
         self._drop_prob = drop_prob
         # preprocess the inputs
-        self._prep = [Mo.FactorizedReduce(channels[0], channels[2]) if reductions[0]
-                      else Mo.ReLUConvBN(channels[0], channels[2], kernel=(1, 1))]
-        self._prep.append(Mo.ReLUConvBN(
+        self._prep = Mo.ModuleList()
+        if reductions[0]:
+            self._prep.add_module(
+                Mo.FactorizedReduce(channels[0], channels[2]))
+        else:
+            self._prep.add_module(Mo.ReLUConvBN(
+                channels[0], channels[2], kernel=(1, 1)))
+        self._prep.add_module(Mo.ReLUConvBN(
             channels[1], channels[2], kernel=(1, 1)))
         # build choice blocks
         self._blocks = Mo.ModuleList()
@@ -89,7 +94,8 @@ class NetworkCIFAR(Mo.Model):
         self._multiplier = multiplier
         self._init_channels = init_channels
         self._mode = mode
-        self._drop_prob = nn.Variable((1, 1, 1, 1), need_grad=False) if drop_prob > 0 else None
+        self._drop_prob = nn.Variable(
+            (1, 1, 1, 1), need_grad=False) if drop_prob > 0 else None
         self._num_cells = num_cells
         self._auxiliary = auxiliary
 

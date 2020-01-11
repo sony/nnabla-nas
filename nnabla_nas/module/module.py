@@ -184,5 +184,4 @@ class Sequential(ModuleList):
         out = input
         for module in self._modules:
             out = module(out)
-            
         return out

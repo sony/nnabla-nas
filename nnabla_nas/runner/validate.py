@@ -7,7 +7,6 @@ import nnabla.utils.learning_rate_scheduler as LRS
 import numpy as np
 from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
-from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
 import nnabla_nas.utils as ut
@@ -147,7 +146,7 @@ class Trainer(object):
                     train_loss.forward(clear_no_need_grad=True)
                     train_loss.backward(clear_buffer=True)
                     error += ut.categorical_error(train_out.d, train_target.d)
-                    loss += train_loss.d
+                    loss += train_loss.d.copy()
 
                 model_optim.update(curr_iter)
                 # add info to the monitor
@@ -163,22 +162,21 @@ class Trainer(object):
                 valid_loss.forward(clear_buffer=True)
                 error = ut.categorical_error(valid_output.d, valid_target.d)
                 # add info to the monitor
-                monitor['valid_loss'].update(valid_loss.d)
+                monitor['valid_loss'].update(valid_loss.d.copy())
                 monitor['valid_err'].update(error)
 
             # write losses and save model after each epoch
             monitor.write(cur_epoch)
-            
+
             if monitor['valid_err'].avg < best_error:
                 best_error = monitor['valid_err'].avg
                 # saving the architecture parameters
-                logger.info('Found a better model at epoch {}'.format(cur_epoch))
+                logger.info(
+                    'Found a better model at epoch {}'.format(cur_epoch))
                 model.save_parameters(
                     path=os.path.join(
                         conf['model_save_path'], conf['model_name'])
                 )
-
-            print("LR is ", model_optim._lr_scheduler.get_learning_rate(curr_iter))
 
         monitor.close()
 

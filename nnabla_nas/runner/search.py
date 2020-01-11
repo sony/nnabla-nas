@@ -6,7 +6,6 @@ import nnabla.functions as F
 import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
-from tensorboardX import SummaryWriter
 
 import nnabla_nas.utils as ut
 from nnabla_nas.dataset import DataLoader
@@ -80,7 +79,7 @@ class Searcher(object):
             conf['context'], device_id=conf['device_id'])
         nn.set_default_context(ctx)
 
-        # input and target variables
+        # input and target variables for training
         train_input = nn.Variable(model.input_shape)
         train_target = nn.Variable((conf['minibatch_size'], 1))
 
@@ -90,7 +89,7 @@ class Searcher(object):
         model.train()
         arch_modules = model.get_arch_modues()  # avoid run through all modules
 
-        train_out = model(train_input)
+        train_out = model(ut.image_augmentation(train_input))
         train_loss = self.criteria(train_out, train_target) / n_micros
         train_out.persistent = True
         train_loss.persistent = True
@@ -99,12 +98,20 @@ class Searcher(object):
         model_optim.set_parameters(model.get_net_parameters())
         arch_optim.set_parameters(model.get_arch_parameters())
 
+        # input and target variables for validating
+        valid_input = nn.Variable(model.input_shape)
+        valid_target = nn.Variable((conf['minibatch_size'], 1))
+        valid_out = model(valid_input)
+        valid_loss = self.criteria(valid_out, valid_target)
+        valid_out.persistent = True
+        valid_loss.persistent = True
+
         # whether we need to sample everytime
         requires_sample = conf['mode'] != 'full'
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-            
+
             for i in range(one_train_epoch):
                 curr_iter = i + one_train_epoch * cur_epoch
 
@@ -115,7 +122,8 @@ class Searcher(object):
 
                     # sample one graph
                     train_out = model(train_input)
-                    train_loss = self.criteria(train_out, train_target) / n_micros
+                    train_loss = self.criteria(
+                        train_out, train_target) / n_micros
 
                     # training model parameters
                     params = model.get_net_parameters(grad_only=True)
@@ -131,7 +139,7 @@ class Searcher(object):
                     train_loss.forward(clear_no_need_grad=True)
                     train_loss.backward(clear_buffer=True)
                     error += ut.categorical_error(train_out.d, train_target.d)
-                    loss += train_loss.d
+                    loss += train_loss.d.copy()
 
                 model_optim.update(curr_iter)
                 # add info to the monitor
@@ -149,12 +157,12 @@ class Searcher(object):
                 error = loss = 0
                 # mini batches update
                 for _ in range(n_micros):
-                    train_input.d, train_target.d = self.valid_loader.next()
-                    train_loss.forward(clear_no_need_grad=True)
-                    error += ut.categorical_error(train_out.d, train_target.d)
-                    loss += train_loss.d
+                    valid_input.d, valid_target.d = self.valid_loader.next()
+                    valid_loss.forward(clear_no_need_grad=True)
+                    error += ut.categorical_error(valid_out.d, valid_target.d)
+                    loss += valid_loss.d.copy()
                     if warmup == 0 and model._mode == 'full':
-                        train_loss.backward(clear_buffer=True)
+                        valid_loss.backward(clear_buffer=True)
 
                 if warmup == 0 and model._mode != 'full':
                     # perform control variate

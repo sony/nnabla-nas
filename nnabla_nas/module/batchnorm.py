@@ -1,6 +1,6 @@
+import nnabla as nn
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
-import nnabla as nn
 
 from .module import Module
 from .parameter import Parameter
@@ -22,9 +22,14 @@ class BatchNormalization(Module):
         var_init = param_init.get('var', ConstantInitializer(1))
 
         super().__init__()
-
-        self.beta = Parameter(shape_stat, initializer=beta_init)
-        self.gamma = Parameter(shape_stat, initializer=gamma_init)
+        if fix_parameters:
+            self.beta = nn.Variable.from_numpy_array(
+                beta_init(shape_stat))
+            self.gamma = nn.Variable.from_numpy_array(
+                gamma_init(shape_stat))
+        else:
+            self.beta = Parameter(shape_stat, initializer=beta_init)
+            self.gamma = Parameter(shape_stat, initializer=gamma_init)
         self.mean = nn.Variable.from_numpy_array(mean_init(shape_stat))
         self.var = nn.Variable.from_numpy_array(var_init(shape_stat))
         self.axes = axes

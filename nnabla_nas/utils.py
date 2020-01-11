@@ -180,4 +180,6 @@ def write_to_json_file(content, file_path):
 
 def image_augmentation(image):
     out = F.random_crop(F.pad(image, (4, 4, 4, 4)), shape=(image.shape))
-    return F.image_augmentation(out, flip_lr=True)
+    out = F.image_augmentation(out, flip_lr=True)
+    out.need_grad = False
+    return out
