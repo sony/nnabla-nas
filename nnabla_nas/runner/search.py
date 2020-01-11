@@ -102,7 +102,7 @@ class Searcher(object):
         valid_input = nn.Variable(model.input_shape)
         valid_target = nn.Variable((conf['minibatch_size'], 1))
         valid_out = model(valid_input)
-        valid_loss = self.criteria(valid_out, valid_target)
+        valid_loss = self.criteria(valid_out, valid_target) / n_micros
         valid_out.persistent = True
         valid_loss.persistent = True
 

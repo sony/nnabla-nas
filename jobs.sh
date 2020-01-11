@@ -1,7 +1,7 @@
 # search DARTS
 python main.py  search \
                 --device-id 0 --context 'cudnn' \
-                --minibatch-size 32 \
+                --minibatch-size 16 \
                 --num-cells 8 \
                 --num-nodes 4 \
                 --init-channels 16 \
