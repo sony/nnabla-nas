@@ -37,6 +37,9 @@ class ProgressMeter(object):
             for m in self.meters.values():
                 self.writer.add_scalar(m.name, m.avg, n_iter)
 
+    def write_image(self, tag, image_tensor, n_iter):
+        self.writer.add_image(tag, image_tensor, n_iter)
+
     def close(self):
         self.writer.close()
 

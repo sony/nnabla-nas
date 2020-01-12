@@ -178,8 +178,9 @@ class Searcher(object):
             if conf['shared_params']:
                 ut.save_dart_arch(model, name + '.json')
                 if conf['visualize']:
-                    outp = os.path.join(conf['monitor_path'], 'visual', str(cur_epoch))
-                    visualize(name + '.json', model._num_choices, outp)
+                    outp = os.path.join(conf['monitor_path'])
+                    for _n, _d in visualize(name + '.json', model._num_choices, outp).items():
+                        monitor.write_image(_n, _d, cur_epoch)
             else:
                 model.save_parameters(name + '.h5', model.get_arch_parameters())
 

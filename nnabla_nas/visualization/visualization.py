@@ -2,6 +2,7 @@ import sys
 from graphviz import Digraph
 import json
 import os
+import imageio
 
 NORMAL_OPS = [
     'dil_conv_3x3',
@@ -56,14 +57,18 @@ def plot(choice, prob, num_choices, ops, filename):
             g.edge(u, v, label='<{:.3f}> '.format(p)+ops[t], fillcolor="gray")
 
     g.render(filename, view=False, cleanup=True)
+    return imageio.imread(filename+'.png').transpose((2, 0, 1))
 
 
 def visualize(arch_file, num_choices, path):
     conf = json.load(open(arch_file))
+    images = dict()
     for name in ['reduce', 'normal']:
-        plot(choice=conf[name + '_alpha'], 
+        images[name] = plot(
+            choice=conf[name + '_alpha'], 
             prob=conf[name + '_prob'], 
             num_choices=num_choices,
             ops=REDUCE_OPS if name == 'reduce' else NORMAL_OPS,
             filename=os.path.join(path, name)
         )
+    return images
