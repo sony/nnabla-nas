@@ -17,6 +17,7 @@ class Cell(Mo.Module):
         self._multiplier = multiplier
         self._num_choices = num_choices
         self._drop_prob = drop_prob
+        
         # preprocess the inputs
         self._prep = Mo.ModuleList()
         if reductions[0]:
@@ -27,6 +28,7 @@ class Cell(Mo.Module):
                 channels[0], channels[2], kernel=(1, 1)))
         self._prep.add_module(Mo.ReLUConvBN(
             channels[1], channels[2], kernel=(1, 1)))
+        
         # build choice blocks
         self._blocks = Mo.ModuleList()
         for i in range(num_choices):
@@ -43,20 +45,32 @@ class Cell(Mo.Module):
         """Each cell has two inputs and one output."""
         out = [op(x) for op, x in zip(self._prep, input)]
         offset = 0
+        apply_drop_path = self._drop_prob is not None
+
         for _ in range(self._num_choices):
-            aux = []
+            aux_output = []
+
             for j, h in enumerate(out):
-                op = self._blocks[offset + j]
-                idx = op._mixed._active
-                if idx != 7:  # check if it's zero op
-                    x = op(h)
-                    # if it's not identity op
-                    if self._drop_prob is not None and (op._is_reduced or idx != 6):
-                        x = ut.drop_path(x, self._drop_prob)
-                    aux.append(x)
-            s = sum(aux)
+                block = self._blocks[offset + j]
+                active_idx = block._mixed._active
+                module = block._mixed._ops[active_idx]
+
+                # check if it's Zero op
+                if active_idx == len(block._mixed._ops) - 1:
+                    continue
+
+                x = module(h)
+                if apply_drop_path and not isinstance(module, Mo.Identity):
+                    x = ut.drop_path(x, self._drop_prob)
+
+                aux_output.append(x)
+            
+            assert(len(aux_output) == 2)
+            s = F.add2(aux_output[0], aux_output[1])
+
             offset += len(out)
             out.append(s)
+
         return F.concatenate(*out[-self._multiplier:], axis=1)
 
 

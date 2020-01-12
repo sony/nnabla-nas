@@ -54,7 +54,7 @@ class Trainer(object):
                 logger.info('Loading {} cell ...'.format(k))
                 for idx, alpha in enumerate(block):
                     w = np.zeros(model._num_ops)
-                    w[arch_params[k + '_choice'][str(idx)]] = 1
+                    w[arch_params[k + '_choice'][str(idx)]] = 100
                     alpha.d = w.reshape(alpha.d.shape)
         else:
             model.load_parameters(conf['arch'] + '.h5')
@@ -126,8 +126,7 @@ class Trainer(object):
 
             # adjusting the drop path rate
             if drop_prob:
-                drop_rate = conf['drop_path_prob'] * \
-                    (cur_epoch / conf['epoch']) + 1e-8
+                drop_rate = conf['drop_path_prob'] * cur_epoch / conf['epoch']
                 drop_prob.d = np.array([drop_rate]).reshape(drop_prob.d.shape)
 
             for i in range(one_train_epoch):
@@ -167,8 +166,7 @@ class Trainer(object):
             if monitor['valid_err'].avg < best_error:
                 best_error = monitor['valid_err'].avg
                 # saving the architecture parameters
-                logger.info(
-                    'Found a better model at epoch {}'.format(cur_epoch))
+                logger.info('New model with err={:.3f} at epoch {}'.format(best_error, cur_epoch))
                 model.save_parameters(
                     path=os.path.join(
                         conf['model_save_path'], conf['model_name'])
