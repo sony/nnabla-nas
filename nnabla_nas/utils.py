@@ -10,8 +10,7 @@ from nnabla.logger import logger
 from scipy.special import softmax
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
-
-from .dataset.transformer import Compose, Normalizer
+from .dataset.transformer import Compose, Normalizer, Cutout
 
 
 class ProgressMeter(object):
@@ -107,60 +106,47 @@ def categorical_error(pred, label):
     return (pred_label != label.flat).mean()
 
 
-def dataset_transformer():
+def dataset_transformer(conf):
     normalize = Normalizer(
         mean=(0.49139968, 0.48215827, 0.44653124),
         std=(0.24703233, 0.24348505, 0.26158768),
         scale=255.0
     )
     train_transform = Compose([normalize])
+    if 'cutout' in conf and conf['cutout']:
+        train_transform.append(Cutout(conf['cutout_length']))
     valid_transform = Compose([normalize])
 
     return train_transform, valid_transform
 
 
-def _get_format(_alpha, _num_choices):
+def parse_weights(alpha, num_choices):
     offset = 0
-    cell, prob = dict(), dict()
-    for i in range(_num_choices):
+    cell, prob, choice = dict(), dict(), dict()
+    for i in range(num_choices):
         cell[i + 2], prob[i + 2] = list(), list()
-        for j in range(i + 2):
-            w = softmax(_alpha[j + offset].d.flatten())
-            idx = int(np.argmax(w))
-            if idx != 7:  # zero operation
-                cell[i + 2].append([idx, j])
-                prob[i + 2].append(float(w[idx]))
+        W = [softmax(alpha[j + offset].d.flatten()) for j in range(i + 2)]
+        # Note: Zero Op shouldn't be included
+        edges = sorted(range(i + 2), key=lambda k:-max(W[k][:-1]))
+        for j, k in enumerate(edges):
+            if j < 2: # select the first two best Ops
+                idx = np.argmax(W[k][:-1])
+                cell[i + 2].append([int(idx), k])
+                prob[i + 2].append(float(W[k][idx]))
+                choice[k + offset] = int(idx)
+            else:  # assign Zero Op to the rest
+                choice[k + offset] = int(len(W[k]) - 1)
         offset += i + 2
-    return cell, prob
+    return cell, prob, choice
+    
 
-
-def get_darts_arch(dart_model):
-    # get current arch
-    # Note: should be called right after training the architecture
-    normal_cell, normal_prob = _get_format(
-        dart_model._alpha_normal, dart_model._num_choices)
-    reduce_cell, reduce_prob = _get_format(
-        dart_model._alpha_reduce, dart_model._num_choices)
-
-    normal_w, reduce_w = [], []
-
-    for alpha in dart_model._alpha_normal:
-        idx = np.argmax(alpha.d.flatten())
-        normal_w.append(int(idx))
-
-    for alpha in dart_model._alpha_reduce:
-        idx = np.argmax(alpha.d.flatten())
-        reduce_w.append(int(idx))
-
-    return {
-        'alpha_normal': normal_cell,
-        'alpha_reduce': reduce_cell,
-        'prob_normal': normal_prob,
-        'prob_reduce': reduce_prob,
-        'normal': normal_w,
-        'reduce': reduce_w
-    }
-
+def save_dart_arch(model, file):
+    memo = dict()
+    for name, alpha in zip(['normal', 'reduce'], [model._alpha_normal, model._alpha_reduce]):
+        for k, v in zip(['alpha', 'prob', 'choice'], parse_weights(alpha, model._num_choices)):
+            memo[name + '_' + k] = v
+    logger.info('Saving arch to {}'.format(file))
+    write_to_json_file(memo, file)
 
 def drop_path(x, drop_prob):
     """Drop path function."""

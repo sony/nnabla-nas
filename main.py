@@ -45,10 +45,14 @@ if __name__ == "__main__":
     train_parser = subparsers.add_parser('train')
     train_parser.set_defaults(func=train)
     pass_args(train_parser)
-    train_parser.add_argument("--drop-path-prob", type=float, default=0.2)
-    train_parser.add_argument("--auxiliary-weight", type=float, default=0.4)
+    train_parser.add_argument('--drop-path-prob', type=float, default=0.2)
+    train_parser.add_argument('--auxiliary-weight', type=float, default=0.4)
     train_parser.add_argument('--auxiliary', action='store_true',
                               default=False, help='use auxiliary tower')
+    train_parser.add_argument('--cutout', action='store_true',
+                              default=False, help='use cutout')
+    train_parser.add_argument('--cutout-length', type=int, default=16, 
+                                help='Cutout length')
     args = parser.parse_args()
 
     if args.config_file is not None:

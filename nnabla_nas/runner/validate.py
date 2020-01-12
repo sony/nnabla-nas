@@ -19,7 +19,7 @@ class Trainer(object):
 
     def __init__(self, model, conf):
         # list of transformers
-        train_transform, valid_transform = ut.dataset_transformer()
+        train_transform, valid_transform = ut.dataset_transformer(conf)
         # dataset configuration
         self.train_loader = DataLoader(
             data_iterator_cifar10(conf['minibatch_size'], True),
@@ -50,16 +50,12 @@ class Trainer(object):
         if conf['shared_params']:
             arch_params = json.load(open(conf['arch'] + '.json'))
             # assign alpha weights
-            logger.info('Loading normal cells ...')
-            for alpha, idx in zip(model._alpha_normal, arch_params['normal']):
-                w = np.zeros(model._num_ops)
-                w[idx] = 1
-                alpha.d = w.reshape(alpha.d.shape)
-            logger.info('Loading reduce cells ...')
-            for alpha, idx in zip(model._alpha_reduce, arch_params['reduce']):
-                w = np.zeros(model._num_ops)
-                w[idx] = 1
-                alpha.d = w.reshape(alpha.d.shape)
+            for k, block in zip(['normal', 'reduce'], [model._alpha_normal, model._alpha_reduce]):
+                logger.info('Loading {} cell ...'.format(k))
+                for idx, alpha in enumerate(block):
+                    w = np.zeros(model._num_ops)
+                    w[arch_params[k + '_choice'][str(idx)]] = 1
+                    alpha.d = w.reshape(alpha.d.shape)
         else:
             model.load_parameters(conf['arch'] + '.h5')
 

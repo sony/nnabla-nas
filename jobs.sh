@@ -19,6 +19,7 @@ python main.py  train \
                 --mode full \
                 --shared-params \
                 --auxiliary \
+                --cutout \
                 --config-file examples/darts_validate.json
 
 # search PNAS

@@ -86,7 +86,7 @@ class AuxiliaryHeadCIFAR(Mo.Module):
 class NetworkCIFAR(Mo.Model):
     def __init__(self, shape, init_channels, num_cells, num_classes,
                  num_choices=4, multiplier=4, stem_multiplier=3,
-                 num_ops=7, shared_params=True, mode='full',
+                 num_ops=8, shared_params=True, mode='full',
                  drop_prob=0.2, auxiliary=True):
         super().__init__()
         self._num_choices = num_choices

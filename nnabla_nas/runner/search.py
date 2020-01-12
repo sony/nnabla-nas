@@ -11,7 +11,7 @@ import nnabla_nas.utils as ut
 from nnabla_nas.dataset import DataLoader
 from nnabla_nas.dataset.cifar10.cifar10_data import data_iterator_cifar10
 from nnabla_nas.optimizer import Optimizer, Solver
-
+from ..visualization import visualize
 
 class Searcher(object):
 
@@ -19,7 +19,7 @@ class Searcher(object):
         # dataset configuration
         data = data_iterator_cifar10(conf['minibatch_size'], True)
         # list of transformers
-        train_transform, valid_transform = ut.dataset_transformer()
+        train_transform, valid_transform = ut.dataset_transformer(conf)
         split = int(conf['train_portion'] * data.size)
         self.train_loader = DataLoader(
             data.slice(rng=None, slice_start=0, slice_end=split),
@@ -125,10 +125,6 @@ class Searcher(object):
                     train_loss = self.criteria(
                         train_out, train_target) / n_micros
 
-                    # training model parameters
-                    params = model.get_net_parameters(grad_only=True)
-                    model_optim.set_parameters(params)
-
                 # clear grad
                 model_optim.zero_grad()
 
@@ -145,11 +141,6 @@ class Searcher(object):
                 # add info to the monitor
                 monitor['train_loss'].update(loss)
                 monitor['train_err'].update(error/n_micros)
-
-                if requires_sample:
-                    # training the arch parameters
-                    params = model.get_arch_parameters(grad_only=True)
-                    arch_optim.set_parameters(params)
 
                 # clear grad
                 arch_optim.zero_grad()
@@ -185,13 +176,12 @@ class Searcher(object):
             # saving the architecture parameters
             name = os.path.join(conf['model_save_path'], conf['model_name'])
             if conf['shared_params']:
-                logger.info(
-                    'Epoch {}: saving the arch to '.format(cur_epoch) + name)
-                with open(name + '.json', 'w+') as f:
-                    json.dump(ut.get_darts_arch(model), f)
+                ut.save_dart_arch(model, name + '.json')
+                if conf['visualize']:
+                    outp = os.path.join(conf['monitor_path'], 'visual', str(cur_epoch))
+                    visualize(name + '.json', model._num_choices, outp)
             else:
-                model.save_parameters(
-                    name + '.h5', params=model.get_arch_parameters())
+                model.save_parameters(name + '.h5', model.get_arch_parameters())
 
             warmup -= warmup > 0
 
