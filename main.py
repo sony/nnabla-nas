@@ -53,7 +53,7 @@ if __name__ == "__main__":
                               default=False, help='use cutout')
     train_parser.add_argument('--cutout-length', type=int, default=16, 
                                 help='Cutout length')
-    parser.add_argument("--minibatch-size-valid", type=int, default=40)
+    train_parser.add_argument("--minibatch-size-valid", type=int, default=40)
     args = parser.parse_args()
 
     if args.config_file is not None:
