@@ -32,12 +32,11 @@ class Trainer(object):
 
         # solver configurations
         model_solver = Solver(conf['model_optim'], conf['model_lr'])
-        one_train_epoch = len(self.train_loader) // conf['batch_size']
+        max_iter = conf['epoch'] * len(self.train_loader) // conf['batch_size']
         lr_scheduler = LRS.__dict__[conf['model_lr_scheduler']](
             conf['model_lr'],
-            gamma=0.97,
-            iter_steps=[one_train_epoch*i for i in range(1, conf['epoch'] + 1)]
-        )  # this is for StepScheduler
+            max_iter=max_iter
+        )  # this is for CosineScheduler
 
         self.model_optim = Optimizer(
             solver=model_solver,
@@ -47,16 +46,7 @@ class Trainer(object):
             lr_scheduler=lr_scheduler
         )
 
-        if conf['shared_params']:
-            arch_params = json.load(open(conf['arch'] + '.json'))
-            # assign alpha weights
-            for k, block in zip(['normal', 'reduce'], [model._alpha_normal, model._alpha_reduce]):
-                logger.info('Loading {} cell ...'.format(k))
-                for idx, alpha in enumerate(block):
-                    w = np.zeros(model._num_ops)
-                    w[arch_params[k + '_choice'][str(idx)]] = 100
-                    alpha.d = w.reshape(alpha.d.shape)
-        else:
+        if not conf['shared_params']:
             model.load_parameters(conf['arch'] + '.h5')
 
         self.model = model
@@ -166,7 +156,8 @@ class Trainer(object):
             if monitor['valid_err'].avg < best_error:
                 best_error = monitor['valid_err'].avg
                 # saving the architecture parameters
-                logger.info('New model with err={:.3f} at epoch {}'.format(best_error, cur_epoch))
+                logger.info('New model with err={:.3f} at epoch {}'.format(
+                    best_error, cur_epoch))
                 model.save_parameters(
                     path=os.path.join(
                         conf['model_save_path'], conf['model_name'])

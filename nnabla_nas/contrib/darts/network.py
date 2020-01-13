@@ -10,14 +10,23 @@ from ...module import MixedOp
 from .modules import ChoiceBlock, StemConv
 
 
+OPS = {
+    0: lambda channels, stride, affine: Mo.DilConv(channels, channels, (3, 3), pad=(2, 2), stride=(stride, stride), affine=affine),
+    1: lambda channels, stride, affine: Mo.DilConv(channels, channels, (5, 5), pad=(4, 4), stride=(stride, stride), affine=affine),
+    2: lambda channels, stride, affine: Mo.SepConv(channels, channels, (3, 3), pad=(1, 1), stride=(stride, stride), affine=affine),
+    3: lambda channels, stride, affine: Mo.SepConv(channels, channels, (5, 5), pad=(2, 2), stride=(stride, stride), affine=affine),
+    4: lambda channels, stride, affine: Mo.MaxPool(kernel=(3, 3), stride=(stride, stride), pad=(1, 1)),
+    5: lambda channels, stride, affine: Mo.AvgPool(kernel=(3, 3), stride=(stride, stride), pad=(1, 1)),
+    6: lambda channels, stride, affine: Mo.FactorizedReduce(channels, channels, affine=affine) if stride > 1 else Mo.Identity(),
+    7: lambda channels, stride, affine: Mo.Zero((stride, stride))
+}
+
+
 class Cell(Mo.Module):
-    def __init__(self, num_choices, multiplier, channels, reductions,
-                 mode='full', alpha=None, drop_prob=None):
+    def __init__(self, channels, reductions, genotype, drop_prob=None):
         super().__init__()
-        self._multiplier = multiplier
-        self._num_choices = num_choices
         self._drop_prob = drop_prob
-        
+
         # preprocess the inputs
         self._prep = Mo.ModuleList()
         if reductions[0]:
@@ -28,54 +37,42 @@ class Cell(Mo.Module):
                 channels[0], channels[2], kernel=(1, 1)))
         self._prep.add_module(Mo.ReLUConvBN(
             channels[1], channels[2], kernel=(1, 1)))
-        
+
+        cell_type = 'reduce' if reductions[-1] else 'normal'
+        cell_arch = genotype[cell_type + '_alpha']
+
         # build choice blocks
+        self._indices = list()
         self._blocks = Mo.ModuleList()
-        for i in range(num_choices):
-            for j in range(i + 2):
-                self._blocks.add_module(
-                    ChoiceBlock(in_channels=channels[2],
-                                out_channels=channels[2],
-                                is_reduced=j < 2 and reductions[1],
-                                mode=mode,
-                                alpha=alpha[len(self._blocks)])
-                )
+        for i in range(len(cell_arch)):
+            for (op_idx, choice_idx) in cell_arch[str(i + 2)]:
+                stride = 2 if reductions[-1] and choice_idx < 2 else 1
+                self._blocks.add_module(OPS[op_idx](channels[2], stride, True))
+                self._indices.append(choice_idx)
 
     def __call__(self, *input):
         """Each cell has two inputs and one output."""
         out = [op(x) for op, x in zip(self._prep, input)]
-        offset = 0
         apply_drop_path = self._drop_prob is not None
 
-        for _ in range(self._num_choices):
-            aux_output = []
+        for i in range(len(self._indices) // 2):
+            idx = (self._indices[2*i], self._indices[2*i + 1])
+            ops = (self._blocks[2*i], self._blocks[2*i + 1])
 
-            for j, h in enumerate(out):
-                block = self._blocks[offset + j]
-                active_idx = block._mixed._active
-                module = block._mixed._ops[active_idx]
+            choice = list()
+            for j, op in zip(idx, ops):
+                choice.append(op(out[j]))
+                if self.training and apply_drop_path:
+                    if not isinstance(op, Mo.Identity):
+                        choice[-1] = ut.drop_path(choice[-1], self._drop_prob)
 
-                # check if it's Zero op
-                if active_idx == len(block._mixed._ops) - 1:
-                    continue
+            out.append(F.add2(choice[0], choice[1]))
 
-                x = module(h)
-                if apply_drop_path and not isinstance(module, Mo.Identity):
-                    x = ut.drop_path(x, self._drop_prob)
-
-                aux_output.append(x)
-            
-            assert(len(aux_output) == 2)
-            s = F.add2(aux_output[0], aux_output[1])
-
-            offset += len(out)
-            out.append(s)
-
-        return F.concatenate(*out[-self._multiplier:], axis=1)
+        return F.concatenate(*out[2:], axis=1)
 
 
 class AuxiliaryHeadCIFAR(Mo.Module):
-
+    # NOTE: Already tested (same as pytorch).
     def __init__(self, channels, num_classes):
         super().__init__()
         self.feature = Mo.Sequential(
@@ -100,14 +97,11 @@ class AuxiliaryHeadCIFAR(Mo.Module):
 class NetworkCIFAR(Mo.Model):
     def __init__(self, shape, init_channels, num_cells, num_classes,
                  num_choices=4, multiplier=4, stem_multiplier=3,
-                 num_ops=8, shared_params=True, mode='full',
-                 drop_prob=0.2, auxiliary=True):
+                 num_ops=8, drop_prob=0.2, auxiliary=True, genotype=None):
         super().__init__()
-        self._num_choices = num_choices
         self._num_ops = num_ops
         self._multiplier = multiplier
         self._init_channels = init_channels
-        self._mode = mode
         self._drop_prob = nn.Variable(
             (1, 1, 1, 1), need_grad=False) if drop_prob > 0 else None
         self._num_cells = num_cells
@@ -116,16 +110,15 @@ class NetworkCIFAR(Mo.Model):
         num_channels = stem_multiplier * init_channels
 
         # initialize the arch parameters
-        self._alpha_normal = self._init_alpha(num_ops, shared_params)
-        self._alpha_reduce = self._init_alpha(num_ops, shared_params)
         self._stem = StemConv(3, num_channels)
-        self._cells = self._init_cells(num_cells, num_channels)
+        self._cells = self._init_cells(num_cells, num_channels, genotype)
         self._ave_pool = Mo.AvgPool(kernel=(8, 8))
         self._linear = Mo.Linear(self._last_channels, num_classes)
 
         # auxiliary head
         self._auxiliary_head = AuxiliaryHeadCIFAR(
             self._c_auxiliary, num_classes)
+
         # save input and output shapes
         self._input_shape = shape
         self._output_shape = (shape[0], num_classes)
@@ -134,29 +127,26 @@ class NetworkCIFAR(Mo.Model):
         logits_aux = None
         out_p = out_c = self._stem(input)
         for i, cell in enumerate(self._cells):
-            out_c, out_p = cell(out_p, out_c), out_c
+            out_p, out_c = out_c, cell(out_p, out_c)
             if i == 2 * self._num_cells//3:
                 if self.training and self._auxiliary:
                     logits_aux = self._auxiliary_head(out_c)
         out_c = self._ave_pool(out_c)
-        return self._linear(out_c), logits_aux
+        logits = self._linear(out_c)
+        return logits, logits_aux
 
-    def _init_cells(self, num_cells, channel_c):
+    def _init_cells(self, num_cells, channel_c, genotype):
         cells = Mo.ModuleList()
-
         channel_p_p, channel_p, channel_c = channel_c, channel_c, self._init_channels
         reduction_p, reduction_c = False, False
+        
         for i in range(num_cells):
             reduction_c = i in (num_cells // 3, 2 * num_cells // 3)
             channel_c *= reduction_c + 1
             cells.add_module(
-                Cell(num_choices=self._num_choices,
-                     multiplier=self._multiplier,
-                     channels=(channel_p_p, channel_p, channel_c),
+                Cell(channels=(channel_p_p, channel_p, channel_c),
                      reductions=(reduction_p, reduction_c),
-                     mode=self._mode,
-                     alpha=self._alpha_reduce if reduction_c
-                     else self._alpha_normal,
+                     genotype=genotype,
                      drop_prob=self._drop_prob)
             )
             reduction_p = reduction_c
@@ -168,16 +158,6 @@ class NetworkCIFAR(Mo.Model):
         self._last_channels = channel_p
 
         return cells
-
-    def _init_alpha(self, n, shared_params):
-        alpha = []
-        for i in range(self._num_choices):
-            for _ in range(i + 2):
-                alpha_shape = (n,) + (1, 1, 1, 1)
-                alpha_init = ConstantInitializer(0.0)
-                alpha.append(Mo.Parameter(alpha_shape, initializer=alpha_init)
-                             if shared_params else None)
-        return alpha
 
     def get_net_parameters(self, grad_only=False):
         param = OrderedDict()

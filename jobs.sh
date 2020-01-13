@@ -12,7 +12,7 @@ python main.py  search \
 # validate DARTS
 python main.py  train \
                 --device-id 2 --context 'cudnn' \
-                --minibatch-size 32 \
+                --minibatch-size 48 \
                 --num-cells 20 \
                 --num-nodes 4 \
                 --init-channels 36 \

@@ -1,5 +1,5 @@
 {
-    "model_weight_decay": 3e-05,
+    "model_weight_decay": 3e-04,
     "print_frequency": 50,
     "arch_with_grad_clip": true,
     "model_optim": "Momentum",
@@ -10,7 +10,7 @@
     "model_with_grad_clip": false,
     "batch_size": 96,
     "model_lr": 0.025,
-    "model_lr_scheduler": "StepScheduler",
+    "model_lr_scheduler": "CosineScheduler",
     "model_name": "darts.h5",
     "model_grad_clip_value": 5.0,
     "monitor_path": "log/darts/train",

@@ -60,26 +60,33 @@ if __name__ == "__main__":
         config.update(vars(args))
 
     if args.func == search:
-        model = Darts(
-            shape=(args.minibatch_size, 3, 32, 32),
-            init_channels=args.init_channels,
-            num_cells=args.num_cells,
-            num_choices=args.num_nodes,
-            num_classes=10,
-            shared_params=args.shared_params,
-            mode=args.mode
-        )
-    else:
-        model = NetworkCIFAR(
-            shape=(args.minibatch_size, 3, 32, 32),
-            init_channels=args.init_channels,
-            num_cells=args.num_cells,
-            num_choices=args.num_nodes,
-            num_classes=10,
-            shared_params=args.shared_params,
-            mode=args.mode,
-            drop_prob=args.drop_path_prob,
-            auxiliary=args.auxiliary
-        )
-
-    args.func(model, config).run()
+        search(
+            model=Darts(
+                shape=(args.minibatch_size, 3, 32, 32),
+                init_channels=args.init_channels,
+                num_cells=args.num_cells,
+                num_choices=args.num_nodes,
+                num_classes=10,
+                shared_params=args.shared_params,
+                mode=args.mode
+            ),
+            config=config
+        ).run()
+        
+    else: 
+        genotype = json.load(open(config['arch']+'.json'))
+        # this code only work for shared params
+        assert config['shared_params']
+        train(
+            model=NetworkCIFAR(
+                shape=(args.minibatch_size, 3, 32, 32),
+                init_channels=args.init_channels,
+                num_cells=args.num_cells,
+                num_classes=10,
+                drop_prob=args.drop_path_prob,
+                auxiliary=args.auxiliary,
+                genotype=genotype
+            ),
+            config=config
+        ).run()
+        
