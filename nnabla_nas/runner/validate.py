@@ -26,7 +26,7 @@ class Trainer(object):
             train_transform
         )
         self.valid_loader = DataLoader(
-            data_iterator_cifar10(conf['minibatch_size'], False),
+            data_iterator_cifar10(conf['minibatch_size_valid'], False),
             valid_transform
         )
 
@@ -102,8 +102,8 @@ class Trainer(object):
 
         # sample a graph for validating
         model.eval()
-        valid_input = nn.Variable(model.input_shape)
-        valid_target = nn.Variable((conf['minibatch_size'], 1))
+        valid_input = nn.Variable([conf['minibatch_size_valid']] + model.input_shape[1:])
+        valid_target = nn.Variable((conf['minibatch_size_valid'], 1))
         valid_output, _ = model(valid_input)
         valid_loss = criteria(valid_output, valid_target)
 
