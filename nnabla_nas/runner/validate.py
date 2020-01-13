@@ -102,7 +102,7 @@ class Trainer(object):
 
         # sample a graph for validating
         model.eval()
-        valid_input = nn.Variable([conf['minibatch_size_valid']] + model.input_shape[1:])
+        valid_input = nn.Variable((conf['minibatch_size_valid'],) + model.input_shape[1:])
         valid_target = nn.Variable((conf['minibatch_size_valid'], 1))
         valid_output, _ = model(valid_input)
         valid_loss = criteria(valid_output, valid_target)
