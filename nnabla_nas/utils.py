@@ -130,9 +130,9 @@ def parse_weights(alpha, num_choices):
         cell[i + 2], prob[i + 2] = list(), list()
         W = [softmax(alpha[j + offset].d.flatten()) for j in range(i + 2)]
         # Note: Zero Op shouldn't be included
-        edges = sorted(range(i + 2), key=lambda k:-max(W[k][:-1]))
+        edges = sorted(range(i + 2), key=lambda k: -max(W[k][:-1]))
         for j, k in enumerate(edges):
-            if j < 2: # select the first two best Ops
+            if j < 2:  # select the first two best Ops
                 idx = np.argmax(W[k][:-1])
                 cell[i + 2].append([int(idx), k])
                 prob[i + 2].append(float(W[k][idx]))
@@ -141,7 +141,7 @@ def parse_weights(alpha, num_choices):
                 choice[k + offset] = int(len(W[k]) - 1)
         offset += i + 2
     return cell, prob, choice
-    
+
 
 def save_dart_arch(model, file):
     memo = dict()
@@ -150,6 +150,7 @@ def save_dart_arch(model, file):
             memo[name + '_' + k] = v
     logger.info('Saving arch to {}'.format(file))
     write_to_json_file(memo, file)
+
 
 def drop_path(x, drop_prob):
     """Drop path function."""
@@ -172,3 +173,7 @@ def image_augmentation(image):
     out = F.image_augmentation(out, flip_lr=True)
     out.need_grad = False
     return out
+
+
+def get_params_size(params):
+    return np.sum(np.prod(p.shape) for p in params.values())

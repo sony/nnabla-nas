@@ -2,12 +2,11 @@ from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
-from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
 from ... import utils as ut
 from ...module import MixedOp
-from .modules import ChoiceBlock, StemConv
+from .modules import StemConv
 
 
 OPS = {
@@ -102,8 +101,8 @@ class NetworkCIFAR(Mo.Model):
         self._num_ops = num_ops
         self._multiplier = multiplier
         self._init_channels = init_channels
-        self._drop_prob = nn.Variable(
-            (1, 1, 1, 1), need_grad=False) if drop_prob > 0 else None
+        self._drop_prob = nn.Variable.from_numpy_array(
+            [0.2]).reshape((1, 1, 1, 1)) if drop_prob > 0 else None
         self._num_cells = num_cells
         self._auxiliary = auxiliary
 
@@ -139,7 +138,7 @@ class NetworkCIFAR(Mo.Model):
         cells = Mo.ModuleList()
         channel_p_p, channel_p, channel_c = channel_c, channel_c, self._init_channels
         reduction_p, reduction_c = False, False
-        
+
         for i in range(num_cells):
             reduction_c = i in (num_cells // 3, 2 * num_cells // 3)
             channel_c *= reduction_c + 1

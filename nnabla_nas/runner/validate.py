@@ -12,7 +12,8 @@ from tqdm import tqdm
 import nnabla_nas.utils as ut
 from nnabla_nas.dataset import DataLoader
 from nnabla_nas.dataset.cifar10.cifar10_data import data_iterator_cifar10
-from nnabla_nas.optimizer import Optimizer, Solver
+from nnabla_nas.optimizer import Optimizer
+import nnabla.solvers as S
 
 
 class Trainer(object):
@@ -31,7 +32,7 @@ class Trainer(object):
         )
 
         # solver configurations
-        model_solver = Solver(conf['model_optim'], conf['model_lr'])
+        model_solver = S.__dict__[conf['model_optim']](conf['model_lr'])
         max_iter = conf['epoch'] * len(self.train_loader) // conf['batch_size']
         lr_scheduler = LRS.__dict__[conf['model_lr_scheduler']](
             conf['model_lr'],
@@ -60,10 +61,14 @@ class Trainer(object):
         model_optim = self.model_optim
         criteria = self.criteria
         drop_prob = self.model._drop_prob
+        valid_size = conf['minibatch_size_valid']
+        train_size = conf['minibatch_size']
+        batch_size = conf['batch_size']
 
-        n_micros = conf['batch_size'] // conf['minibatch_size']
-        one_train_epoch = len(self.train_loader) // conf['batch_size']
-        one_valid_epoch = len(self.valid_loader) // conf['minibatch_size']
+        n_micros = batch_size // train_size
+        one_train_epoch = len(self.train_loader) // batch_size
+        one_valid_epoch = len(self.valid_loader) // valid_size
+
         # monitor the training process
         monitor = ut.get_standard_monitor(
             one_train_epoch, conf['monitor_path'])
@@ -80,7 +85,7 @@ class Trainer(object):
 
         # input and target variables
         train_input = nn.Variable(model.input_shape)
-        train_target = nn.Variable((conf['minibatch_size'], 1))
+        train_target = nn.Variable((train_size, 1))
 
         model.train()
         for module in model.get_arch_modues():
@@ -91,25 +96,28 @@ class Trainer(object):
         train_out, auxilary_out = model(ut.image_augmentation(train_input))
         train_loss = criteria(train_out, train_target) / n_micros
         if conf['auxiliary']:
-            train_loss += conf['auxiliary_weight'] * \
-                criteria(auxilary_out, train_target) / n_micros
-
+            train_loss += (conf['auxiliary_weight']/n_micros) * \
+                criteria(auxilary_out, train_target)
         train_loss.persistent = True
         train_out.persistent = True
 
-        params = model.get_net_parameters(grad_only=True)
-        model_optim.set_parameters(params)
+        model_optim.set_parameters(
+            params=model.get_net_parameters(grad_only=True),
+            reset=False, retain_state=True
+        )
 
         # sample a graph for validating
         model.eval()
-        valid_input = nn.Variable((conf['minibatch_size_valid'],) + model.input_shape[1:])
-        valid_target = nn.Variable((conf['minibatch_size_valid'], 1))
+        valid_input = nn.Variable((valid_size,) + model.input_shape[1:])
+        valid_target = nn.Variable((valid_size, 1))
         valid_output, _ = model(valid_input)
         valid_loss = criteria(valid_output, valid_target)
-
         valid_output.persistent = True
         valid_loss.persistent = True
         best_error = 1.0
+
+        model_size = ut.get_params_size(model_optim.get_parameters()) / 1e6
+        logger.info('Model size = %.6f MB' % model_size)
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
@@ -117,7 +125,7 @@ class Trainer(object):
             # adjusting the drop path rate
             if drop_prob:
                 drop_rate = conf['drop_path_prob'] * cur_epoch / conf['epoch']
-                drop_prob.d = np.array([drop_rate]).reshape(drop_prob.d.shape)
+                drop_prob.d[0] = drop_rate
 
             for i in range(one_train_epoch):
                 curr_iter = i + one_train_epoch * cur_epoch
@@ -125,6 +133,7 @@ class Trainer(object):
                 # training model parameters
                 model_optim.zero_grad()
                 error = loss = 0
+
                 # mini batches update
                 for _ in range(n_micros):
                     train_input.d, train_target.d = self.train_loader.next()
@@ -156,12 +165,14 @@ class Trainer(object):
             if monitor['valid_err'].avg < best_error:
                 best_error = monitor['valid_err'].avg
                 # saving the architecture parameters
-                logger.info('New model with err={:.3f} at epoch {}'.format(
-                    best_error, cur_epoch))
                 model.save_parameters(
                     path=os.path.join(
                         conf['model_save_path'], conf['model_name'])
                 )
+
+            logger.info('Epoch %d: lr=%.5f\tdrop_prob=%.5f\terr=%.3f' %
+                        (cur_epoch, model_optim.get_learning_rate(curr_iter),
+                         drop_rate, monitor['valid_err'].avg))
 
         monitor.close()
 
