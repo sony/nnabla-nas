@@ -1,6 +1,6 @@
 # search DARTS
 python main.py  search \
-                --device-id 0 --context 'cudnn' \
+                --device-id 1 --context 'cudnn' \
                 --batch-size-train 16 \
                 --batch-size-valid 16 \
                 --num-cells 8 \

@@ -1,8 +1,8 @@
+import nnabla as nn
 import nnabla.functions as F
+import numpy as np
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
-import nnabla as nn
-import numpy as np
 
 from .. import utils as ut
 from .module import Module, ModuleList

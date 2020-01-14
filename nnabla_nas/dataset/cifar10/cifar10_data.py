@@ -97,21 +97,3 @@ def data_iterator_cifar10(batch_size,
                          rng,
                          with_memory_cache,
                          with_file_cache)
-
-
-def get_data_iterator(batch_size, arch_training=True):
-    """Return the cifar10 data loader."""
-    data = data_iterator_cifar10(batch_size, train=True)
-    if arch_training:
-        train = data.slice(rng=None, slice_start=0, slice_end=25000)
-        valid = data.slice(rng=None, slice_start=25000, slice_end=50000)
-    else:
-        train = data
-        valid = data_iterator_cifar10(batch_size, train=False)
-    return {
-        'train': train,
-        'valid': valid,
-        'mean': (0.49139968, 0.48215827, 0.44653124),
-        'std': (0.24703233, 0.24348505, 0.26158768),
-        'scale': 255.0
-    }
