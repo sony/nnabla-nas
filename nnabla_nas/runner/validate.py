@@ -1,10 +1,9 @@
-import json
 import os
 
 import nnabla as nn
 import nnabla.functions as F
+import nnabla.solvers as S
 import nnabla.utils.learning_rate_scheduler as LRS
-import numpy as np
 from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
 from tqdm import tqdm
@@ -13,7 +12,8 @@ import nnabla_nas.utils as ut
 from nnabla_nas.dataset import DataLoader
 from nnabla_nas.dataset.cifar10.cifar10_data import data_iterator_cifar10
 from nnabla_nas.optimizer import Optimizer
-import nnabla.solvers as S
+
+from ..module import BatchNormalization
 
 
 class Trainer(object):
@@ -23,11 +23,13 @@ class Trainer(object):
         train_transform, valid_transform = ut.dataset_transformer(conf)
         # dataset configuration
         self.train_loader = DataLoader(
-            data_iterator_cifar10(conf['minibatch_size'], True),
+            data_iterator_cifar10(conf['batch_size_train'], True,
+                                  shuffle=True),
             train_transform
         )
         self.valid_loader = DataLoader(
-            data_iterator_cifar10(conf['minibatch_size_valid'], False),
+            data_iterator_cifar10(conf['batch_size_valid'], False,
+                                  shuffle=False),
             valid_transform
         )
 
@@ -38,7 +40,6 @@ class Trainer(object):
             conf['model_lr'],
             max_iter=max_iter
         )  # this is for CosineScheduler
-
         self.model_optim = Optimizer(
             solver=model_solver,
             grad_clip=conf['model_grad_clip_value'] if
@@ -61,8 +62,8 @@ class Trainer(object):
         model_optim = self.model_optim
         criteria = self.criteria
         drop_prob = self.model._drop_prob
-        valid_size = conf['minibatch_size_valid']
-        train_size = conf['minibatch_size']
+        valid_size = conf['batch_size_valid']
+        train_size = conf['batch_size_train']
         batch_size = conf['batch_size']
 
         n_micros = batch_size // train_size
@@ -96,7 +97,7 @@ class Trainer(object):
         train_out, auxilary_out = model(ut.image_augmentation(train_input))
         train_loss = criteria(train_out, train_target) / n_micros
         if conf['auxiliary']:
-            train_loss += (conf['auxiliary_weight']/n_micros) * \
+            train_loss += (conf['auxiliary_weight'] / n_micros) * \
                 criteria(auxilary_out, train_target)
         train_loss.persistent = True
         train_out.persistent = True
@@ -105,6 +106,9 @@ class Trainer(object):
             params=model.get_net_parameters(grad_only=True),
             reset=False, retain_state=True
         )
+
+        model_size = ut.get_params_size(model_optim.get_parameters()) / 1e6
+        logger.info('Model size = %.6f MB' % model_size)
 
         # sample a graph for validating
         model.eval()
@@ -116,18 +120,15 @@ class Trainer(object):
         valid_loss.persistent = True
         best_error = 1.0
 
-        model_size = ut.get_params_size(model_optim.get_parameters()) / 1e6
-        logger.info('Model size = %.6f MB' % model_size)
-
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-
+            model.train()
             # adjusting the drop path rate
             if drop_prob:
                 drop_rate = conf['drop_path_prob'] * cur_epoch / conf['epoch']
                 drop_prob.d[0] = drop_rate
 
-            for i in range(one_train_epoch):
+            for i in range(10):  # range(one_train_epoch):
                 curr_iter = i + one_train_epoch * cur_epoch
 
                 # training model parameters
@@ -144,20 +145,31 @@ class Trainer(object):
 
                 model_optim.update(curr_iter)
                 # add info to the monitor
-                monitor['train_loss'].update(loss)
-                monitor['train_err'].update(error/n_micros)
+                monitor['train_loss'].update(loss, train_size)
+                monitor['train_err'].update(error/n_micros, train_size)
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i, ['train_loss', 'train_err'])
 
+                for k, m in model.get_modules():
+                    if isinstance(m, BatchNormalization):
+                        print(k, m.mean.d.flatten())
+                        print(k, m.var.d.flatten())
+                sdfsddf
+            model.eval()
             # mini batches update
             for i in tqdm(range(one_valid_epoch)):
                 valid_input.d, valid_target.d = self.valid_loader.next()
                 valid_loss.forward(clear_buffer=True)
                 error = ut.categorical_error(valid_output.d, valid_target.d)
                 # add info to the monitor
-                monitor['valid_loss'].update(valid_loss.d.copy())
-                monitor['valid_err'].update(error)
+                monitor['valid_loss'].update(valid_loss.d.copy(), valid_size)
+                monitor['valid_err'].update(error, valid_size)
+
+                for k, m in model.get_modules():
+                    if isinstance(m, BatchNormalization):
+                        print('mean', k, m.mean.d.flatten())
+                        print('var', k, m.var.d.flatten())
 
             # write losses and save model after each epoch
             monitor.write(cur_epoch)
@@ -170,7 +182,7 @@ class Trainer(object):
                         conf['model_save_path'], conf['model_name'])
                 )
 
-            logger.info('Epoch %d: lr=%.5f\tdrop_prob=%.5f\terr=%.3f' %
+            logger.info('Epoch %d: lr=%.5f\tdrop_prob=%.5f\tErr=%.3f' %
                         (cur_epoch, model_optim.get_learning_rate(curr_iter),
                          drop_rate, monitor['valid_err'].avg))
 

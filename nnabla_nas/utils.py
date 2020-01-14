@@ -10,7 +10,8 @@ from nnabla.logger import logger
 from scipy.special import softmax
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
-from .dataset.transformer import Compose, Normalizer, Cutout
+
+from .dataset.transformer import Compose, Cutout, Normalizer
 
 
 class ProgressMeter(object):

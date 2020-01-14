@@ -1,6 +1,8 @@
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
+import nnabla as nn
+import numpy as np
 
 from .. import utils as ut
 from .module import Module, ModuleList
@@ -11,40 +13,56 @@ class MixedOp(Module):
     def __init__(self, operators, mode='sample', alpha=None):
         super().__init__()
         n = len(operators)
+        alpha_shape = (n,) + (1, 1, 1, 1)
+        alpha_init = ConstantInitializer(0.0)
+
         self._mode = mode
-        self._mode_old = mode
+
         self._ops = ModuleList(operators)
-        self._active = 0
-        self._alpha = alpha or self._init_alpha(n)
+        self._alpha = alpha or Parameter(alpha_shape, initializer=alpha_init)
+        self._binary = nn.Variable.from_numpy_array(np.zeros(alpha_shape))
+
+        self._active = 0  # save the active index
+        self._state = None  # save the states of intermediate outputs
 
     def __call__(self, input):
         if self._mode == 'full':
             out = F.mul2(self._ops(input), F.softmax(self._alpha, axis=0))
             return F.sum(out, axis=0)
-        self._update_active_idx()
-        return self._ops[self._active](input)
 
-    def _init_alpha(self, n):
-        alpha_shape = (n,) + (1, 1, 1, 1)
-        alpha_init = ConstantInitializer(0.0)
-        return Parameter(alpha_shape, initializer=alpha_init)
+        if self._mode == 'sample':
+            self._state = [op(input) for op in self._ops]
+            out = F.mul2(F.stack(*self._state, axis=0), self._binary)
+            return F.sum(out, axis=0)
+
+        return self._ops[self._active](input)
 
     def _update_active_idx(self):
         """Update index of the active operation."""
         # recompute active_idx
-        probs = softmax(self._alpha.d.flatten())
+        probs = softmax(self._alpha.d.flat)
         self._active = ut.sample(
             pvals=probs,
             mode=self._mode
         )
+        # update binary variable
+        self._binary.data.zero()
+        self._binary.d[self._active] = 1
 
         # set off need_grad for unnecessary modules
-        for i, module in enumerate(self._ops):
-            need_grad = self._mode == 'full' or i == self._active
-            module.update_grad(need_grad)
+        if self._state:
+            for i in range(len(self._state)):
+                self._state[i].need_grad = (i == self._active)
 
-        # update gradients for alpha
-        for i, p in enumerate(probs):
-            self._alpha.g[i] = int(self._active == i) - p
+        return self
 
+    def _update_alpha_grad(self):
+        """Update gradients for alpha."""
+        probs = softmax(self._alpha.d.flat)
+        self._active = ut.sample(
+            pvals=probs,
+            mode=self._mode
+        )
+        probs[self._active] -= 1
+        self._alpha.g = np.reshape(-probs, self._alpha.shape)
         return self

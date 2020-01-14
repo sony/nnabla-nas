@@ -30,7 +30,7 @@ class Module(object):
 
         return self
 
-    def train(self, mode=True, memo=None):
+    def train(self, mode=True):
         r"""Sets the module in training mode.
         This has any effect only on certain modules. See documentations of
         particular modules for details of their behaviors in training or
@@ -43,13 +43,9 @@ class Module(object):
         Returns:
             Module: self
         """
-        if memo is None:
-            memo = set()
-        if self not in memo:
-            memo.add(self)
-            self.training = mode
-            for module in self.children():
-                module.train(mode, memo)
+        self.training = mode
+        for _, module in self.get_modules():
+            module.training = mode
         return self
 
     def eval(self):

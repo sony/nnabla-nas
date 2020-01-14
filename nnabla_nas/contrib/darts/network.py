@@ -8,7 +8,6 @@ from ... import utils as ut
 from ...module import MixedOp
 from .modules import StemConv
 
-
 OPS = {
     0: lambda channels, stride, affine: Mo.DilConv(channels, channels, (3, 3), pad=(2, 2), stride=(stride, stride), affine=affine),
     1: lambda channels, stride, affine: Mo.DilConv(channels, channels, (5, 5), pad=(4, 4), stride=(stride, stride), affine=affine),

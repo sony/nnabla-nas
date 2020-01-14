@@ -10,7 +10,7 @@
     "arch_lr": 3e-4,
     "arch_optim": "Adam",
     "model_lr_control": true,
-    "model_with_grad_clip": false,
+    "model_with_grad_clip": true,
     "batch_size": 64,
     "model_lr": 0.025,
     "model_lr_scheduler": "CosineScheduler",

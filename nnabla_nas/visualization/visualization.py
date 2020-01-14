@@ -1,8 +1,9 @@
-import sys
-from graphviz import Digraph
 import json
 import os
+import sys
+
 import imageio
+from graphviz import Digraph
 
 NORMAL_OPS = [
     'dil_conv_3x3',

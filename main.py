@@ -20,7 +20,8 @@ def pass_args(parser):
     parser.add_argument("--device-id", "-d", type=str, default='1',
                         help='Device ID the training run on. \
                         This is only valid if you specify `-c cudnn`.')
-    parser.add_argument("--minibatch-size", type=int, default=8)
+    parser.add_argument("--batch-size-train", type=int, default=8)
+    parser.add_argument("--batch-size-valid", type=int, default=8)
     parser.add_argument("--num-cells", type=int, default=8)
     parser.add_argument("--num-nodes", type=int, default=4,
                         help='Number of nodes per cell, must be more than 2.')
@@ -51,36 +52,33 @@ if __name__ == "__main__":
                               default=False, help='use auxiliary tower')
     train_parser.add_argument('--cutout', action='store_true',
                               default=False, help='use cutout')
-    train_parser.add_argument('--cutout-length', type=int, default=16, 
-                                help='Cutout length')
-    train_parser.add_argument("--minibatch-size-valid", type=int, default=40)
+    train_parser.add_argument('--cutout-length', type=int, default=16,
+                              help='Cutout length')
     args = parser.parse_args()
 
     if args.config_file is not None:
         config = json.load(open(args.config_file))
         config.update(vars(args))
 
-    if args.func == search:
-        search(
-            model=Darts(
-                shape=(args.minibatch_size, 3, 32, 32),
-                init_channels=args.init_channels,
-                num_cells=args.num_cells,
-                num_choices=args.num_nodes,
-                num_classes=10,
-                shared_params=args.shared_params,
-                mode=args.mode
-            ),
-            config=config
-        ).run()
-        
-    else: 
+    if not config['shared_params'] or args.func == search:
+        model = Darts(
+            shape=(args.batch_size_train, 3, 32, 32),
+            init_channels=args.init_channels,
+            num_cells=args.num_cells,
+            num_choices=args.num_nodes,
+            num_classes=10,
+            shared_params=args.shared_params,
+            mode=args.mode,
+            drop_prob=args.drop_path_prob if args.func == train else None,
+        )
+        args.func(model, config).run()
+    else:
         genotype = json.load(open(config['arch']+'.json'))
         # this code only work for shared params
         assert config['shared_params']
         train(
             model=NetworkCIFAR(
-                shape=(args.minibatch_size, 3, 32, 32),
+                shape=(args.batch_size_train, 3, 32, 32),
                 init_channels=args.init_channels,
                 num_cells=args.num_cells,
                 num_classes=10,
@@ -90,4 +88,3 @@ if __name__ == "__main__":
             ),
             config=config
         ).run()
-        
