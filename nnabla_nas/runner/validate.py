@@ -4,7 +4,6 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.solvers as S
 import nnabla.utils.learning_rate_scheduler as LRS
-from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
 from tqdm import tqdm
 
@@ -82,10 +81,6 @@ class Trainer(object):
         log_path = os.path.join(conf['monitor_path'], 'train_config.json')
         logger.info('Experimental settings are saved to ' + log_path)
         ut.write_to_json_file(content=conf, file_path=log_path)
-        # setup context for nnabla
-        ctx = get_extension_context(
-            conf['context'], device_id=conf['device_id'])
-        nn.set_default_context(ctx)
 
         # sample one graph for training
         model.train()
@@ -118,6 +113,7 @@ class Trainer(object):
         valid_loss = criteria(valid_output, valid_target)
         valid_output.persistent = True
         valid_loss.persistent = True
+        valid_output.need_grad = False
         best_error = 1.0
 
         for cur_epoch in range(conf['epoch']):
@@ -129,22 +125,19 @@ class Trainer(object):
 
             for i in range(one_train_epoch):
                 curr_iter = i + one_train_epoch*cur_epoch
+
                 # training model parameters
                 optimizer.zero_grad()
-                error = loss = 0
-
-                # mini batches update
                 for _ in range(n_micros):
                     train_input.d, train_target.d = self.train_loader.next()
                     train_loss.forward(clear_no_need_grad=True)
                     train_loss.backward(clear_buffer=True)
-                    error += ut.categorical_error(train_out.d, train_target.d)
-                    loss += train_loss.d.copy()
-
+                    error = ut.categorical_error(train_out.d, train_target.d)
+                    loss = train_loss.d.copy()
+                    monitor['train_loss'].update(loss * n_micros, train_size)
+                    monitor['train_err'].update(error, train_size)
                 optimizer.update(curr_iter)
 
-                monitor['train_loss'].update(loss, train_size)
-                monitor['train_err'].update(error/n_micros, train_size)
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i, ['train_loss', 'train_err'])
 

@@ -1,15 +1,12 @@
 import json
 import os
-import time
 from collections import OrderedDict
 
-import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 from nnabla.logger import logger
 from scipy.special import softmax
 from tensorboardX import SummaryWriter
-from tqdm import tqdm
 
 from .dataset.transformer import Compose, Cutout, Normalizer
 

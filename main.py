@@ -1,6 +1,9 @@
 import argparse
 import json
 
+import nnabla as nn
+from nnabla.ext_utils import get_extension_context
+
 from nnabla_nas.contrib import Darts, NetworkCIFAR
 from nnabla_nas.runner import Searcher, Trainer
 
@@ -59,6 +62,11 @@ if __name__ == "__main__":
     if args.config_file is not None:
         config = json.load(open(args.config_file))
         config.update(vars(args))
+
+    # setup context for nnabla
+    ctx = get_extension_context(
+        config['context'], device_id=config['device_id'])
+    nn.set_default_context(ctx)
 
     if not config['shared_params'] or args.func == search:
         model = Darts(

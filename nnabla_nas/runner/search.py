@@ -4,7 +4,6 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.solvers as S
 import nnabla.utils.learning_rate_scheduler as LRS
-from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
 
 import nnabla_nas.utils as ut
@@ -28,7 +27,7 @@ class Searcher(object):
             train_transform
         )
         self.valid_loader = DataLoader(
-            data.slice(rng=None, slice_start=split, slice_end=50000),
+            data.slice(rng=None, slice_start=split, slice_end=data.size),
             valid_transform
         )
 
@@ -65,26 +64,23 @@ class Searcher(object):
         model_optim = self.model_optim
         arch_optim = self.arch_optim
         model_path = os.path.join(conf['model_save_path'], conf['model_name'])
+        arch_file = model_path + '.json'
+        log_path = os.path.join(conf['monitor_path'], 'search_config.json')
 
         train_size = conf['batch_size_train']
         valid_size = conf['batch_size_valid']
         batch_size = conf['batch_size']
         one_train_epoch = len(self.train_loader) // batch_size
+        warmup = conf['warmup']
+        train_micros = batch_size // train_size
+        valid_micros = batch_size // valid_size
 
         # monitor the training process
         monitor = ut.get_standard_monitor(
             one_train_epoch, conf['monitor_path'])
-        # write out the configuration
-        log_path = os.path.join(conf['monitor_path'], 'search_config.json')
+
         logger.info('Experimental settings are saved to ' + log_path)
         ut.write_to_json_file(content=conf, file_path=log_path)
-        ctx = get_extension_context(
-            conf['context'], device_id=conf['device_id'])
-        nn.set_default_context(ctx)
-
-        warmup = conf['warmup']
-        train_micros = batch_size // train_size
-        valid_micros = batch_size // valid_size
 
         arch_modules = model.get_arch_modues()  # avoid run through all modules
 
@@ -124,42 +120,34 @@ class Searcher(object):
 
             for i in range(one_train_epoch):
                 curr_iter = i + one_train_epoch * cur_epoch
-
                 if requires_sample:
                     # sample an architecture
                     for m in arch_modules:
                         m._update_active_idx()
 
-                # clear grad
+                # model update
                 model_optim.zero_grad()
-
-                error = loss = 0
-                # mini batches update
                 for _ in range(train_micros):
                     train_input.d, train_target.d = self.train_loader.next()
                     train_loss.forward(clear_no_need_grad=True)
                     train_loss.backward(clear_buffer=True)
-                    error += ut.categorical_error(train_out.d, train_target.d)
-                    loss += train_loss.d.copy()
-
+                    error = ut.categorical_error(train_out.d, train_target.d)
+                    loss = train_loss.d.copy()
+                    monitor['train_loss'].update(loss*train_micros, train_size)
+                    monitor['train_err'].update(error, train_size)
                 model_optim.update(curr_iter)
 
-                monitor['train_loss'].update(loss)
-                monitor['train_err'].update(error/train_micros)
-
-                # clear grad
+                # architecture update
                 arch_optim.zero_grad()
-
-                error = loss = 0
-                # mini batches update
                 for _ in range(valid_micros):
                     valid_input.d, valid_target.d = self.valid_loader.next()
                     valid_loss.forward(clear_no_need_grad=True)
-                    error += ut.categorical_error(valid_out.d, valid_target.d)
-                    loss += valid_loss.d.copy()
+                    error = ut.categorical_error(valid_out.d, valid_target.d)
+                    loss = valid_loss.d.copy()
+                    monitor['valid_loss'].update(loss*valid_micros, valid_size)
+                    monitor['valid_err'].update(error, valid_size)
                     if warmup == 0 and not requires_sample:
                         valid_loss.backward(clear_buffer=True)
-
                 if warmup == 0:
                     if requires_sample:
                         # compute gradients
@@ -170,28 +158,21 @@ class Searcher(object):
                             v.g *= loss - conf['control_variate']
                     arch_optim.update(curr_iter)
 
-                # add info to the monitor
-                monitor['valid_loss'].update(loss)
-                monitor['valid_err'].update(error/valid_micros)
-
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i)
 
             # saving the architecture parameters
             if conf['shared_params']:
-                ut.save_dart_arch(model, model_path + '.json')
+                ut.save_dart_arch(model, arch_file)
                 if conf['visualize']:
-                    outp = os.path.join(conf['monitor_path'])
-                    arch_output = visualize(model_path + '.json',
-                                            model._num_choices, outp)
-                    for _n, _d in arch_output.items():
-                        monitor.write_image(_n, _d, cur_epoch)
+                    curr_arch = visualize(arch_file, conf['monitor_path'])
+                    for tag, img in curr_arch.items():
+                        monitor.write_image(tag, img, cur_epoch)
             else:
-                model.save_parameters(model_path + '.h5',
-                                      model.get_arch_parameters())
+                model.save_parameters(
+                    model_path + '.h5', model.get_arch_parameters())
             warmup -= warmup > 0
 
-            # write losses and save model after each epoch
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\twu=%d\tErr=%.3f\tLoss=%.3f' %
                         (cur_epoch, model_optim.get_learning_rate(curr_iter),

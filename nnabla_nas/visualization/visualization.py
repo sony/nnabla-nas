@@ -12,7 +12,7 @@ NORMAL_OPS = [
     'sep_conv_5x5',
     'max_pool_3x3',
     'avg_pool_3x3',
-    'identity',
+    'skip_connect',
     'zero'
 ]
 REDUCE_OPS = [
@@ -22,12 +22,12 @@ REDUCE_OPS = [
     'sep_conv_5x5',
     'max_pool_3x3',
     'avg_pool_3x3',
-    'fac_reduce',
+    'skip_connect',
     'zero'
 ]
 
 
-def plot(choice, prob, num_choices, ops, filename):
+def plot(choice, prob, ops, filename):
     g = Digraph(format='png',
                 edge_attr=dict(fontsize='14', fontname="times"),
                 node_attr=dict(style='filled', shape='rect', align='center', fontsize='20',
@@ -39,6 +39,8 @@ def plot(choice, prob, num_choices, ops, filename):
     g.node("c_{k-2}", fillcolor='darkseagreen2')
     g.node("c_{k-1}", fillcolor='darkseagreen2')
     g.node("c_{k}", fillcolor='palegoldenrod')
+
+    num_choices = len(prob)
     for i in range(num_choices):
         g.node(str(i + 2), fillcolor='lightblue')
 
@@ -61,14 +63,13 @@ def plot(choice, prob, num_choices, ops, filename):
     return imageio.imread(filename+'.png').transpose((2, 0, 1))
 
 
-def visualize(arch_file, num_choices, path):
+def visualize(arch_file, path):
     conf = json.load(open(arch_file))
     images = dict()
     for name in ['reduce', 'normal']:
         images[name] = plot(
-            choice=conf[name + '_alpha'], 
-            prob=conf[name + '_prob'], 
-            num_choices=num_choices,
+            choice=conf[name + '_alpha'],
+            prob=conf[name + '_prob'],
             ops=REDUCE_OPS if name == 'reduce' else NORMAL_OPS,
             filename=os.path.join(path, name)
         )
