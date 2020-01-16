@@ -76,8 +76,7 @@ if __name__ == "__main__":
             num_choices=args.num_nodes,
             num_classes=10,
             shared_params=args.shared_params,
-            mode=args.mode,
-            drop_prob=args.drop_path_prob if args.func == train else None,
+            mode=args.mode
         )
         args.func(model, config).run()
     else:
@@ -90,7 +89,6 @@ if __name__ == "__main__":
                 init_channels=args.init_channels,
                 num_cells=args.num_cells,
                 num_classes=10,
-                drop_prob=args.drop_path_prob,
                 auxiliary=args.auxiliary,
                 genotype=genotype
             ),

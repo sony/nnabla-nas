@@ -21,9 +21,8 @@ OPS = {
 
 
 class Cell(Mo.Module):
-    def __init__(self, channels, reductions, genotype, drop_prob=None):
+    def __init__(self, channels, reductions, genotype):
         super().__init__()
-        self._drop_prob = drop_prob
 
         # preprocess the inputs
         self._prep = Mo.ModuleList()
@@ -51,8 +50,6 @@ class Cell(Mo.Module):
     def __call__(self, *input):
         """Each cell has two inputs and one output."""
         out = [op(x) for op, x in zip(self._prep, input)]
-        apply_drop_path = self._drop_prob is not None
-
         for i in range(len(self._indices) // 2):
             idx = (self._indices[2*i], self._indices[2*i + 1])
             ops = (self._blocks[2*i], self._blocks[2*i + 1])
@@ -60,9 +57,8 @@ class Cell(Mo.Module):
             choice = list()
             for j, op in zip(idx, ops):
                 choice.append(op(out[j]))
-                if self.training and apply_drop_path:
-                    if not isinstance(op, Mo.Identity):
-                        choice[-1] = ut.drop_path(choice[-1], self._drop_prob)
+                if self.training and not isinstance(op, Mo.Identity):
+                    choice[-1] = ut.drop_path(choice[-1])
 
             out.append(F.add2(choice[0], choice[1]))
 
@@ -95,13 +91,11 @@ class AuxiliaryHeadCIFAR(Mo.Module):
 class NetworkCIFAR(Mo.Model):
     def __init__(self, shape, init_channels, num_cells, num_classes,
                  num_choices=4, multiplier=4, stem_multiplier=3,
-                 num_ops=8, drop_prob=0.2, auxiliary=True, genotype=None):
+                 num_ops=8, auxiliary=True, genotype=None):
         super().__init__()
         self._num_ops = num_ops
         self._multiplier = multiplier
         self._init_channels = init_channels
-        self._drop_prob = nn.Variable.from_numpy_array(
-            [0.2]).reshape((1, 1, 1, 1)) if drop_prob > 0 else None
         self._num_cells = num_cells
         self._auxiliary = auxiliary
 
@@ -144,8 +138,7 @@ class NetworkCIFAR(Mo.Model):
             cells.add_module(
                 Cell(channels=(channel_p_p, channel_p, channel_c),
                      reductions=(reduction_p, reduction_c),
-                     genotype=genotype,
-                     drop_prob=self._drop_prob)
+                     genotype=genotype)
             )
             reduction_p = reduction_c
             channel_p_p, channel_p = channel_p, self._multiplier * channel_c

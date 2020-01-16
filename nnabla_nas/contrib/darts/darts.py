@@ -10,14 +10,13 @@ from .modules import Cell, StemConv
 class Darts(Mo.Model):
     def __init__(self, shape, init_channels, num_cells, num_classes,
                  num_choices=4, multiplier=4, stem_multiplier=3,
-                 num_ops=8, shared_params=True, mode='full', drop_prob=None):
+                 num_ops=8, shared_params=True, mode='full'):
         super().__init__()
         self._num_choices = num_choices
         self._num_ops = num_ops
         self._multiplier = multiplier
         self._init_channels = init_channels
         self._mode = mode
-        self._drop_prob = drop_prob
 
         num_channels = stem_multiplier * init_channels
 

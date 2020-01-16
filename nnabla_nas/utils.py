@@ -9,6 +9,7 @@ from scipy.special import softmax
 from tensorboardX import SummaryWriter
 
 from .dataset.transformer import Compose, Cutout, Normalizer
+import nnabla as nn
 
 
 class ProgressMeter(object):
@@ -150,8 +151,13 @@ def save_dart_arch(model, file):
     write_to_json_file(memo, file)
 
 
-def drop_path(x, drop_prob):
-    """Drop path function."""
+def drop_path(x):
+    """Drop path function. Taken from Yashima code"""
+    drop_prob = nn.parameter.get_parameter_or_create(
+        "drop_rate",
+        shape=(1, 1, 1, 1),
+        need_grad=False
+    )
     mask = F.rand(shape=(x.shape[0], 1, 1, 1))
     mask = F.greater_equal(mask, drop_prob)
     x = F.div2(x, 1 - drop_prob)

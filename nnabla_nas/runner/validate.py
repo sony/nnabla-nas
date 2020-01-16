@@ -11,6 +11,7 @@ import nnabla_nas.utils as ut
 from nnabla_nas.dataset import DataLoader
 from nnabla_nas.dataset.cifar10 import cifar10
 from nnabla_nas.optimizer import Optimizer
+import numpy as np
 
 
 class Trainer(object):
@@ -59,7 +60,6 @@ class Trainer(object):
         model = self.model
         optimizer = self.optimizer
         criteria = self.criteria
-        drop_prob = self.model._drop_prob
         save_path = os.path.join(conf['model_save_path'], conf['model_name'])
 
         valid_size = conf['batch_size_valid']
@@ -116,12 +116,19 @@ class Trainer(object):
         valid_output.need_grad = False
         best_error = 1.0
 
+        # set dropout rate in advance
+        nn.parameter.get_parameter_or_create(
+            "drop_rate", shape=(1, 1, 1, 1), need_grad=False)
+        drop_rate = nn.Variable.from_numpy_array(
+            np.array([conf['drop_path_prob']]).reshape(1, 1, 1, 1)
+        )
+        nn.parameter.set_parameter("drop_rate", drop_rate)
+
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
             # adjusting the drop path rate
-            if drop_prob:
-                drop_rate = conf['drop_path_prob']*cur_epoch/conf['epoch']
-                drop_prob.d[0] = drop_rate
+            curr_drop = F.mul_scalar(drop_rate, cur_epoch/conf['epoch'])
+            nn.parameter.set_parameter("drop_rate", curr_drop)
 
             for i in range(one_train_epoch):
                 curr_iter = i + one_train_epoch*cur_epoch
@@ -154,10 +161,9 @@ class Trainer(object):
                 model.save_parameters(save_path)
 
             monitor.write(cur_epoch)
-            logger.info('Epoch %d: lr=%.5f\tdp=%.5f\tErr=%.3f\tLoss=%.3f' %
+            logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
                         (cur_epoch, optimizer.get_learning_rate(curr_iter),
-                         drop_rate, monitor['valid_err'].avg,
-                         monitor['valid_loss'].avg))
+                         monitor['valid_err'].avg, monitor['valid_loss'].avg))
 
         monitor.close()
 
