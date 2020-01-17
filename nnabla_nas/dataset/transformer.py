@@ -27,6 +27,9 @@ class Compose(object):
         for t in self.transforms:
             img = t(img)
         return img
+    
+    def append(self, transform):
+        self.transforms.append(transform)
 
     def __repr__(self):
         format_string = self.__class__.__name__ + '('
@@ -35,3 +38,24 @@ class Compose(object):
             format_string += '    {0}'.format(t)
         format_string += '\n)'
         return format_string
+
+class Cutout(object):
+    def __init__(self, length):
+        self.length = length
+
+    def __call__(self, image):
+        h, w = image.shape[2:]
+        mask = np.ones((h, w), np.float32)
+        y = np.random.randint(h)
+        x = np.random.randint(w)
+        y1 = np.clip(y - self.length // 2, 0, h)
+        y2 = np.clip(y + self.length // 2, 0, h)
+        x1 = np.clip(x - self.length // 2, 0, w)
+        x2 = np.clip(x + self.length // 2, 0, w)
+        mask[y1: y2, x1: x2] = 0.
+        image *= mask
+        return image
+
+    def __repr__(self):
+        return self.__class__.__name__
+        + '(length={0})'.format(self.length)

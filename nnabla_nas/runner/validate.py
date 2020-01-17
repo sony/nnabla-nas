@@ -1,46 +1,41 @@
-import json
 import os
 
 import nnabla as nn
 import nnabla.functions as F
+import nnabla.solvers as S
 import nnabla.utils.learning_rate_scheduler as LRS
-import numpy as np
-from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
-from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
 import nnabla_nas.utils as ut
 from nnabla_nas.dataset import DataLoader
-from nnabla_nas.dataset.cifar10.cifar10_data import data_iterator_cifar10
-from nnabla_nas.optimizer import Optimizer, Solver
+from nnabla_nas.dataset.cifar10 import cifar10
+from nnabla_nas.optimizer import Optimizer
+import numpy as np
 
 
 class Trainer(object):
 
     def __init__(self, model, conf):
-        # list of transformers
-        train_transform, valid_transform = ut.dataset_transformer()
-        # dataset configuration
+        # dataset loader setup
+        train_transform, valid_transform = ut.dataset_transformer(conf)
         self.train_loader = DataLoader(
-            data_iterator_cifar10(conf['minibatch_size'], True),
+            cifar10(conf['batch_size_train'], True, shuffle=True),
             train_transform
         )
         self.valid_loader = DataLoader(
-            data_iterator_cifar10(conf['minibatch_size'], False),
+            cifar10(conf['batch_size_valid'], False, shuffle=False),
             valid_transform
         )
 
         # solver configurations
-        model_solver = Solver(conf['model_optim'], conf['model_lr'])
+        model_solver = S.__dict__[conf['model_optim']](conf['model_lr'])
         max_iter = conf['epoch'] * len(self.train_loader) // conf['batch_size']
         lr_scheduler = LRS.__dict__[conf['model_lr_scheduler']](
             conf['model_lr'],
-            gamma=0.97,
-            iter_steps=[max_iter*i for i in range(1, conf['epoch'] + 1)]
-        )  # this is for StepScheduler
-
-        self.model_optim = Optimizer(
+            max_iter=max_iter  # this is for CosineScheduler
+        )
+        self.optimizer = Optimizer(
             solver=model_solver,
             grad_clip=conf['model_grad_clip_value'] if
             conf['model_with_grad_clip'] else None,
@@ -48,130 +43,128 @@ class Trainer(object):
             lr_scheduler=lr_scheduler
         )
 
-        if conf['shared_params']:
-            arch_params = json.load(open(conf['arch'] + '.json'))
-            # assign alpha weights
-            logger.info('Loading normal cells ...')
-            for alpha, idx in zip(model._alpha_normal, arch_params['normal']):
-                w = np.zeros(model._num_ops)
-                w[idx] = 1
-                alpha.d = w.reshape(alpha.d.shape)
-            logger.info('Loading reduce cells ...')
-            for alpha, idx in zip(model._alpha_reduce, arch_params['reduce']):
-                w = np.zeros(model._num_ops)
-                w[idx] = 1
-                alpha.d = w.reshape(alpha.d.shape)
-        else:
+        if not conf['shared_params']:
             model.load_parameters(conf['arch'] + '.h5')
+            # preparing to sample one graph
+            for module in model.get_arch_modues():
+                module._mode = 'max'
+                module._update_active_idx()
 
         self.model = model
+        self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
         self.conf = conf
 
     def run(self):
         """Run the training process."""
         conf = self.conf
         model = self.model
-        model_optim = self.model_optim
+        optimizer = self.optimizer
+        criteria = self.criteria
+        save_path = os.path.join(conf['model_save_path'], conf['model_name'])
 
-        one_epoch = len(self.train_loader) // conf['batch_size']
-        one_valid_epoch = len(self.valid_loader) // conf['minibatch_size']
+        valid_size = conf['batch_size_valid']
+        train_size = conf['batch_size_train']
+        batch_size = conf['batch_size']
+
+        assert len(self.valid_loader) % valid_size == 0
+
+        n_micros = batch_size // train_size
+        one_train_epoch = len(self.train_loader) // batch_size
+        one_valid_epoch = len(self.valid_loader) // valid_size
+        aux_weight = conf['auxiliary_weight'] / n_micros
+
         # monitor the training process
-        monitor = ut.ProgressMeter(
-            num_batches=one_epoch,
-            meters=[
-                ut.AverageMeter('train_loss', fmt=':5.3f'),
-                ut.AverageMeter('valid_loss', fmt=':5.3f'),
-                ut.AverageMeter('train_err', fmt=':5.3f'),
-                ut.AverageMeter('valid_err', fmt=':5.3f')
-            ],
-            tb_writer=SummaryWriter(
-                os.path.join(conf['monitor_path'], 'tensorboard')
-            )
-        )
-        n_micros = conf['batch_size'] // conf['minibatch_size']
+        monitor = ut.get_standard_monitor(
+            one_train_epoch, conf['monitor_path'])
 
         # write out the configuration
-        path = os.path.join(conf['monitor_path'], 'train_config.json')
-        with open(path, 'w+') as file:
-            json.dump(conf, file,  ensure_ascii=False,
-                      indent=4, default=lambda o: '<not serializable>')
-
-        ctx = get_extension_context(
-            conf['context'], device_id=conf['device_id'])
-        nn.set_default_context(ctx)
-
-        # input and target variables
-        x_var = nn.Variable(model.input_shape)
-        image = F.random_crop(F.pad(x_var, (4, 4, 4, 4)), shape=(x_var.shape))
-        image = F.image_augmentation(image, flip_lr=True)
-        t_var = nn.Variable((conf['minibatch_size'], 1))
-
-        model.train()
-        for m in model.get_arch_modues():
-            m._mode = 'max'
-            m._update_active_idx()
-
-        def criteria(o, t):
-            return F.mean(F.softmax_cross_entropy(o, t))/n_micros
+        log_path = os.path.join(conf['monitor_path'], 'train_config.json')
+        logger.info('Experimental settings are saved to ' + log_path)
+        ut.write_to_json_file(content=conf, file_path=log_path)
 
         # sample one graph for training
-        out, aux = model(image)
-        loss = criteria(out, t_var)
+        model.train()
+        train_input = nn.Variable(model.input_shape)
+        train_target = nn.Variable((train_size, 1))
+        train_out, aux_out = model(ut.image_augmentation(train_input))
+        train_loss = criteria(train_out, train_target)/n_micros
         if conf['auxiliary']:
-            loss += conf['auxiliary_weight'] * criteria(aux, t_var)
+            train_loss += aux_weight*criteria(aux_out, train_target)
+        train_loss.persistent = True
+        train_out.persistent = True
 
-        params = model.get_net_parameters(grad_only=True)
-        model_optim.set_parameters(params)
+        # assign parameters
+        optimizer.set_parameters(
+            params=model.get_net_parameters(grad_only=True),
+            reset=False, retain_state=True
+        )
+
+        # print a summary
+        model_size = ut.get_params_size(optimizer.get_parameters())
+        aux_size = ut.get_params_size(model._auxiliary_head.get_parameters())
+        model_size = (model_size - aux_size) / 1e6
+        logger.info('Model size = {:.6f} MB'.format(model_size))
 
         # sample a graph for validating
         model.eval()
-        val_tar = nn.Variable((conf['minibatch_size'], 1))
-        val_var = nn.Variable(model.input_shape)
-        val_out, _ = model(val_var)
-        val_loss = F.mean(F.softmax_cross_entropy(val_out, val_tar))
+        valid_input = nn.Variable((valid_size,) + model.input_shape[1:])
+        valid_target = nn.Variable((valid_size, 1))
+        valid_output, _ = model(valid_input)
+        valid_loss = criteria(valid_output, valid_target)
+        valid_output.persistent = True
+        valid_loss.persistent = True
+        valid_output.need_grad = False
+        best_error = 1.0
+
+        # set dropout rate in advance
+        nn.parameter.get_parameter_or_create(
+            "drop_rate", shape=(1, 1, 1, 1), need_grad=False)
+        drop_rate = nn.Variable.from_numpy_array(
+            np.array([conf['drop_path_prob']]).reshape(1, 1, 1, 1)
+        )
+        nn.parameter.set_parameter("drop_rate", drop_rate)
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-            for i in range(one_epoch):
-                curr_iter = i + one_epoch * cur_epoch
+            # adjusting the drop path rate
+            curr_drop = F.mul_scalar(drop_rate, cur_epoch/conf['epoch'])
+            nn.parameter.set_parameter("drop_rate", curr_drop)
+
+            for i in range(one_train_epoch):
+                curr_iter = i + one_train_epoch*cur_epoch
 
                 # training model parameters
-                model_optim.zero_grad()
-
-                v_err = v_loss = 0
-                # mini batches update
+                optimizer.zero_grad()
                 for _ in range(n_micros):
-                    x_var.d, t_var.d = self.train_loader.next()
-                    loss.forward()
-                    loss.backward()
-                    v_err += ut.categorical_error(out.d, t_var.d)
-                    v_loss += loss.d
-
-                model_optim.update(curr_iter)
-                # add info to the monitor
-                monitor['train_loss'].update(v_loss)
-                monitor['train_err'].update(v_err/n_micros)
+                    train_input.d, train_target.d = self.train_loader.next()
+                    train_loss.forward(clear_no_need_grad=True)
+                    train_loss.backward(clear_buffer=True)
+                    error = ut.categorical_error(train_out.d, train_target.d)
+                    loss = train_loss.d.copy()
+                    monitor['train_loss'].update(loss * n_micros, train_size)
+                    monitor['train_err'].update(error, train_size)
+                optimizer.update(curr_iter)
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i, ['train_loss', 'train_err'])
 
-            # mini batches update
+            # compute the validation error
             for i in tqdm(range(one_valid_epoch)):
-                val_var.d, val_tar.d = self.valid_loader.next()
-                val_loss.forward()
-                err = ut.categorical_error(val_out.d, val_tar.d)
-                # add info to the monitor
-                monitor['valid_loss'].update(val_loss.d)
-                monitor['valid_err'].update(err)
+                valid_input.d, valid_target.d = self.valid_loader.next()
+                valid_loss.forward(clear_buffer=True)
+                error = ut.categorical_error(valid_output.d, valid_target.d)
+                monitor['valid_loss'].update(valid_loss.d.copy(), valid_size)
+                monitor['valid_err'].update(error, valid_size)
 
-            # write losses and save model after each epoch
+            if monitor['valid_err'].avg < best_error:
+                best_error = monitor['valid_err'].avg
+                model.save_parameters(save_path)
+
             monitor.write(cur_epoch)
-
-            # saving the architecture parameters
-            model.save_parameters(
-                path=os.path.join(
-                    conf['model_save_path'], conf['model_name'])
-            )
+            logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
+                        (cur_epoch, optimizer.get_learning_rate(curr_iter),
+                         monitor['valid_err'].avg, monitor['valid_loss'].avg))
 
         monitor.close()
+
         return self

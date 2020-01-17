@@ -1,7 +1,7 @@
 import nnabla as nn
 import nnabla.parametric_functions as PF
-import pytest
 
+import pytest
 from nnabla_nas import module as Mo
 from nnabla_nas.contrib import darts as Da
 
