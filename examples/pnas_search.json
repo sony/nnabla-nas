@@ -4,7 +4,7 @@
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 78200
+            "max_iter": 141000
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -29,5 +29,5 @@
     "batch_size": 64,
     "model_name": "arch",
     "output_path": "log/pnas/search",
-    "train_portion": 0.5
+    "train_portion": 0.9
 }
