@@ -31,7 +31,7 @@ class Optimizer(object):
         if self._retain_state:
             self._solver.set_states(
                 OrderedDict({
-                    k: v for k, v in self._states if k in params
+                    k: v for k, v in self._states.items() if k in params
                 })
             )
 
