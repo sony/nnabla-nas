@@ -18,8 +18,8 @@ class Solver(object):
             params, reset=True, retain_state=False
         )
         if kargs.get('retain_state', False):
-           states = self._get_current_states(params)
-           self._solver.set_states(states)
+            states = self._get_current_states(params)
+            self._solver.set_states(states)
 
     def weight_decay(self, wd):
         self._solver.weight_decay(wd)
@@ -46,7 +46,7 @@ class Solver(object):
         for k in params:
             states[k] = self._states.get(k, initial_states[k])
         return states
-    
+
     def _update_current_states(self):
         self._states.update(self._solver.get_states())
 

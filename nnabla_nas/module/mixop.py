@@ -29,12 +29,6 @@ class MixedOp(Module):
         if self._mode == 'full':
             out = F.mul2(self._ops(input), F.softmax(self._alpha, axis=0))
             return F.sum(out, axis=0)
-
-        if self._mode == 'sample':
-            self._state = [op(input) for op in self._ops]
-            out = F.mul2(F.stack(*self._state, axis=0), self._binary)
-            return F.sum(out, axis=0)
-
         return self._ops[self._active](input)
 
     def _update_active_idx(self):
@@ -45,24 +39,11 @@ class MixedOp(Module):
             pvals=probs,
             mode=self._mode
         )
-        # update binary variable
-        self._binary.data.zero()
-        self._binary.d[self._active] = 1
-
-        # set off need_grad for unnecessary modules
-        if self._state:
-            for i in range(len(self._state)):
-                self._state[i].need_grad = (i == self._active)
-
-        return self
+        for i, op in enumerate(self._ops):
+            op.update_grad(self._active == i)
 
     def _update_alpha_grad(self):
-        """Update gradients for alpha."""
         probs = softmax(self._alpha.d.flat)
-        self._active = ut.sample(
-            pvals=probs,
-            mode=self._mode
-        )
         probs[self._active] -= 1
         self._alpha.g = np.reshape(-probs, self._alpha.shape)
         return self

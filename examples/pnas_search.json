@@ -1,23 +1,33 @@
 {
-    "control_variate": 0.001,
-    "model_weight_decay": 3e-04,
     "print_frequency": 20,
-    "arch_with_grad_clip": true,
-    "model_optim": "Momentum",
-    "model_save_path": "log/pnas/search",
-    "warmup": 0,
+    "model_optimizer": {
+        "lr_scheduler": {
+            "name": "CosineScheduler",
+            "init_lr": 0.025,
+            "max_iter": 78200
+        },
+        "grad_clip": 5.0,
+        "weight_decay": 3e-4,
+        "solver": {
+            "name": "Momentum",
+            "lr": 0.025
+        }
+    },
+    "arch_optimizer": {
+        "control_variate": 0.001,
+        "lr_scheduler": null,
+        "grad_clip": 5.0,
+        "weight_decay": 1e-3,
+        "solver": {
+            "name": "Adam",
+            "alpha": 0.01,
+            "beta1": 0.5,
+            "beta2": 0.999
+        }
+    },
     "epoch": 200,
-    "arch_lr": 3e-4,
-    "arch_optim": "Adam",
-    "model_lr_control": true,
-    "model_with_grad_clip": true,
     "batch_size": 64,
-    "model_lr": 0.025,
-    "model_lr_scheduler": "CosineScheduler",
     "model_name": "arch",
-    "model_grad_clip_value": 5.0,
-    "arch_grad_clip_value": 5.0,
-    "arch_weight_decay": 1e-3,
-    "monitor_path": "log/pnas/search",
+    "output_path": "log/pnas/search",
     "train_portion": 0.5
 }
