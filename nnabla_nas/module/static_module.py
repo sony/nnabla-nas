@@ -54,7 +54,10 @@ class StaticModule(Module):
             return True
 
     def _shape_function(self, parent):
-        return (None,)*4
+        #we build a nummy nnabla graph to infer the shapes
+        inputs       = [nn.Variable(pi.shape) for pi in parent]
+        dummy_graph  = self._value_function(self._aggregate_inputs(inputs))
+        return dummy_graph.shape
 
     def _init_parents(self, parent):
         if len(parent) > 0:
@@ -117,6 +120,12 @@ class StaticModule(Module):
             res = inputs[0]
         return res
 
+    def get_eval_probs(self):
+        pass
+
+    def _eval_prob_function(self, eval_probs):
+        pass
+
     def clear_value(self):
         self._value = None
 
@@ -128,9 +137,9 @@ class StaticModule(Module):
             self._value = self._value_function(self._aggregate_inputs([pi.value() for pi in self.parent]))
         return self._value
 
-    def profile(self, profiler, n_runs=100):
+    def profile(self, profiler, n_run=100):
         try:
-            return profiler.profile(static_module=self, n_run=100)
+            return profiler.profile(static_module=self, n_run=n_run)
         except:
             print("Cannot profile module {}!".format(self.name))
             return 0.0
@@ -176,9 +185,6 @@ class Input(StaticModule):
         """
         pass
 
-    def _shape_function(self, parent):
-        return self._shape
-
     def _value_function(self, inputs):
         return self._value
 
@@ -194,9 +200,6 @@ class Identity(StaticModule):
     """
     def _value_function(self, inputs):
         return inputs
-
-    def _shape_function(self, parent):
-        return parent[0].shape
 
 class Merge(StaticModule):
 
@@ -232,15 +235,6 @@ class Merge(StaticModule):
         for cai in self._channel_adaptation:
             ca_module = Conv(in_channels=shapes[cai[0]][1], out_channels=cai[1], kernel=(1,1))
             self._channel_adaptation_modules.add_module(cai[0], ca_module)
-
-    def _shape_function(self, parent):
-        """
-        The shape of the output is the minimal shape of all input tensors.
-        """
-        shapes      = [(list(pi.shape) + 4 * [1])[:4] for pi in parent]
-        min_shp     = tuple(np.min(np.array(shapes), axis=0))
-
-        return min_shp
 
     def _aggregate_inputs(self, input):
         #1. adapt the spatial dimensions, using pooling
@@ -328,6 +322,34 @@ class Join(StaticModule):
     def _value_function(self, input):
         return input
 
+#------------------------------------Some pooling StaticModules------------------------------------
+
+
+#------------------------------------Some convolutional StaticModules------------------------------
+class StaticConv(StaticModule):
+    def __init__(self, name, parent, kernel_shape, pad=None, stride=None, dilation=None, group=1,
+                 w_init=None, b_init=None, base_axis=1, rng=None, with_bias=True, *args, **kwargs):
+        self._kernel_shape = kernel_shap
+        self._pad = pad
+        self._stride = stride
+        self._dilation = dilation
+        self._group = group
+        self._w_init = w_init
+        self._b_init = b_init
+        self._base_axis = base_axis
+        self._rng = rng
+        self._with_bias = with_bias
+        super(StaticConv, self).__init__(name, parent, *args, **kwargs)
+
+    def _create_modules(self):
+        self._conv_module = Conv(self.parent[0].shape[1], self._kernel_shape[0], self._kernel_shape[1:],
+                                 pad=self._pad, stride=self._stride, dilation=self._dilation, group=self._group,
+                                 w_init=self._w_init, b_init=self._b_init, base_axis=self._base_axis, rng=self._rng, with_bias=self._with_bias)
+
+    def _value_function(self, input):
+        return self._conv_module(input)
+
+
 #------------------------------------A graph of StaticModules--------------------------------------
 class StaticGraph(StaticModule):
     # Graph is derived from Op, such that we can realize nested graphs!
@@ -370,14 +392,14 @@ class StaticGraph(StaticModule):
             self._shape = self._output.shape
         return self._shape
 
-    def profile(self, profiler, n_runs=100):
+    def profile(self, profiler, n_run=100):
         """
         Compared to a single vertice, we need to profile all vertices which are nested in this graph.
         """
         result = {}
         for mi in self.get_modules():
             if isinstance(mi[1], StaticModule) and mi[1] != self:
-                result[mi[1].name] = mi[1].profile(profiler, n_runs=100)
+                result[mi[1].name] = mi[1].profile(profiler, n_run=n_run)
 
         return result
 
@@ -388,11 +410,13 @@ if __name__ == '__main__':
     class MyGraph(StaticGraph):
         def _generate_graph(self, inputs):
             self.input_module_2 = Input(name='input_2', value=nn.Variable((10,20,32,32)))
-            self.join = Join(name='join', parent=[*inputs, self.input_module_2])
+            self.conv_module    = StaticConv(name='conv', parent=[self.input_module_2], kernel_shape=(30,3,3))
+            self.join = Merge(name='join', parent=[*inputs, self.input_module_2])
             return self.join
 
     input_module_1 = Input(name='input_1', value=nn.Variable((10,20,32,32)))
     myGraph = MyGraph(name='myGraph', parent=[input_module_1])
 
-    latency = myGraph.profile(NNablaProfiler())
+    latency = myGraph.profile(NNablaProfiler(), n_run=10)
+    print(latency)
     import pdb; pdb.set_trace()

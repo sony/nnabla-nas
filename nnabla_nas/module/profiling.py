@@ -25,4 +25,5 @@ class NNablaProfiler(Profiler):
         #3. run the nnabla profiler
         prof = GraphProfiler(out, device_id=self._dev_idx, ext_name=self._nnabla_context, n_run=n_run)
         prof.run()
+        print(n_run)
         return prof.result['forward_all']
