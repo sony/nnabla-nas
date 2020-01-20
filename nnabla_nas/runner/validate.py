@@ -97,7 +97,7 @@ class Trainer(object):
         train_loss.apply(persistent=True)
         train_err.apply(persistent=True)
         # assign parameters
-        optimizer.set_parameters(model.get_net_parameters())
+        optimizer.set_parameters(model.get_net_parameters(grad_only=True))
 
         # print a summary
         model_size = ut.get_params_size(optimizer.get_parameters())

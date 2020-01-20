@@ -51,7 +51,7 @@ class Cell(Mo.Module):
     """
 
     def __init__(self, num_choices, multiplier, channels, reductions,
-                 mode='full', alpha=None):
+                 mode='full', alpha=None, affine=False):
         super().__init__()
         self._multiplier = multiplier
         self._num_choices = num_choices
@@ -59,12 +59,12 @@ class Cell(Mo.Module):
         self._prep = Mo.ModuleList()
         if reductions[0]:
             self._prep.add_module(
-                Mo.FactorizedReduce(channels[0], channels[2], affine=False))
+                Mo.FactorizedReduce(channels[0], channels[2], affine=affine))
         else:
             self._prep.add_module(
-                Mo.ReLUConvBN(channels[0], channels[2], kernel=(1, 1), affine=False))
+                Mo.ReLUConvBN(channels[0], channels[2], kernel=(1, 1), affine=affine))
         self._prep.add_module(Mo.ReLUConvBN(
-            channels[1], channels[2], kernel=(1, 1), affine=False))
+            channels[1], channels[2], kernel=(1, 1), affine=affine))
         # build choice blocks
         self._blocks = Mo.ModuleList()
         for i in range(num_choices):
@@ -75,7 +75,7 @@ class Cell(Mo.Module):
                                 is_reduced=j < 2 and reductions[1],
                                 mode=mode,
                                 alpha=alpha[len(self._blocks)],
-                                affine=False)
+                                affine=affine)
                 )
 
     def __call__(self, *input):

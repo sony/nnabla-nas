@@ -36,7 +36,7 @@ python main.py  search \
 # validate PNAS
 python main.py  train \
                 --device-id 1 --context 'cudnn' \
-                --batch-size-train 48 \
+                --batch-size-train 128 \
                 --batch-size-valid 100 \
                 --num-cells 8 \
                 --num-nodes 4 \

@@ -6,6 +6,7 @@ from nnabla.ext_utils import get_extension_context
 
 from nnabla_nas.contrib import Darts, NetworkCIFAR
 from nnabla_nas.runner import Searcher, Trainer
+from nnabla_nas.contrib.pnas.network import PNASNetwork
 
 
 def search(model, config):
@@ -81,17 +82,31 @@ if __name__ == "__main__":
         )
         args.func(model, config).run()
     else:
-        genotype = json.load(open(config['arch']+'.json'))
-        # this code only work for shared params
-        assert config['shared_params']
-        train(
-            model=NetworkCIFAR(
-                shape=(args.batch_size_train, 3, 32, 32),
-                init_channels=args.init_channels,
-                num_cells=args.num_cells,
-                num_classes=10,
-                auxiliary=args.auxiliary,
-                genotype=genotype
-            ),
-            config=config
-        ).run()
+        if config['shared_params']:
+            genotype = json.load(open(config['arch']+'.json'))
+            # this code only work for shared params
+            assert config['shared_params']
+            train(
+                model=NetworkCIFAR(
+                    shape=(args.batch_size_train, 3, 32, 32),
+                    init_channels=args.init_channels,
+                    num_cells=args.num_cells,
+                    num_classes=10,
+                    auxiliary=args.auxiliary,
+                    genotype=genotype
+                ),
+                config=config
+            ).run()
+        else:
+            train(
+                PNASNetwork(
+                    shape=(args.batch_size_train, 3, 32, 32),
+                    init_channels=args.init_channels,
+                    num_cells=args.num_cells,
+                    num_classes=10,
+                    shared_params=args.shared_params,
+                    auxiliary=args.auxiliary,
+                    mode=args.mode
+                ),
+                config=config
+            ).run()
