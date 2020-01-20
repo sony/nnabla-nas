@@ -6,6 +6,7 @@ from .linear import Linear
 from .mixop import MixedOp
 from .model import Model
 from .module import Module, ModuleList, Sequential
+from .static_module import StaticModule
 from .parameter import Parameter
 from .pooling import AvgPool, MaxPool
 from .relu import ReLU
@@ -13,6 +14,7 @@ from .relu import ReLU
 __all__ = [
     'Parameter',
     'Module',
+    'StaticModule'
     'Model',
     'Sequential',
     'ModuleList',

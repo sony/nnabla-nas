@@ -63,15 +63,6 @@ class Module(object):
         """
         return self.train(False)
 
-    def children(self):
-        r"""Returns an iterator over immediate children modules.
-        Yields:
-            Module: a child module
-        """
-        for module in self.__dict__.values():
-            if isinstance(module, Module):
-                yield module
-
     def get_modules(self, prefix='', memo=None):
         if memo is None:
             memo = set()
@@ -168,6 +159,35 @@ class ModuleList(Module):
             for i, module in enumerate(self._modules):
                 name = prefix + '/_modules/{}'.format(i)
                 yield from module.get_modules(name, memo)
+
+class ModuleDict(Module):
+    def __init__(self, modules=None):
+        super().__init__()
+        if modules is None:
+            modules = OrderedDict()
+        self._modules = modules
+
+    def add_module(self, key, module):
+        self._modules[key] = module
+
+    def __getitem__(self, key):
+        return self._modules[key]
+
+    def __len__(self):
+        return len(self._modules)
+
+    def __iter__(self):
+        return iter(self._modules)
+
+    def get_modules(self, prefix='', memo=None):
+        if memo is None:
+            memo = set()
+        if self not in memo:
+            memo.add(self)
+            yield prefix, self
+            for module in self._modules:
+                name = prefix + '/_modules/{}'.format(module)
+                yield from self._modules[module].get_modules(name, memo)
 
 
 class Sequential(ModuleList):
