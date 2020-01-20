@@ -4,7 +4,7 @@
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 35157
+            "max_iter": 52735
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -25,7 +25,7 @@
             "beta2": 0.999
         }
     },
-    "epoch": 200,
+    "epoch": 300,
     "batch_size": 256,
     "warmup": 40,
     "model_name": "arch",
