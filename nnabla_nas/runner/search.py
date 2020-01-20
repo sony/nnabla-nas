@@ -17,6 +17,7 @@ class Searcher(object):
     """
     Searching the best architecture.
     """
+
     def __init__(self, model, conf):
         self.model = model
         self.arch_modules = model.get_arch_modues()
@@ -81,6 +82,8 @@ class Searcher(object):
         model_path = os.path.join(out_path, conf['model_name'])
         log_path = os.path.join(out_path, 'search_config.json')
         arch_file = model_path + '.json'
+        warmup = conf['warmup']
+        need_resample = conf['mode'] == 'sample'
 
         # monitor the training process
         monitor = ut.ProgressMeter(one_epoch, path=out_path)
@@ -94,14 +97,14 @@ class Searcher(object):
             monitor.reset()
 
             for i in range(one_epoch):
-                if conf['mode'] == 'sample':
+                if need_resample:
                     self._sample()
 
                 reward = 0
                 for mode, ph in self.placeholder.items():
                     optim[mode].zero_grad()
                     training = (mode == 'model')
-                    
+
                     for _ in range(self.w_micros):
                         ph['input'].d, ph['target'].d = self.loader[mode].next()
                         ph['loss'].forward(clear_no_need_grad=True)
@@ -110,24 +113,27 @@ class Searcher(object):
                             ph['loss'].backward(clear_buffer=True)
 
                         error = ph['err'].d.copy()
-                        loss = ph['loss'].d.copy() * self.w_micros
+                        loss = ph['loss'].d.copy()
 
-                        monitor.update(mode + '_loss', loss, conf['mini_batch_size'])
-                        monitor.update(mode + '_err', error, conf['mini_batch_size'])
+                        monitor.update(mode + '_loss', loss * self.w_micros,
+                                       conf['mini_batch_size'])
+                        monitor.update(mode + '_err', error,
+                                       conf['mini_batch_size'])
 
-                        if not training:
-                            reward += loss
+                        # compute reward for reinfoce update
+                        reward += (1-training) * loss
 
-                    optim[mode].update()
+                    # update the model parameters or arch parameters for DARTS
+                    if training or (warmup == 0 and not need_resample):
+                        optim[mode].update()
 
-                if conf['mode'] == 'sample':
+                if warmup == 0 and need_resample:
                     self._reinforce_update(reward)
-
-                optim['arch'].update()
+                    optim['arch'].update()
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i)
-
+            warmup -= warmup > 0
             # saving the architecture parameters
             if conf['shared_params']:
                 ut.save_dart_arch(model, arch_file)
@@ -165,7 +171,8 @@ class Searcher(object):
             # loss and error
             image = ut.image_augmentation(ph['input'])
             ph['output'] = self.model(image).apply(persistent=True)
-            ph['loss'] = self.criteria(ph['output'], ph['target']) / self.w_micros
+            ph['loss'] = self.criteria(
+                ph['output'], ph['target']) / self.w_micros
             ph['err'] = self.evaluate(
                 ph['output'].get_unlinked_variable(), ph['target'])
             ph['loss'].apply(persistent=True)
@@ -175,10 +182,13 @@ class Searcher(object):
             params = self.model.get_net_parameters(grad_only=True) if training\
                 else self.model.get_arch_parameters(grad_only=True)
             self.optimizer[mode].set_parameters(params)
-        
+
         if verbose:
-            model_size = ut.get_params_size(self.optimizer['model'].get_parameters())/1e6
-            arch_size = ut.get_params_size(self.optimizer['arch'].get_parameters())/1e6
-            logger.info('Model size={:.6f} MB\t Arch size={:.6f} MB'.format(model_size, arch_size))
+            model_size = ut.get_params_size(
+                self.optimizer['model'].get_parameters())/1e6
+            arch_size = ut.get_params_size(
+                self.optimizer['arch'].get_parameters())/1e6
+            logger.info('Model size={:.6f} MB\t Arch size={:.6f} MB'.format(
+                model_size, arch_size))
 
         return self

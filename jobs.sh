@@ -26,8 +26,8 @@ python main.py  train \
 # search PNAS
 python main.py  search \
                 --device-id 1 --context 'cudnn' \
-                --mini-batch-size 64 \
-                --num-cells 20 \
+                --mini-batch-size 128 \
+                --num-cells 8 \
                 --num-nodes 4 \
                 --init-channels 16 \
                 --mode sample \

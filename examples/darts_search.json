@@ -25,6 +25,7 @@
         }
     },
     "epoch": 50,
+    "warmup": 0,
     "batch_size": 64,
     "model_name": "arch",
     "output_path": "log/darts/search",
