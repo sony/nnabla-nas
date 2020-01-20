@@ -5,24 +5,24 @@ from ... import module as Mo
 
 class ChoiceBlock(Mo.Module):
     def __init__(self, in_channels, out_channels,
-                 is_reduced=False, mode='full', alpha=None):
+                 is_reduced=False, mode='full', alpha=None, affine=True):
         super().__init__()
         self._is_reduced = is_reduced
         stride = (2, 2) if is_reduced else (1, 1)
         self._mixed = Mo.MixedOp(
             operators=[
                 Mo.DilConv(in_channels, out_channels, (3, 3),
-                           pad=(2, 2), stride=stride),
+                           pad=(2, 2), stride=stride, affine=affine),
                 Mo.DilConv(in_channels, out_channels, (5, 5),
-                           pad=(4, 4), stride=stride),
+                           pad=(4, 4), stride=stride, affine=affine),
                 Mo.SepConv(in_channels, out_channels,
-                           (3, 3), pad=(1, 1), stride=stride),
+                           (3, 3), pad=(1, 1), stride=stride, affine=affine),
                 Mo.SepConv(in_channels, out_channels,
-                           (5, 5), pad=(2, 2), stride=stride),
+                           (5, 5), pad=(2, 2), stride=stride, affine=affine),
                 Mo.MaxPool(kernel=(3, 3), stride=stride, pad=(1, 1)),
                 Mo.AvgPool(kernel=(3, 3), stride=stride, pad=(1, 1)),
-                Mo.FactorizedReduce(in_channels, out_channels) if is_reduced
-                else Mo.Identity(),
+                Mo.FactorizedReduce(in_channels, out_channels, affine=affine)
+                if is_reduced else Mo.Identity(),
                 Mo.Zero(stride)
             ],
             mode=mode,
@@ -47,7 +47,7 @@ class StemConv(Mo.Module):
 
 
 class Cell(Mo.Module):
-    """Cell in DARTS. 
+    """Cell in DARTS.
     """
 
     def __init__(self, num_choices, multiplier, channels, reductions,
@@ -56,10 +56,15 @@ class Cell(Mo.Module):
         self._multiplier = multiplier
         self._num_choices = num_choices
         # preprocess the inputs
-        self._prep = [Mo.FactorizedReduce(channels[0], channels[2]) if reductions[0]
-                      else Mo.ReLUConvBN(channels[0], channels[2], kernel=(1, 1))]
-        self._prep.append(Mo.ReLUConvBN(
-            channels[1], channels[2], kernel=(1, 1)))
+        self._prep = Mo.ModuleList()
+        if reductions[0]:
+            self._prep.add_module(
+                Mo.FactorizedReduce(channels[0], channels[2], affine=False))
+        else:
+            self._prep.add_module(
+                Mo.ReLUConvBN(channels[0], channels[2], kernel=(1, 1), affine=False))
+        self._prep.add_module(Mo.ReLUConvBN(
+            channels[1], channels[2], kernel=(1, 1), affine=False))
         # build choice blocks
         self._blocks = Mo.ModuleList()
         for i in range(num_choices):
@@ -69,7 +74,8 @@ class Cell(Mo.Module):
                                 out_channels=channels[2],
                                 is_reduced=j < 2 and reductions[1],
                                 mode=mode,
-                                alpha=alpha[len(self._blocks)])
+                                alpha=alpha[len(self._blocks)],
+                                affine=False)
                 )
 
     def __call__(self, *input):

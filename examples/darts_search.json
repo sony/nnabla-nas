@@ -1,5 +1,4 @@
 {
-    "control_variate": 0.001,
     "model_weight_decay": 3e-4,
     "print_frequency": 20,
     "arch_with_grad_clip": true,
@@ -19,5 +18,6 @@
     "arch_grad_clip_value": 5.0,
     "arch_weight_decay": 1e-3,
     "monitor_path": "log/darts/search",
-    "train_portion": 0.5
+    "train_portion": 0.5,
+    "visualize": true
 }

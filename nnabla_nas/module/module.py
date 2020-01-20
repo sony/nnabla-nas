@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import nnabla as nn
+import nnabla.functions as F
 
 from .parameter import Parameter
 
@@ -29,7 +30,7 @@ class Module(object):
 
         return self
 
-    def train(self, mode=True, memo=None):
+    def train(self, mode=True):
         r"""Sets the module in training mode.
         This has any effect only on certain modules. See documentations of
         particular modules for details of their behaviors in training or
@@ -42,13 +43,9 @@ class Module(object):
         Returns:
             Module: self
         """
-        if memo is None:
-            memo = set()
-        if self not in memo:
-            memo.add(self)
-            self.training = mode
-            for module in self.children():
-                module.train(mode, memo)
+        self.training = mode
+        for _, module in self.get_modules():
+            module.training = mode
         return self
 
     def eval(self):
@@ -150,6 +147,9 @@ class ModuleList(Module):
     def __iter__(self):
         return iter(self._modules)
 
+    def __call__(self, input, axis=0):
+        return F.stack(*[m(input) for m in self._modules], axis=axis)
+
     def get_modules(self, prefix='', memo=None):
         if memo is None:
             memo = set()
@@ -198,8 +198,6 @@ class Sequential(ModuleList):
 
     def __call__(self, input):
         out = input
-        # print('hello world')
         for module in self._modules:
             out = module(out)
-            # print(module.__class__, out.shape)
         return out

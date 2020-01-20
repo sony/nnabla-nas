@@ -82,7 +82,7 @@ class DilConv(Module):
     """
 
     def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None):
+                 pad=None, stride=None, affine=True):
         super().__init__()
         self._conv = Sequential(
             ReLU(),
@@ -91,7 +91,8 @@ class DilConv(Module):
                  dilation=(2, 2), group=in_channels, with_bias=False),
             Conv(in_channels=in_channels, out_channels=out_channels,
                  kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=out_channels, n_dims=4)
+            BatchNormalization(n_features=out_channels,
+                               n_dims=4, fix_parameters=not affine)
         )
 
     def __call__(self, input):
@@ -102,7 +103,7 @@ class SepConv(Module):
     """Separable convolution."""
 
     def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None):
+                 pad=None, stride=None, affine=True):
         super().__init__()
         self._conv = Sequential(
             ReLU(),
@@ -111,14 +112,16 @@ class SepConv(Module):
                  group=in_channels, with_bias=False),
             Conv(in_channels=in_channels, out_channels=in_channels,
                  kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=in_channels, n_dims=4),
+            BatchNormalization(n_features=in_channels,
+                               n_dims=4, fix_parameters=not affine),
             ReLU(),
             Conv(in_channels=in_channels, out_channels=in_channels,
                  kernel=kernel, pad=pad, stride=(1, 1), group=in_channels,
                  with_bias=False),
             Conv(in_channels=in_channels, out_channels=out_channels,
                  kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=out_channels, n_dims=4)
+            BatchNormalization(n_features=out_channels,
+                               n_dims=4, fix_parameters=not affine)
         )
 
     def __call__(self, input):

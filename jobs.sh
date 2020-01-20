@@ -1,7 +1,8 @@
 # search DARTS
 python main.py  search \
-                --device-id 0 --context 'cudnn' \
-                --minibatch-size 16 \
+                --device-id 1 --context 'cudnn' \
+                --batch-size-train 16 \
+                --batch-size-valid 16 \
                 --num-cells 8 \
                 --num-nodes 4 \
                 --init-channels 16 \
@@ -12,19 +13,21 @@ python main.py  search \
 # validate DARTS
 python main.py  train \
                 --device-id 2 --context 'cudnn' \
-                --minibatch-size 12 \
+                --batch-size-train 48 \
+                --batch-size-valid 40 \
                 --num-cells 20 \
                 --num-nodes 4 \
                 --init-channels 36 \
                 --mode full \
                 --shared-params \
                 --auxiliary \
+                --cutout \
                 --config-file examples/darts_validate.json
 
 # search PNAS
 python main.py  search \
                 --device-id 1 --context 'cudnn' \
-                --minibatch-size 32 \
+                --minibatch-size 64 \
                 --num-cells 8 \
                 --num-nodes 4 \
                 --init-channels 16 \
@@ -39,4 +42,4 @@ python main.py  train \
                 --num-nodes 4 \
                 --init-channels 48 \
                 --mode sample \
-                --config-file examples/pnas_valiate.json
+                --config-file examples/pnas_validate.json
