@@ -130,7 +130,7 @@ class Module(object):
 
 class ModuleList(Module):
     def __init__(self, modules=None):
-        super().__init__()
+        Module.__init__(self)
         if modules is None:
             modules = []
         self._modules = modules

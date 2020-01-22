@@ -51,7 +51,7 @@ class Conv(Module):
                  pad=None, stride=None, dilation=None, group=1,
                  w_init=None, b_init=None,
                  base_axis=1, rng=None, with_bias=True):
-        super().__init__()
+        Module.__init__(self)
         if w_init is None:
             w_init = UniformInitializer(
                 calc_uniform_lim_glorot(in_channels, out_channels, tuple(kernel)), rng=rng)

@@ -6,7 +6,7 @@ Classes for graph based definition of DNN architectures and candidate spaces.
 import numpy as np
 import nnabla as nn
 import nnabla.functions as F
-from nnabla_nas.module import Module
+from nnabla_nas.module import Module, ModuleList
 from nnabla_nas.module.module import ModuleDict
 from nnabla_nas.module.convolution import Conv
 from nnabla_nas.module.parameter import Parameter
@@ -15,6 +15,7 @@ from nnabla.initializer import (ConstantInitializer, UniformInitializer,
 
 class StaticModule(Module):
     def __init__(self, name, parent, *args, **kwargs):
+        print('init {}'.format(name))
         """
         A vertice is a computational node in a DNN architecture.
         It has a unique name, and a reference to a graph object where it lives in.
@@ -44,7 +45,7 @@ class StaticModule(Module):
             raise Exception("Input shapes of vertice {} are not valid!".format(self.name))
 
         self._create_modules()
-        super(StaticModule, self).__init__()
+        Module.__init__(self)
 
     def _shapes_valid(self, parent):
         shapes      = [(list(pi.shape) + 4 * [1])[:4] for pi in parent]
@@ -95,6 +96,7 @@ class StaticModule(Module):
         The parent vertices of this vertice (all vertices which are connected
         with incoming edges).
         """
+        #import pdb; pdb.set_trace()
         return self._parent
 
     @property
@@ -126,12 +128,12 @@ class StaticModule(Module):
     def clear_value(self):
         self._value = None
 
-    def value(self, clear_value=False):
+    def __call__(self, clear_value=False):
         if clear_value:
             self.clear_value()
 
         if self._value is None:
-            self._value = self._value_function(self._aggregate_inputs([pi.value(clear_value) for pi in self.parent]))
+            self._value = self._value_function(self._aggregate_inputs([pi(clear_value) for pi in self.parent]))
         return self._value
 
     def clear_eval_probs(self):
@@ -195,9 +197,6 @@ class StaticModule(Module):
         """
         return bitwidth * np.prod(self.shape) / div
 
-    def __call__(self):
-        raise Exception('StaticModules cannot be called! Use StaticModule.value() instead.')
-
 #----------------------------------------some basic StaticModules--------------------------------------------
 
 class Input(StaticModule):
@@ -234,7 +233,7 @@ class Identity(StaticModule):
 
 class Zero(StaticModule):
     def _value_function(self, input):
-        return 0.0*self.input
+        return 0.0*input
 
     def _eval_prob_function(self, inputs): #a zero operation sets the evaluation pobabilities of all parents to 0
         return {self: nn.Variable.from_numpy_array(np.array(1.0))}
@@ -296,7 +295,7 @@ class Merge(StaticModule):
         return res
 
 class Join(StaticModule):
-    def __init__(self, name, parent, join_parameters=None, mode='linear', *args, **kwargs):
+    def __init__(self, name, parent, join_parameters, mode='linear', *args, **kwargs):
         """
         :param join_parameters: nnabla variable of shape (#parents,1), the logits for the join operations
         :param mode: string, the mode we use to join (linear, sample, max)
@@ -307,13 +306,10 @@ class Join(StaticModule):
         self._supported_modes =['linear', 'sample', 'max']
         self.mode = mode
 
-        if join_parameters is not None:
-            if join_parameters.size == len(parent):
-                self._join_parameters = F.reshape(join_parameter, shape=(len(parent),))
-            else:
-                raise Exception("The number of provided join parameters does not match the number of parents")
+        if join_parameters.size == len(parent):
+            self._join_parameters = F.reshape(join_parameters, shape=(len(parent),))
         else:
-            self._join_parameters = Parameter(shape=(len(parent),))
+            raise Exception("The number of provided join parameters does not match the number of parents")
         self._sel_p = F.softmax(self._join_parameters)
 
         super(Join, self).__init__(name=name, parent=parent, *args, **kwargs)
@@ -380,38 +376,49 @@ class Join(StaticModule):
 
 
 #------------------------------------Some pooling StaticModules------------------------------------
-
-
-#------------------------------------Some convolutional StaticModules------------------------------
-class StaticConv(StaticModule):
-    def __init__(self, name, parent, kernel_shape, pad=None, stride=None, dilation=None, group=1,
-                 w_init=None, b_init=None, base_axis=1, rng=None, with_bias=True, *args, **kwargs):
-        self._kernel_shape = kernel_shape
-        self._pad = pad
+class MaxPool(Module):
+    def __init__(self, kernel, stride=None, ignore_border=True, pad=None, channel_last=False, n_outputs=-1, outputs=None):
+        self._kernel = kernel
         self._stride = stride
-        self._dilation = dilation
-        self._group = group
-        self._w_init = w_init
-        self._b_init = b_init
-        self._base_axis = base_axis
-        self._rng = rng
-        self._with_bias = with_bias
-        super(StaticConv, self).__init__(name, parent, *args, **kwargs)
+        self._ignore_border=ignore_border
+        self._pad = pad
+        self._channel_last = channel_last
+        self._n_outputs = n_outputs
+        self._outputs = outputs
 
-    def _create_modules(self):
-        self._conv_module = Conv(self.parent[0].shape[1], self._kernel_shape[0], self._kernel_shape[1:],
-                                 pad=self._pad, stride=self._stride, dilation=self._dilation, group=self._group,
-                                 w_init=self._w_init, b_init=self._b_init, base_axis=self._base_axis, rng=self._rng, with_bias=self._with_bias)
+    def __call__(self, input):
+        return F.max_pooling(input, self._kernel, self._stride, self._ignore_border, self._pad, self._channel_last, self._n_outputs, self._outputs)
 
-    def _value_function(self, input):
-        return self._conv_module(input)
+class AveragePool(Module):
 
-#TODO: move this DwConv to module.convolution
+    def __init__(self, kernel, stride=None, ignore_border=True, pad=None, including_pad=True, channel_last=False, n_outputs=-1, outputs=None):
+        self._kernel = kernel
+        self._stride = stride
+        self._ignore_border=ignore_border
+        self._pad = pad
+        self._including_pad = including_pad
+        self._channel_last = channel_last
+        self._n_outputs = n_outputs
+        self._outputs = outputs
+
+    def __call__(self, input):
+        return F.average_pooling(input, self._kernel, self._stride, self._ignore_border, self._pad, self._including_pad, self._channel_last, self._n_outputs, self._outputs)
+
+class GlobalAveragePool(Module):
+    def __init__(self, n_outputs=-1, outputs=None):
+        self._n_outputs = n_outputs
+        self._outputs = outputs
+
+    def __call__(self, input):
+        return F.global_average_pooling(input, self._n_outputs, self._outputs)
+
+#------------------------------------Some Modules needed to define static modules------------------------------
+
 class DwConv(Module):
     def __init__(self, in_channels, kernel,
                 pad=None, stride=None, dilation=None,
                 w_init=None, b_init=None, rng=None, with_bias=True):
-        super().__init__()
+        Module.__init__(self)
         if w_init is None:
             w_init = UniformInitializer(
                 calc_uniform_lim_glorot(
@@ -429,36 +436,87 @@ class DwConv(Module):
         self.pad = pad
         self.stride = stride
         self.dilation=dilation
+        self.in_channels=in_channels
+        self.rng=rng
+        self.with_bias=with_bias
 
     def __call__(self, input):
         return F.depthwise_convolution(input, self.W, self.b, 1,
                             self.pad, self.stride, self.dilation)
 
-class StaticSepConv(StaticConv):
-    def __init__(self, name, parent, kernel_shape, pad=None, stride=None, dilation=None,
-                 w_init=None, b_init=None, w_init_pw=None, b_init_pw=None, base_axis=1, rng=None, with_bias=True, *args, **kwargs):
-        super(StaticSepConv, self).__init__(name, parent, kernel_shape,
-                                            pad=pad, stride=None, dilation=None, group=None,
-                                            w_init=None, b_init=None, base_axis=1, rng=None,
-                                            with_bias=True, *args, **kwargs)
+class SepConv(DwConv):
+    def __init__(self, out_channels, *args, **kwargs):
+        DwConv.__init__(self, *args, **kwargs)
+        self.out_channels = out_channels
+        self._conv_module_pw = Conv(self.in_channels, self.out_channels, kernel=(1, 1),
+                                 pad=None, group=1, rng=self.rng, with_bias=None)
 
-    def _create_modules(self):
-        self._conv_module_dw = DwConv(in_channels=self.parent[0].shape[1], kernel=self._kernel_shape[1:],
-                                 pad=self._pad, stride=self._stride, dilation=self._dilation,
-                                 w_init=self._w_init, b_init=self._b_init, rng=self._rng, with_bias=self._with_bias)
-        self._conv_module_pw = Conv(self.parent[0].shape[1], self._kernel_shape[0], kernel=(1, 1),
-                                 pad=None, stride=self._stride, dilation=self._dilation, group=1,
-                                 w_init=self._w_init, b_init=self._b_init, base_axis=self._base_axis, rng=self._rng, with_bias=self._with_bias)
+    def __call__(self, input):
+        return self._conv_module_pw(DwConv.__call__(self, input))
+
+#------------------------------------Some convolutional StaticModules------------------------------
+
+class StaticConv(Conv, StaticModule):
+    def __init__(self, name, parent, *args, **kwargs):
+        Conv.__init__(self, *args, **kwargs)
+        StaticModule.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return self._conv_module_pw(self._conv_module_dw(input))
+        return Conv.__call__(self, input)
+
+    def __call__(self, clear_value=False):
+        return StaticModule.__call__(self, clear_value=clear_value)
+
+class StaticSepConv(SepConv, StaticModule):
+    def __init__(self, name, parent, *args, **kwargs):
+        SepConv.__init__(self, *args, **kwargs)
+        StaticModule.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return SepConv.__call__(self, input)
+
+    def __call__(self, clear_value=False):
+        return StaticModule.__call__(self, clear_value=clear_value)
+
+class StaticMaxPool(MaxPool, StaticModule):
+    def __init__(self, name, parent, *args, **kwargs):
+        MaxPool.__init__(self, *args, **kwargs)
+        StaticModule.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return MaxPool.__call__(self, input)
+
+    def __call__(self, clear_value=False):
+        return StaticModule.__call__(self, clear_value=clear_value)
+
+class StaticAveragePool(AveragePool, StaticModule):
+    def __init__(self, name, parent, *args, **kwargs):
+        AveragePool.__init__(self, *args, **kwargs)
+        StaticModule.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return AveragePool.__call__(self, input)
+
+    def __call__(self, clear_value=False):
+        return StaticModule.__call__(self, clear_value=clear_value)
+
+class StaticGlobalAveragePool(GlobalAveragePool, StaticModule):
+    def __init__(self, name, parent, *args, **kwargs):
+        GlobalAveragePool.__init__(self, *args, **kwargs)
+        StaticModule.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return GlobalAveragePool.__call__(self, input)
+
+    def __call__(self, clear_value=False):
+        return StaticModule.__call__(self, clear_value=clear_value)
 
 #------------------------------------A graph of StaticModules--------------------------------------
-class StaticGraph(StaticModule):
+class StaticGraph(ModuleList, StaticModule):
     # Graph is derived from Op, such that we can realize nested graphs!
     def __init__(self, name, parent=[], *args, **kwargs):
-        super(StaticGraph, self).__init__(name=name, parent=parent, *args, **kwargs)
-        self._graph_modules = []
+        ModuleList.__init__(self)
+        StaticModule.__init__(self, name=name, parent=parent, *args, **kwargs)
 
         self._inputs = []
         for pi in self._parent:
@@ -476,7 +534,6 @@ class StaticGraph(StaticModule):
         This function instantiates all vertices within this graph and collects the vertices.
         """
         output = self._generate_graph(inputs)
-
         return output
 
     def clear_value(self):
@@ -487,8 +544,8 @@ class StaticGraph(StaticModule):
         for gmi in self._graph_modules:
             gmi.clear_value()
 
-    def value(self, clear_value=False):
-        return self._output.value(clear_value=clear_value)
+    def __call__(self, clear_value=False):
+        return self._output(clear_value=clear_value)
 
     def eval_probs(self, clear_probs=False):
         return self._output.eval_probs(clear_probs=clear_probs)
@@ -519,14 +576,15 @@ if __name__ == '__main__':
 
     class MyGraph(StaticGraph):
         def _generate_graph(self, inputs):
-            self.input_module_2 = Input(name='input_2', value=nn.Variable((10,20,32,32)))
-            self.conv_module    = StaticSepConv(name='conv', parent=[self.input_module_2], kernel_shape=(20,3,3), pad=(1,1))
-            self.join = Join(name='join', parent=[*inputs, self.conv_module])
-            self.out = Merge(name='merge', parent=[self.join, self.input_module_2])
-            return self.out
+            self.add_module(Input(name='input_2', value=nn.Variable((10,20,32,32))))
+            self.add_module(StaticSepConv(name='conv', parent=[self._modules[-1]], in_channels=20, out_channels=20, kernel=(3,3), pad=(1,1)))
+            self.add_module(Join(name='join', parent=[*inputs, self._modules[-1]], join_parameters=Parameter(shape=(2,))))
+            self.add_module(Merge(name='merge', parent=[self._modules[-1], self._modules[0]]))
+            return self._modules[-1]
 
     input_module_1 = Input(name='input_1', value=nn.Variable((10,20,32,32)))
     myGraph = MyGraph(name='myGraph', parent=[input_module_1])
+    out = myGraph()
 
     latency = myGraph.profile(NNablaProfiler(), n_run=10)
 
