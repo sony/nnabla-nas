@@ -34,6 +34,7 @@ class StaticModule(Module):
         self._name          = name
         self._profiler      = None
         self._value         = None
+        self._eval_probs    = None
         self._eval_prob     = None
         self._shape         = None
 
@@ -102,9 +103,6 @@ class StaticModule(Module):
         """
         return self._child
 
-    def _value_function(self, input):
-        raise NotImplementedError
-
     def _aggregate_inputs(self, inputs):
         """
         Aggregates all input tensors to one single input tensor (summing them up)
@@ -120,11 +118,8 @@ class StaticModule(Module):
             res = inputs[0]
         return res
 
-    def get_eval_probs(self):
-        pass
-
-    def _eval_prob_function(self, eval_probs):
-        pass
+    def _value_function(self, input):
+        raise NotImplementedError
 
     def clear_value(self):
         self._value = None
@@ -134,8 +129,42 @@ class StaticModule(Module):
             self.clear_value()
 
         if self._value is None:
-            self._value = self._value_function(self._aggregate_inputs([pi.value() for pi in self.parent]))
+            self._value = self._value_function(self._aggregate_inputs([pi.value(clear_value) for pi in self.parent]))
         return self._value
+
+    def clear_eval_probs(self):
+        self._eval_probs = None
+
+    def eval_probs(self, clear_probs=False):
+        if clear_probs:
+            self.clear_eval_probs()
+
+        if self._eval_probs is None:
+            self._eval_probs = self._eval_prob_function([pi.eval_probs(clear_probs) for pi in self.parent])
+        return self._eval_probs
+
+    def _eval_prob_function(self, input):
+        """
+        The standard transformation is, that we multiply with a path probability of 1.0
+        (deterministic graph with independent (Bernoulli distributed) path probabilities).
+        :param input: list of dictionaries with evaluation probabilities of the parent vertices
+        :param name_scope: string
+        :return: updated evaluation probabilities
+        """
+        res     = {}
+        for inpi in input: #dictionary
+            for inpii in inpi:
+                if inpii in res:
+                    res[inpii].append(inpi[inpii])
+                else:
+                    res.update({inpii: [inpi[inpii]]})
+
+        #combine all probabilities arriving from different paths
+        for resi in res:
+            res[resi] = 1.0 - F.prod(1.0 - F.stack(*res[resi]))
+
+        res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
+        return res
 
     def profile(self, profiler, n_run=100):
         try:
@@ -200,6 +229,13 @@ class Identity(StaticModule):
     """
     def _value_function(self, inputs):
         return inputs
+
+class Zero(StaticModule):
+    def _value_function(self, input):
+        return 0.0*self.input
+
+    def _eval_prob_function(self, inputs): #a zero operation sets the evaluation pobabilities of all parents to 0
+        return {self: nn.Variable.from_numpy_array(np.array(1.0))}
 
 class Merge(StaticModule):
 
@@ -298,7 +334,6 @@ class Join(StaticModule):
         def one_hot(x, n=len(inputs)):
             return np.array([int(i == x) for i in range(n)])
 
-        self._sel_p = F.softmax(self._join_parameters) # a nnabla variable
         res = 0.0
         if self.mode == 'linear':
             for pi, inpi in zip(self._sel_p, inputs):
@@ -322,6 +357,26 @@ class Join(StaticModule):
     def _value_function(self, input):
         return input
 
+    def _eval_prob_function(self, input):
+        """
+        In case of JoinLin, we multiply with a path probability self._sel_p
+        (Categorical path probabilities).
+        :param input: list of dictionaries with evaluation probabilities of the parent vertices
+        :param name_scope: string
+        :return: updated evaluation probabilities
+        """
+        res = {}
+        for i, inpi in enumerate(input):  # dictionary
+            for inpii in inpi: #dictionary element
+                if inpii in res:
+                # we need to multiply all the evaluation probabilities of one input with the corresponding selection probability
+                    res[inpii] += inpi[inpii] * self._sel_p[i]
+                else:
+                    res.update({inpii: inpi[inpii] * self._sel_p[i]})
+        res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
+        return res
+
+
 #------------------------------------Some pooling StaticModules------------------------------------
 
 
@@ -329,7 +384,7 @@ class Join(StaticModule):
 class StaticConv(StaticModule):
     def __init__(self, name, parent, kernel_shape, pad=None, stride=None, dilation=None, group=1,
                  w_init=None, b_init=None, base_axis=1, rng=None, with_bias=True, *args, **kwargs):
-        self._kernel_shape = kernel_shap
+        self._kernel_shape = kernel_shape
         self._pad = pad
         self._stride = stride
         self._dilation = dilation
@@ -349,6 +404,40 @@ class StaticConv(StaticModule):
     def _value_function(self, input):
         return self._conv_module(input)
 
+#TODO: move this DwConv to module.convolution
+class DwConv(Conv):
+    def __init__(self, in_channels, out_channels, kernel,
+                pad=None, stride=None, dilation=None,
+                w_init=None, b_init=None,
+                base_axis=1, rng=None, with_bias=True):
+
+        super().__init__(in_channels, out_channels, kernel,
+                pad=None, stride=None, dilation=None, group=1,
+                w_init=None, b_init=None,
+                base_axis=1, rng=None, with_bias=True)
+
+    def __call__(self, input):
+        return F.depthwise_convolution(input, self.W, self.b, self.base_axis,
+                            self.pad, self.stride, self.dilation)
+
+class StaticSepConv(StaticConv):
+    def __init__(self, name, parent, kernel_shape, pad=None, stride=None, dilation=None,
+                 w_init=None, b_init=None, w_init_pw=None, b_init_pw=None, base_axis=1, rng=None, with_bias=True, *args, **kwargs):
+        super(StaticSepConv, self).__init__(name, parent, kernel_shape[1:],
+                                            pad=None, stride=None, dilation=None, group=None,
+                                            w_init=None, b_init=None, base_axis=1, rng=None,
+                                            with_bias=True, *args, **kwargs)
+
+    def _create_modules(self):
+        self._conv_module_dw = DwConv(self.parent[0].shape[1], self.parent[0].shape[1], self._kernel_shape[1:],
+                                 pad=self._pad, stride=self._stride, dilation=self._dilation,
+                                 w_init=self._w_init, b_init=self._b_init, base_axis=self._base_axis, rng=self._rng, with_bias=self._with_bias)
+        self._conv_module_pw = Conv(self.parent[0].shape[1], self._kernel_shape[0], self._kernel_shape[1:],
+                                 pad=self._pad, stride=self._stride, dilation=self._dilation, group=1,
+                                 w_init=self._w_init, b_init=self._b_init, base_axis=self._base_axis, rng=self._rng, with_bias=self._with_bias)
+
+    def _value_function(self, input):
+        return self._conv_module_pw(self._conv_module_dw(input))
 
 #------------------------------------A graph of StaticModules--------------------------------------
 class StaticGraph(StaticModule):
@@ -377,11 +466,18 @@ class StaticGraph(StaticModule):
         return output
 
     def clear_value(self):
-        for gvi in self._graph_modules:
-            gvi.clear_value()
+        for gmi in self._graph_modules:
+            gmi.clear_value()
+
+    def clear_probs(self):
+        for gmi in self._graph_modules:
+            gmi.clear_value()
 
     def value(self, clear_value=False):
         return self._output.value(clear_value=clear_value)
+
+    def eval_probs(self, clear_probs=False):
+        return self._output.eval_probs(clear_probs=clear_probs)
 
     @property
     def shape(self):
@@ -410,13 +506,23 @@ if __name__ == '__main__':
     class MyGraph(StaticGraph):
         def _generate_graph(self, inputs):
             self.input_module_2 = Input(name='input_2', value=nn.Variable((10,20,32,32)))
-            self.conv_module    = StaticConv(name='conv', parent=[self.input_module_2], kernel_shape=(30,3,3))
-            self.join = Merge(name='join', parent=[*inputs, self.input_module_2])
-            return self.join
+            self.conv_module    = StaticConv(name='conv', parent=[self.input_module_2], kernel_shape=(20,3,3), pad=(1,1))
+            self.join = Join(name='join', parent=[*inputs, self.conv_module])
+            self.out = Merge(name='merge', parent=[self.join, self.input_module_2])
+            return self.out
 
     input_module_1 = Input(name='input_1', value=nn.Variable((10,20,32,32)))
     myGraph = MyGraph(name='myGraph', parent=[input_module_1])
 
     latency = myGraph.profile(NNablaProfiler(), n_run=10)
+
+    eval_p = myGraph.eval_probs()
+    for evi in eval_p:
+        try:
+            eval_p[evi].forward()
+        except:
+            pass
+        print("Module {} has evaluation probability {}".format(evi.name, eval_p[evi].d))
+
     print(latency)
     import pdb; pdb.set_trace()
