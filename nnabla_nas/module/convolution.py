@@ -3,7 +3,7 @@ from nnabla.initializer import (ConstantInitializer, UniformInitializer,
                                 calc_uniform_lim_glorot)
 
 from .batchnorm import BatchNormalization
-from .module import Module, Sequential
+from .container import Module, Sequential
 from .parameter import Parameter
 from .relu import ReLU
 

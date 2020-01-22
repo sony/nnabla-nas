@@ -1,5 +1,5 @@
 from .darts import Darts
-from .modules import Cell, ChoiceBlock, StemConv, AuxiliaryHeadCIFAR
+from .modules import AuxiliaryHeadCIFAR, Cell, ChoiceBlock, StemConv
 from .network import NetworkCIFAR
 
 __all__ = ['Cell',  'ChoiceBlock', 'StemConv',

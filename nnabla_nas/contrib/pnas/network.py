@@ -1,9 +1,10 @@
-from nnabla.initializer import ConstantInitializer
 from collections import OrderedDict
+
+from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
 from ...module import MixedOp
-from ..darts import StemConv, Cell, AuxiliaryHeadCIFAR
+from ..darts import AuxiliaryHeadCIFAR, Cell, StemConv
 
 
 class PNASNetwork(Mo.Model):

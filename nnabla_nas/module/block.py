@@ -1,8 +1,9 @@
 import nnabla.functions as F
 
 from .batchnorm import BatchNormalization
+from .container import Sequential
 from .convolution import Conv
-from .module import Module, Sequential
+from .module import Module
 from .relu import ReLU
 
 

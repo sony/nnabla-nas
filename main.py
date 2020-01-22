@@ -5,8 +5,8 @@ import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 
 from nnabla_nas.contrib import Darts, NetworkCIFAR
-from nnabla_nas.runner import Searcher, Trainer
 from nnabla_nas.contrib.pnas.network import PNASNetwork
+from nnabla_nas.runner import Searcher, Trainer
 
 
 def search(model, config):

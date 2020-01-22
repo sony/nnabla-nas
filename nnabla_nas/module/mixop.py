@@ -5,7 +5,8 @@ from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
 
 from .. import utils as ut
-from .module import Module, ModuleList
+from .container import ModuleList
+from .module import Module
 from .parameter import Parameter
 
 

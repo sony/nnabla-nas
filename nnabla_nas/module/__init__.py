@@ -1,11 +1,12 @@
 from .batchnorm import BatchNormalization
 from .block import FactorizedReduce, Identity, ReLUConvBN, Zero
+from .container import ModuleList, Sequential
 from .convolution import Conv, DilConv, SepConv
 from .droppath import DropPath
 from .linear import Linear
 from .mixop import MixedOp
 from .model import Model
-from .module import Module, ModuleList, Sequential
+from .module import Module
 from .parameter import Parameter
 from .pooling import AvgPool, MaxPool
 from .relu import ReLU
