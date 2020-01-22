@@ -10,6 +10,8 @@ from nnabla_nas.module import Module
 from nnabla_nas.module.module import ModuleDict
 from nnabla_nas.module.convolution import Conv
 from nnabla_nas.module.parameter import Parameter
+from nnabla.initializer import (ConstantInitializer, UniformInitializer,
+                                calc_uniform_lim_glorot)
 
 class StaticModule(Module):
     def __init__(self, name, parent, *args, **kwargs):
@@ -405,35 +407,47 @@ class StaticConv(StaticModule):
         return self._conv_module(input)
 
 #TODO: move this DwConv to module.convolution
-class DwConv(Conv):
-    def __init__(self, in_channels, out_channels, kernel,
+class DwConv(Module):
+    def __init__(self, in_channels, kernel,
                 pad=None, stride=None, dilation=None,
-                w_init=None, b_init=None,
-                base_axis=1, rng=None, with_bias=True):
-
-        super().__init__(in_channels, out_channels, kernel,
-                pad=None, stride=None, dilation=None, group=1,
-                w_init=None, b_init=None,
-                base_axis=1, rng=None, with_bias=True)
+                w_init=None, b_init=None, rng=None, with_bias=True):
+        super().__init__()
+        if w_init is None:
+            w_init = UniformInitializer(
+                calc_uniform_lim_glorot(
+                    in_channels,
+                    in_channels,
+                    tuple(kernel)),
+                rng=rng)
+        if with_bias and b_init is None:
+            b_init = ConstantInitializer()
+        self.W = Parameter((in_channels,) + tuple(kernel), initializer = w_init)
+        self.b = None
+        if with_bias:
+            b_init = ConstantInitializer()
+        self.b = Parameter((in_channels, ), initializer=b_init)
+        self.pad = pad
+        self.stride = stride
+        self.dilation=dilation
 
     def __call__(self, input):
-        return F.depthwise_convolution(input, self.W, self.b, self.base_axis,
+        return F.depthwise_convolution(input, self.W, self.b, 1,
                             self.pad, self.stride, self.dilation)
 
 class StaticSepConv(StaticConv):
     def __init__(self, name, parent, kernel_shape, pad=None, stride=None, dilation=None,
                  w_init=None, b_init=None, w_init_pw=None, b_init_pw=None, base_axis=1, rng=None, with_bias=True, *args, **kwargs):
-        super(StaticSepConv, self).__init__(name, parent, kernel_shape[1:],
-                                            pad=None, stride=None, dilation=None, group=None,
+        super(StaticSepConv, self).__init__(name, parent, kernel_shape,
+                                            pad=pad, stride=None, dilation=None, group=None,
                                             w_init=None, b_init=None, base_axis=1, rng=None,
                                             with_bias=True, *args, **kwargs)
 
     def _create_modules(self):
-        self._conv_module_dw = DwConv(self.parent[0].shape[1], self.parent[0].shape[1], self._kernel_shape[1:],
+        self._conv_module_dw = DwConv(in_channels=self.parent[0].shape[1], kernel=self._kernel_shape[1:],
                                  pad=self._pad, stride=self._stride, dilation=self._dilation,
-                                 w_init=self._w_init, b_init=self._b_init, base_axis=self._base_axis, rng=self._rng, with_bias=self._with_bias)
-        self._conv_module_pw = Conv(self.parent[0].shape[1], self._kernel_shape[0], self._kernel_shape[1:],
-                                 pad=self._pad, stride=self._stride, dilation=self._dilation, group=1,
+                                 w_init=self._w_init, b_init=self._b_init, rng=self._rng, with_bias=self._with_bias)
+        self._conv_module_pw = Conv(self.parent[0].shape[1], self._kernel_shape[0], kernel=(1, 1),
+                                 pad=None, stride=self._stride, dilation=self._dilation, group=1,
                                  w_init=self._w_init, b_init=self._b_init, base_axis=self._base_axis, rng=self._rng, with_bias=self._with_bias)
 
     def _value_function(self, input):
@@ -506,7 +520,7 @@ if __name__ == '__main__':
     class MyGraph(StaticGraph):
         def _generate_graph(self, inputs):
             self.input_module_2 = Input(name='input_2', value=nn.Variable((10,20,32,32)))
-            self.conv_module    = StaticConv(name='conv', parent=[self.input_module_2], kernel_shape=(20,3,3), pad=(1,1))
+            self.conv_module    = StaticSepConv(name='conv', parent=[self.input_module_2], kernel_shape=(20,3,3), pad=(1,1))
             self.join = Join(name='join', parent=[*inputs, self.conv_module])
             self.out = Merge(name='merge', parent=[self.join, self.input_module_2])
             return self.out
