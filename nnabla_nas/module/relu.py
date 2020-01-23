@@ -5,7 +5,7 @@ from .module import Module
 
 class ReLU(Module):
     def __init__(self, inplace=False):
-        super().__init__()
+        Module.__init__(self)
         self._inplace = inplace
 
     def __call__(self, input):

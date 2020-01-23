@@ -9,6 +9,8 @@ import nnabla.functions as F
 from nnabla_nas.module import Module, ModuleList
 from nnabla_nas.module.module import ModuleDict
 from nnabla_nas.module.convolution import Conv
+from nnabla_nas.module.batchnorm import BatchNormalization
+from nnabla_nas.module.relu import ReLU
 from nnabla_nas.module.parameter import Parameter
 from nnabla.initializer import (ConstantInitializer, UniformInitializer,
                                 calc_uniform_lim_glorot)
@@ -239,7 +241,6 @@ class Zero(StaticModule):
         return {self: nn.Variable.from_numpy_array(np.array(1.0))}
 
 class Merge(StaticModule):
-
     def _value_function(self, inputs):
         return inputs
 
@@ -455,6 +456,15 @@ class SepConv(DwConv):
         return self._conv_module_pw(DwConv.__call__(self, input))
 
 #------------------------------------Some convolutional StaticModules------------------------------
+class StaticDwConcatenate(StaticModule):
+    def _aggregate_inputs(self, inputs):
+        if len(inputs)>1:
+            return F.concatenate(*inputs, axis=1)
+        else:
+            return inputs[0]
+
+    def _value_function(self, input):
+        return input
 
 class StaticConv(Conv, StaticModule):
     def __init__(self, name, parent, *args, **kwargs):
@@ -462,7 +472,7 @@ class StaticConv(Conv, StaticModule):
         StaticModule.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return Conv.__call__(self, input)
+        return Conv.__call__(self, input) #change to self.call
 
     def __call__(self, clear_value=False):
         return StaticModule.__call__(self, clear_value=clear_value)
@@ -511,14 +521,37 @@ class StaticGlobalAveragePool(GlobalAveragePool, StaticModule):
     def __call__(self, clear_value=False):
         return StaticModule.__call__(self, clear_value=clear_value)
 
+class StaticReLU(ReLU, StaticModule):
+    def __init__(self, name, parent, *args, **kwargs):
+        ReLU.__init__(self, *args, **kwargs)
+        StaticModule.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return ReLU.__call__(self, input)
+
+    def __call__(self, clear_value=False):
+        return StaticModule.__call__(self, clear_value=clear_value)
+
+class StaticBatchNormalization(BatchNormalization, StaticModule):
+    def __init__(self, name, parent, *args, **kwargs):
+        BatchNormalization.__init__(self, *args, **kwargs)
+        StaticModule.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return BatchNormalization.__call__(self, input)
+
+    def __call__(self, clear_value=False):
+        return StaticModule.__call__(self, clear_value=clear_value)
+
+
 #------------------------------------A graph of StaticModules--------------------------------------
-class StaticGraph(ModuleList, StaticModule):
+class StaticGraph(ModuleList, StaticModule): #TODO: change to Sequential
     # Graph is derived from Op, such that we can realize nested graphs!
     def __init__(self, name, parent=[], *args, **kwargs):
         ModuleList.__init__(self)
         StaticModule.__init__(self, name=name, parent=parent, *args, **kwargs)
 
-        self._inputs = []
+        self._inputs = [] #rename to parent
         for pi in self._parent:
             if isinstance(pi, StaticModule):
                 self._inputs.append(pi)
@@ -526,10 +559,10 @@ class StaticGraph(ModuleList, StaticModule):
                 raise Exception("Parents of StaticGraph object must be an instance of StaticModule!")
         self._output = self.generate_graph(self._inputs)
 
-    def _generate_graph(self, inputs):
+    def _generate_graph(self, inputs): #remove and use append/extend
         raise NotImplementedError
 
-    def generate_graph(self, inputs):
+    def generate_graph(self, inputs): #remove
         """
         This function instantiates all vertices within this graph and collects the vertices.
         """
@@ -576,7 +609,7 @@ if __name__ == '__main__':
 
     class MyGraph(StaticGraph):
         def _generate_graph(self, inputs):
-            self.add_module(Input(name='input_2', value=nn.Variable((10,20,32,32))))
+            self.add_module(Input(name='input_2', value=nn.Variable((10,20,32,32)))) #change add_module -> append
             self.add_module(StaticSepConv(name='conv', parent=[self._modules[-1]], in_channels=20, out_channels=20, kernel=(3,3), pad=(1,1)))
             self.add_module(Join(name='join', parent=[*inputs, self._modules[-1]], join_parameters=Parameter(shape=(2,))))
             self.add_module(Merge(name='merge', parent=[self._modules[-1], self._modules[0]]))

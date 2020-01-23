@@ -21,7 +21,7 @@ class BatchNormalization(Module):
         mean_init = param_init.get('mean', ConstantInitializer(0))
         var_init = param_init.get('var', ConstantInitializer(1))
 
-        super().__init__()
+        Module.__init__(self)
         if fix_parameters:
             self.beta = nn.Variable.from_numpy_array(
                 beta_init(shape_stat))
