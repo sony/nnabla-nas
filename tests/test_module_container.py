@@ -1,10 +1,7 @@
 import nnabla as nn
 import numpy as np
 
-from nnabla_nas.module import Module
-from nnabla_nas.module import ModuleList
-from nnabla_nas.module import Parameter
-from nnabla_nas.module import Sequential
+from nnabla_nas.module import Module, ModuleList, Parameter, Sequential
 
 
 class BasicUnit(Module):
@@ -119,6 +116,3 @@ def test_Sequential():
 
     y = model(x)
     assert isinstance(y, nn.Variable)
-
-
-test_Sequential()
