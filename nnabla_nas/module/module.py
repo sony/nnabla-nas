@@ -48,6 +48,28 @@ class Module(object):
         for module in self.modules.values():
             module.need_grad = mode
 
+    @property
+    def inputs(self):
+        r"""Return a list of inputs used during `call` function."""
+        if '_inputs' not in self.__dict__:
+            self.__dict__['_inputs'] = list()
+        return self._inputs
+
+    @inputs.setter
+    def inputs(self, v):
+        setattr(self, '_inputs', v)
+
+    @property
+    def outputs(self):
+        r"""Return a list of outputs used during `call` function."""
+        if '_outputs' not in self.__dict__:
+            self.__dict__['outputs'] = list()
+        return self._outputs
+
+    @outputs.setter
+    def outputs(self, v):
+        setattr(self, '_outputs', v)
+
     def __getattr__(self, name):
         if name in self.modules:
             return self.modules[name]
@@ -64,9 +86,16 @@ class Module(object):
             self.modules[name] = value
         elif isinstance(value, Parameter):
             self.parameters[name] = value
-        else:
-            # avoid conflict with property
+        else:  # avoid conflict with property
             object.__setattr__(self, name, value)
+
+    def __delattr__(self, name):
+        if name in self.parameters:
+            del self.parameters[name]
+        elif name in self.modules:
+            del self.modules[name]
+        else:
+            object.__delattr__(self, name)
 
     def apply(self, **kargs):
         r"""Helper for setting property, then return self."""
@@ -118,8 +147,33 @@ class Module(object):
                         'as True. Please turn off if you allow it.')
         return self
 
+    def __key_format__(self, key):
+        r"""Set the submodule representation."""
+        return f'.{key}'
+
+    def __extra_repr__(self):
+        r"""Set the extra representation for the module."""
+        return ''
+
     def __repr__(self):
-        return f'{self.__class__.__name__}'
+        r"""Return str representtation of the module."""
+        main_str = f'{self.__class__.__name__}(' + self.__extra_repr__()
+        sub_str = ''
+        for key, module in self.modules.items():
+            m_repr = repr(module).split('\n')
+            head = [self.__key_format__(key) + ': ' + m_repr.pop(0)]
+            tail = [m_repr.pop()] if len(m_repr) else []
+            m_repr = [' '*2 + line for line in (head + m_repr + tail)]
+            sub_str += '\n' + '\n'.join(m_repr)
+        main_str += sub_str + ('\n' if sub_str else '') + ')'
+        return main_str
 
     def __call__(self, *args, **kargs):
+        self.inputs = args
+        self.outputs = self.call(*args, **kargs)
+        return self.outputs
+
+    def call(self, *args, **kargs):
+        r"""Implement the call of module. Inmediate inputs should only be
+        Variables."""
         raise NotImplementedError

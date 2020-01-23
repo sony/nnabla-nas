@@ -14,8 +14,8 @@ class BasicUnit(Module):
         self.weights = Parameter(shape, initializer=np.random.randn(*shape))
         self.shape = shape
 
-    def __call__(self, input):
-        return self.weights - input
+    def call(self, input):
+        return self.weights + input
 
 
 class Block(Module):
@@ -24,25 +24,26 @@ class Block(Module):
         self.unit1 = BasicUnit(shape=shape)
         self.unit2 = BasicUnit(shape=shape)
 
-    def __call__(self, input):
+    def call(self, input):
         out = self.unit0(input)
         out = self.unit1(out)
         out = self.unit2(out)
-        return out + input
+        return out
 
 
 class MyModule(Module):
     def __init__(self, shape=(3, 3)):
         self.weights = Parameter(shape, initializer=np.random.randn(*shape))
-        self.module1 = Block()
-        self.module2 = Block()
+        self.module1 = Block(shape)
+        self.module2 = Block(shape)
         self.const = nn.Variable(shape, need_grad=False)
         self.shape = shape
 
-    def __call__(self, input):
+    def call(self, input):
         out = self.module1(input)
         out = self.module2(out)
-        return self.weights * out + self.const
+        out = out + self.weights + self.const
+        return out
 
 
 def test_module():
@@ -82,3 +83,13 @@ def test_properties(prop, mode):
     module.apply(**{prop: mode})
     for k, m in module.get_modules():
         assert getattr(m, prop) == mode
+
+
+def test_inputs_outputs():
+    input_shape = (5, 5)
+    module = MyModule(input_shape)
+    inputs = nn.Variable(input_shape)
+    outputs = module(inputs)
+
+    assert inputs is module.inputs[0]
+    assert outputs is module.outputs
