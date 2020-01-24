@@ -53,4 +53,4 @@ class Linear(Module):
     def __extra_repr__(self):
         return (f'in_features={self._in_features}, '
                 f'out_features={self._out_features}, '
-                f'bias={self.b is not None}')
+                f'bias={self._b is not None}')

@@ -3,11 +3,11 @@ from collections import OrderedDict
 from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
-from ...module import MixedOp
-from ..darts import AuxiliaryHeadCIFAR, Cell, StemConv
+from ..misc import AuxiliaryHeadCIFAR
+from ..darts.modules import Cell, StemConv
 
 
-class PNASNetwork(Mo.Model):
+class SearchNet(Mo.Module):
     def __init__(self, shape, init_channels, num_cells, num_classes,
                  num_choices=4, multiplier=4, stem_multiplier=3,
                  num_ops=8, shared_params=True, mode='full',  auxiliary=True):
@@ -53,7 +53,8 @@ class PNASNetwork(Mo.Model):
     def _init_cells(self, num_cells, channel_c):
         cells = Mo.ModuleList()
 
-        channel_p_p, channel_p, channel_c = channel_c, channel_c, self._init_channels
+        channel_p_p, channel_p, channel_c = channel_c, channel_c, \
+            self._init_channels
         reduction_p, reduction_c = False, False
 
         for i in range(num_cells):
@@ -115,3 +116,8 @@ class PNASNetwork(Mo.Model):
             if isinstance(module, MixedOp):
                 ans.append(module)
         return ans
+
+
+class TrainNet(Mo.Module):
+    def __init__(self):
+        super().__init__()

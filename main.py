@@ -3,10 +3,8 @@ import json
 
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context
-
-from nnabla_nas.contrib import Darts, NetworkCIFAR
-from nnabla_nas.contrib.pnas.network import PNASNetwork
 from nnabla_nas.runner import Searcher, Trainer
+import nnabla_nas.contrib as contrib
 
 
 def search(model, config):
@@ -29,6 +27,7 @@ def pass_args(parser):
                         help='Number of nodes per cell, must be more than 2.')
     parser.add_argument("--init-channels", type=int, default=16,
                         help='Number of output filters of CNN, must be even.')
+    parser.add_argument("--network", type=str, default='darts')
     parser.add_argument("--mode", type=str, default='sample')
     parser.add_argument("--shared-params", action='store_true')
     parser.add_argument('--config-file', type=str,
@@ -70,8 +69,10 @@ if __name__ == "__main__":
         config['context'], device_id=config['device_id'])
     nn.set_default_context(ctx)
 
+    model = contrib.__dict__[config['network']]
+
     if args.func == search:
-        model = Darts(
+        model = model.SearchNet(
             shape=(args.mini_batch_size, 3, 32, 32),
             init_channels=args.init_channels,
             num_cells=args.num_cells,
@@ -87,26 +88,13 @@ if __name__ == "__main__":
             # this code only work for shared params
             assert config['shared_params']
             train(
-                model=NetworkCIFAR(
+                model=model.TrainNet(
                     shape=(args.batch_size_train, 3, 32, 32),
                     init_channels=args.init_channels,
                     num_cells=args.num_cells,
                     num_classes=10,
                     auxiliary=args.auxiliary,
                     genotype=genotype
-                ),
-                config=config
-            ).run()
-        else:
-            train(
-                PNASNetwork(
-                    shape=(args.batch_size_train, 3, 32, 32),
-                    init_channels=args.init_channels,
-                    num_cells=args.num_cells,
-                    num_classes=10,
-                    shared_params=args.shared_params,
-                    auxiliary=args.auxiliary,
-                    mode=args.mode
                 ),
                 config=config
             ).run()

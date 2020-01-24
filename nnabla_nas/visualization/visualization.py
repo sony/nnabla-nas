@@ -30,8 +30,9 @@ REDUCE_OPS = [
 def plot(choice, prob, ops, filename):
     g = Digraph(format='png',
                 edge_attr=dict(fontsize='14', fontname="times"),
-                node_attr=dict(style='filled', shape='rect', align='center', fontsize='20',
-                               height='0.5', width='0.5', penwidth='2', fontname="times"),
+                node_attr=dict(style='filled', shape='rect', align='center',
+                               fontsize='20', height='0.5', width='0.5',
+                               penwidth='2', fontname="times"),
                 engine='dot')
     g.body.extend(['rankdir=LR'])
 

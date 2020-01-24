@@ -6,6 +6,7 @@ python main.py  search \
                 --num-nodes 4 \
                 --init-channels 16 \
                 --mode full \
+                --network darts \
                 --shared-params \
                 --config-file examples/darts_search.json
 

@@ -1,6 +1,3 @@
-from .darts import Darts
-from .modules import AuxiliaryHeadCIFAR, Cell, ChoiceBlock, StemConv
-from .network import NetworkCIFAR
+from .network import SearchNet, TrainNet
 
-__all__ = ['Cell',  'ChoiceBlock', 'StemConv',
-           'Darts', 'NetworkCIFAR', 'AuxiliaryHeadCIFAR']
+__all__ = ['SearchNet', 'TrainNet']

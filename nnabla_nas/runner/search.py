@@ -20,7 +20,7 @@ class Searcher(object):
 
     def __init__(self, model, conf):
         self.model = model
-        self.arch_modules = model.get_arch_modues()
+        self.arch_modules = model.get_arch_modules()
         self.conf = conf
         self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
         self.evaluate = lambda o, t:  F.mean(F.top_n_error(o, t))
@@ -62,11 +62,11 @@ class Searcher(object):
         # placeholders
         self.placeholder = OrderedDict({
             'model': {
-                'input':  nn.Variable(model.input_shape),
+                'input':  nn.Variable(model._input_shape),
                 'target': nn.Variable((conf['mini_batch_size'], 1))
             },
             'arch': {
-                'input': nn.Variable(model.input_shape),
+                'input': nn.Variable(model._input_shape),
                 'target': nn.Variable((conf['mini_batch_size'], 1))
             }
         })
@@ -133,6 +133,7 @@ class Searcher(object):
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i)
+
             warmup -= warmup > 0
             # saving the architecture parameters
             if conf['shared_params']:
@@ -166,7 +167,7 @@ class Searcher(object):
 
         for mode, ph in self.placeholder.items():
             training = (mode == 'model')
-            self.model.train(training)
+            self.model.apply(training=training)
 
             # loss and error
             image = ut.image_augmentation(ph['input'])

@@ -85,8 +85,8 @@ class Trainer(object):
         ut.write_to_json_file(content=conf, file_path=log_path)
 
         # sample one graph for training
-        model.train()
-        train_input = nn.Variable(model.input_shape)
+        model.apply(training=True)
+        train_input = nn.Variable(model._input_shape)
         train_target = nn.Variable((train_size, 1))
         train_out, aux_out = model(ut.image_augmentation(train_input))
         train_out.apply(persistent=True)
@@ -106,8 +106,8 @@ class Trainer(object):
         logger.info('Model size = {:.6f} MB'.format(model_size))
 
         # sample a graph for validating
-        model.eval()
-        valid_input = nn.Variable((valid_size,) + model.input_shape[1:])
+        model.apply(training=False)
+        valid_input = nn.Variable((valid_size,) + model._input_shape[1:])
         valid_target = nn.Variable((valid_size, 1))
         valid_out, _ = model(valid_input)
         valid_out.apply(persistent=True)
@@ -158,7 +158,7 @@ class Trainer(object):
 
             if monitor['valid_err'].avg < best_error:
                 best_error = monitor['valid_err'].avg
-                model.save_parameters(save_path)
+                nn.save_parameters(save_path, model.get_parameters())
 
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
