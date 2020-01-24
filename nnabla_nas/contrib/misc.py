@@ -1,10 +1,9 @@
-
-
-import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
+from nnabla import logger
+
 
 from .. import module as Mo
 from .. import utils as ut
@@ -87,7 +86,8 @@ class ReLUConvBN(Mo.Module):
         stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
             dimensions. Defaults to None.
         affine (bool, optinal): A boolean value that when set to `True`,
-            this module has learnable parameters. Defaults to `True`.
+            this module has learnable batchnorm parameters. Defaults to `True`.
+
     """
 
     def __init__(self, in_channels, out_channels, kernel,
@@ -121,104 +121,45 @@ class ReLUConvBN(Mo.Module):
                 f'affine={self._affine}')
 
 
-class FactorizedReduce(Mo.Module):
-    r"""Factorize layer.
+class MixedOp(Mo.Module):
+    r"""Mixed Operator layer.
+
+    Selects a single operator or a combination of different operators that are
+    allowed in this module.
+
+    Args:
+        operators (List of modules): A list of modules.
+        mode (str, optional): The selecting mode for this module. Defaults to
+            `sample`.
+        alpha (Parameter, optional): The weights used to calculate the
+            evaluation probabilities. Defaults to None.
+
     """
 
-    def __init__(self, in_channels, out_channels, affine=True):
-        super().__init__()
-        if out_channels % 2:
-            raise ValueError(f'{out_channels} must be even.')
-        self._relu = Mo.ReLU()
-        self._conv_1 = Mo.Conv(in_channels, out_channels // 2, kernel=(1, 1),
-                               stride=(2, 2), with_bias=False)
-        self._conv_2 = Mo.Conv(in_channels, out_channels // 2, kernel=(1, 1),
-                               stride=(2, 2), with_bias=False)
-        self._conc = Mo.Merging(mode='concat', axis=1)
-        self._bn = Mo.BatchNormalization(n_features=out_channels, n_dims=4,
-                                         fix_parameters=not affine)
-
-    def call(self, input):
-        out = self._relu(input)
-        out = self._conc(
-            self._conv_1(out),
-            self._conv_2(out[:, :, 1:, 1:])
-        )
-        out = self._bn(out)
-        return out
-
-
-class DilConv(Module):
-    """Dilated depthwise separable convolution.
-    """
-
-    def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None, affine=True):
-        super().__init__()
-        self._conv = Sequential(
-            ReLU(),
-            Conv(in_channels=in_channels, out_channels=in_channels,
-                 kernel=kernel, pad=pad, stride=stride,
-                 dilation=(2, 2), group=in_channels, with_bias=False),
-            Conv(in_channels=in_channels, out_channels=out_channels,
-                 kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=out_channels,
-                               n_dims=4, fix_parameters=not affine)
-        )
-
-    def __call__(self, input):
-        return self._conv(input)
-
-
-class SepConv(Module):
-    """Separable convolution."""
-
-    def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None, affine=True):
-        super().__init__()
-        self._conv = Sequential(
-            ReLU(),
-            Conv(in_channels=in_channels, out_channels=in_channels,
-                 kernel=kernel, pad=pad, stride=stride,
-                 group=in_channels, with_bias=False),
-            Conv(in_channels=in_channels, out_channels=in_channels,
-                 kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=in_channels,
-                               n_dims=4, fix_parameters=not affine),
-            ReLU(),
-            Conv(in_channels=in_channels, out_channels=in_channels,
-                 kernel=kernel, pad=pad, stride=(1, 1), group=in_channels,
-                 with_bias=False),
-            Conv(in_channels=in_channels, out_channels=out_channels,
-                 kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=out_channels,
-                               n_dims=4, fix_parameters=not affine)
-        )
-
-    def __call__(self, input):
-        return self._conv(input)
-
-
-class MixedOp(Module):
     def __init__(self, operators, mode='sample', alpha=None):
         super().__init__()
-        n = len(operators)
-        alpha_shape = (n,) + (1, 1, 1, 1)
-        alpha_init = ConstantInitializer(0.0)
-
+        self._active = -1  # save the active index
         self._mode = mode
+        self._ops = Mo.ModuleList(operators)
+        self._alpha = alpha
 
-        self._ops = ModuleList(operators)
-        self._alpha = alpha or Parameter(alpha_shape, initializer=alpha_init)
-        self._binary = nn.Variable.from_numpy_array(np.zeros(alpha_shape))
+        if alpha is None:
+            n = len(operators)
+            alpha_shape = (n,) + (1, 1, 1, 1)
+            alpha_init = ConstantInitializer(0.0)
+            self._alpha = Mo.Parameter(
+                alpha_shape, initializer=alpha_init)
 
-        self._active = 0  # save the active index
-        self._state = None  # save the states of intermediate outputs
-
-    def __call__(self, input):
+    def call(self, input):
         if self._mode == 'full':
-            out = F.mul2(self._ops(input), F.softmax(self._alpha, axis=0))
+            out = [op(input) for op in self._ops]
+            out = F.stack(*out, axis=0)
+            out = F.mul2(out, F.softmax(self._alpha, axis=0))
             return F.sum(out, axis=0)
+
+        if self._active < 0:
+            logger.warn('The active index was not initialized.')
+
         return self._ops[self._active](input)
 
     def _update_active_idx(self):
@@ -233,7 +174,11 @@ class MixedOp(Module):
             op.update_grad(self._active == i)
 
     def _update_alpha_grad(self):
+        """Update the gradients for parameter `alpha`."""
         probs = softmax(self._alpha.d.flat)
         probs[self._active] -= 1
         self._alpha.g = np.reshape(-probs, self._alpha.shape)
         return self
+
+    def __extra_repr__(self):
+        return f'num_ops={len(self._ops)}, mode={self._mode}'
