@@ -1,4 +1,5 @@
 import nnabla as nn
+import numpy as np
 
 from nnabla_nas.module import LeakyReLU, ReLU, ReLU6
 
@@ -11,6 +12,10 @@ def test_ReLU():
     assert isinstance(output, nn.Variable)
     assert output.shape == input.shape
 
+    input.d = np.random.randn(*input.shape)
+    output.forward()
+    assert not np.isnan(output.d).any()
+
 
 def test_ReLU6():
     module = ReLU6()
@@ -20,6 +25,10 @@ def test_ReLU6():
     assert isinstance(output, nn.Variable)
     assert output.shape == input.shape
 
+    input.d = np.random.randn(*input.shape)
+    output.forward()
+    assert not np.isnan(output.d).any()
+
 
 def test_LeakyReLU():
     module = LeakyReLU(alpha=0.3, inplace=True)
@@ -28,3 +37,7 @@ def test_LeakyReLU():
 
     assert isinstance(output, nn.Variable)
     assert output.shape == input.shape
+
+    input.d = np.random.randn(*input.shape)
+    output.forward()
+    assert not np.isnan(output.d).any()

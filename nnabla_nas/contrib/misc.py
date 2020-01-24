@@ -1,9 +1,8 @@
 import nnabla.functions as F
 import numpy as np
+from nnabla import logger
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
-from nnabla import logger
-
 
 from .. import module as Mo
 from .. import utils as ut
@@ -60,9 +59,9 @@ class DropPath(Mo.Module):
 
     def call(self, input):
         mask = F.rand(shape=(input.shape[0], 1, 1, 1))
-        mask = F.greater_equal_scalar(mask, self.drop_prob)
+        mask = F.greater_equal_scalar(mask, self._drop_prob)
         out = F.mul_scalar(input, 1. / (1 - self._drop_prob))
-        out = F.mul2(out, self.mask)
+        out = F.mul2(out, mask)
         return out
 
     def __extra_repr__(self):
@@ -128,9 +127,9 @@ class MixedOp(Mo.Module):
     allowed in this module.
 
     Args:
-        operators (List of modules): A list of modules.
+        operators (List of `Module`): A list of modules.
         mode (str, optional): The selecting mode for this module. Defaults to
-            `sample`.
+            `sample`. Possible modes are `sample`, `full`, or `max`.
         alpha (Parameter, optional): The weights used to calculate the
             evaluation probabilities. Defaults to None.
 
@@ -138,6 +137,10 @@ class MixedOp(Mo.Module):
 
     def __init__(self, operators, mode='sample', alpha=None):
         super().__init__()
+
+        if mode not in ('max', 'sample', 'full'):
+            raise ValueError(f'mode={mode} is not supported.')
+
         self._active = -1  # save the active index
         self._mode = mode
         self._ops = Mo.ModuleList(operators)
@@ -171,7 +174,7 @@ class MixedOp(Mo.Module):
             mode=self._mode
         )
         for i, op in enumerate(self._ops):
-            op.update_grad(self._active == i)
+            op.need_grad = (self._active == i)
 
     def _update_alpha_grad(self):
         """Update the gradients for parameter `alpha`."""

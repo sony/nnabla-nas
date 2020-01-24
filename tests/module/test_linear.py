@@ -1,4 +1,5 @@
 import nnabla as nn
+import numpy as np
 import pytest
 
 from nnabla_nas.module import Linear, Parameter
@@ -15,3 +16,7 @@ def test_linear(fix_parameters):
     objcls = nn.Variable if fix_parameters else Parameter
     assert isinstance(module._W, objcls)
     assert isinstance(module._b, objcls)
+
+    input.d = np.random.randn(*input.shape)
+    output.forward()
+    assert not np.isnan(output.d).any()

@@ -1,4 +1,5 @@
 import nnabla as nn
+import numpy as np
 import pytest
 
 from nnabla_nas.module import Merging
@@ -8,13 +9,18 @@ from nnabla_nas.module import Merging
 def test_merging(mode):
     module = Merging(mode=mode, axis=int(mode == 'concat'))
 
-    x = nn.Variable((8, 5, 3))
-    y = nn.Variable((8, 5, 3))
+    input_1 = nn.Variable((8, 5, 3))
+    input_2 = nn.Variable((8, 5, 3))
 
-    out = module(x, y)
+    output = module(input_1, input_2)
 
-    assert isinstance(out, nn.Variable)
+    assert isinstance(output, nn.Variable)
     if mode == 'concat':
-        assert out.shape == (8, 10, 3)
+        assert output.shape == (8, 10, 3)
     else:
-        assert out.shape == (8, 5, 3)
+        assert output.shape == (8, 5, 3)
+
+    input_1.d = np.random.randn(*input_1.shape)
+    input_2.d = np.random.randn(*input_2.shape)
+    output.forward()
+    assert not np.isnan(output.d).any()

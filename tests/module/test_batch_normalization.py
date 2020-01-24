@@ -1,4 +1,5 @@
 import nnabla as nn
+import numpy as np
 import pytest
 
 from nnabla_nas.module import BatchNormalization, Parameter
@@ -20,3 +21,7 @@ def test_batchnorm(fix_parameters):
 
     assert isinstance(module._mean, nn.Variable)
     assert isinstance(module._var, nn.Variable)
+
+    input.d = np.random.randn(*input.shape)
+    output.forward()
+    assert not np.isnan(output.d).any()
