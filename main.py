@@ -5,6 +5,7 @@ import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 
 from nnabla_nas.contrib import Darts, NetworkCIFAR
+from nnabla_nas.contrib.pnas.network import PNASNetwork
 from nnabla_nas.runner import Searcher, Trainer
 
 
@@ -23,8 +24,6 @@ def pass_args(parser):
     parser.add_argument("--device-id", "-d", type=str, default='1',
                         help='Device ID the training run on. \
                         This is only valid if you specify `-c cudnn`.')
-    parser.add_argument("--batch-size-train", type=int, default=8)
-    parser.add_argument("--batch-size-valid", type=int, default=8)
     parser.add_argument("--num-cells", type=int, default=8)
     parser.add_argument("--num-nodes", type=int, default=4,
                         help='Number of nodes per cell, must be more than 2.')
@@ -44,11 +43,14 @@ if __name__ == "__main__":
     search_parser = subparsers.add_parser('search')
     search_parser.set_defaults(func=search)
     pass_args(search_parser)
+    search_parser.add_argument("--mini-batch-size", type=int, default=8)
 
     # train the model
     train_parser = subparsers.add_parser('train')
     train_parser.set_defaults(func=train)
     pass_args(train_parser)
+    train_parser.add_argument("--batch-size-train", type=int, default=8)
+    train_parser.add_argument("--batch-size-valid", type=int, default=8)
     train_parser.add_argument('--drop-path-prob', type=float, default=0.2)
     train_parser.add_argument('--auxiliary-weight', type=float, default=0.4)
     train_parser.add_argument('--auxiliary', action='store_true',
@@ -68,9 +70,9 @@ if __name__ == "__main__":
         config['context'], device_id=config['device_id'])
     nn.set_default_context(ctx)
 
-    if not config['shared_params'] or args.func == search:
+    if args.func == search:
         model = Darts(
-            shape=(args.batch_size_train, 3, 32, 32),
+            shape=(args.mini_batch_size, 3, 32, 32),
             init_channels=args.init_channels,
             num_cells=args.num_cells,
             num_choices=args.num_nodes,
@@ -80,17 +82,31 @@ if __name__ == "__main__":
         )
         args.func(model, config).run()
     else:
-        genotype = json.load(open(config['arch']+'.json'))
-        # this code only work for shared params
-        assert config['shared_params']
-        train(
-            model=NetworkCIFAR(
-                shape=(args.batch_size_train, 3, 32, 32),
-                init_channels=args.init_channels,
-                num_cells=args.num_cells,
-                num_classes=10,
-                auxiliary=args.auxiliary,
-                genotype=genotype
-            ),
-            config=config
-        ).run()
+        if config['shared_params']:
+            genotype = json.load(open(config['arch']+'.json'))
+            # this code only work for shared params
+            assert config['shared_params']
+            train(
+                model=NetworkCIFAR(
+                    shape=(args.batch_size_train, 3, 32, 32),
+                    init_channels=args.init_channels,
+                    num_cells=args.num_cells,
+                    num_classes=10,
+                    auxiliary=args.auxiliary,
+                    genotype=genotype
+                ),
+                config=config
+            ).run()
+        else:
+            train(
+                PNASNetwork(
+                    shape=(args.batch_size_train, 3, 32, 32),
+                    init_channels=args.init_channels,
+                    num_cells=args.num_cells,
+                    num_classes=10,
+                    shared_params=args.shared_params,
+                    auxiliary=args.auxiliary,
+                    mode=args.mode
+                ),
+                config=config
+            ).run()

@@ -84,9 +84,15 @@ class Darts(Mo.Model):
 
     def get_arch_parameters(self, grad_only=False):
         param = OrderedDict()
-        for key, val in self.get_parameters(grad_only).items():
-            if '_alpha' in key:
-                param[key] = val
+        if self._alpha_normal[0] is not None:
+            for i, alpha in enumerate(self._alpha_normal):
+                param['_alpha_normal_{}'.format(i)] = alpha
+            for i, alpha in enumerate(self._alpha_reduce):
+                param['_alpha_reduce_{}'.format(i)] = alpha
+        else:
+            for key, val in self.get_parameters(grad_only).items():
+                if '_alpha' in key:
+                    param[key] = val
         return param
 
     def get_arch_modues(self):

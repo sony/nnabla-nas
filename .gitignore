@@ -1,6 +1,7 @@
 report.ipynb
 # main.py
 log/
+__nnabla_nas__/
 
 .vscode
 .mypy_cache
