@@ -2,6 +2,7 @@ import operator
 from collections import OrderedDict
 
 from .module import Module
+from .parameter import Parameter
 
 
 def _get_abs_string_index(obj, idx):
@@ -25,6 +26,8 @@ class ModuleList(Module):
 
     def append(self, module):
         r"""Appends a given module to the end of the list."""
+        if not isinstance(module, Module):
+            ValueError(f'{module} is not an instance of Module.')
         setattr(self, str(len(self)), module)
         return self
 
@@ -35,6 +38,8 @@ class ModuleList(Module):
 
     def insert(self, index, module):
         r"""Insert a given module before a given index in the list."""
+        if not isinstance(module, Module):
+            ValueError(f'{module} is not an instance of Module.')
         for i in range(len(self), index, -1):
             self.modules[str(i)] = self.modules[str(i - 1)]
         self.modules[str(index)] = module
@@ -47,6 +52,8 @@ class ModuleList(Module):
         return self.modules[index]
 
     def __setitem__(self, index, module):
+        if not isinstance(module, Module):
+            ValueError(f'{module} is not an instance of Module.')
         index = _get_abs_string_index(self, index)
         self.modules[str(index)] = module
 
@@ -67,6 +74,70 @@ class ModuleList(Module):
 
     def __iadd__(self, modules):
         return self.extend(modules)
+
+    def __key_format__(self, key):
+        return f'[{key}]'
+
+
+class ParameterList(Module):
+    r"""Hold parameters in a list."""
+
+    def __init__(self, parameters=None):
+        super().__init__()
+        if parameters is not None:
+            self += parameters
+
+    def append(self, parameter):
+        r"""Appends a given module to the end of the list."""
+        if not isinstance(parameter, Parameter):
+            ValueError(f'{parameter} is not an instance of Parameter.')
+        setattr(self, str(len(self)), parameter)
+        return self
+
+    def extend(self, parameters):
+        for parameter in parameters:
+            self.append(parameter)
+        return self
+
+    def insert(self, index, parameter):
+        r"""Insert a given parameter before a given index in the list."""
+        if not isinstance(parameter, Parameter):
+            ValueError(f'{parameter} is not an instance of Parameter.')
+        for i in range(len(self), index, -1):
+            self.parameters[str(i)] = self.parameters[str(i - 1)]
+        self.parameters[str(index)] = parameter
+        return self
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            return self.__class__(list(self.parameters.values())[index])
+        index = _get_abs_string_index(self, index)
+        return self.parameters[index]
+
+    def __setitem__(self, index, parameter):
+        if not isinstance(parameter, Parameter):
+            ValueError(f'{parameter} is not an instance of Parameter.')
+        index = _get_abs_string_index(self, index)
+        self.parameters[str(index)] = parameter
+
+    def __delitem__(self, index):
+        if isinstance(index, slice):
+            for k in range(len(self.parameters))[index]:
+                delattr(self, str(k))
+        else:
+            delattr(self, _get_abs_string_index(self, index))
+        indices = [str(i) for i in range(len(self.parameters))]
+        self._parameters = OrderedDict(
+            list(zip(indices, self.parameters.values())))
+
+    def __len__(self):
+        return len(self.parameters)
+
+    def __iter__(self):
+        return iter(self.parameters.values())
+
+    def __iadd__(self, parameters):
+        return self.extend(parameters)
 
     def __key_format__(self, key):
         return f'[{key}]'

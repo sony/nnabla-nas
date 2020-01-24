@@ -37,7 +37,7 @@ class Module(object):
 
     @property
     def need_grad(self):
-        r"""Whether the module need gradient."""
+        r"""Whether the module needs gradient."""
         if '_need_grad' not in self.__dict__:
             self.__dict__['_need_grad'] = True
         return self._need_grad

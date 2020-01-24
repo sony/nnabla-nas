@@ -87,26 +87,3 @@ class Cell(Mo.Module):
             offset += len(out)
             out.append(s)
         return F.concatenate(*out[-self._multiplier:], axis=1)
-
-
-class AuxiliaryHeadCIFAR(Mo.Module):
-
-    def __init__(self, channels, num_classes):
-        super().__init__()
-        self.feature = Mo.Sequential(
-            Mo.ReLU(),
-            Mo.AvgPool(kernel=(5, 5), stride=(3, 3)),
-            Mo.Conv(in_channels=channels, out_channels=128,
-                    kernel=(1, 1), with_bias=False),
-            Mo.BatchNormalization(n_features=128, n_dims=4),
-            Mo.ReLU(),
-            Mo.Conv(in_channels=128, out_channels=768,
-                    kernel=(2, 2), with_bias=False),
-            Mo.BatchNormalization(n_features=768, n_dims=4),
-            Mo.ReLU()
-        )
-        self.classifier = Mo.Linear(in_features=768, out_features=num_classes)
-
-    def __call__(self, input):
-        out = self.feature(input)
-        return self.classifier(out)

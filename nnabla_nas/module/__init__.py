@@ -1,6 +1,6 @@
 from .batchnorm import BatchNormalization
-from .container import ModuleList, Sequential
-from .convolution import Conv, Conv1D, Conv2D, Conv3D, ConvNd
+from .container import ModuleList, ParameterList, Sequential
+from .convolution import Conv, DwConv
 from .identity import Identity
 from .linear import Linear
 from .merging import Merging
@@ -15,6 +15,7 @@ __all__ = [
     'Module',
     'Sequential',
     'ModuleList',
+    'ParameterList',
     'Identity',
     'Zero',
     'Merging',
@@ -22,10 +23,7 @@ __all__ = [
     'MaxPool',
     'GlobalAvgPool',
     'Conv',
-    'Conv1D',
-    'Conv2D',
-    'Conv3D',
-    'ConvNd',
+    'DwConv',
     'BatchNormalization',
     'Linear',
     'ReLU',

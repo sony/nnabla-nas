@@ -19,8 +19,8 @@ class Zero(Module):
 
     def call(self, input):
         if self._stride[0] > 1:
-            out = input[:, :, ::self._stride[0], ::self._stride[1]]
-            out = F.mul_scalar(out, 0.0)
-        else:
-            out = F.mul_scalar(input, 0.0)
-        return out
+            input = input[:, :, ::self._stride[0], ::self._stride[1]]
+        return F.mul_scalar(input, 0.0)
+
+    def __extra_repr__(self):
+        return f'stride={self._stride}'

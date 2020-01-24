@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 
 import nnabla as nn
@@ -57,6 +58,9 @@ def test_module():
 def test_load_save_parameters():
     module = MyModule(shape=(5, 5))
     params = module.get_parameters()
+
+    if not os.path.exists('__nnabla_nas__'):
+        os.makedirs('__nnabla_nas__')
     nn.save_parameters('__nnabla_nas__/params.h5', params)
     nn.load_parameters('__nnabla_nas__/params.h5')
 
