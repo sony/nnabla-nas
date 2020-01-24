@@ -1,35 +1,32 @@
 from .batchnorm import BatchNormalization
-from .block import FactorizedReduce, Identity, ReLUConvBN, Zero
-from .convolution import Conv, DilConv, SepConv
-from .droppath import DropPath
+from .container import ModuleList, ParameterList, Sequential
+from .convolution import Conv, DwConv
+from .identity import Identity
 from .linear import Linear
-from .mixop import MixedOp
-from .model import Model
-from .module import Module, ModuleList, Sequential
+from .merging import Merging
+from .module import Module
 from .parameter import Parameter
-from .pooling import AvgPool, MaxPool
-from .relu import ReLU
+from .pooling import AvgPool, GlobalAvgPool, MaxPool
+from .relu import LeakyReLU, ReLU, ReLU6
+from .zero import Zero
 
 __all__ = [
     'Parameter',
     'Module',
-    'Model',
     'Sequential',
     'ModuleList',
-    'Parameter',
-    'Identity',
-    'AvgPool',
-    'MaxPool',
-    'Conv',
-    'DilConv',
-    'SepConv',
-    'BatchNormalization',
-    'Linear',
-    'DropPath',
-    'MixedOp',
-    'ReLU',
+    'ParameterList',
     'Identity',
     'Zero',
-    'ReLUConvBN',
-    'FactorizedReduce'
+    'Merging',
+    'AvgPool',
+    'MaxPool',
+    'GlobalAvgPool',
+    'Conv',
+    'DwConv',
+    'BatchNormalization',
+    'Linear',
+    'ReLU',
+    'ReLU6',
+    'LeakyReLU'
 ]

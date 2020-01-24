@@ -1,19 +1,22 @@
 {
-    "control_variate": 0.001,
-    "model_weight_decay": 3e-05,
     "print_frequency": 50,
-    "arch_with_grad_clip": true,
-    "model_optim": "Momentum",
-    "model_save_path": "log/pnas/train",
-    "warmup": 0,
-    "epoch": 600,
-    "model_lr_control": true,
-    "model_with_grad_clip": true,
-    "batch_size": 96,
-    "model_lr": 0.025,
-    "model_lr_scheduler": "CosineScheduler",
+    "optimizer": {
+        "lr_scheduler": {
+            "name": "CosineScheduler",
+            "init_lr": 0.025,
+            "max_iter": 117188
+        },
+        "grad_clip": 5.0,
+        "weight_decay": 3e-4,
+        "solver": {
+            "name": "Momentum",
+            "lr": 0.025
+        }
+    },
+    "output_path": "log/pnas/train",
+    "epoch": 300,
+    "batch_size": 128,
     "model_name": "pnas.h5",
-    "model_grad_clip_value": 5.0,
-    "monitor_path": "log/pnas/train",
+    "auxiliary_weight": 0.4,
     "arch": "log/pnas/search/arch"
 }
