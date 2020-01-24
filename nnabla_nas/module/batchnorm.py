@@ -8,9 +8,54 @@ from .parameter import Parameter
 
 class BatchNormalization(Module):
     def __init__(self, n_features, n_dims, axes=[1], decay_rate=0.9, eps=1e-5,
-                 batch_stat=True, output_stat=False, fix_parameters=False,
-                 param_init=None):
+                 output_stat=False, fix_parameters=False, param_init=None):
+        r"""Batch normalization layer.
+
+        Args:
+            n_features (int): Number of dimentional features.
+            n_dims (int): Number of dimensions.
+            axes (:obj:`tuple` of :obj:`int`):
+                Mean and variance for each element in ``axes`` are calculated
+                using elements on the rest axes. For example, if an input is 4
+                dimensions, and ``axes`` is ``[1]``,  batch mean is calculated
+                as ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
+                (using numpy expression as an example).
+            decay_rate (float, optional): Decay rate of running mean and
+                variance. Defaults to 0.9
+            eps (float, optional): Tiny value to avoid zero division by std.
+                Defaults to 1e-5.
+            output_stat (bool, optional): Output batch mean and variance.
+                Defaults to `False`.
+            fix_parameters (bool): When set to `True`, the beta and gamma will
+                not be updated.
+            param_init (dict):
+                Parameter initializers can be set with a dict. A key of the
+                dict must be ``'beta'``, ``'gamma'``, ``'mean'`` or ``'var'``.
+                A value of the dict must be an :obj:`~nnabla.initializer.
+                Initializer` or a :obj:`numpy.ndarray`.
+                E.g. ``{
+                        'beta': ConstantIntializer(0),
+                        'gamma': np.ones(gamma_shape) * 2
+                        }``.
+
+        Returns:
+            :class:`~nnabla.Variable`: N-D array.
+
+        References:
+            - Ioffe and Szegedy, Batch Normalization: Accelerating Deep
+            Network Training by Reducing Internal Covariate Shift.
+            https://arxiv.org/abs/1502.03167
+
+        The shape of parameters has the same number of dimensions with the
+        input data, and the shapes in ``axes`` has the same dimensions with
+        the input, while the rest has ``1``. If an input is 4-dim and
+        ``axes=[1]``, the parameter shape will be
+        ``param_shape = np.mean(inp.d, axis=(0, 2, 3), keepdims=True).shape``
+        (using numpy expression as an example).
+        """
+        super().__init__()
         assert len(axes) == 1
+
         shape_stat = [1 for _ in range(n_dims)]
         shape_stat[axes[0]] = n_features
 
@@ -21,24 +66,32 @@ class BatchNormalization(Module):
         mean_init = param_init.get('mean', ConstantInitializer(0))
         var_init = param_init.get('var', ConstantInitializer(1))
 
-        super().__init__()
         if fix_parameters:
-            self.beta = nn.Variable.from_numpy_array(
+            self._beta = nn.Variable.from_numpy_array(
                 beta_init(shape_stat))
-            self.gamma = nn.Variable.from_numpy_array(
+            self._gamma = nn.Variable.from_numpy_array(
                 gamma_init(shape_stat))
         else:
-            self.beta = Parameter(shape_stat, initializer=beta_init)
-            self.gamma = Parameter(shape_stat, initializer=gamma_init)
-        self.mean = nn.Variable.from_numpy_array(mean_init(shape_stat))
-        self.var = nn.Variable.from_numpy_array(var_init(shape_stat))
-        self.axes = axes
-        self.decay_rate = decay_rate
-        self.eps = eps
-        self.output_stat = output_stat
+            self._beta = Parameter(shape_stat, initializer=beta_init)
+            self._gamma = Parameter(shape_stat, initializer=gamma_init)
 
-    def __call__(self, input):
-        return F.batch_normalization(input, self.beta, self.gamma,
-                                     self.mean, self.var, self.axes,
-                                     self.decay_rate, self.eps, self.training,
-                                     self.output_stat)
+        self._mean = nn.Variable.from_numpy_array(mean_init(shape_stat))
+        self._var = nn.Variable.from_numpy_array(var_init(shape_stat))
+        self._axes = axes
+        self._decay_rate = decay_rate
+        self._eps = eps
+        self._n_features = n_features
+        self._fix_parameters = fix_parameters
+        self._output_stat = output_stat
+
+    def call(self, input):
+        return F.batch_normalization(input, self._beta, self._gamma,
+                                     self._mean, self._var, self._axes,
+                                     self._decay_rate, self._eps,
+                                     self.training, self._output_stat)
+
+    def __extra_repr__(self):
+        return (f'n_features={self._n_features}, '
+                f'fix_parameters={self._fix_parameters}, '
+                f'eps={self._eps}, '
+                f'decay_rate={self._decay_rate}')

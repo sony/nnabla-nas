@@ -2,6 +2,7 @@ import json
 import os
 from collections import OrderedDict
 
+import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 from nnabla.logger import logger
@@ -9,20 +10,19 @@ from scipy.special import softmax
 from tensorboardX import SummaryWriter
 
 from .dataset.transformer import Compose, Cutout, Normalizer
-import nnabla as nn
+from .visualization import visualize
 
 
 class ProgressMeter(object):
-    def __init__(self, num_batches, meters, tb_writer=None, prefix=""):
+    def __init__(self, num_batches, meters=[], path=None):
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
         self.meters = OrderedDict()
         for m in meters:
             self.meters[m.name] = m
-        self.prefix = prefix
-        self.writer = tb_writer
+        self.writer = SummaryWriter(os.path.join(path, 'tensorboard'))
 
     def display(self, batch, key=None):
-        entries = [self.prefix + self.batch_fmtstr.format(batch)]
+        entries = [self.batch_fmtstr.format(batch)]
         key = key or [m.name for m in self.meters.values()]
         entries += [str(meter)
                     for meter in self.meters.values() if meter.name in key]
@@ -38,6 +38,11 @@ class ProgressMeter(object):
 
     def write_image(self, tag, image_tensor, n_iter):
         self.writer.add_image(tag, image_tensor, n_iter)
+
+    def update(self, tag, value, n):
+        if tag not in self.meters:
+            self.meters[tag] = AverageMeter(tag, fmt=':5.3f')
+        self.meters[tag].update(value, n)
 
     def close(self):
         self.writer.close()
@@ -75,21 +80,6 @@ class AverageMeter(object):
     def __str__(self):
         fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
         return fmtstr.format(**self.__dict__)
-
-
-def get_standard_monitor(one_epoch, path):
-    return ProgressMeter(
-        num_batches=one_epoch,
-        meters=[
-            AverageMeter('train_loss', fmt=':5.3f'),
-            AverageMeter('valid_loss', fmt=':5.3f'),
-            AverageMeter('train_err', fmt=':5.3f'),
-            AverageMeter('valid_err', fmt=':5.3f')
-        ],
-        tb_writer=SummaryWriter(
-            os.path.join(path, 'tensorboard')
-        )
-    )
 
 
 def sample(pvals, mode='sample'):
@@ -144,8 +134,10 @@ def parse_weights(alpha, num_choices):
 
 def save_dart_arch(model, file):
     memo = dict()
-    for name, alpha in zip(['normal', 'reduce'], [model._alpha_normal, model._alpha_reduce]):
-        for k, v in zip(['alpha', 'prob', 'choice'], parse_weights(alpha, model._num_choices)):
+    for name, alpha in zip(['normal', 'reduce'],
+                           [model._alpha_normal, model._alpha_reduce]):
+        for k, v in zip(['alpha', 'prob', 'choice'],
+                        parse_weights(alpha, model._num_choices)):
             memo[name + '_' + k] = v
     logger.info('Saving arch to {}'.format(file))
     write_to_json_file(memo, file)
@@ -181,3 +173,10 @@ def image_augmentation(image):
 
 def get_params_size(params):
     return np.sum(np.prod(p.shape) for p in params.values())
+
+
+def get_object_from_dict(module, args):
+    if args is not None:
+        class_name = args.pop('name')
+        return module[class_name](**args)
+    return None
