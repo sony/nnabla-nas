@@ -1,3 +1,4 @@
+import numpy as np
 import nnabla as nn
 from collections import OrderedDict
 from nnabla.initializer import ConstantInitializer
@@ -86,57 +87,79 @@ class ZophBlock(smo.StaticGraph):
         return self._modules[-1]
 
 class ZophCell(smo.StaticGraph):
-    def __init__(self, name, parent, candidates, channels, n_modules=7, reducing=False, join_parameters=None):
+    def __init__(self, name, parent, candidates, channels, n_modules=3, reducing=False, join_parameters=[None]*3):
         self._candidates = candidates
         self._channels = channels
         self._n_modules = n_modules
         self._reducing = reducing
-        self._join_parameters
+        self._join_parameters = join_parameters
         smo.StaticGraph.__init__(self, name, parent)
 
     def _generate_graph(self, inputs):
         #match the input dimensions
         shapes = [(list(ii.shape) + 4 * [1])[:4] for ii in self.parent]
-        self._shape_adaptation      = {i: np.array(si[2:]) / np.array(self.shape[2:])) for i,si in enumerate(shapes) if tuple(si[2:]) != tuple(self.shape[2:])}
+        min_shape = np.min(np.array(shapes), axis=0)
+        self._shape_adaptation = {i: np.array(si[2:]) / min_shape[2:] for i,si in enumerate(shapes) if tuple(si[2:]) != tuple(min_shape[2:])}
 
+        #perform the input channel projection, using pointwise convolutions
+        projected_inputs = []
         for i,ii in enumerate(inputs):
-            #perform pooling if required
-            if i in self._shape_adaptation:
-                self.
             self.add_module(smo.StaticConv(name='{}/input_conv_{}'.format(self.name, i), parent=[ii],
                                            in_channels=ii.shape[1], out_channels=self._channels, kernel=(1,1), with_bias=False))
-        for i in range(self._n_modules):
-            vertices.append(Zoph18Vertice(name='zoph18_vertice_{}'.format(i),
-                                         graph=self,
-                                         channels=self._channels,
-                                         vertice_classes=vertice_classes))
-            #TODO: We must concatenate here instead of linear combination!
-            vertices[-1](*vertices[:-1])
+            projected_inputs.append(self._modules[-1])
 
-        vertices.append(n3gb.JoinCon(name='output_con', graph=self, collections=['MODEL']))
-        vertices[-1](*vertices[1:-1]) #the depthwise concatenation of all intermediate nodes, inputs excluded
+        #perform shape adaptation, using pooling, if needed
+        for i,pii in enumerate(projected_inputs):
+            if i in self._shape_adaptation:
+                self.add_module(smo.StaticMaxPool(name='{}/shape_adapt_pool_{}'.format(self.name, i), parent=[pii],
+                                              kernel=self._shape_adaptation[i], stride=self._shape_adaptation[i]))
+                projected_inputs[i] = self._modules[-1]
+
+        #in case of a reducing cell, we need to perform another max-pooling on all inputs
         if self._reducing:
-            vertices.append(n3gb.MaxPool(name='max_pool',
-                                         graph=self,
-                                         pooling_shape=(self._channels, 2, 2),
-                                         stride=(2, 2),
-                                         collections=['MODEL']))
-            vertices[-1](vertices[-2])
+            for i, pii in enumerate(projected_inputs):
+                self.add_module(smo.StaticMaxPool(name='{}/shape_adapt_pool_{}'.format(self.name, i), parent=[pii],
+                                              kernel=(2,2), stride=(2,2)))
+                projected_inputs[i] = self._modules[-1]
+
+        cell_modules=projected_inputs
+        for i in range(self._n_modules):
+            self.add_module(ZophBlock(name='{}/zoph_block_{}'.format(self.name, i), parent=cell_modules,
+                                      candidates=self._candidates, channels=self._channels,
+                                      join_parameters=self._join_parameters[i]))
+            cell_modules.append(self._modules[-1])
+
+        #perform output concatenation
+        self.add_module(smo.StaticDwConcatenate(name=self.name+'/output_concat', parent=cell_modules))
+        return self._modules[-1]
 
 class ZophNetwork(smo.StaticModule):
+    def __init__(self, name, parent, stem_channels=64, cells=[ZophCell]*3, candidates=, reducing):
+        self._stem_channels = stem_channels
+        self._cells = cells
+        self._candidates = candidates
+        self._reducing = reducing
+        smo.StaticModule.__init__(self, name, parent)
+
     def _create_modules(self):
-        pass
+        #1. add the stem convolutions
+        self.add_module()
+        #2. add the cells using shared architecture parameters
+
+        #3. add output convolution and global average pooling
 
 if __name__ == '__main__':
 
-    input = smo.Input(name='input', value=nn.Variable((10,20,32,32)))
+    input = smo.Input(name='input', value=nn.Variable((10,20,32,16)))
+    input2 = smo.Input(name='input', value=nn.Variable((10,20,32,32)))
     sep_conv3x3 = SepConv3x3(name='conv1', parent=[input], channels=30)
     sep_conv5x5 = SepConv5x5(name='conv2', parent=[input], channels=30)
     dil_sep_conv3x3 = DilSepConv3x3(name='conv3', parent=[input], channels=30)
     dil_sep_conv5x5 = DilSepConv5x5(name='conv4', parent=[input], channels=30)
     max_pool3x3 = MaxPool3x3(name='pool1', parent=[input])
     avg_pool3x3 = AveragePool3x3(name='pool2', parent=[input])
-    zoph_block = ZophBlock(name='cell1', parent=[input], channels=20, candidates=ZOPH_CANDIDATES)
+    zoph_block = ZophBlock(name='block1', parent=[input], channels=20, candidates=ZOPH_CANDIDATES)
+    zoph_cell = ZophCell(name='cell1', parent=[input, input2], candidates=ZOPH_CANDIDATES, channels=32)
 
     out_1 = sep_conv3x3()
     out_2 = sep_conv5x5()

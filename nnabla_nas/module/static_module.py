@@ -569,6 +569,10 @@ class StaticGraph(ModuleList, StaticModule): #TODO: change to Sequential
         output = self._generate_graph(inputs)
         return output
 
+    def _shapes_valid(self, parent):
+        #We cannot deside if the shapes of a graph are valid, because we do not know the inner graph structure at this point
+        return True
+
     def clear_value(self):
         for gmi in self._graph_modules:
             gmi.clear_value()
