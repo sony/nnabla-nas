@@ -191,7 +191,7 @@ class DwConv(Module):
         self._base_axis = base_axis
         self._multiplier = multiplier
 
-    def __call__(self, input):
+    def call(self, input):
         return F.depthwise_convolution(input, self._W, self._b,
                                        self._base_axis, self._pad,
                                        self._stride, self._dilation,

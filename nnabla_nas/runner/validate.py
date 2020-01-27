@@ -3,7 +3,6 @@ import os
 import nnabla as nn
 import nnabla.functions as F
 import nnabla.utils.learning_rate_scheduler as LRS
-import numpy as np
 from nnabla.logger import logger
 from tqdm import tqdm
 
@@ -49,13 +48,6 @@ class Trainer(object):
             name=solver.pop('name'), **solver
         )
 
-        if not conf['shared_params']:
-            model.load_parameters(conf['arch'] + '.h5')
-            # preparing to sample one graph
-            for module in model.get_arch_modues():
-                module._mode = 'max'
-                module._update_active_idx()
-
     def run(self):
         """Run the training process."""
         conf = self.conf
@@ -85,8 +77,8 @@ class Trainer(object):
         ut.write_to_json_file(content=conf, file_path=log_path)
 
         # sample one graph for training
-        model.train()
-        train_input = nn.Variable(model.input_shape)
+        model.apply(training=True)
+        train_input = nn.Variable((train_size, 3, 32, 32))
         train_target = nn.Variable((train_size, 1))
         train_out, aux_out = model(ut.image_augmentation(train_input))
         train_out.apply(persistent=True)
@@ -97,17 +89,18 @@ class Trainer(object):
         train_loss.apply(persistent=True)
         train_err.apply(persistent=True)
         # assign parameters
-        optimizer.set_parameters(model.get_net_parameters(grad_only=True))
+        optimizer.set_parameters(model.get_parameters(grad_only=True))
 
         # print a summary
         model_size = ut.get_params_size(optimizer.get_parameters())
-        aux_size = ut.get_params_size(model._auxiliary_head.get_parameters())
+        aux_size = ut.get_params_size(
+            model._auxiliary_head.get_parameters()) if conf['auxiliary'] else 0
         model_size = (model_size - aux_size) / 1e6
         logger.info('Model size = {:.6f} MB'.format(model_size))
 
         # sample a graph for validating
-        model.eval()
-        valid_input = nn.Variable((valid_size,) + model.input_shape[1:])
+        model.apply(training=False)
+        valid_input = nn.Variable((valid_size, 3, 32, 32))
         valid_target = nn.Variable((valid_size, 1))
         valid_out, _ = model(valid_input)
         valid_out.apply(persistent=True)
@@ -118,19 +111,8 @@ class Trainer(object):
         valid_err.apply(persistent=True)
         best_error = 1.0
 
-        # set dropout rate in advance
-        nn.parameter.get_parameter_or_create(
-            "drop_rate", shape=(1, 1, 1, 1), need_grad=False)
-        drop_rate = nn.Variable.from_numpy_array(
-            np.array([conf['drop_path_prob']]).reshape(1, 1, 1, 1)
-        )
-        nn.parameter.set_parameter("drop_rate", drop_rate)
-
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-            # adjusting the drop path rate
-            curr_drop = F.mul_scalar(drop_rate, cur_epoch/conf['epoch'])
-            nn.parameter.set_parameter("drop_rate", curr_drop)
 
             for i in range(one_train_epoch):
                 # training model parameters
@@ -158,7 +140,7 @@ class Trainer(object):
 
             if monitor['valid_err'].avg < best_error:
                 best_error = monitor['valid_err'].avg
-                model.save_parameters(save_path)
+                nn.save_parameters(save_path, model.get_parameters())
 
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %

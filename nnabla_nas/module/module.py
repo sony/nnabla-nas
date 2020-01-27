@@ -59,17 +59,6 @@ class Module(object):
     def inputs(self, v):
         setattr(self, '_inputs', v)
 
-    @property
-    def outputs(self):
-        r"""Return a list of outputs used during `call` function."""
-        if '_outputs' not in self.__dict__:
-            self.__dict__['outputs'] = list()
-        return self._outputs
-
-    @outputs.setter
-    def outputs(self, v):
-        setattr(self, '_outputs', v)
-
     def __getattr__(self, name):
         if name in self.modules:
             return self.modules[name]
@@ -169,9 +158,8 @@ class Module(object):
         return main_str
 
     def __call__(self, *args, **kargs):
-        self.inputs = args
-        self.outputs = self.call(*args, **kargs)
-        return self.outputs
+        self.inputs = [x.shape for x in args]
+        return self.call(*args, **kargs)
 
     def call(self, *args, **kargs):
         r"""Implement the call of module. Inmediate inputs should only be

@@ -89,11 +89,10 @@ def test_properties(prop, mode):
         assert getattr(m, prop) == mode
 
 
-def test_inputs_outputs():
+def test_inputs():
     input_shape = (5, 5)
     module = MyModule(input_shape)
     inputs = nn.Variable(input_shape)
-    outputs = module(inputs)
+    module(inputs)
 
-    assert inputs is module.inputs[0]
-    assert outputs is module.outputs
+    assert input_shape == module.inputs[0]

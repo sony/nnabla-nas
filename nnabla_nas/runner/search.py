@@ -5,7 +5,9 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
+from collections import Counter
 
+from ..contrib.darts.modules import CANDIDATE_FUNC
 from .. import utils as ut
 from ..dataset import DataLoader
 from ..dataset.cifar10 import cifar10
@@ -20,11 +22,12 @@ class Searcher(object):
 
     def __init__(self, model, conf):
         self.model = model
-        self.arch_modules = model.get_arch_modues()
+        self.arch_modules = model.get_arch_modules()
         self.conf = conf
         self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
         self.evaluate = lambda o, t:  F.mean(F.top_n_error(o, t))
         self.w_micros = self.conf['batch_size'] // self.conf['mini_batch_size']
+        self.op_names = list(CANDIDATE_FUNC.keys())
 
         # dataset configuration
         data = cifar10(conf['mini_batch_size'], True)
@@ -52,7 +55,7 @@ class Searcher(object):
             )
             solver = optim['solver']
             self.optimizer[key] = Optimizer(
-                retain_state=conf['mode'] == 'sample',
+                retain_state=conf['network']['name'] == 'pnas',
                 weight_decay=optim.pop('weight_decay', None),
                 grad_clip=optim.pop('grad_clip', None),
                 lr_scheduler=lr_scheduler,
@@ -62,11 +65,11 @@ class Searcher(object):
         # placeholders
         self.placeholder = OrderedDict({
             'model': {
-                'input':  nn.Variable(model.input_shape),
+                'input':  nn.Variable((conf['mini_batch_size'], 3, 32, 32)),
                 'target': nn.Variable((conf['mini_batch_size'], 1))
             },
             'arch': {
-                'input': nn.Variable(model.input_shape),
+                'input': nn.Variable((conf['mini_batch_size'], 3, 32, 32)),
                 'target': nn.Variable((conf['mini_batch_size'], 1))
             }
         })
@@ -83,7 +86,7 @@ class Searcher(object):
         log_path = os.path.join(out_path, 'search_config.json')
         arch_file = model_path + '.json'
         warmup = conf['warmup']
-        need_resample = conf['mode'] == 'sample'
+        need_resample = conf['network']['name'] == 'pnas'
 
         # monitor the training process
         monitor = ut.ProgressMeter(one_epoch, path=out_path)
@@ -109,7 +112,7 @@ class Searcher(object):
                         ph['input'].d, ph['target'].d = self.loader[mode].next()
                         ph['loss'].forward(clear_no_need_grad=True)
                         ph['err'].forward(clear_buffer=True)
-                        if training or conf['mode'] != 'sample':
+                        if training or not need_resample:
                             ph['loss'].backward(clear_buffer=True)
 
                         error = ph['err'].d.copy()
@@ -133,15 +136,18 @@ class Searcher(object):
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i)
+
             warmup -= warmup > 0
             # saving the architecture parameters
-            if conf['shared_params']:
+            if conf['network']['name'] != 'pnas':
                 ut.save_dart_arch(model, arch_file)
                 for tag, img in visualize(arch_file, out_path).items():
                     monitor.write_image(tag, img, cur_epoch)
             else:
-                model.save_parameters(model_path + '.h5',
-                                      model.get_arch_parameters())
+                nn.save_parameters(model_path + '.h5',
+                                   model.get_arch_parameters())
+                logger.info(self._get_statistics())
+
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
                         (cur_epoch, optim['model'].get_learning_rate(),
@@ -150,6 +156,15 @@ class Searcher(object):
         monitor.close()
 
         return self
+
+    def _get_statistics(self):
+        stats = ''
+        ans = Counter([m._active for m in self.arch_modules])
+        total = len(self.arch_modules)
+        for k in range(len(self.op_names)):
+            name = self.op_names[k]
+            stats += name + f' = {ans[k]/total*100:.2f}%\t'
+        return stats
 
     def _reinforce_update(self, reward):
         for m in self.arch_modules:
@@ -160,13 +175,13 @@ class Searcher(object):
 
     def _sample(self, verbose=False):
         """Sample new graphs, one for model training and one for arch training."""
-        if self.conf['mode'] == 'sample':
+        if self.conf['network']['name'] == 'pnas':
             for m in self.arch_modules:
                 m._update_active_idx()
 
         for mode, ph in self.placeholder.items():
             training = (mode == 'model')
-            self.model.train(training)
+            self.model.apply(training=training)
 
             # loss and error
             image = ut.image_augmentation(ph['input'])
