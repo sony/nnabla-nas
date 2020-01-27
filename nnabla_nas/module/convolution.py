@@ -89,6 +89,7 @@ class Conv(Module):
         self._out_channels = out_channels
         self._channel_last = channel_last
         self._fix_parameters = fix_parameters
+        self._rng = rng
 
     def call(self, input):
         return F.convolution(input, self._W, self._b, self._base_axis,
@@ -206,13 +207,3 @@ class DwConv(Module):
                 f'base_axis={self._base_axis}, '
                 f'with_bias={self._b is not None}, '
                 f'fix_parameters={self._fix_parameters}')
-
-class SepConv(DwConv):
-    def __init__(self, out_channels, *args, **kwargs):
-        DwConv.__init__(self, *args, **kwargs)
-        self.out_channels = out_channels
-        self._conv_module_pw = Conv(self.in_channels, self.out_channels, kernel=(1, 1),
-                                 pad=None, group=1, rng=self.rng, with_bias=None)
-
-    def call(self, input):
-        return self._conv_module_pw(DwConv.call(self, input))

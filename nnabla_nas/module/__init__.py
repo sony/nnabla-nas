@@ -1,6 +1,6 @@
 from .batchnorm import BatchNormalization
 from .container import ModuleList, ParameterList, Sequential
-from .convolution import Conv, DwConv, SepConv
+from .convolution import Conv, DwConv
 from .identity import Identity
 from .linear import Linear
 from .merging import Merging
