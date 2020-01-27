@@ -1,40 +1,36 @@
+import json
 from collections import OrderedDict
 
-from nnabla.initializer import ConstantInitializer
 import nnabla.functions as F
+from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
-from ... import utils as ut
+from ..misc import AuxiliaryHeadCIFAR, DropPath, MixedOp
 from . import modules as darts
-from ..misc import MixedOp, AuxiliaryHeadCIFAR
 
 
 class SearchNet(Mo.Module):
     r"""SearchNet for DARTS."""
 
-    def __init__(self, shape, init_channels, num_cells, num_classes,
-                 num_choices=4, multiplier=4, stem_multiplier=3,
-                 num_ops=8, shared_params=True, mode='full'):
+    def __init__(self, in_channels, init_channels, num_cells, num_classes,
+                 num_choices=4, multiplier=4, stem_multiplier=3):
         super().__init__()
         self._num_choices = num_choices
-        self._num_ops = num_ops
+        self._num_ops = len(darts.CANDIDATE_FUNC)
         self._multiplier = multiplier
         self._init_channels = init_channels
-        self._mode = mode
 
         num_channels = stem_multiplier * init_channels
 
         # initialize the arch parameters
-        self._alpha_normal = self._init_alpha(num_ops, shared_params)
-        self._alpha_reduce = self._init_alpha(num_ops, shared_params)
-        self._stem = darts.StemConv(3, num_channels)
+        self._alpha_normal = self._init_alpha(self._num_ops)
+        self._alpha_reduce = self._init_alpha(self._num_ops)
+
+        # build the network
+        self._stem = darts.StemConv(in_channels, num_channels)
         self._cells = self._init_cells(num_cells, num_channels)
         self._ave_pool = Mo.AvgPool(kernel=(8, 8))
         self._linear = Mo.Linear(self._last_channels, num_classes)
-
-        # save input and output shapes
-        self._input_shape = shape
-        self._output_shape = (shape[0], num_classes)
 
     def call(self, input):
         out_p = out_c = self._stem(input)
@@ -59,7 +55,7 @@ class SearchNet(Mo.Module):
                     multiplier=self._multiplier,
                     channels=(channel_p_p, channel_p, channel_c),
                     reductions=(reduction_p, reduction_c),
-                    mode=self._mode,
+                    mode='full',
                     alpha=self._alpha_reduce if reduction_c
                     else self._alpha_normal
                 )
@@ -72,14 +68,13 @@ class SearchNet(Mo.Module):
 
         return cells
 
-    def _init_alpha(self, n, shared_params):
+    def _init_alpha(self, n):
         alpha = []
         for i in range(self._num_choices):
             for _ in range(i + 2):
                 alpha_shape = (n,) + (1, 1, 1, 1)
                 alpha_init = ConstantInitializer(0.0)
-                alpha.append(Mo.Parameter(alpha_shape, initializer=alpha_init)
-                             if shared_params else None)
+                alpha.append(Mo.Parameter(alpha_shape, initializer=alpha_init))
         return alpha
 
     def get_net_parameters(self, grad_only=False):
@@ -91,15 +86,10 @@ class SearchNet(Mo.Module):
 
     def get_arch_parameters(self, grad_only=False):
         param = OrderedDict()
-        if self._alpha_normal[0] is not None:
-            for i, alpha in enumerate(self._alpha_normal):
-                param['_alpha_normal_{}'.format(i)] = alpha
-            for i, alpha in enumerate(self._alpha_reduce):
-                param['_alpha_reduce_{}'.format(i)] = alpha
-        else:
-            for key, val in self.get_parameters(grad_only).items():
-                if '_alpha' in key:
-                    param[key] = val
+        for i, alpha in enumerate(self._alpha_normal):
+            param['_alpha_normal_{}'.format(i)] = alpha
+        for i, alpha in enumerate(self._alpha_reduce):
+            param['_alpha_reduce_{}'.format(i)] = alpha
         return param
 
     def get_arch_modules(self):
@@ -113,31 +103,31 @@ class SearchNet(Mo.Module):
 class TrainNet(Mo.Module):
     """TrainNet for DARTS."""
 
-    def __init__(self, shape, init_channels, num_cells, num_classes,
-                 num_choices=4, multiplier=4, stem_multiplier=3,
-                 num_ops=8, auxiliary=True, genotype=None):
+    def __init__(self, in_channels, init_channels, num_cells, num_classes,
+                 genotype, num_choices=4, multiplier=4, stem_multiplier=3,
+                 drop_path=0.2, auxiliary=True):
         super().__init__()
-        self._num_ops = num_ops
+        self._num_ops = len(darts.CANDIDATE_FUNC)
         self._multiplier = multiplier
         self._init_channels = init_channels
         self._num_cells = num_cells
         self._auxiliary = auxiliary
+        self._num_choices = num_choices
+        self._drop_path = drop_path
 
         num_channels = stem_multiplier * init_channels
+        genotype = json.load(open(genotype, 'r'))
 
         # initialize the arch parameters
-        self._stem = darts.StemConv(3, num_channels)
+        self._stem = darts.StemConv(in_channels, num_channels)
         self._cells = self._init_cells(num_cells, num_channels, genotype)
         self._ave_pool = Mo.AvgPool(kernel=(8, 8))
         self._linear = Mo.Linear(self._last_channels, num_classes)
 
         # auxiliary head
-        self._auxiliary_head = AuxiliaryHeadCIFAR(
-            self._c_auxiliary, num_classes)
-
-        # save input and output shapes
-        self._input_shape = shape
-        self._output_shape = (shape[0], num_classes)
+        if auxiliary:
+            self._auxiliary_head = AuxiliaryHeadCIFAR(
+                self._c_auxiliary, num_classes)
 
     def call(self, input):
         logits_aux = None
@@ -163,7 +153,8 @@ class TrainNet(Mo.Module):
             cells.append(
                 Cell(channels=(channel_p_p, channel_p, channel_c),
                      reductions=(reduction_p, reduction_c),
-                     genotype=genotype)
+                     genotype=genotype,
+                     drop_path=self._drop_path)
             )
             reduction_p = reduction_c
             channel_p_p, channel_p = channel_p, self._multiplier * channel_c
@@ -175,20 +166,6 @@ class TrainNet(Mo.Module):
 
         return cells
 
-    def get_net_parameters(self, grad_only=False):
-        param = OrderedDict()
-        for key, val in self.get_parameters(grad_only).items():
-            if '_alpha' not in key:
-                param[key] = val
-        return param
-
-    def get_arch_parameters(self, grad_only=False):
-        param = OrderedDict()
-        for key, val in self.get_parameters(grad_only).items():
-            if '_alpha' in key:
-                param[key] = val
-        return param
-
     def get_arch_modues(self):
         ans = []
         for name, module in self.get_modules():
@@ -198,9 +175,9 @@ class TrainNet(Mo.Module):
 
 
 class Cell(Mo.Module):
-    def __init__(self, channels, reductions, genotype):
+    def __init__(self, channels, reductions, genotype, drop_path):
         super().__init__()
-
+        self._drop_path = drop_path
         # preprocess the inputs
         self._prep = Mo.ModuleList()
         if reductions[0]:
@@ -239,7 +216,7 @@ class Cell(Mo.Module):
             for j, op in zip(idx, ops):
                 choice.append(op(out[j]))
                 if self.training and not isinstance(op, Mo.Identity):
-                    choice[-1] = ut.drop_path(choice[-1])
+                    choice[-1] = DropPath(self._drop_path)(choice[-1])
 
             out.append(F.add2(choice[0], choice[1]))
 

@@ -1,10 +1,18 @@
 {
-    "print_frequency": 20,
+    "search": true,
+    "network": {
+        "name": "pnas",
+        "in_channels": 3,
+        "init_channels": 16,
+        "num_cells": 20,
+        "num_classes": 10,
+        "num_choices": 4
+    },
     "model_optimizer": {
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 52735
+            "max_iter": 58600
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -26,9 +34,11 @@
         }
     },
     "epoch": 300,
-    "batch_size": 256,
-    "warmup": 40,
+    "batch_size": 128,
+    "mini_batch_size": 128,
+    "warmup": 10,
     "model_name": "arch",
     "output_path": "log/pnas/search",
+    "print_frequency": 20,
     "train_portion": 0.9
 }

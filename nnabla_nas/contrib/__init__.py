@@ -1,4 +1,3 @@
-from . import darts
-from . import pnas
+from . import darts, pnas
 
 __all__ = ['darts', 'pnas']

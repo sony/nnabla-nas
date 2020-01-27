@@ -1,10 +1,18 @@
 {
-    "print_frequency": 20,
+    "search": true,
+    "network": {
+        "name": "darts",
+        "in_channels": 3,
+        "init_channels": 16,
+        "num_cells": 8,
+        "num_classes": 10,
+        "num_choices": 4
+    },
     "model_optimizer": {
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 20000
+            "max_iter": 19532
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -29,5 +37,7 @@
     "batch_size": 64,
     "model_name": "arch",
     "output_path": "log/darts/search",
-    "train_portion": 0.5
+    "train_portion": 0.5,
+    "mini_batch_size": 16,
+    "print_frequency": 20
 }

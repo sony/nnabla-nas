@@ -7,6 +7,7 @@ import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
 
 from .. import utils as ut
+from ..contrib.misc import MixedOp
 from ..dataset import DataLoader
 from ..dataset.cifar10 import cifar10
 from ..optimizer import Optimizer
@@ -52,7 +53,7 @@ class Searcher(object):
             )
             solver = optim['solver']
             self.optimizer[key] = Optimizer(
-                retain_state=conf['mode'] == 'sample',
+                retain_state=conf['network']['name'] == 'pnas',
                 weight_decay=optim.pop('weight_decay', None),
                 grad_clip=optim.pop('grad_clip', None),
                 lr_scheduler=lr_scheduler,
@@ -62,11 +63,11 @@ class Searcher(object):
         # placeholders
         self.placeholder = OrderedDict({
             'model': {
-                'input':  nn.Variable(model._input_shape),
+                'input':  nn.Variable((conf['mini_batch_size'], 3, 32, 32)),
                 'target': nn.Variable((conf['mini_batch_size'], 1))
             },
             'arch': {
-                'input': nn.Variable(model._input_shape),
+                'input': nn.Variable((conf['mini_batch_size'], 3, 32, 32)),
                 'target': nn.Variable((conf['mini_batch_size'], 1))
             }
         })
@@ -83,7 +84,7 @@ class Searcher(object):
         log_path = os.path.join(out_path, 'search_config.json')
         arch_file = model_path + '.json'
         warmup = conf['warmup']
-        need_resample = conf['mode'] == 'sample'
+        need_resample = conf['network']['name'] == 'pnas'
 
         # monitor the training process
         monitor = ut.ProgressMeter(one_epoch, path=out_path)
@@ -109,7 +110,7 @@ class Searcher(object):
                         ph['input'].d, ph['target'].d = self.loader[mode].next()
                         ph['loss'].forward(clear_no_need_grad=True)
                         ph['err'].forward(clear_buffer=True)
-                        if training or conf['mode'] != 'sample':
+                        if training or not need_resample:
                             ph['loss'].backward(clear_buffer=True)
 
                         error = ph['err'].d.copy()
@@ -136,17 +137,25 @@ class Searcher(object):
 
             warmup -= warmup > 0
             # saving the architecture parameters
-            if conf['shared_params']:
+            if conf['network']['name'] != 'pnas':
                 ut.save_dart_arch(model, arch_file)
                 for tag, img in visualize(arch_file, out_path).items():
                     monitor.write_image(tag, img, cur_epoch)
             else:
-                model.save_parameters(model_path + '.h5',
-                                      model.get_arch_parameters())
+                nn.save_parameters(model_path + '.h5',
+                                   model.get_arch_parameters())
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
                         (cur_epoch, optim['model'].get_learning_rate(),
                          monitor['arch_err'].avg, monitor['arch_loss'].avg))
+
+            ans = []
+            for k, m in model.get_modules():
+                if isinstance(m, MixedOp):
+                    ans.append(m._active)
+
+            from collections import Counter
+            print(Counter(ans))
 
         monitor.close()
 
@@ -161,7 +170,7 @@ class Searcher(object):
 
     def _sample(self, verbose=False):
         """Sample new graphs, one for model training and one for arch training."""
-        if self.conf['mode'] == 'sample':
+        if self.conf['network']['name'] == 'pnas':
             for m in self.arch_modules:
                 m._update_active_idx()
 

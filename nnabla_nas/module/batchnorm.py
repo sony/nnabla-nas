@@ -75,8 +75,10 @@ class BatchNormalization(Module):
             self._beta = Parameter(shape_stat, initializer=beta_init)
             self._gamma = Parameter(shape_stat, initializer=gamma_init)
 
-        self._mean = nn.Variable.from_numpy_array(mean_init(shape_stat))
-        self._var = nn.Variable.from_numpy_array(var_init(shape_stat))
+        self._mean = Parameter(shape_stat, need_grad=False,
+                               initializer=mean_init)
+        self._var = Parameter(shape_stat, need_grad=False,
+                              initializer=var_init)
         self._axes = axes
         self._decay_rate = decay_rate
         self._eps = eps

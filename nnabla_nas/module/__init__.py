@@ -1,6 +1,7 @@
 from .batchnorm import BatchNormalization
 from .container import ModuleList, ParameterList, Sequential
 from .convolution import Conv, DwConv
+from .dropout import Dropout
 from .identity import Identity
 from .linear import Linear
 from .merging import Merging
@@ -28,5 +29,6 @@ __all__ = [
     'Linear',
     'ReLU',
     'ReLU6',
-    'LeakyReLU'
+    'LeakyReLU',
+    'Dropout'
 ]

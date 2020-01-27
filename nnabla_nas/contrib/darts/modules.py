@@ -1,8 +1,9 @@
+from collections import OrderedDict
+
 import nnabla.functions as F
 
 from ... import module as Mo
-from ..misc import ReLUConvBN, MixedOp
-from collections import OrderedDict
+from ..misc import MixedOp, ReLUConvBN
 
 CANDIDATE_FUNC = OrderedDict([
     ('dil_conv_3x3', lambda channels, stride, affine:
@@ -239,7 +240,7 @@ class Cell(Mo.Module):
                         out_channels=channels[2],
                         is_reduced=j < 2 and reductions[1],
                         mode=mode,
-                        alpha=alpha[len(self._blocks)],
+                        alpha=alpha[len(self._blocks)] if alpha else None,
                         affine=affine
                     )
                 )

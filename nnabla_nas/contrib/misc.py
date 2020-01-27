@@ -58,6 +58,8 @@ class DropPath(Mo.Module):
         self._drop_prob = drop_prob
 
     def call(self, input):
+        if self._drop_prob == 0:
+            return input
         mask = F.rand(shape=(input.shape[0], 1, 1, 1))
         mask = F.greater_equal_scalar(mask, self._drop_prob)
         out = F.mul_scalar(input, 1. / (1 - self._drop_prob))
