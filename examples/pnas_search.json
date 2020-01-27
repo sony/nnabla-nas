@@ -12,7 +12,7 @@
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 58600
+            "max_iter": 105469
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
