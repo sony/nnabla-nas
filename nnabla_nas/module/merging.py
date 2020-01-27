@@ -23,10 +23,12 @@ class Merging(Module):
 
     def call(self, *input):
         if self._mode == 'concat' and len(input) > 1:
-            input = F.concatenate(*input, axis=self._axis)
+            return F.concatenate(*input, axis=self._axis)
         elif self._mode == 'add':
-            input = sum(input)
-        return input
+            return sum(input)
+        else:
+            raise RuntimeError
+
 
     def __extra_repr__(self):
         return f'mode={self._mode}, axis={self._axis}'

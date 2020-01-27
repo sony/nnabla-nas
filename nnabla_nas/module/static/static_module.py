@@ -58,16 +58,16 @@ class Module(smo.Module):
         else:
             raise RuntimeError
 
-    def _shape_function(self, input_shape):
+    def _shape_function(self):
         #we build a nummy nnabla graph to infer the shapes
-        input = nn.Variable(input_shape)
+        input = nn.Variable(self.parent.shape)
         dummy_graph  = self._value_function(input)
         return dummy_graph.shape
 
     @property
     def shape(self):
         if self._shape is None:
-            self._shape = self._shape_function(self.parent.shape)
+            self._shape = self._shape_function()
         return self._shape
 
     @property
@@ -221,7 +221,7 @@ class Graph(smo.ModuleList, Module):
 
 #------------------------------------Some basic StaticModules------------------------------
 class Input(Module):
-    def __init__(self, name, value=None):
+    def __init__(self, name, value=None, *args, **kwargs):
         """
         An input op to the graph, which can store input values to propagate through the graph. If the input node has
         parent, it is the identity op, which just feeds the aggregated inputs to the output.
@@ -268,6 +268,9 @@ class Identity(smo.Identity, Module):
     def _value_function(self, input):
         return smo.Identity.call(self, input)
 
+    def call(self, clear_value=False):
+        return Module.call(self, clear_value=clear_value)
+
 class Zero(smo.Zero, Module):
     def __init__(self, name, parent, *args, **kwargs):
         smo.Zero.__init__(self, *args, **kwargs)
@@ -275,6 +278,9 @@ class Zero(smo.Zero, Module):
 
     def _value_function(self, input):
         return smo.Zero.call(self, input)
+
+    def call(self, clear_value=False):
+        return Module.call(self, clear_value=clear_value)
 
     def _eval_prob_function(self, input): #a zero operation sets the evaluation pobabilities of all parents to 0
         return {self: nn.Variable.from_numpy_array(np.array(1.0))}
@@ -418,6 +424,12 @@ class Merging(smo.Merging, Module):
     def _value_function(self, input):
         return smo.Merging.call(self,*input)
 
+    def _shape_function(self):
+        #we build a nummy nnabla graph to infer the shapes
+        inputs = [nn.Variable(pi.shape) for pi in self.parent]
+        dummy_graph  = self._value_function(inputs)
+        return dummy_graph.shape
+
     def profile(self, profiler, n_run=100):
         inputs = [nn.Variable(shape=pi.shape) for pi in self.parent]
         out = self._value_function(inputs)
@@ -525,6 +537,12 @@ class Join(Module):
                     res.update({inpii: inpi[inpii] * self._sel_p[i]})
         res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
         return res
+
+    def _shape_function(self):
+        #we build a nummy nnabla graph to infer the shapes
+        inputs = [nn.Variable(pi.shape) for pi in self.parent]
+        dummy_graph  = self._value_function(inputs)
+        return dummy_graph.shape
 
     def profile(self, profiler, n_run=100):
         inputs = [nn.Variable(shape=pi.shape) for pi in self.parent]

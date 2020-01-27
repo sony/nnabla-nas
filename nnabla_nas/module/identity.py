@@ -6,8 +6,8 @@ class Identity(Module):
     A placeholder identity operator that is argument-insensitive.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        Module.__init__(self)
 
     def call(self, input):
         return input

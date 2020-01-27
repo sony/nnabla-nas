@@ -190,7 +190,7 @@ class MixedOp(Mo.Module):
 class SepConv(Mo.DwConv):
     def __init__(self, out_channels, *args, **kwargs):
         Mo.DwConv.__init__(self, *args, **kwargs)
-        self.out_channels = out_channels
+        self._out_channels = out_channels
         self._conv_module_pw = Mo.Conv(self._in_channels, out_channels, kernel=(1, 1),
                                  pad=None, group=1, rng=self._rng, with_bias=None)
 

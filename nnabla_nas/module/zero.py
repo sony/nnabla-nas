@@ -13,8 +13,8 @@ class Zero(Module):
 
     """
 
-    def __init__(self, stride=(1, 1)):
-        super().__init__()
+    def __init__(self, stride=(1, 1), *args, **kwargs):
+        Module.__init__(self)
         self._stride = stride
 
     def call(self, input):
