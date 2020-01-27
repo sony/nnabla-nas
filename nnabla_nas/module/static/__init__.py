@@ -19,4 +19,6 @@ __all__ = [
     'Join',
     'Profiler',
     'NNablaProfiler'
+    'Merging',
+    'Join'
     ]

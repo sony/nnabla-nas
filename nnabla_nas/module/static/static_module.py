@@ -125,8 +125,10 @@ class Module(smo.Module):
         return input
 
     def profile(self, profiler, n_run=100):
+        input = nn.Variable(shape=self.parent.shape)
+        out = self._value_function(input)
         try:
-            return profiler.profile(static_module=self, n_run=n_run)
+            return profiler.profile(out, n_run=n_run)
         except:
             print("Cannot profile module {}!".format(self.name))
             return 0.0
@@ -254,6 +256,9 @@ class Input(Module):
         We are not allowed to clear the value of an input vertice!
         """
         pass
+
+    def profile(self, profiler, n_run=100):
+        return 0.0
 
 class Identity(smo.Identity, Module):
     def __init__(self, name, parent, *args, **kwargs):
@@ -413,6 +418,15 @@ class Merging(smo.Merging, Module):
     def _value_function(self, input):
         return smo.Merging.call(self,*input)
 
+    def profile(self, profiler, n_run=100):
+        inputs = [nn.Variable(shape=pi.shape) for pi in self.parent]
+        out = self._value_function(inputs)
+        try:
+            return profiler.profile(out, n_run=n_run)
+        except:
+            print("Cannot profile module {}!".format(self.name))
+            return 0.0
+
 
 class Join(Module):
     def __init__(self, name, parents, join_parameters, mode='linear', *args, **kwargs):
@@ -511,6 +525,15 @@ class Join(Module):
                     res.update({inpii: inpi[inpii] * self._sel_p[i]})
         res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
         return res
+
+    def profile(self, profiler, n_run=100):
+        inputs = [nn.Variable(shape=pi.shape) for pi in self.parent]
+        out = self._value_function(inputs)
+        try:
+            return profiler.profile(out, n_run=n_run)
+        except:
+            print("Cannot profile module {}!".format(self.name))
+            return 0.0
 
 
 if __name__ == '__main__':
