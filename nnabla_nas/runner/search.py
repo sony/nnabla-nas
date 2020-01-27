@@ -5,9 +5,10 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
+from collections import Counter
 
+from ..contrib.darts.modules import CANDIDATE_FUNC
 from .. import utils as ut
-from ..contrib.misc import MixedOp
 from ..dataset import DataLoader
 from ..dataset.cifar10 import cifar10
 from ..optimizer import Optimizer
@@ -26,6 +27,7 @@ class Searcher(object):
         self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
         self.evaluate = lambda o, t:  F.mean(F.top_n_error(o, t))
         self.w_micros = self.conf['batch_size'] // self.conf['mini_batch_size']
+        self.op_names = list(CANDIDATE_FUNC.keys())
 
         # dataset configuration
         data = cifar10(conf['mini_batch_size'], True)
@@ -144,22 +146,25 @@ class Searcher(object):
             else:
                 nn.save_parameters(model_path + '.h5',
                                    model.get_arch_parameters())
+                logger.info(self._get_statistics())
+
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
                         (cur_epoch, optim['model'].get_learning_rate(),
                          monitor['arch_err'].avg, monitor['arch_loss'].avg))
 
-            ans = []
-            for k, m in model.get_modules():
-                if isinstance(m, MixedOp):
-                    ans.append(m._active)
-
-            from collections import Counter
-            print(Counter(ans))
-
         monitor.close()
 
         return self
+
+    def _get_statistics(self):
+        stats = ''
+        ans = Counter([m._active for m in self.arch_modules])
+        total = len(self.arch_modules)
+        for k in range(len(self.op_names)):
+            name = self.op_names[k]
+            stats += name + f' = {ans[k]/total*100:.2f}%\t'
+        return stats
 
     def _reinforce_update(self, reward):
         for m in self.arch_modules:

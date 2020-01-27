@@ -10,7 +10,6 @@ from scipy.special import softmax
 from tensorboardX import SummaryWriter
 
 from .dataset.transformer import Compose, Cutout, Normalizer
-from .visualization import visualize
 
 
 class ProgressMeter(object):
