@@ -101,13 +101,16 @@ class Module(smo.Module):
         self._value = None
 
     def call(self, clear_value=False):
-        print("calling "+self.name)
+        print("calling "+self.name+ " with parent {}".format(self.parent))
         if clear_value:
             self.clear_value()
 
         if self._value is None:
             self._value = self._value_function(self.parent(clear_value))
         return self._value
+
+    def __call__(self, *args, **kargs):
+        return self.call(*args, **kargs)
 
     def clear_eval_probs(self):
         self._eval_probs = None
@@ -259,6 +262,7 @@ class Input(Module):
 
     def profile(self, profiler, n_run=100):
         return 0.0
+
 
 class Identity(smo.Identity, Module):
     def __init__(self, name, parent, *args, **kwargs):
@@ -513,7 +517,6 @@ class Join(Module):
         print("calling "+self.name)
         if clear_value:
             self.clear_value()
-
         if self._value is None:
             self._value = self._value_function([pi(clear_value) for pi in self.parent])
         return self._value
@@ -560,7 +563,7 @@ if __name__ == '__main__':
         def __init__(self, name, parents):
             Graph.__init__(self, name=name, parents=parents)
             self.append(Input(name='input_2', value=nn.Variable((10,20,32,32))))
-            self.append(SepConv(name='conv', parent=self[-1], in_channels=20, out_channels=20, kernel=(3,3), pad=(1,1)))
+            self.append(Conv(name='conv', parent=self[-1], in_channels=20, out_channels=20, kernel=(3,3), pad=(1,1)))
             self.append(Input(name='input_3', value=nn.Variable((10,20,32,32))))
             self.append(Join(name='concat',
                              parents=self,
