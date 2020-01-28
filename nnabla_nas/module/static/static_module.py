@@ -9,7 +9,7 @@ import nnabla.functions as F
 from nnabla.initializer import (ConstantInitializer, UniformInitializer,
                                 calc_uniform_lim_glorot)
 from nnabla_nas.module.parameter import Parameter
-import nnabla_nas.module as smo
+import nnabla_nas.module as mo
 import nnabla_nas.contrib.misc as misc
 import operator
 
@@ -22,9 +22,8 @@ def _get_abs_string_index(obj, idx):
         idx += len(obj)
     return str(idx)
 
-class Module(smo.Module):
+class Module(mo.Module):
     def __init__(self, name, parent, *args, **kwargs):
-        print('init {}'.format(name))
         """
         A vertice is a computational node in a DNN architecture.
         It has a unique name, and a reference to a graph object where it lives in.
@@ -46,7 +45,7 @@ class Module(smo.Module):
         self._eval_probs    = None
         self._shape         = None
 
-        smo.Module.__init__(self)
+        mo.Module.__init__(self)
 
     def add_child(self, child):
         self._children.append(child)
@@ -83,7 +82,6 @@ class Module(smo.Module):
         The parent vertices of this vertice (all vertices which are connected
         with incoming edges).
         """
-        #import pdb; pdb.set_trace()
         return self._parent
 
     @property
@@ -101,7 +99,6 @@ class Module(smo.Module):
         self._value = None
 
     def call(self, clear_value=False):
-        print("calling "+self.name+ " with parent {}".format(self.parent))
         if clear_value:
             self.clear_value()
 
@@ -157,10 +154,10 @@ class Module(smo.Module):
         return bitwidth * np.prod(self.shape) / div
 
 #------------------------------------A graph of StaticModules--------------------------------------
-class Graph(smo.ModuleList, Module):
+class Graph(mo.ModuleList, Module):
     # Graph is derived from Op, such that we can realize nested graphs!
     def __init__(self, name, parents, *args, **kwargs):
-        smo.ModuleList.__init__(self, *args, **kwargs)
+        mo.ModuleList.__init__(self, *args, **kwargs)
         Module.__init__(self, name=name, parent=parents)
         self._output = None
 
@@ -264,24 +261,24 @@ class Input(Module):
         return 0.0
 
 
-class Identity(smo.Identity, Module):
+class Identity(mo.Identity, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.Identity.__init__(self, *args, **kwargs)
+        mo.Identity.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.Identity.call(self, input)
+        return mo.Identity.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
-class Zero(smo.Zero, Module):
+class Zero(mo.Zero, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.Zero.__init__(self, *args, **kwargs)
+        mo.Zero.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.Zero.call(self, input)
+        return mo.Zero.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
@@ -289,24 +286,24 @@ class Zero(smo.Zero, Module):
     def _eval_prob_function(self, input): #a zero operation sets the evaluation pobabilities of all parents to 0
         return {self: nn.Variable.from_numpy_array(np.array(1.0))}
 
-class Conv(smo.Conv, Module):
+class Conv(mo.Conv, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.Conv.__init__(self, *args, **kwargs)
+        mo.Conv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.Conv.call(self, input) #change to self.call
+        return mo.Conv.call(self, input) #change to self.call
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
-class DwConv(smo.DwConv, Module):
+class DwConv(mo.DwConv, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.DwConv.__init__(self, *args, **kwargs)
+        mo.DwConv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.DwConv.call(self, input)
+        return mo.DwConv.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
@@ -322,64 +319,64 @@ class SepConv(misc.SepConv, Module):
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
-class MaxPool(smo.MaxPool, Module):
+class MaxPool(mo.MaxPool, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.MaxPool.__init__(self, *args, **kwargs)
+        mo.MaxPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.MaxPool.call(self, input)
+        return mo.MaxPool.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
-class AvgPool(smo.AvgPool, Module):
+class AvgPool(mo.AvgPool, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.AvgPool.__init__(self, *args, **kwargs)
+        mo.AvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.AvgPool.call(self, input)
+        return mo.AvgPool.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
-class GlobalAvgPool(smo.GlobalAvgPool, Module):
+class GlobalAvgPool(mo.GlobalAvgPool, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.GlobalAvgPool.__init__(self, *args, **kwargs)
+        mo.GlobalAvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.GlobalAvgPool.call(self, input)
+        return mo.GlobalAvgPool.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
-class ReLU(smo.ReLU, Module):
+class ReLU(mo.ReLU, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.ReLU.__init__(self, *args, **kwargs)
+        mo.ReLU.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.ReLU.call(self, input)
+        return mo.ReLU.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
-class BatchNormalization(smo.BatchNormalization, Module):
+class BatchNormalization(mo.BatchNormalization, Module):
     def __init__(self, name, parent, *args, **kwargs):
-        smo.BatchNormalization.__init__(self, *args, **kwargs)
+        mo.BatchNormalization.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return smo.BatchNormalization.call(self, input)
+        return mo.BatchNormalization.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
-class Merging(smo.Merging, Module):
+class Merging(mo.Merging, Module):
     def __init__(self, name, parents, mode, axis=1):
-        smo.Merging.__init__(self, mode, axis)
+        mo.Merging.__init__(self, mode, axis)
         Module.__init__(self, name, parents)
 
     def _init_parent(self, parent):
@@ -394,7 +391,6 @@ class Merging(smo.Merging, Module):
             raise Exception('At least one provided parent is not a static module!')
 
     def call(self, clear_value=False):
-        print("calling "+self.name)
         if clear_value:
             self.clear_value()
 
@@ -426,7 +422,7 @@ class Merging(smo.Merging, Module):
         return res
 
     def _value_function(self, input):
-        return smo.Merging.call(self,*input)
+        return mo.Merging.call(self,*input)
 
     def _shape_function(self):
         #we build a nummy nnabla graph to infer the shapes
@@ -514,7 +510,6 @@ class Join(Module):
         return res
 
     def call(self, clear_value=False):
-        print("calling "+self.name)
         if clear_value:
             self.clear_value()
         if self._value is None:
