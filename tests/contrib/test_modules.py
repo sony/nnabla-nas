@@ -1,9 +1,9 @@
 import nnabla as nn
 import nnabla.parametric_functions as PF
-
 import pytest
+
 from nnabla_nas import module as Mo
-from nnabla_nas.contrib import darts as Da
+from nnabla_nas.contrib.darts.modules import FactorizedReduce
 
 
 @pytest.mark.parametrize('batch_size', [8, 16, 32])
@@ -12,7 +12,7 @@ from nnabla_nas.contrib import darts as Da
 @pytest.mark.parametrize('width', [8, 16, 32])
 @pytest.mark.parametrize('height', [8, 16, 32])
 def test_FactorizeReduce(batch_size, in_channels, out_channels, width, height):
-    m = Da.FactorizedReduce(in_channels=in_channels, out_channels=out_channels)
+    m = FactorizedReduce(in_channels=in_channels, out_channels=out_channels)
     x = nn.Variable([batch_size, in_channels, width, height])
     assert m(x).shape == (batch_size, out_channels, width // 2, height // 2)
 
@@ -23,7 +23,8 @@ def test_FactorizeReduce(batch_size, in_channels, out_channels, width, height):
 @pytest.mark.parametrize('kernel', [(3, 3), (5, 5)])
 @pytest.mark.parametrize('stride', [(1, 1), (2, 2)])
 @pytest.mark.parametrize('pad', [(0, 0), (1, 1), (2, 2)])
-def test_Convolution(batch_size, in_channels, out_channels, kernel, stride, pad):
+def test_Convolution(batch_size, in_channels, out_channels, kernel, stride,
+                     pad):
     nn.clear_parameters()
     x = nn.Variable([batch_size, in_channels, 64, 64])
     m = Mo.Conv(in_channels=in_channels, out_channels=out_channels,

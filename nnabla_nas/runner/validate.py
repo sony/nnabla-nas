@@ -2,7 +2,6 @@ import os
 
 import nnabla as nn
 import nnabla.functions as F
-import nnabla.solvers as S
 import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
 from tqdm import tqdm
@@ -11,48 +10,43 @@ import nnabla_nas.utils as ut
 from nnabla_nas.dataset import DataLoader
 from nnabla_nas.dataset.cifar10 import cifar10
 from nnabla_nas.optimizer import Optimizer
-import numpy as np
 
 
 class Trainer(object):
 
     def __init__(self, model, conf):
-        # dataset loader setup
-        train_transform, valid_transform = ut.dataset_transformer(conf)
-        self.train_loader = DataLoader(
-            cifar10(conf['batch_size_train'], True, shuffle=True),
-            train_transform
-        )
-        self.valid_loader = DataLoader(
-            cifar10(conf['batch_size_valid'], False, shuffle=False),
-            valid_transform
-        )
-
-        # solver configurations
-        model_solver = S.__dict__[conf['model_optim']](conf['model_lr'])
-        max_iter = conf['epoch'] * len(self.train_loader) // conf['batch_size']
-        lr_scheduler = LRS.__dict__[conf['model_lr_scheduler']](
-            conf['model_lr'],
-            max_iter=max_iter  # this is for CosineScheduler
-        )
-        self.optimizer = Optimizer(
-            solver=model_solver,
-            grad_clip=conf['model_grad_clip_value'] if
-            conf['model_with_grad_clip'] else None,
-            weight_decay=conf['model_weight_decay'],
-            lr_scheduler=lr_scheduler
-        )
-
-        if not conf['shared_params']:
-            model.load_parameters(conf['arch'] + '.h5')
-            # preparing to sample one graph
-            for module in model.get_arch_modues():
-                module._mode = 'max'
-                module._update_active_idx()
-
         self.model = model
         self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
+        self.evaluate = lambda o, t:  F.mean(F.top_n_error(o, t))
         self.conf = conf
+
+        # dataloader
+        train_transform, valid_transform = ut.dataset_transformer(conf)
+        self.loader = {
+            'train': DataLoader(
+                cifar10(conf['batch_size_train'], True, shuffle=True),
+                train_transform
+            ),
+            'valid': DataLoader(
+                cifar10(conf['batch_size_valid'], False, shuffle=False),
+                valid_transform
+            )
+        }
+
+        # solver configurations
+        optim = conf['optimizer'].copy()
+        lr_scheduler = ut.get_object_from_dict(
+            module=LRS.__dict__,
+            args=optim.pop('lr_scheduler', None)
+        )
+        solver = optim['solver']
+        self.optimizer = Optimizer(
+            retain_state=False,
+            weight_decay=optim.pop('weight_decay', None),
+            grad_clip=optim.pop('grad_clip', None),
+            lr_scheduler=lr_scheduler,
+            name=solver.pop('name'), **solver
+        )
 
     def run(self):
         """Run the training process."""
@@ -60,109 +54,97 @@ class Trainer(object):
         model = self.model
         optimizer = self.optimizer
         criteria = self.criteria
-        save_path = os.path.join(conf['model_save_path'], conf['model_name'])
+        evaluate = self.evaluate
+        save_path = os.path.join(conf['output_path'], conf['model_name'])
 
         valid_size = conf['batch_size_valid']
         train_size = conf['batch_size_train']
         batch_size = conf['batch_size']
 
-        assert len(self.valid_loader) % valid_size == 0
+        assert len(self.loader['valid']) % valid_size == 0
 
         n_micros = batch_size // train_size
-        one_train_epoch = len(self.train_loader) // batch_size
-        one_valid_epoch = len(self.valid_loader) // valid_size
+        one_train_epoch = len(self.loader['train']) // batch_size
+        one_valid_epoch = len(self.loader['valid']) // valid_size
         aux_weight = conf['auxiliary_weight'] / n_micros
 
         # monitor the training process
-        monitor = ut.get_standard_monitor(
-            one_train_epoch, conf['monitor_path'])
+        monitor = ut.ProgressMeter(one_train_epoch, path=conf['output_path'])
 
         # write out the configuration
-        log_path = os.path.join(conf['monitor_path'], 'train_config.json')
+        log_path = os.path.join(conf['output_path'], 'train_config.json')
         logger.info('Experimental settings are saved to ' + log_path)
         ut.write_to_json_file(content=conf, file_path=log_path)
 
         # sample one graph for training
-        model.train()
-        train_input = nn.Variable(model.input_shape)
+        model.apply(training=True)
+        train_input = nn.Variable((train_size, 3, 32, 32))
         train_target = nn.Variable((train_size, 1))
         train_out, aux_out = model(ut.image_augmentation(train_input))
+        train_out.apply(persistent=True)
         train_loss = criteria(train_out, train_target)/n_micros
+        train_err = evaluate(train_out.get_unlinked_variable(), train_target)
         if conf['auxiliary']:
             train_loss += aux_weight*criteria(aux_out, train_target)
-        train_loss.persistent = True
-        train_out.persistent = True
-
+        train_loss.apply(persistent=True)
+        train_err.apply(persistent=True)
         # assign parameters
-        optimizer.set_parameters(
-            params=model.get_net_parameters(grad_only=True),
-            reset=False, retain_state=True
-        )
+        optimizer.set_parameters(model.get_parameters(grad_only=True))
 
         # print a summary
         model_size = ut.get_params_size(optimizer.get_parameters())
-        aux_size = ut.get_params_size(model._auxiliary_head.get_parameters())
+        aux_size = ut.get_params_size(
+            model._auxiliary_head.get_parameters()) if conf['auxiliary'] else 0
         model_size = (model_size - aux_size) / 1e6
         logger.info('Model size = {:.6f} MB'.format(model_size))
 
         # sample a graph for validating
-        model.eval()
-        valid_input = nn.Variable((valid_size,) + model.input_shape[1:])
+        model.apply(training=False)
+        valid_input = nn.Variable((valid_size, 3, 32, 32))
         valid_target = nn.Variable((valid_size, 1))
-        valid_output, _ = model(valid_input)
-        valid_loss = criteria(valid_output, valid_target)
-        valid_output.persistent = True
-        valid_loss.persistent = True
-        valid_output.need_grad = False
+        valid_out, _ = model(valid_input)
+        valid_out.apply(persistent=True)
+        valid_out.apply(need_grad=False)
+        valid_loss = criteria(valid_out, valid_target)
+        valid_err = evaluate(valid_out.get_unlinked_variable(), valid_target)
+        valid_loss.apply(persistent=True)
+        valid_err.apply(persistent=True)
         best_error = 1.0
-
-        # set dropout rate in advance
-        nn.parameter.get_parameter_or_create(
-            "drop_rate", shape=(1, 1, 1, 1), need_grad=False)
-        drop_rate = nn.Variable.from_numpy_array(
-            np.array([conf['drop_path_prob']]).reshape(1, 1, 1, 1)
-        )
-        nn.parameter.set_parameter("drop_rate", drop_rate)
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-            # adjusting the drop path rate
-            curr_drop = F.mul_scalar(drop_rate, cur_epoch/conf['epoch'])
-            nn.parameter.set_parameter("drop_rate", curr_drop)
 
             for i in range(one_train_epoch):
-                curr_iter = i + one_train_epoch*cur_epoch
-
                 # training model parameters
                 optimizer.zero_grad()
                 for _ in range(n_micros):
-                    train_input.d, train_target.d = self.train_loader.next()
+                    train_input.d, train_target.d = self.loader['train'].next()
                     train_loss.forward(clear_no_need_grad=True)
                     train_loss.backward(clear_buffer=True)
-                    error = ut.categorical_error(train_out.d, train_target.d)
+                    train_err.forward(clear_buffer=True)
                     loss = train_loss.d.copy()
-                    monitor['train_loss'].update(loss * n_micros, train_size)
-                    monitor['train_err'].update(error, train_size)
-                optimizer.update(curr_iter)
+                    monitor.update('train_loss', loss * n_micros, train_size)
+                    monitor.update('train_err', train_err.d.copy(), train_size)
+                optimizer.update()
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i, ['train_loss', 'train_err'])
 
             # compute the validation error
             for i in tqdm(range(one_valid_epoch)):
-                valid_input.d, valid_target.d = self.valid_loader.next()
+                valid_input.d, valid_target.d = self.loader['valid'].next()
                 valid_loss.forward(clear_buffer=True)
-                error = ut.categorical_error(valid_output.d, valid_target.d)
-                monitor['valid_loss'].update(valid_loss.d.copy(), valid_size)
-                monitor['valid_err'].update(error, valid_size)
+                valid_err.forward(clear_buffer=True)
+                monitor.update('valid_loss', valid_loss.d.copy(), valid_size)
+                monitor.update('valid_err', valid_err.d.copy(), valid_size)
 
             if monitor['valid_err'].avg < best_error:
                 best_error = monitor['valid_err'].avg
-                model.save_parameters(save_path)
+                nn.save_parameters(save_path, model.get_parameters())
 
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
-                        (cur_epoch, optimizer.get_learning_rate(curr_iter),
+                        (cur_epoch, optimizer.get_learning_rate(),
                          monitor['valid_err'].avg, monitor['valid_loss'].avg))
 
         monitor.close()

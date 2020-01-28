@@ -1,3 +1,3 @@
-from .darts import Darts, NetworkCIFAR
+from . import darts, pnas
 
-__all__ = ['Darts', 'NetworkCIFAR']
+__all__ = ['darts', 'pnas']

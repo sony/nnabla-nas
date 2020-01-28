@@ -1,203 +1,168 @@
 from collections import OrderedDict
 
 import nnabla as nn
-import nnabla.functions as F
 
 from .parameter import Parameter
 
 
 class Module(object):
+    r"""Module base for all nnabla neural network modules."""
 
-    def __init__(self):
-        self.need_grad = True
-        self.training = True
+    @property
+    def modules(self):
+        r"""Return an `OrderedDict` containing immediate modules."""
+        if '_modules' not in self.__dict__:
+            self.__dict__['_modules'] = OrderedDict()
+        return self._modules
 
-    def update_grad(self, mode=True, memo=None):
-        """Update need_grad."""
-        if memo is None:
-            memo = set()
+    @property
+    def parameters(self):
+        r"""Return an `OrderedDict` containing immediate parameters."""
+        if '_parameters' not in self.__dict__:
+            self.__dict__['_parameters'] = OrderedDict()
+        return self._parameters
 
-        if self.need_grad != mode and self not in memo:
-            memo.add(self)
-            # update grads for the current module
-            self.need_grad = mode
-            for v in self.__dict__.values():
-                if isinstance(v, Parameter):
-                    v.need_grad = mode
-            # update its children
-            for module in self.children():
-                module.update_grad(mode, memo)
+    @property
+    def training(self):
+        r"""The training mode of module."""
+        if '_training' not in self.__dict__:
+            self.__dict__['_training'] = True
+        return self._training
 
-        return self
-
-    def train(self, mode=True):
-        r"""Sets the module in training mode.
-        This has any effect only on certain modules. See documentations of
-        particular modules for details of their behaviors in training or
-        evaluation mode, if they are affected, e.g. :class:`Dropout`,
-        :class:`BatchNormalization`,
-        etc.
-        Args:
-            mode (bool): whether to set training mode (``True``) or evaluation
-                         mode (``False``). Default: ``True``.
-        Returns:
-            Module: self
-        """
-        self.training = mode
-        for _, module in self.get_modules():
+    @training.setter
+    def training(self, mode):
+        setattr(self, '_training', mode)
+        for module in self.modules.values():
             module.training = mode
-        return self
 
-    def eval(self):
-        r"""Sets the module in evaluation mode.
-        This has any effect only on certain modules. See documentations of
-        particular modules for details of their behaviors in training or
-        evaluation mode, if they are affected, e.g. :class:`Dropout`,
-        :class:`BatchNorm`, etc.
-        This is equivalent with :meth:`self.train(False)`.
-        Returns:
-            Module: self
-        """
-        return self.train(False)
+
+    @property
+    def need_grad(self):
+        r"""Whether the module needs gradient."""
+        if '_need_grad' not in self.__dict__:
+            self.__dict__['_need_grad'] = True
+        return self._need_grad
+
+    @need_grad.setter
+    def need_grad(self, mode):
+        setattr(self, '_need_grad', mode)
+        for module in self.modules.values():
+            module.need_grad = mode
+
+    @property
+    def inputs(self):
+        r"""Return a list of inputs used during `call` function."""
+        if '_inputs' not in self.__dict__:
+            self.__dict__['_inputs'] = list()
+        return self._inputs
+
+    @inputs.setter
+    def inputs(self, v):
+        setattr(self, '_inputs', v)
+
+    def __getattr__(self, name):
+        if name in self.modules:
+            return self.modules[name]
+        if name in self.parameters:
+            return self.parameters[name]
+        return object.__getattr__(self, name)
+
+    def __setattr__(self, name, value):
+        def remove_from(*dicts):
+            for d in dicts:
+                d.pop(name, None)
+        remove_from(self.__dict__, self.modules, self.parameters)
+        if isinstance(value, Module):
+            self.modules[name] = value
+        elif isinstance(value, Parameter):
+            self.parameters[name] = value
+        else:  # avoid conflict with property
+            object.__setattr__(self, name, value)
+
+    def __delattr__(self, name):
+        if name in self.parameters:
+            del self.parameters[name]
+        elif name in self.modules:
+            del self.modules[name]
+        else:
+            object.__delattr__(self, name)
+
+    def apply(self, **kargs):
+        r"""Helper for setting property, then return self."""
+        for key, value in kargs.items():
+            setattr(self, key, value)
+        return self
 
     def get_modules(self, prefix='', memo=None):
+        r"""Return an iterator over all modules in the network, yielding
+        both the name of the module as well as the module itself."""
         if memo is None:
             memo = set()
         if self not in memo:
             memo.add(self)
-            yield (prefix, self)
-            for name, module in self.__dict__.items():
-                if not isinstance(module, Module) or module in memo:
+            yield prefix, self
+            for name, module in self.modules.items():
+                if module is None:
                     continue
-                sub_prefix = '{}/{}'.format(prefix,
-                                            name) if prefix != '' else name
-                for m in module.get_modules(sub_prefix, memo):
+                submodule_prefix = prefix + ('/' if prefix else '') + name
+                for m in module.get_modules(submodule_prefix, memo):
                     yield m
 
     def get_parameters(self, grad_only=False):
+        r"""Return an `OrderedDict` containing all parameters in the module."""
         params = OrderedDict()
-        for (prefix, module) in self.get_modules():
+        for prefix, module in self.get_modules():
             if grad_only and not module.need_grad:
                 continue
-            for k, v in module.__dict__.items():
-                if not isinstance(v, Parameter):
+            for name, p in module.parameters.items():
+                if grad_only and not p.need_grad:
                     continue
-                name = '{}/{}'.format(prefix, k)
-                if grad_only and not v.need_grad:
-                    continue
-                params[name] = v
+                key = prefix + ('/' if prefix else '') + name
+                params[key] = p
         return params
 
-    def save_parameters(self, path, params=None, grad_only=False):
-        """Save all parameters into a file with the specified format.
-        Currently hdf5 and protobuf formats are supported.
-        Args:
-            path : path or file object
-            grad_only (bool, optional): Return parameters with `need_grad`
-                option as `True`.
-        """
-        params = params or self.get_parameters(grad_only=grad_only)
-        nn.save_parameters(path, params)
-
-    def load_parameters(self, path):
-        """Load parameters from a file with the specified format.
-        Args:
-            path : path or file object
-        """
-        nn.load_parameters(path)
-        for v in self.get_modules():
-            if not isinstance(v, tuple):
-                continue
-            prefix, module = v
-            for k, v in module.__dict__.items():
-                if not isinstance(v, Parameter):
-                    continue
-                pname = k
-                name = "{}/{}".format(prefix, pname)
-                # Substitute
-                param0 = v
-                param1 = nn.parameter.pop_parameter(name)
-                if param0 is None:
+    def set_parameters(self, params, raise_if_missing=False):
+        r"""Set parameters for the module."""
+        for prefix, module in self.get_modules():
+            for name, p in module.parameters.items():
+                key = prefix + ('/' if prefix else '') + name
+                if key in params:
+                    p.d = params[key].d.copy()
+                    nn.logger.info(f'`{key}` loaded.)')
+                elif raise_if_missing:
                     raise ValueError(
-                        "Model does not have {} parameter.".format(name))
-                if param1:
-                    param0.d = param1.d.copy()
-                    nn.logger.info("`{}` loaded.)".format(name))
+                        f'A child module {name} cannot be found in '
+                        '{this}. This error is raised because '
+                        '`raise_if_missing` is specified '
+                        'as True. Please turn off if you allow it.')
+        return self
 
-    def __call__(self, *input):
+    def __key_format__(self, key):
+        r"""Set the submodule representation."""
+        return f'.{key}'
+
+    def __extra_repr__(self):
+        r"""Set the extra representation for the module."""
+        return ''
+
+    def __repr__(self):
+        r"""Return str representtation of the module."""
+        main_str = f'{self.__class__.__name__}(' + self.__extra_repr__()
+        sub_str = ''
+        for key, module in self.modules.items():
+            m_repr = repr(module).split('\n')
+            head = [self.__key_format__(key) + ': ' + m_repr.pop(0)]
+            tail = [m_repr.pop()] if len(m_repr) else []
+            m_repr = [' '*2 + line for line in (head + m_repr + tail)]
+            sub_str += '\n' + '\n'.join(m_repr)
+        main_str += sub_str + ('\n' if sub_str else '') + ')'
+        return main_str
+
+    def __call__(self, *args, **kargs):
+        self.inputs = [x.shape for x in args]
+        return self.call(*args, **kargs)
+
+    def call(self, *args, **kargs):
+        r"""Implement the call of module. Inmediate inputs should only be
+        Variables."""
         raise NotImplementedError
-
-
-class ModuleList(Module):
-    def __init__(self, modules=None):
-        Module.__init__(self)
-        if modules is None:
-            modules = []
-        self._modules = modules
-
-    def add_module(self, module):
-        self._modules.append(module)
-
-    def __getitem__(self, idx):
-        return self._modules[idx]
-
-    def __len__(self):
-        return len(self._modules)
-
-    def __iter__(self):
-        return iter(self._modules)
-
-    def __call__(self, input, axis=0):
-        return F.stack(*[m(input) for m in self._modules], axis=axis)
-
-    def get_modules(self, prefix='', memo=None):
-        if memo is None:
-            memo = set()
-        if self not in memo:
-            memo.add(self)
-            yield prefix, self
-            for i, module in enumerate(self._modules):
-                name = prefix + '/_modules/{}'.format(i)
-                yield from module.get_modules(name, memo)
-
-class ModuleDict(Module):
-    def __init__(self, modules=None):
-        super().__init__()
-        if modules is None:
-            modules = OrderedDict()
-        self._modules = modules
-
-    def add_module(self, key, module):
-        self._modules[key] = module
-
-    def __getitem__(self, key):
-        return self._modules[key]
-
-    def __len__(self):
-        return len(self._modules)
-
-    def __iter__(self):
-        return iter(self._modules)
-
-    def get_modules(self, prefix='', memo=None):
-        if memo is None:
-            memo = set()
-        if self not in memo:
-            memo.add(self)
-            yield prefix, self
-            for module in self._modules:
-                name = prefix + '/_modules/{}'.format(module)
-                yield from self._modules[module].get_modules(name, memo)
-
-
-class Sequential(ModuleList):
-    def __init__(self, *args):
-        super().__init__([])
-        for module in args:
-            self._modules.append(module)
-
-    def __call__(self, input):
-        out = input
-        for module in self._modules:
-            out = module(out)
-        return out

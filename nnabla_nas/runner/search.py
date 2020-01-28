@@ -1,184 +1,209 @@
 import os
+from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
-import nnabla.solvers as S
 import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
+from collections import Counter
 
-import nnabla_nas.utils as ut
-from nnabla_nas.dataset import DataLoader
-from nnabla_nas.dataset.cifar10 import cifar10
-from nnabla_nas.optimizer import Optimizer
-
+from ..contrib.darts.modules import CANDIDATE_FUNC
+from .. import utils as ut
+from ..dataset import DataLoader
+from ..dataset.cifar10 import cifar10
+from ..optimizer import Optimizer
 from ..visualization import visualize
 
 
 class Searcher(object):
+    """
+    Searching the best architecture.
+    """
 
     def __init__(self, model, conf):
+        self.model = model
+        self.arch_modules = model.get_arch_modules()
+        self.conf = conf
+        self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
+        self.evaluate = lambda o, t:  F.mean(F.top_n_error(o, t))
+        self.w_micros = self.conf['batch_size'] // self.conf['mini_batch_size']
+        self.op_names = list(CANDIDATE_FUNC.keys())
+
         # dataset configuration
-        data = cifar10(conf['batch_size_train'], True)
-        # list of transformers
+        data = cifar10(conf['mini_batch_size'], True)
         train_transform, valid_transform = ut.dataset_transformer(conf)
         split = int(conf['train_portion'] * data.size)
-        self.train_loader = DataLoader(
-            data.slice(rng=None, slice_start=0, slice_end=split),
-            train_transform
-        )
-        self.valid_loader = DataLoader(
-            data.slice(rng=None, slice_start=split, slice_end=data.size),
-            valid_transform
-        )
+
+        self.loader = {
+            'model': DataLoader(
+                data.slice(rng=None, slice_start=0, slice_end=split),
+                train_transform
+            ),
+            'arch': DataLoader(
+                data.slice(rng=None, slice_start=split, slice_end=data.size),
+                valid_transform
+            )
+        }
 
         # solver configurations
-        model_solver = S.__dict__[conf['model_optim']](conf['model_lr'])
-        arch_solver = S.__dict__[conf['arch_optim']](conf['arch_lr'],
-                                                     beta1=0.5, beta2=0.999)
-        lr_scheduler = LRS.__dict__[conf['model_lr_scheduler']](
-            conf['model_lr'],
-            conf['epoch']*len(self.train_loader)//conf['batch_size']
-        )
-        self.model_optim = Optimizer(
-            solver=model_solver,
-            grad_clip=conf['model_grad_clip_value'] if
-            conf['model_with_grad_clip'] else None,
-            weight_decay=conf['model_weight_decay'],
-            lr_scheduler=lr_scheduler
-        )
-        self.arch_optim = Optimizer(
-            solver=arch_solver,
-            grad_clip=conf['arch_grad_clip_value'] if
-            conf['arch_with_grad_clip'] else None,
-            weight_decay=conf['arch_weight_decay']
-        )
+        self.optimizer = dict()
+        for key in ['model', 'arch']:
+            optim = conf[key + '_optimizer'].copy()
+            lr_scheduler = ut.get_object_from_dict(
+                module=LRS.__dict__,
+                args=optim.pop('lr_scheduler', None)
+            )
+            solver = optim['solver']
+            self.optimizer[key] = Optimizer(
+                retain_state=conf['network']['name'] == 'pnas',
+                weight_decay=optim.pop('weight_decay', None),
+                grad_clip=optim.pop('grad_clip', None),
+                lr_scheduler=lr_scheduler,
+                name=solver.pop('name'), **solver
+            )
 
-        self.model = model
-        self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
-        self.conf = conf
+        # placeholders
+        self.placeholder = OrderedDict({
+            'model': {
+                'input':  nn.Variable((conf['mini_batch_size'], 3, 32, 32)),
+                'target': nn.Variable((conf['mini_batch_size'], 1))
+            },
+            'arch': {
+                'input': nn.Variable((conf['mini_batch_size'], 3, 32, 32)),
+                'target': nn.Variable((conf['mini_batch_size'], 1))
+            }
+        })
 
     def run(self):
         """Run the training process."""
         conf = self.conf
         model = self.model
-        model_optim = self.model_optim
-        arch_optim = self.arch_optim
-        model_path = os.path.join(conf['model_save_path'], conf['model_name'])
-        arch_file = model_path + '.json'
-        log_path = os.path.join(conf['monitor_path'], 'search_config.json')
+        optim = self.optimizer
+        one_epoch = len(self.loader['model']) // conf['batch_size']
 
-        train_size = conf['batch_size_train']
-        valid_size = conf['batch_size_valid']
-        batch_size = conf['batch_size']
-        one_train_epoch = len(self.train_loader) // batch_size
+        out_path = conf['output_path']
+        model_path = os.path.join(out_path, conf['model_name'])
+        log_path = os.path.join(out_path, 'search_config.json')
+        arch_file = model_path + '.json'
         warmup = conf['warmup']
-        train_micros = batch_size // train_size
-        valid_micros = batch_size // valid_size
+        need_resample = conf['network']['name'] == 'pnas'
 
         # monitor the training process
-        monitor = ut.get_standard_monitor(
-            one_train_epoch, conf['monitor_path'])
-
+        monitor = ut.ProgressMeter(one_epoch, path=out_path)
         logger.info('Experimental settings are saved to ' + log_path)
         ut.write_to_json_file(content=conf, file_path=log_path)
 
-        arch_modules = model.get_arch_modues()  # avoid run through all modules
-
-        # build a graph for training
-        model.train()
-        train_input = nn.Variable(model.input_shape)
-        train_target = nn.Variable((train_size, 1))
-        train_out = model(ut.image_augmentation(train_input))
-        train_loss = self.criteria(train_out, train_target)/train_micros
-        train_out.persistent = True
-        train_loss.persistent = True
-
-        # assigning parameters
-        model_optim.set_parameters(
-            params=model.get_net_parameters(grad_only=True),
-            reset=False, retain_state=True
-        )
-        arch_optim.set_parameters(
-            params=model.get_arch_parameters(grad_only=True),
-            reset=False, retain_state=True
-        )
-
-        # input and target variables for validating
-        model.eval()
-        valid_input = nn.Variable((valid_size, ) + model.input_shape[1:])
-        valid_target = nn.Variable((valid_size, 1))
-        valid_out = model(valid_input)
-        valid_loss = self.criteria(valid_out, valid_target)/valid_micros
-        valid_out.persistent = True
-        valid_loss.persistent = True
-
-        # whether we need to sample everytime
-        requires_sample = conf['mode'] == 'sample'
+        # sample computational graphs
+        self._sample(verbose=True)
 
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
 
-            for i in range(one_train_epoch):
-                curr_iter = i + one_train_epoch * cur_epoch
-                if requires_sample:
-                    # sample an architecture
-                    for m in arch_modules:
-                        m._update_active_idx()
+            for i in range(one_epoch):
+                if need_resample:
+                    self._sample()
 
-                # model update
-                model_optim.zero_grad()
-                for _ in range(train_micros):
-                    train_input.d, train_target.d = self.train_loader.next()
-                    train_loss.forward(clear_no_need_grad=True)
-                    train_loss.backward(clear_buffer=True)
-                    error = ut.categorical_error(train_out.d, train_target.d)
-                    loss = train_loss.d.copy()
-                    monitor['train_loss'].update(loss*train_micros, train_size)
-                    monitor['train_err'].update(error, train_size)
-                model_optim.update(curr_iter)
+                reward = 0
+                for mode, ph in self.placeholder.items():
+                    optim[mode].zero_grad()
+                    training = (mode == 'model')
 
-                # architecture update
-                arch_optim.zero_grad()
-                for _ in range(valid_micros):
-                    valid_input.d, valid_target.d = self.valid_loader.next()
-                    valid_loss.forward(clear_no_need_grad=True)
-                    error = ut.categorical_error(valid_out.d, valid_target.d)
-                    loss = valid_loss.d.copy()
-                    monitor['valid_loss'].update(loss*valid_micros, valid_size)
-                    monitor['valid_err'].update(error, valid_size)
-                    if warmup == 0 and not requires_sample:
-                        valid_loss.backward(clear_buffer=True)
-                if warmup == 0:
-                    if requires_sample:
-                        # compute gradients
-                        for m in arch_modules:
-                            m._update_alpha_grad()
-                        # perform control variate
-                        for v in arch_optim.get_parameters().values():
-                            v.g *= loss - conf['control_variate']
-                    arch_optim.update(curr_iter)
+                    for _ in range(self.w_micros):
+                        ph['input'].d, ph['target'].d = self.loader[mode].next()
+                        ph['loss'].forward(clear_no_need_grad=True)
+                        ph['err'].forward(clear_buffer=True)
+                        if training or not need_resample:
+                            ph['loss'].backward(clear_buffer=True)
+
+                        error = ph['err'].d.copy()
+                        loss = ph['loss'].d.copy()
+
+                        monitor.update(mode + '_loss', loss * self.w_micros,
+                                       conf['mini_batch_size'])
+                        monitor.update(mode + '_err', error,
+                                       conf['mini_batch_size'])
+
+                        # compute reward for reinfoce update
+                        reward += (1-training) * loss
+
+                    # update the model parameters or arch parameters for DARTS
+                    if training or (warmup == 0 and not need_resample):
+                        optim[mode].update()
+
+                if warmup == 0 and need_resample:
+                    self._reinforce_update(reward)
+                    optim['arch'].update()
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i)
 
-            # saving the architecture parameters
-            if conf['shared_params']:
-                ut.save_dart_arch(model, arch_file)
-                if conf['visualize']:
-                    curr_arch = visualize(arch_file, conf['monitor_path'])
-                    for tag, img in curr_arch.items():
-                        monitor.write_image(tag, img, cur_epoch)
-            else:
-                model.save_parameters(
-                    model_path + '.h5', model.get_arch_parameters())
             warmup -= warmup > 0
+            # saving the architecture parameters
+            if conf['network']['name'] != 'pnas':
+                ut.save_dart_arch(model, arch_file)
+                for tag, img in visualize(arch_file, out_path).items():
+                    monitor.write_image(tag, img, cur_epoch)
+            else:
+                nn.save_parameters(model_path + '.h5',
+                                   model.get_arch_parameters())
+                logger.info(self._get_statistics())
 
             monitor.write(cur_epoch)
-            logger.info('Epoch %d: lr=%.5f\twu=%d\tErr=%.3f\tLoss=%.3f' %
-                        (cur_epoch, model_optim.get_learning_rate(curr_iter),
-                         warmup, monitor['valid_err'].avg,
-                         monitor['valid_loss'].avg))
+            logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
+                        (cur_epoch, optim['model'].get_learning_rate(),
+                         monitor['arch_err'].avg, monitor['arch_loss'].avg))
 
         monitor.close()
+
+        return self
+
+    def _get_statistics(self):
+        stats = ''
+        ans = Counter([m._active for m in self.arch_modules])
+        total = len(self.arch_modules)
+        for k in range(len(self.op_names)):
+            name = self.op_names[k]
+            stats += name + f' = {ans[k]/total*100:.2f}%\t'
+        return stats
+
+    def _reinforce_update(self, reward):
+        for m in self.arch_modules:
+            m._update_alpha_grad()
+        # perform control variate
+        for v in self.optimizer['arch'].get_parameters().values():
+            v.g *= reward - self.conf['arch_optimizer']['control_variate']
+
+    def _sample(self, verbose=False):
+        """Sample new graphs, one for model training and one for arch training."""
+        if self.conf['network']['name'] == 'pnas':
+            for m in self.arch_modules:
+                m._update_active_idx()
+
+        for mode, ph in self.placeholder.items():
+            training = (mode == 'model')
+            self.model.apply(training=training)
+
+            # loss and error
+            image = ut.image_augmentation(ph['input'])
+            ph['output'] = self.model(image).apply(persistent=True)
+            ph['loss'] = self.criteria(
+                ph['output'], ph['target']) / self.w_micros
+            ph['err'] = self.evaluate(
+                ph['output'].get_unlinked_variable(), ph['target'])
+            ph['loss'].apply(persistent=True)
+            ph['err'].apply(persistent=True)
+
+            # set parameters to the optimizer
+            params = self.model.get_net_parameters(grad_only=True) if training\
+                else self.model.get_arch_parameters(grad_only=True)
+            self.optimizer[mode].set_parameters(params)
+
+        if verbose:
+            model_size = ut.get_params_size(
+                self.optimizer['model'].get_parameters())/1e6
+            arch_size = ut.get_params_size(
+                self.optimizer['arch'].get_parameters())/1e6
+            logger.info('Model size={:.6f} MB\t Arch size={:.6f} MB'.format(
+                model_size, arch_size))
 
         return self

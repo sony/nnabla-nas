@@ -1,18 +1,37 @@
 {
-    "model_weight_decay": 3e-04,
-    "print_frequency": 50,
-    "model_optim": "Momentum",
-    "model_save_path": "log/darts/train",
-    "warmup": 0,
+    "search": false,
+    "network": {
+        "name": "darts",
+        "in_channels": 3,
+        "init_channels": 36,
+        "num_cells": 20,
+        "num_classes": 10,
+        "num_choices": 4,
+        "drop_path": 0.2,
+        "genotype": "log/darts/search/arch.json"
+    },
+    "optimizer": {
+        "lr_scheduler": {
+            "name": "CosineScheduler",
+            "init_lr": 0.025,
+            "max_iter": 312500
+        },
+        "grad_clip": 5.0,
+        "weight_decay": 3e-4,
+        "solver": {
+            "name": "Momentum",
+            "lr": 0.025
+        }
+    },
+    "output_path": "log/darts/train",
     "epoch": 600,
-    "model_lr_control": true,
-    "model_with_grad_clip": true,
     "batch_size": 96,
-    "model_lr": 0.025,
-    "model_lr_scheduler": "CosineScheduler",
+    "batch_size_train": 48,
+    "batch_size_valid": 40,
     "model_name": "darts.h5",
-    "model_grad_clip_value": 5.0,
-    "monitor_path": "log/darts/train",
+    "auxiliary": true,
+    "cutout": true,
+    "cutout_length": 16,
     "auxiliary_weight": 0.4,
-    "arch": "log/darts/search/arch"
+    "print_frequency": 50
 }

@@ -1,128 +1,209 @@
+import nnabla as nn
 import nnabla.functions as F
 from nnabla.initializer import (ConstantInitializer, UniformInitializer,
                                 calc_uniform_lim_glorot)
 
-from .batchnorm import BatchNormalization
-from .module import Module, Sequential
+from .module import Module
 from .parameter import Parameter
-from .relu import ReLU
 
 
 class Conv(Module):
-    """N-D Convolution with a bias term.
+    """N-D Convolution layer.
 
     Args:
-        in_channels (~nnabla.Variable): Number of convolution kernels (which
-            is equal to the number of input channels)
-        out_channels (int): Number of convolution kernels (which is equal to
-            the number of output channels). For example, to apply convolution
-            on an input with 16 types of filters, specify 16.
+        in_channels (:obj:`int`): Number of convolution kernels (which is
+            equal to the number of input channels).
+        out_channels (:obj:`int`): Number of convolution kernels (which is
+            equal to the number of output channels). For example, to apply
+            convolution on an input with 16 types of filters, specify 16.
         kernel (:obj:`tuple` of :obj:`int`): Convolution kernel size. For
             example, to apply convolution on an image with a 3 (height) by 5
             (width) two-dimensional kernel, specify (3,5).
-        pad (:obj:`tuple` of :obj:`int`): Padding sizes for dimensions.
-        stride (:obj:`tuple` of :obj:`int`): Stride sizes for dimensions.
-        dilation (:obj:`tuple` of :obj:`int`): Dilation sizes for dimensions.
-        group (int): Number of groups of channels. This makes connections
-            across channels more sparse by grouping connections along map
-            direction.
+        pad (:obj:`tuple` of :obj:`int`, optional): Padding sizes for
+            dimensions. Defaults to None.
+        stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
+            dimensions. Defaults to None.
+        dilation (:obj:`tuple` of :obj:`int`, optional): Dilation sizes for
+            dimensions. Defaults to None.
+        group (int, optional): Number of groups of channels. This makes
+            connections across channels more sparse by grouping connections
+            along map direction. Defaults to 1.
         w_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`):
+            or :obj:`numpy.ndarray`, optional):
             Initializer for weight. By default, it is initialized with
             :obj:`nnabla.initializer.UniformInitializer` within the range
             determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
         b_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`):
+            or :obj:`numpy.ndarray`, optional):
             Initializer for bias. By default, it is initialized with zeros if
             `with_bias` is `True`.
-        base_axis (int): Dimensions up to `base_axis` are treated as the
-            sample dimensions.
-        fix_parameters (bool): When set to `True`, the weights and biases will
-            not be updated.
-        rng (numpy.random.RandomState): Random generator for Initializer.
-        with_bias (bool): Specify whether to include the bias term.
+        base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
+            treated as the sample dimensions. Defaults to 1.
+        fix_parameters (bool, optional): When set to `True`, the weights and
+            biases will not be updated. Defaults to `False`.
+        rng (numpy.random.RandomState, optional): Random generator for
+            Initializer.  Defaults to None.
+        with_bias (bool, optional): Specify whether to include the bias term.
+            Defaults to `True`.
+        channel_last(bool, optional): If True, the last dimension is
+            considered as channel dimension, a.k.a NHWC order. Defaults to
+            `False`.
 
-    Returns:
-        :class:`~nnabla.Variable`: N-D array. See
-            :obj:`~nnabla.functions.convolution` for the output shape.
     """
-
-    def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None, dilation=None, group=1,
-                 w_init=None, b_init=None,
-                 base_axis=1, rng=None, with_bias=True):
+    def __init__(self, in_channels, out_channels, kernel, pad=None,
+                 stride=None, dilation=None, group=1, w_init=None, b_init=None,
+                 base_axis=1, fix_parameters=False, rng=None, with_bias=True,
+                 channel_last=False):
         Module.__init__(self)
+
         if w_init is None:
             w_init = UniformInitializer(
-                calc_uniform_lim_glorot(in_channels, out_channels, tuple(kernel)), rng=rng)
+                calc_uniform_lim_glorot(
+                    in_channels, out_channels, tuple(kernel)),
+                rng=rng
+            )
 
         w_shape = (out_channels, in_channels // group) + tuple(kernel)
-        self.W = Parameter(w_shape, initializer=w_init)
-        self.b = None
+        b_shape = (out_channels, )
 
-        if with_bias:
-            if b_init is None:
-                b_init = ConstantInitializer()
-            b_shape = (out_channels, )
-            self.b = Parameter(b_shape, initializer=b_init)
+        self._b = None
+        if with_bias and b_init is None:
+            b_init = ConstantInitializer()
 
-        self.base_axis = base_axis
-        self.pad = pad
-        self.stride = stride
-        self.dilation = dilation
-        self.group = group
+        if fix_parameters:
+            self._W = nn.Variable.from_numpy_array(w_init(w_shape))
+            if with_bias:
+                self._b = nn.Variable.from_numpy_array(b_init(b_shape))
+        else:
+            self._W = Parameter(w_shape, initializer=w_init)
+            if with_bias:
+                self._b = Parameter(b_shape, initializer=b_init)
 
-    def __call__(self, input):
-        return F.convolution(input, self.W, self.b, self.base_axis,
-                             self.pad, self.stride, self.dilation, self.group)
+        self._base_axis = base_axis
+        self._pad = pad
+        self._stride = stride
+        self._dilation = dilation
+        self._group = group
+        self._kernel = kernel
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+        self._channel_last = channel_last
+        self._fix_parameters = fix_parameters
+        self._rng = rng
+
+    def call(self, input):
+        return F.convolution(input, self._W, self._b, self._base_axis,
+                             self._pad, self._stride, self._dilation,
+                             self._group, self._channel_last)
+
+    def __extra_repr__(self):
+        return (f'in_channels={self._in_channels}, '
+                f'out_channels={self._out_channels}, '
+                f'kernel={self._kernel}, '
+                f'stride={self._stride}, '
+                f'pad={self._pad}, '
+                f'dilation={self._dilation}, '
+                f'base_axis={self._base_axis}, '
+                f'group={self._group}, '
+                f'with_bias={self._b is not None}, '
+                f'fix_parameters={self._fix_parameters}, '
+                f'channel_last={self._channel_last}')
 
 
-class DilConv(Module):
-    """Dilated depthwise separable convolution.
+class DwConv(Module):
+    """N-D Depthwise Convolution layer.
+
+    Args:
+        in_channels (:obj:`int`): Number of convolution kernels (which is
+            equal to the number of input channels).
+        kernel (:obj:`tuple` of :obj:`int`): Convolution kernel size. For
+            example, to apply convolution on an image with a 3 (height) by 5
+            (width) two-dimensional kernel, specify (3,5).
+        pad (:obj:`tuple` of :obj:`int`, optional): Padding sizes for
+            dimensions. Defaults to None.
+        stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
+            dimensions. Defaults to None.
+        dilation (:obj:`tuple` of :obj:`int`, optional): Dilation sizes for
+            dimensions. Defaults to None.
+        multiplier (:obj:`int`, optional): Number of output feature maps per
+            input feature map. Defaults to 1.
+        w_init (:obj:`nnabla.initializer.BaseInitializer`
+            or :obj:`numpy.ndarray`, optional):
+            Initializer for weight. By default, it is initialized with
+            :obj:`nnabla.initializer.UniformInitializer` within the range
+            determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
+        b_init (:obj:`nnabla.initializer.BaseInitializer`
+            or :obj:`numpy.ndarray`, optional):
+            Initializer for bias. By default, it is initialized with zeros if
+            `with_bias` is `True`.
+        base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
+            treated as the sample dimensions. Defaults to 1.
+        fix_parameters (bool, optional): When set to `True`, the weights and
+            biases will not be updated. Defaults to `False`.
+        rng (numpy.random.RandomState, optional): Random generator for
+            Initializer.  Defaults to None.
+        with_bias (bool, optional): Specify whether to include the bias term.
+            Defaults to `True`.
+
+    References:
+        - F. Chollet: Chollet, Francois. "Xception: Deep Learning with
+        Depthwise Separable Convolutions. https://arxiv.org/abs/1610.02357
+
     """
 
-    def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None, affine=True):
-        super().__init__()
-        self._conv = Sequential(
-            ReLU(),
-            Conv(in_channels=in_channels, out_channels=in_channels,
-                 kernel=kernel, pad=pad, stride=stride,
-                 dilation=(2, 2), group=in_channels, with_bias=False),
-            Conv(in_channels=in_channels, out_channels=out_channels,
-                 kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=out_channels,
-                               n_dims=4, fix_parameters=not affine)
-        )
+    def __init__(self, in_channels, kernel, pad=None, stride=None,
+                 dilation=None, multiplier=1, w_init=None, b_init=None,
+                 base_axis=1, fix_parameters=False, rng=None, with_bias=True):
+        Module.__init__(self)
 
-    def __call__(self, input):
-        return self._conv(input)
+        if w_init is None:
+            w_init = UniformInitializer(
+                calc_uniform_lim_glorot(
+                    in_channels, in_channels, tuple(kernel)
+                ),
+                rng=rng
+            )
 
+        if with_bias and b_init is None:
+            b_init = ConstantInitializer()
 
-class SepConv(Module):
-    """Separable convolution."""
+        w_shape = (in_channels,) + tuple(kernel)
+        b_shape = (in_channels, )
 
-    def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None, affine=True):
-        super().__init__()
-        self._conv = Sequential(
-            ReLU(),
-            Conv(in_channels=in_channels, out_channels=in_channels,
-                 kernel=kernel, pad=pad, stride=stride,
-                 group=in_channels, with_bias=False),
-            Conv(in_channels=in_channels, out_channels=in_channels,
-                 kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=in_channels,
-                               n_dims=4, fix_parameters=not affine),
-            ReLU(),
-            Conv(in_channels=in_channels, out_channels=in_channels,
-                 kernel=kernel, pad=pad, stride=(1, 1), group=in_channels,
-                 with_bias=False),
-            Conv(in_channels=in_channels, out_channels=out_channels,
-                 kernel=(1, 1), with_bias=False),
-            BatchNormalization(n_features=out_channels,
-                               n_dims=4, fix_parameters=not affine)
-        )
+        self._b = None
 
-    def __call__(self, input):
-        return self._conv(input)
+        if fix_parameters:
+            self._W = nn.Variable.from_numpy_array(w_init(w_shape))
+            if with_bias:
+                self._b = nn.Variable.from_numpy_array(b_init(b_shape))
+        else:
+            self._W = Parameter(w_shape, initializer=w_init)
+            if with_bias:
+                self._b = Parameter(b_shape, initializer=b_init)
+        self._pad = pad
+        self._stride = stride
+        self._dilation = dilation
+        self._in_channels = in_channels
+        self._rng = rng
+        self._with_bias = with_bias
+        self._fix_parameters = fix_parameters
+        self._kernel = kernel
+        self._base_axis = base_axis
+        self._multiplier = multiplier
+
+    def call(self, input):
+        return F.depthwise_convolution(input, self._W, self._b,
+                                       self._base_axis, self._pad,
+                                       self._stride, self._dilation,
+                                       self._multiplier)
+
+    def __extra_repr__(self):
+        return (f'in_channels={self._in_channels}, '
+                f'kernel={self._kernel}, '
+                f'stride={self._stride}, '
+                f'pad={self._pad}, '
+                f'dilation={self._dilation}, '
+                f'multiplier={self._multiplier}, '
+                f'base_axis={self._base_axis}, '
+                f'with_bias={self._b is not None}, '
+                f'fix_parameters={self._fix_parameters}')
