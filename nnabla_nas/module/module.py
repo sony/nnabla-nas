@@ -35,6 +35,7 @@ class Module(object):
         for module in self.modules.values():
             module.training = mode
 
+
     @property
     def need_grad(self):
         r"""Whether the module needs gradient."""

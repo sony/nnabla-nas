@@ -20,7 +20,7 @@ class ModuleList(Module):
     the Pytorch implementation."""
 
     def __init__(self, modules=None):
-        super().__init__()
+        Module.__init__(self)
         if modules is not None:
             self += modules
 
@@ -83,7 +83,7 @@ class ParameterList(Module):
     r"""Hold parameters in a list."""
 
     def __init__(self, parameters=None):
-        super().__init__()
+        Module.__init__(self)
         if parameters is not None:
             self += parameters
 

@@ -53,7 +53,7 @@ class BatchNormalization(Module):
         ``param_shape = np.mean(inp.d, axis=(0, 2, 3), keepdims=True).shape``
         (using numpy expression as an example).
         """
-        super().__init__()
+        Module.__init__(self)
         assert len(axes) == 1
 
         shape_stat = [1 for _ in range(n_dims)]

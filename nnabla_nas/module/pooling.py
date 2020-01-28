@@ -20,7 +20,7 @@ class MaxPool(Module):
     """
 
     def __init__(self, kernel, stride=None, pad=None, channel_last=False):
-        super().__init__()
+        Module.__init__(self)
         self._kernel = kernel
         self._stride = stride
         self._pad = pad
@@ -55,7 +55,7 @@ class AvgPool(Module):
     """
 
     def __init__(self, kernel, stride=None, pad=None, channel_last=False):
-        super().__init__()
+        Module.__init__(self)
         self._kernel = kernel
         self._stride = stride
         self._pad = pad
@@ -81,7 +81,7 @@ class GlobalAvgPool(Module):
     """
 
     def __init__(self):
-        super().__init__()
+        Module.__init__(self)
 
     def call(self, input):
         return F.global_average_pooling(input)

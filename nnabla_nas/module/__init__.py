@@ -25,6 +25,7 @@ __all__ = [
     'GlobalAvgPool',
     'Conv',
     'DwConv',
+    'SepConv',
     'BatchNormalization',
     'Linear',
     'ReLU',

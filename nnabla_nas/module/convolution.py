@@ -50,12 +50,11 @@ class Conv(Module):
             `False`.
 
     """
-
     def __init__(self, in_channels, out_channels, kernel, pad=None,
                  stride=None, dilation=None, group=1, w_init=None, b_init=None,
                  base_axis=1, fix_parameters=False, rng=None, with_bias=True,
                  channel_last=False):
-        super().__init__()
+        Module.__init__(self)
 
         if w_init is None:
             w_init = UniformInitializer(
@@ -90,6 +89,7 @@ class Conv(Module):
         self._out_channels = out_channels
         self._channel_last = channel_last
         self._fix_parameters = fix_parameters
+        self._rng = rng
 
     def call(self, input):
         return F.convolution(input, self._W, self._b, self._base_axis,
@@ -154,7 +154,7 @@ class DwConv(Module):
     def __init__(self, in_channels, kernel, pad=None, stride=None,
                  dilation=None, multiplier=1, w_init=None, b_init=None,
                  base_axis=1, fix_parameters=False, rng=None, with_bias=True):
-        super().__init__()
+        Module.__init__(self)
 
         if w_init is None:
             w_init = UniformInitializer(
