@@ -38,7 +38,7 @@ class ProgressMeter(object):
     def write_image(self, tag, image_tensor, n_iter):
         self.writer.add_image(tag, image_tensor, n_iter)
 
-    def update(self, tag, value, n):
+    def update(self, tag, value, n=1):
         if tag not in self.meters:
             self.meters[tag] = AverageMeter(tag, fmt=':5.3f')
         self.meters[tag].update(value, n)

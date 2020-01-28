@@ -13,6 +13,7 @@ from ..dataset import DataLoader
 from ..dataset.cifar10 import cifar10
 from ..optimizer import Optimizer
 from ..visualization import visualize
+from ..contrib.pnas import estimator as EST
 
 
 class Searcher(object):
@@ -44,6 +45,17 @@ class Searcher(object):
                 valid_transform
             )
         }
+
+        # regularizer configurations
+        self.reg = None
+        if 'regularizer' in conf:
+            self.reg = dict()
+            for k, v in conf['regularizer'].items():
+                args = v.copy()
+                self.reg[k] = dict()
+                self.reg[k]['bound'] = args.pop('bound')
+                self.reg[k]['weight'] = args.pop('weight')
+                self.reg[k]['reg'] = EST.__dict__[args.pop('name')](**args)
 
         # solver configurations
         self.optimizer = dict()
@@ -130,9 +142,15 @@ class Searcher(object):
                     if training or (warmup == 0 and not need_resample):
                         optim[mode].update()
 
-                if warmup == 0 and need_resample:
-                    self._reinforce_update(reward)
-                    optim['arch'].update()
+                if need_resample:
+                    if self.reg:
+                        for k, v in self.reg.items():
+                            value = v['reg'].get_estimation(model)
+                            reward += v['weight']*max(0, value - v['bound'])
+                            monitor.update(k, value, 1)
+                    if warmup == 0:
+                        self._reinforce_update(reward)
+                        optim['arch'].update()
 
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i)

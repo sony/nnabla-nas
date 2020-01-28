@@ -35,7 +35,7 @@ class MemoryEstimator(Estimator):
         if idm not in self.memo:
             self.memo[idm] = sum(np.prod(p.shape)
                                  for p in module.parameters.values())
-        return self.memo[idm]
+        return self.memo[idm] * 1e-6
 
 
 class LatencyEstimator(Estimator):
@@ -48,7 +48,7 @@ class LatencyEstimator(Estimator):
             execution time are measured. Default value is 10.
     """
 
-    def __init__(self, device_id=0, ext_name='cpu', n_run=10):
+    def __init__(self, device_id=0, ext_name='cudnn', n_run=10):
         self._device_id = device_id
         self._ext_name = ext_name
         self._n_run = n_run
@@ -75,4 +75,4 @@ class LatencyEstimator(Estimator):
             mem[key] = float(runner.result['forward'][0].mean_time)
             module.apply(training=state)  # recover training state
 
-        return mem[key]
+        return mem[key] * 1e-3
