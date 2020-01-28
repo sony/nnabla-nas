@@ -121,8 +121,13 @@ class Module(mo.Module):
         return self._eval_probs
 
     def _eval_prob_function(self, input):
-        input.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
-        return input
+        res = {}
+
+        for ii in input:
+            res[ii] = input[ii]
+
+        res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
+        return res
 
     def profile(self, profiler, n_run=100):
         input = nn.Variable(shape=self.parent.shape)
@@ -560,7 +565,7 @@ if __name__ == '__main__':
             self.append(Input(name='input_2', value=nn.Variable((10,20,32,32))))
             self.append(Conv(name='conv', parent=self[-1], in_channels=20, out_channels=20, kernel=(3,3), pad=(1,1)))
             self.append(Input(name='input_3', value=nn.Variable((10,20,32,32))))
-            self.append(Join(name='concat',
+            self.append(Join(name='join',
                              parents=self,
                              mode='linear',
                              join_parameters=Parameter(shape=(3,))))

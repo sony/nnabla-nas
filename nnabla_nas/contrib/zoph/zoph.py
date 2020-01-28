@@ -199,6 +199,8 @@ if __name__ == '__main__':
     zoph_cell = ZophCell(name='cell1', parents=[input, input2], candidates=ZOPH_CANDIDATES, channels=32)
     zoph_network = ZophNetwork(name='network1', parents=[input2])
 
+    #---------------------test graph setup--------------------------
+
     out_1 = sep_conv3x3()
     out_2 = sep_conv5x5()
     out_3 = dil_sep_conv3x3()
@@ -208,4 +210,17 @@ if __name__ == '__main__':
     out_7 = zoph_block()
     out_8 = zoph_cell()
     out_9 = zoph_network()
+
+
+    #----------------------test profiling------------------------
+    from nnabla_nas.module.static import NNablaProfiler
+    eval_p = zoph_cell.eval_probs()
+    for evi in eval_p:
+        try:
+            eval_p[evi].forward()
+        except:
+            pass
+        print("Module {} has evaluation probability {}".format(evi.name, eval_p[evi].d))
+
+
     import pdb; pdb.set_trace()
