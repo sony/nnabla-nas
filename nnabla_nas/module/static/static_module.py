@@ -43,6 +43,7 @@ class Module(mo.Module):
         self._name          = name
         self._value         = None
         self._eval_probs    = None
+        self._prof          = None
         self._shape         = None
         self._forward_tag   = False
         if eval_prob is None:
@@ -107,9 +108,6 @@ class Module(mo.Module):
         if tag is None or self._forward_tag != tag:
             self._forward_tag   = not(self._forward_tag) #flip the tag
             self._value         = self._value_function(self.parent(self._forward_tag))
-            print("calculating output of {} from scratch".format(self.name))
-        else:
-            print("reusing output of {}".format(self.name))
         return self._value
 
     def __call__(self, *args, **kargs):
@@ -133,10 +131,15 @@ class Module(mo.Module):
     #    return res
 
     def profile(self, profiler, n_run=100):
+        if self._prof is None:
+            self._prof = self._profile(profiler, n_run)
+        return self._prof
+
+    def _profile(self, profiler, n_run=100):
         input = nn.Variable(shape=self.parent.shape)
         out = self._value_function(input)
         try:
-            return profiler.profile(out, n_run=n_run)
+            return float(profiler.profile(out, n_run=n_run))
         except:
             print("Cannot profile module {}!".format(self.name))
             return 0.0
@@ -160,6 +163,9 @@ class Module(mo.Module):
         :param div: integer, e.g. 8*2**20 if we want to have the complexity in MB
         """
         return bitwidth * np.prod(self.shape) / div
+
+    def get_exp_latency(self, profiler, n_run=10):
+        return self.profile(profiler, n_run=n_run)*self.eval_prob
 
 #------------------------------------A graph of StaticModules--------------------------------------
 class Graph(mo.ModuleList, Module):
@@ -206,7 +212,7 @@ class Graph(mo.ModuleList, Module):
             self._shape = self.output.shape
         return self._shape
 
-    def profile(self, profiler, n_run=100):
+    def _profile(self, profiler, n_run=100):
         """
         Compared to a single vertice, we need to profile all vertices which are nested in this graph.
         """
@@ -226,6 +232,12 @@ class Graph(mo.ModuleList, Module):
 
     def __delitem__(self, index):
         raise RuntimeError
+
+    def get_exp_latency(self, profiler, n_run=10):
+        exp_latency = 0
+        for mi in self.modules:
+            exp_latency += self.modules[mi].get_exp_latency(profiler, n_run)
+        return exp_latency
 
 #------------------------------------Some basic StaticModules------------------------------
 class Input(Module):
@@ -265,7 +277,7 @@ class Input(Module):
         """
         pass
 
-    def profile(self, profiler, n_run=100):
+    def _profile(self, profiler, n_run=100):
         return 0.0
 
     def call(self, tag=None):
@@ -406,9 +418,6 @@ class Merging(mo.Merging, Module):
         if tag is None or self._forward_tag != tag:
             self._forward_tag   = not(self._forward_tag) #flip the tag
             self._value         = self._value_function([pi(self._forward_tag) for pi in self.parent])
-            print("calculating output of {} from scratch".format(self.name))
-        else:
-            print("reusing output of {}".format(self.name))
         return self._value
 
     #def eval_probs(self, clear_probs=False):
@@ -443,11 +452,11 @@ class Merging(mo.Merging, Module):
         dummy_graph  = self._value_function(inputs)
         return dummy_graph.shape
 
-    def profile(self, profiler, n_run=100):
+    def _profile(self, profiler, n_run=100):
         inputs = [nn.Variable(shape=pi.shape) for pi in self.parent]
         out = self._value_function(inputs)
         try:
-            return profiler.profile(out, n_run=n_run)
+            return float(profiler.profile(out, n_run=n_run))
         except:
             print("Cannot profile module {}!".format(self.name))
             return 0.0
@@ -526,9 +535,6 @@ class Join(Module):
         if tag is None or self._forward_tag != tag:
             self._forward_tag   = not(self._forward_tag) #flip the tag
             self._value         = self._value_function([pi(self._forward_tag) for pi in self.parent])
-            print("calculating output of {} from scratch".format(self.name))
-        else:
-            print("reusing output of {}".format(self.name))
         return self._value
 
     #def eval_probs(self, clear_probs=False):
@@ -557,11 +563,11 @@ class Join(Module):
         dummy_graph  = self._value_function(inputs)
         return dummy_graph.shape
 
-    def profile(self, profiler, n_run=100):
+    def _profile(self, profiler, n_run=100):
         inputs = [nn.Variable(shape=pi.shape) for pi in self.parent]
         out = self._value_function(inputs)
         try:
-            return profiler.profile(out, n_run=n_run)
+            return float(profiler.profile(out, n_run=n_run))
         except:
             print("Cannot profile module {}!".format(self.name))
             return 0.0
