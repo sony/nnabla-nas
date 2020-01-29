@@ -368,6 +368,17 @@ class ReLU(mo.ReLU, Module):
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
+class Dropout(mo.Dropout, Module):
+    def __init__(self, name, parent, *args, **kwargs):
+        mo.Dropout.__init__(self, *args, **kwargs)
+        Module.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return mo.Dropout.call(self, input)
+
+    def call(self, clear_value=False):
+        return Module.call(self, clear_value=clear_value)
+
 class BatchNormalization(mo.BatchNormalization, Module):
     def __init__(self, name, parent, *args, **kwargs):
         mo.BatchNormalization.__init__(self, *args, **kwargs)

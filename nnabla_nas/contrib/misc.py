@@ -18,7 +18,7 @@ class AuxiliaryHeadCIFAR(Mo.Module):
     """
 
     def __init__(self, channels, num_classes):
-        super().__init__()
+        Mo.Module.__init__(self)
         self._channels = channels
         self._num_classes = num_classes
         self._feature = Mo.Sequential(
@@ -43,7 +43,6 @@ class AuxiliaryHeadCIFAR(Mo.Module):
     def __extra_repr__(self):
         return f'channels={self._channels}, num_classes={self._num_classes}'
 
-
 class DropPath(Mo.Module):
     r"""Drop Path layer.
 
@@ -54,7 +53,7 @@ class DropPath(Mo.Module):
     """
 
     def __init__(self, drop_prob=0.2):
-        super().__init__()
+        Mo.Module.__init__(self)
         self._drop_prob = drop_prob
 
     def call(self, input):
@@ -93,7 +92,7 @@ class ReLUConvBN(Mo.Module):
 
     def __init__(self, in_channels, out_channels, kernel,
                  pad=None, stride=None, affine=True):
-        super().__init__()
+        Mo.Module.__init__(self)
 
         self._in_channels = in_channels
         self._out_channels = out_channels
@@ -143,21 +142,22 @@ class ConvBNReLU6(Mo.Module):
     """
 
     def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None, group=1, fix_parameters=False):
-        super().__init__()
+                 pad=None, stride=None, with_bias=True, group=1, fix_parameters=False):
+        Mo.Module.__init__(self)
 
         self._in_channels = in_channels
         self._out_channels = out_channels
         self._kernel = kernel
         self._pad = pad
         self._stride = stride
+        self._with_bias = with_bias
         self._group = group
         self._fix_parameters = fix_parameters
 
         self._operators = Mo.Sequential(
             Mo.Conv(in_channels, out_channels, kernel=kernel,
                     stride=stride, pad=pad, group=self._group,
-                    with_bias=False),
+                    with_bias=with_bias),
             Mo.BatchNormalization(n_features=out_channels, n_dims=4,
                                   fix_parameters=fix_parameters),
             Mo.ReLU6()
@@ -172,6 +172,8 @@ class ConvBNReLU6(Mo.Module):
                 f'kernel={self._kernel}, '
                 f'stride={self._stride}, '
                 f'pad={self._pad}, '
+                f'with_bias={self._with_bias}, '
+                f'group={self._group}, '
                 f'fix_parameters={self._fix_parameters}')
 
 class InvertedResidualConv(Mo.Module):
@@ -200,7 +202,7 @@ class InvertedResidualConv(Mo.Module):
     def __init__(self, in_channels, out_channels, kernel,
                  pad=None, stride=None, expansion_factor=6,
                  fix_parameters=False):
-        super().__init__()
+        Mo.Module.__init__(self)
 
         self._in_channels = in_channels
         self._out_channels = out_channels
@@ -263,7 +265,7 @@ class MixedOp(Mo.Module):
     """
 
     def __init__(self, operators, mode='sample', alpha=None):
-        super().__init__()
+        Mo.Module.__init__(self)
 
         if mode not in ('max', 'sample', 'full'):
             raise ValueError(f'mode={mode} is not supported.')
