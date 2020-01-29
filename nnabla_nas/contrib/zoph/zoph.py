@@ -219,17 +219,8 @@ if __name__ == '__main__':
     out_8 = zoph_cell()
     out_9 = zoph_network()
 
-    import pdb; pdb.set_trace()
-
-    #----------------------test profiling------------------------
     from nnabla_nas.module.static import NNablaProfiler
-    eval_p = zoph_cell.eval_probs()
-    for evi in eval_p:
-        try:
-            eval_p[evi].forward()
-        except:
-            pass
-        print("Module {} has evaluation probability {}".format(evi.name, eval_p[evi].d))
-
-
+    profiler    = NNablaProfiler()
+    exp_lat     = zoph_network.get_exp_latency(profiler)
     import pdb; pdb.set_trace()
+

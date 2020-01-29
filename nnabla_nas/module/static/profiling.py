@@ -18,4 +18,4 @@ class NNablaProfiler(Profiler):
     def _profile(self, input, n_run):
         prof = GraphProfiler(input, device_id=self._dev_idx, ext_name=self._nnabla_context, n_run=n_run)
         prof.run()
-        return prof.result['forward_all']
+        return float(prof.result['forward_all'])
