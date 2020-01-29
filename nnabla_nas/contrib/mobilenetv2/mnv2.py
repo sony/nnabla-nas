@@ -31,35 +31,32 @@ class InvertedResidualConv(misc.InvertedResidualConv, smo.Module):
 
 
 class Mnv2Classifier(smo.Graph):
-    def __init__(self, name, parent, n_classes=10, drop_rate=0.2, is_training=True):
-        super(Mnv2Classifier, self).__init__(name, parent)
+    def __init__(self, name, parents, n_classes=10, drop_rate=0.2, is_training=True):
+        super(Mnv2Classifier, self).__init__(name, parents)
         self._n_classes = n_classes
         self._drop_rate = drop_rate
         self._is_training = is_training
 
-    def _generate_graph(self, inputs):
-        self.add_module(StaticDropOut(name='{}/dropout'.format(self._name),
-            parent=inputs,
-            drop_rate=self._drop_rate,
-                                      is_training=self._is_training))
-        self.add_module(StaticGlobalAveragePool(name='{}/avg_pool'.format(self._name),
-                                                parent=[self._modules[-1]]))
-        self.add_module(StaticLinear(name='{}/affine'.format(self._name),
-                               parent=[self.modules[-1]],
-                               in_features=self._modules[-1].shape[1],
-                               out_feature=self._n_classes))
-        return self._modules[-1]
+        self.append(smo.Dropout(name='{}/dropout'.format(self._name),
+                                parent=self.parent[0],
+                                drop_prob=self._drop_rate))
+        self.append(smo.GlobalAvgPool(name='{}/avg_pool'.format(self._name),
+                                      parent=self[-1]))
+        self.append(smo.Linear(name='{}/affine'.format(self._name),
+                               parent=self[-1],
+                               in_channels=self._modules[-1].shape[1],
+                               out_channels=self._n_classes))
 
 
 class Mnv2Architecture(smo.Graph):
-    def __init__(self, name, parent,
+    def __init__(self, name, parents,
                  inverted_residual_setting,
                  first_maps=32,
                  last_maps=1280,
                  width_mult=1.0,
                  n_classes=10,
                  is_training=True):
-        super(Mnv2Architecture, self).__init__(name, parent)
+        super(Mnv2Architecture, self).__init__(name, parents)
         self._inverted_residual_setting = inverted_residual_setting
         self._n_classes = n_classes
         self._first_maps = first_maps
@@ -67,15 +64,16 @@ class Mnv2Architecture(smo.Graph):
         self._width_mult = width_mult
         self._is_training = is_training
 
-    def _generate_graph(self, inputs):
         # First Layer
-        self.add_module(ConvBnRelu6(name="{}/first-conv".format(self._name),
-                                    parent=[self.modules[-1]],
-                                    in_channels=inputs.shape[1],
+        self.append(ConvBnRelu6(name="{}/first-conv".format(self._name),
+                                    parent=self._parent[0],
+                                    in_channels=self._parent[0].shape[1],
                                     out_channels=int(first_maps * width_mult),
                                     kernel=(3, 3),
                                     pad=(1, 1),
-                                    stride=(2, 2)))
+                                    stride=(2, 2),
+                                    with_bias=False))
+        maps = int(first_maps * width_mult)
         # Inverted residual blocks
         for t, c, n, s in inverted_residual_setting:
                 maps = int(c * width_mult)
@@ -84,27 +82,29 @@ class Mnv2Architecture(smo.Graph):
                         stride = (s, s)
                     else:
                         stride = (1, 1)
-                    self.add_module(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}-{}-{}".format(self._name,t, c, n, s, i),
-                                                         parent=[self.modules[-1]],
-                                                         maps=maps,
+                    self.append(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}-{}-{}".format(self._name,t, c, n, s, i),
+                                                         parent=self[-1],
+                                                         in_channels=int(first_maps * width_mult),
+                                                         out_channels=maps,
                                                          kernel=(3, 3),
                                                          pad=(1, 1),
                                                          stride=stride,
                                                          expansion_factor=t))
         # Last Layer
-        self.add_module(ConvBnRelu6(name="{}/last-conv".format(self._name),
-                                    parent=[self.modules[-1]],
-                                    graph=self,
-                                    maps=int(last_maps * width_mult),
+        self.append(ConvBnRelu6(name="{}/last-conv".format(self._name),
+                                    parent=self[-1],
+                                    in_channels=maps,
+                                    out_channels=int(last_maps * width_mult),
                                     kernel=(1, 1),
-                                    pad=(0, 0)))
+                                    pad=(0, 0),
+                                    with_bias=False))
         
         # Classifier  
-        self.add_module(Mnv2Classifier(name="{}/classifier".format(self._name), parent=[self.modules[-1]], n_classes=self._n_classes))
+        self.append(Mnv2Classifier(name="{}/classifier".format(self._name), parents=[self[-1]], n_classes=self._n_classes))
 
 class CandidatesCell(smo.Graph):
-    def __init__(self, name, parent, t_set, stride, c, identity_skip, join_mode='linear', join_parameters=None):
-        super(CandidatesCell, self).__init__(name=name, parent=parent)
+    def __init__(self, name, parents, t_set, stride, c, identity_skip, join_mode='linear', join_parameters=None):
+        super(CandidatesCell, self).__init__(name=name, parents=parents)
         self._t_set = t_set
         self._stride = stride
         self._c = c
@@ -116,20 +116,20 @@ class CandidatesCell(smo.Graph):
             self._join_parameters = join_parameters
 
 
-    def _generate_graph(self, inputs):
         for t in t_set:
             maps = c
-            self.add_module(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}".format(self._name, t, maps, stride[0]),
+            self.append(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}".format(self._name, t, maps, stride[0]),
                                                  parent=inputs,
-                                                 maps=maps,
+                                                 in_channels=self._parent[0].shape[1],
+                                                 out_channels=maps,
                                                  kernel=(3, 3),
                                                  pad=(1, 1),
                                                  stride=stride,
                                                  expansion_factor=t))
         # Join
         if identity_skip:
-            self.add_module(Identity(name='{}/skip'.format(self._name), parent=[self.modules[-1]]))
-            self.add_module(Join(name='{}/join'.format(self._name), parent=[self.modules[-1]], join_parameters=self._join_parameters, mode=self._join_mode))
+            self.append(Identity(name='{}/skip'.format(self._name), parent=[self.modules[-1]]))
+            self.append(Join(name='{}/join'.format(self._name), parent=[self.modules[-1]], join_parameters=self._join_parameters, mode=self._join_mode))
 
 #class Mnv2SearchSpace(Graph):
 #    def __init__(self, name,
@@ -212,7 +212,7 @@ if __name__ =='__main__':
 
     input = smo.Input(name='arch_input', value=nn.Variable((32,3,32,32)))
     mnv2_graph = Mnv2Architecture(name='mv2',
-                                  parent=input,
+                                  parents=[input],
                                   inverted_residual_setting=inverted_residual_setting,
                                   first_maps=32,
                                   last_maps=1280,
