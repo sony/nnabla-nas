@@ -14,8 +14,8 @@ class ConvBnRelu6(misc.ConvBNReLU6, smo.Module):
     def _value_function(self, input):
         return misc.ConvBNReLU6.call(self, input)
 
-    def call(self, clear_value=False):
-        return smo.Module.call(self, clear_value=clear_value)
+    def call(self, tag=None):
+        return smo.Module.call(self, tag=tag)
 
 
 class InvertedResidualConv(misc.InvertedResidualConv, smo.Module):
@@ -24,10 +24,10 @@ class InvertedResidualConv(misc.InvertedResidualConv, smo.Module):
         smo.Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return misc.ConstantInitializer.call(self, input)
+        return misc.InvertedResidualConv.call(self, input)
 
-    def call(self, clear_value=False):
-        return smo.Module.call(self, clear_value=clear_value)
+    def call(self, tag=None):
+        return smo.Module.call(self, tag=tag)
 
 
 class Mnv2Classifier(smo.Graph):
@@ -44,8 +44,8 @@ class Mnv2Classifier(smo.Graph):
                                       parent=self[-1]))
         self.append(smo.Linear(name='{}/affine'.format(self._name),
                                parent=self[-1],
-                               in_channels=self._modules[-1].shape[1],
-                               out_channels=self._n_classes))
+                               in_features=self[-1].shape[1],
+                               out_features=self._n_classes))
 
 
 class Mnv2Architecture(smo.Graph):
@@ -63,7 +63,7 @@ class Mnv2Architecture(smo.Graph):
         self._last_maps = last_maps
         self._width_mult = width_mult
         self._is_training = is_training
-
+        
         # First Layer
         self.append(ConvBnRelu6(name="{}/first-conv".format(self._name),
                                     parent=self._parent[0],
@@ -79,12 +79,10 @@ class Mnv2Architecture(smo.Graph):
                 maps = int(c * width_mult)
                 for i in range(n):
                     if i == 0:
-                        stride = (s, s)
-                    else:
                         stride = (1, 1)
-                    self.append(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}-{}-{}".format(self._name,t, c, n, s, i),
+                        self.append(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}-{}-{}".format(self._name,t, c, n, s, i),
                                                          parent=self[-1],
-                                                         in_channels=int(first_maps * width_mult),
+                                                         in_channels=self[-1].shape[1],
                                                          out_channels=maps,
                                                          kernel=(3, 3),
                                                          pad=(1, 1),
