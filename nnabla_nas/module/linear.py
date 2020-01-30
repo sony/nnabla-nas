@@ -30,7 +30,7 @@ class Linear(Module):
 
     def __init__(self, in_features, out_features, base_axis=1, w_init=None,
                  b_init=None, rng=None, bias=True):
-        super().__init__()
+        Module.__init__(self)
 
         if w_init is None:
             w_init = UniformInitializer(
