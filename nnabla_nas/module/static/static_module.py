@@ -302,6 +302,18 @@ class Conv(mo.Conv, Module):
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
 
+class Linear(mo.Dropout, Module):
+    def __init__(self, name, parent, *args, **kwargs):
+        mo.Linear.__init__(self, *args, **kwargs)
+        Module.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return mo.Linear.call(self, input)
+
+    def call(self, clear_value=False):
+        return Module.call(self, clear_value=clear_value)
+
+
 class DwConv(mo.DwConv, Module):
     def __init__(self, name, parent, *args, **kwargs):
         mo.DwConv.__init__(self, *args, **kwargs)
@@ -364,6 +376,17 @@ class ReLU(mo.ReLU, Module):
 
     def _value_function(self, input):
         return mo.ReLU.call(self, input)
+
+    def call(self, clear_value=False):
+        return Module.call(self, clear_value=clear_value)
+
+class Dropout(mo.Dropout, Module):
+    def __init__(self, name, parent, *args, **kwargs):
+        mo.Dropout.__init__(self, *args, **kwargs)
+        Module.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return mo.Dropout.call(self, input)
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
