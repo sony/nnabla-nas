@@ -44,7 +44,7 @@
     "epoch": 120,
     "batch_size": 96,
     "mini_batch_size": 48,
-    "warmup": 0,
+    "warmup": 40,
     "model_name": "arch",
     "output_path": "log/pnas-con/search",
     "print_frequency": 20,
