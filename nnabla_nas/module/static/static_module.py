@@ -98,12 +98,10 @@ class Module(mo.Module):
     def clear_value(self):
         self._value = None
 
-    def call(self, clear_value=False):
-        if clear_value:
-            self.clear_value()
-
-        if self._value is None:
-            self._value = self._value_function(self.parent(clear_value))
+    def call(self, tag=None):
+        if tag is None or self._forward_tag != tag:
+            self._forward_tag   = not(self._forward_tag) #flip the tag
+            self._value         = self._value_function(self.parent(self._forward_tag))
         return self._value
 
     def __call__(self, *args, **kargs):
@@ -188,8 +186,8 @@ class Graph(mo.ModuleList, Module):
         for gmi in self._graph_modules:
             gmi.clear_value()
 
-    def call(self, clear_value=False):
-        return self.output(clear_value=clear_value)
+    def call(self, tag=None):
+        return self.output(tag=tag)
 
     def eval_probs(self, clear_probs=False):
         return self.output.eval_probs(clear_probs=clear_probs)
@@ -264,7 +262,9 @@ class Input(Module):
 
     def profile(self, profiler, n_run=100):
         return 0.0
-
+    
+    def call(self, tag=None):
+        return self._value_function(None)
 
 class Identity(mo.Identity, Module):
     def __init__(self, name, parent, *args, **kwargs):
@@ -312,7 +312,6 @@ class Linear(mo.Dropout, Module):
 
     def call(self, clear_value=False):
         return Module.call(self, clear_value=clear_value)
-
 
 class DwConv(mo.DwConv, Module):
     def __init__(self, name, parent, *args, **kwargs):
