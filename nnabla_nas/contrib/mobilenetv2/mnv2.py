@@ -14,8 +14,8 @@ class ConvBnRelu6(misc.ConvBNReLU6, smo.Module):
     def _value_function(self, input):
         return misc.ConvBNReLU6.call(self, input)
 
-    def call(self, clear_value=False):
-        return smo.Module.call(self, clear_value=clear_value)
+    def call(self, tag=None):
+        return smo.Module.call(self, tag=tag)
 
 
 class InvertedResidualConv(misc.InvertedResidualConv, smo.Module):
@@ -26,8 +26,8 @@ class InvertedResidualConv(misc.InvertedResidualConv, smo.Module):
     def _value_function(self, input):
         return misc.InvertedResidualConv.call(self, input)
 
-    def call(self, clear_value=False):
-        return smo.Module.call(self, clear_value=clear_value)
+    def call(self, tag=None):
+        return smo.Module.call(self, tag=tag)
 
 
 class Mnv2Classifier(smo.Graph):
@@ -42,7 +42,6 @@ class Mnv2Classifier(smo.Graph):
                                 drop_prob=self._drop_rate))
         self.append(smo.GlobalAvgPool(name='{}/avg_pool'.format(self._name),
                                       parent=self[-1]))
-        import pdb; pdb.set_trace();
         self.append(smo.Linear(name='{}/affine'.format(self._name),
                                parent=self[-1],
                                in_features=self[-1].shape[1],

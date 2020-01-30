@@ -332,8 +332,8 @@ class Linear(mo.Dropout, Module):
     def _value_function(self, input):
         return mo.Linear.call(self, input)
 
-    def call(self, clear_value=False):
-        return Module.call(self, clear_value=clear_value)
+    def call(self, tag=None):
+        return Module.call(self, tag=tag)
 
 class DwConv(mo.DwConv, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
@@ -409,8 +409,8 @@ class Dropout(mo.Dropout, Module):
     def _value_function(self, input):
         return mo.Dropout.call(self, input)
 
-    def call(self, clear_value=False):
-        return Module.call(self, clear_value=clear_value)
+    def call(self, tag=None):
+        return Module.call(self, tag=tag)
 
 class BatchNormalization(mo.BatchNormalization, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
