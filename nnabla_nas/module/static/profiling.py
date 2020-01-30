@@ -16,6 +16,8 @@ class NNablaProfiler(Profiler):
         self._nnabla_context = ctx.backend[0].split(':')[0]
 
     def _profile(self, input, n_run):
+        for i in range(2):
+            input.forward() #warmups
         prof = GraphProfiler(input, device_id=self._dev_idx, ext_name=self._nnabla_context, n_run=n_run)
         prof.run()
         return float(prof.result['forward_all'])

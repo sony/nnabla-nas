@@ -218,8 +218,11 @@ class Graph(mo.ModuleList, Module):
         """
         result = {}
         for mi in self.get_modules():
-            if isinstance(mi[1], Module) and mi[1] != self:
-                result[mi[1].name] = mi[1].profile(profiler, n_run=n_run)
+            if isinstance(mi[1], Module):
+                if mi[1] != self and not isinstance(mi[1], Graph):
+                    result[mi[1].name] = mi[1].profile(profiler, n_run=n_run)
+                else:
+                    print("do not profile {}".format(mi[1].name))
         return result
 
     def __getitem__(self, index):

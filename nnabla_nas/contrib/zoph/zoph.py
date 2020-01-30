@@ -193,6 +193,15 @@ class ZophNetwork(smo.Graph):
                              kernel=(1,1)))
         self.append(smo.GlobalAvgPool(name='{}/global_average_pool'.format(self.name), parent=self[-1]))
 
+
+    def get_arch_modules(self):
+        ans = []
+        for name, module in self.get_modules():
+            if isinstance(module, smo.Join):
+                ans.append(module)
+        return ans
+
+
 if __name__ == '__main__':
 
     input = smo.Input(name='input', value=nn.Variable((10,20,32,16)))
@@ -208,7 +217,6 @@ if __name__ == '__main__':
     zoph_network = ZophNetwork(name='network1', parents=[input2])
 
     #---------------------test graph setup--------------------------
-
     out_1 = sep_conv3x3()
     out_2 = sep_conv5x5()
     out_3 = dil_sep_conv3x3()
@@ -219,8 +227,43 @@ if __name__ == '__main__':
     out_8 = zoph_cell()
     out_9 = zoph_network()
 
+    #forward twice, just to get rid of the setup time when profiling
+    for i in range(2):
+        print("Warmup fw pass {}".format(i))
+        out_9.forward()
+
+    #-------------------do the profiling results sum up to the correct value------------------
     from nnabla_nas.module.static import NNablaProfiler
-    profiler    = NNablaProfiler()
+    from nnabla.utils.profiler import GraphProfiler
+
+    #-----profiling the whole graph at once---------
+    ctx = nn.context.get_current_context()
+    dev_idx = int(ctx.device_id)
+    nnabla_context = ctx.backend[0].split(':')[0]
+    total_latency = [] 
+    summed_latency = []
+
+    for i in range(10):
+        prof = GraphProfiler(out_9, device_id=dev_idx, ext_name=nnabla_context, n_run=10)
+        prof.run()
+        total_latency.append(float(prof.result['forward_all']))
+
+        #-----profiling each module individually--------
+        profiler    = NNablaProfiler()
+
+        for mi in zoph_network.get_modules():
+            if isinstance(mi, smo.Module):
+                mi._profile = None #reset the profile
+
+        latencies   = zoph_network.profile(profiler, n_run=10)
+        summed_lat  = 0.0
+        for li in latencies:
+            summed_latency.append(latencies[li])
+        print(i)
+
+    print('latency when profiling the whole graph at once is {}'.format(np.sum(np.array(total_latency))/10))
+    print('latency when profiling module by module is {}'.format(np.sum(np.array(summed_latency))/10))
+    
     exp_lat     = zoph_network.get_exp_latency(profiler)
     import pdb; pdb.set_trace()
 
