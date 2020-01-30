@@ -1,5 +1,6 @@
 import numpy as np
 import nnabla as nn
+import nnabla.functions as F
 from collections import OrderedDict
 from nnabla.initializer import ConstantInitializer
 import nnabla_nas.module as mo
@@ -8,7 +9,7 @@ from nnabla_nas.module.parameter import Parameter
 
 #---------------------Definition of the candidate convolutions for the zoph search space-------------------------------
 class SepConv(smo.SepConv):
-    def __init__(self, name, parent, out_channels, kernel, dilation):
+    def __init__(self, name, parent, out_channels, kernel, dilation, eval_prob=None):
 
         if dilation is None:
             pad = tuple([ki//2 for ki in kernel])
@@ -18,7 +19,8 @@ class SepConv(smo.SepConv):
         smo.SepConv.__init__(self, name=name, parent=parent, in_channels=parent.shape[1],
                              out_channels=parent.shape[1],
                              kernel=kernel, pad=pad,
-                             dilation=dilation, with_bias=False)
+                             dilation=dilation, with_bias=False,
+                             eval_prob=eval_prob)
 
         self.bn = mo.BatchNormalization(n_features=self._out_channels, n_dims=4)
         self.relu = mo.ReLU()
@@ -27,25 +29,25 @@ class SepConv(smo.SepConv):
         return self.relu(self.bn(smo.SepConv._value_function(self, smo.SepConv._value_function(self, input))))
 
 class SepConv3x3(SepConv):
-    def __init__(self, name, parent, channels):
-        SepConv.__init__(self, name, parent, channels, (3,3), None)
+    def __init__(self, name, parent, channels, eval_prob=None):
+        SepConv.__init__(self, name, parent, channels, (3,3), None, eval_prob=eval_prob)
 
 class SepConv5x5(SepConv):
-    def __init__(self, name, parent, channels):
-        SepConv.__init__(self, name, parent, channels, (5,5), None)
+    def __init__(self, name, parent, channels, eval_prob=None):
+        SepConv.__init__(self, name, parent, channels, (5,5), None, eval_prob=eval_prob)
 
 class DilSepConv3x3(SepConv):
-    def __init__(self, name, parent, channels):
-        SepConv.__init__(self, name, parent, channels, (3,3), (2,2))
+    def __init__(self, name, parent, channels, eval_prob=None):
+        SepConv.__init__(self, name, parent, channels, (3,3), (2,2), eval_prob=eval_prob)
 
 class DilSepConv5x5(SepConv):
-    def __init__(self, name, parent, channels):
-        SepConv.__init__(self, name, parent, channels, (5,5), (2,2))
+    def __init__(self, name, parent, channels, eval_prob=None):
+        SepConv.__init__(self, name, parent, channels, (5,5), (2,2), eval_prob=eval_prob)
 
 
 #---------------------Definition of the candidate pooling operations for the zoph search space-------------------------------
 class MaxPool3x3(smo.MaxPool):
-    def __init__(self, name, parent, *args, **kwargs):
+    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         smo.MaxPool.__init__(self, name, parent, kernel=(3,3), stride=(1,1), pad=(1,1))
         self.bn = mo.BatchNormalization(n_features=self.parent.shape[1], n_dims=4)
         self.relu= mo.ReLU()
@@ -54,8 +56,8 @@ class MaxPool3x3(smo.MaxPool):
         return self.relu(self.bn(smo.MaxPool._value_function(self, input)))
 
 class AveragePool3x3(smo.AvgPool):
-    def __init__(self, name, parent, *args, **kwargs):
-        smo.AvgPool.__init__(self, name, parent, kernel=(3,3), stride=(1,1), pad=(1,1))
+    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+        smo.AvgPool.__init__(self, name, parent, kernel=(3,3), stride=(1,1), pad=(1,1), eval_prob=eval_prob)
         self.bn = mo.BatchNormalization(n_features=self.parent.shape[1], n_dims=4)
         self.relu= mo.ReLU()
 
@@ -83,19 +85,25 @@ class ZophBlock(smo.Graph):
             self._join_parameters = join_parameters
         smo.Graph.__init__(self, name, parents)
 
-        #add an input concatenation
+        join_prob = F.softmax(self._join_parameters)
 
+        #add an input concatenation
         input_con = smo.Merging(name='{}/input_con'.format(self.name),
                                 parents=self.parent,
                                 mode='concat',
-                                axis=1)
+                                axis=1,
+                                eval_prob=F.sum(join_prob[:-1]))
         self.append(input_con)
         input_conv = smo.Conv(name='{}/input_conv'.format(self.name), parent=input_con, in_channels=input_con.shape[1],
-                              out_channels=self._channels, kernel=(1,1))
+                              out_channels=self._channels, kernel=(1,1),
+                                eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
 
         for i,ci in enumerate(self._candidates):
-            self.append(ci(name='{}/candidate_{}'.format(self.name, i), parent=input_conv, channels=self._channels))
+            self.append(ci(name='{}/candidate_{}'.format(self.name, i),
+                           parent=input_conv,
+                           channels=self._channels,
+                           eval_prob=join_prob[i]))
         self.append(smo.Join(name='{}/join'.format(self.name), parents=self[2:], join_parameters=self._join_parameters))
 
 class ZophCell(smo.Graph):
@@ -185,6 +193,15 @@ class ZophNetwork(smo.Graph):
                              kernel=(1,1)))
         self.append(smo.GlobalAvgPool(name='{}/global_average_pool'.format(self.name), parent=self[-1]))
 
+
+    def get_arch_modules(self):
+        ans = []
+        for name, module in self.get_modules():
+            if isinstance(module, smo.Join):
+                ans.append(module)
+        return ans
+
+
 if __name__ == '__main__':
 
     input = smo.Input(name='input', value=nn.Variable((10,20,32,16)))
@@ -200,7 +217,6 @@ if __name__ == '__main__':
     zoph_network = ZophNetwork(name='network1', parents=[input2])
 
     #---------------------test graph setup--------------------------
-
     out_1 = sep_conv3x3()
     out_2 = sep_conv5x5()
     out_3 = dil_sep_conv3x3()
@@ -211,16 +227,43 @@ if __name__ == '__main__':
     out_8 = zoph_cell()
     out_9 = zoph_network()
 
+    #forward twice, just to get rid of the setup time when profiling
+    for i in range(2):
+        print("Warmup fw pass {}".format(i))
+        out_9.forward()
 
-    #----------------------test profiling------------------------
+    #-------------------do the profiling results sum up to the correct value------------------
     from nnabla_nas.module.static import NNablaProfiler
-    eval_p = zoph_cell.eval_probs()
-    for evi in eval_p:
-        try:
-            eval_p[evi].forward()
-        except:
-            pass
-        print("Module {} has evaluation probability {}".format(evi.name, eval_p[evi].d))
+    from nnabla.utils.profiler import GraphProfiler
 
+    #-----profiling the whole graph at once---------
+    ctx = nn.context.get_current_context()
+    dev_idx = int(ctx.device_id)
+    nnabla_context = ctx.backend[0].split(':')[0]
+    total_latency = [] 
+    summed_latency = []
 
+    for i in range(10):
+        prof = GraphProfiler(out_9, device_id=dev_idx, ext_name=nnabla_context, n_run=10)
+        prof.run()
+        total_latency.append(float(prof.result['forward_all']))
+
+        #-----profiling each module individually--------
+        profiler    = NNablaProfiler()
+
+        for mi in zoph_network.get_modules():
+            if isinstance(mi, smo.Module):
+                mi._profile = None #reset the profile
+
+        latencies   = zoph_network.profile(profiler, n_run=10)
+        summed_lat  = 0.0
+        for li in latencies:
+            summed_latency.append(latencies[li])
+        print(i)
+
+    print('latency when profiling the whole graph at once is {}'.format(np.sum(np.array(total_latency))/10))
+    print('latency when profiling module by module is {}'.format(np.sum(np.array(summed_latency))/10))
+    
+    exp_lat     = zoph_network.get_exp_latency(profiler)
     import pdb; pdb.set_trace()
+
