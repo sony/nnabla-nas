@@ -50,7 +50,8 @@ class SearchNet(Mo.Module):
                     multiplier=self._multiplier,
                     channels=(channel_p_p, channel_p, channel_c),
                     reductions=(reduction_p, reduction_c),
-                    mode='sample'
+                    mode='sample',
+                    affine=True
                 )
             )
             reduction_p = reduction_c

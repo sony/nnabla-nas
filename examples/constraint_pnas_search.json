@@ -3,21 +3,16 @@
     "network": {
         "name": "pnas",
         "in_channels": 3,
-        "init_channels": 16,
-        "num_cells": 20,
+        "init_channels": 36,
+        "num_cells": 10,
         "num_classes": 10,
         "num_choices": 4
     },
     "regularizer": {
-        "memory": {
-            "name": "MemoryEstimator",
-            "weight": 1.0,
-            "bound": 0.7
-        },
         "latency": {
             "name": "LatencyEstimator",
-            "weight": 10.0,
-            "bound": 0.02,
+            "weight": 0.1,
+            "bound": 15,
             "device_id": 0,
             "ext_name": "cudnn"
         }
@@ -26,7 +21,7 @@
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 105469
+            "max_iter": 56250
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -36,21 +31,20 @@
         }
     },
     "arch_optimizer": {
-        "control_variate": 0.001,
         "lr_scheduler": null,
         "grad_clip": 5.0,
-        "weight_decay": 1e-3,
+        "weight_decay": 0,
         "solver": {
             "name": "Adam",
-            "alpha": 0.01,
-            "beta1": 0.5,
+            "alpha": 0.001,
+            "beta1": 0,
             "beta2": 0.999
         }
     },
-    "epoch": 300,
-    "batch_size": 128,
-    "mini_batch_size": 128,
-    "warmup": 20,
+    "epoch": 120,
+    "batch_size": 96,
+    "mini_batch_size": 48,
+    "warmup": 0,
     "model_name": "arch",
     "output_path": "log/pnas-con/search",
     "print_frequency": 20,

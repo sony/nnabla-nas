@@ -35,7 +35,7 @@ class MemoryEstimator(Estimator):
         if idm not in self.memo:
             self.memo[idm] = sum(np.prod(p.shape)
                                  for p in module.parameters.values())
-        return self.memo[idm] * 1e-6
+        return self.memo[idm]
 
 
 class LatencyEstimator(Estimator):
@@ -75,4 +75,4 @@ class LatencyEstimator(Estimator):
             mem[key] = float(runner.result['forward'][0].mean_time)
             module.apply(training=state)  # recover training state
 
-        return mem[key] * 1e-3
+        return mem[key]

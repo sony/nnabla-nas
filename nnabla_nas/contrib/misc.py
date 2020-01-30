@@ -143,7 +143,7 @@ class MixedOp(Mo.Module):
         if mode not in ('max', 'sample', 'full'):
             raise ValueError(f'mode={mode} is not supported.')
 
-        self._active = -1  # save the active index
+        self._active = None  # save the active index
         self._mode = mode
         self._ops = Mo.ModuleList(operators)
         self._alpha = alpha
@@ -162,7 +162,7 @@ class MixedOp(Mo.Module):
             out = F.mul2(out, F.softmax(self._alpha, axis=0))
             return F.sum(out, axis=0)
 
-        if self._active < 0:
+        if self._active is None:
             logger.warn('The active index was not initialized.')
 
         return self._ops[self._active](input)
@@ -194,7 +194,7 @@ class SepConv(Mo.DwConv):
         Mo.DwConv.__init__(self, *args, **kwargs)
         self._out_channels = out_channels
         self._conv_module_pw = Mo.Conv(self._in_channels, out_channels, kernel=(1, 1),
-                                 pad=None, group=1, rng=self._rng, with_bias=None)
+                                       pad=None, group=1, rng=self._rng, with_bias=None)
 
     def call(self, input):
         return self._conv_module_pw(Mo.DwConv.call(self, input))
