@@ -15,6 +15,7 @@ from ..dataset import DataLoader
 from ..dataset.cifar10 import cifar10
 from ..optimizer import Optimizer
 from ..contrib.pnas import estimator as EST
+from ..contrib.pnas.modules import SampledOp
 
 
 class Searcher(object):
@@ -25,10 +26,10 @@ class Searcher(object):
     def __init__(self, model, conf):
         self.model = model
         self.conf = conf
-        self.arch_modules = model.get_arch_modules()
+        self.arch_modules = [m for _, m in model.get_modules() if isinstance(m, SampledOp)]
         self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
         self.evaluate = lambda o, t:  F.mean(F.top_n_error(o, t))
-        self.iter = self.conf['batch_size'] // self.conf['mini_batch_size']
+        self.accum_grad = self.conf['batch_size'] // self.conf['mini_batch_size']
         self.op_names = list(CANDIDATE_FUNC.keys())
 
         # dataset configuration
@@ -48,15 +49,13 @@ class Searcher(object):
         }
 
         # regularizer configurations
-        self.reg = None
-        if 'regularizer' in conf:
-            self.reg = dict()
-            for k, v in conf['regularizer'].items():
-                args = v.copy()
-                self.reg[k] = dict()
-                self.reg[k]['bound'] = args.pop('bound')
-                self.reg[k]['weight'] = args.pop('weight')
-                self.reg[k]['reg'] = EST.__dict__[args.pop('name')](**args)
+        self.reg = dict()
+        for k, v in conf['regularizer'].items():
+            args = v.copy()
+            self.reg[k] = dict()
+            self.reg[k]['bound'] = args.pop('bound')
+            self.reg[k]['weight'] = args.pop('weight')
+            self.reg[k]['reg'] = EST.__dict__[args.pop('name')](**args)
 
         # solver configurations
         self.optimizer = dict()
@@ -68,7 +67,7 @@ class Searcher(object):
             )
             solver = optim['solver']
             self.optimizer[key] = Optimizer(
-                retain_state=key == 'model',
+                retain_state=True,
                 weight_decay=optim.pop('weight_decay', None),
                 grad_clip=optim.pop('grad_clip', None),
                 lr_scheduler=lr_scheduler,
@@ -96,17 +95,12 @@ class Searcher(object):
 
         # monitor the training process
         monitor = ut.ProgressMeter(one_epoch, path=conf['output_path'])
-        ut.write_to_json_file(
-            content=conf,
-            file_path=os.path.join(conf['output_path'], 'search_config.json')
-        )
-
-        self._avg_reward = None  # average reward
+        self._reward = 0  # average reward
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
             for i in range(one_epoch):
                 self._update_model_step(monitor)
-                if warmup == 0:
+                if warmup == 0 and cur_epoch > 0:
                     self._update_arch_step(monitor)
                 if i % conf['print_frequency'] == 0:
                     monitor.display(i)
@@ -117,10 +111,11 @@ class Searcher(object):
                 self.model.get_arch_parameters()
             )
             # logging output
-            logger.info(self._get_statistics())
             monitor.write(cur_epoch)
 
+        logger.info(self._get_statistics())
         monitor.close()
+
         return self
 
     def _update_model_step(self, monitor):
@@ -128,71 +123,54 @@ class Searcher(object):
         bz = self.conf['mini_batch_size']
         ph = self.placeholder['model']
         self._sample_train_net()
-        for _ in range(self.iter):
+        for _ in range(self.accum_grad):
             ph['input'].d, ph['target'].d = self.loader['model'].next()
             ph['loss'].forward(clear_no_need_grad=True)
-            ph['err'].forward(clear_buffer=True)
             ph['loss'].backward(clear_buffer=True)
-            monitor.update('model_loss', ph['loss'].d * self.iter, bz)
+            ph['err'].forward(clear_buffer=True)
+            monitor.update('model_loss', ph['loss'].d * self.accum_grad, bz)
             monitor.update('model_err', ph['err'].d, bz)
         self.optimizer['model'].update()
 
     def _update_arch_step(self, monitor):
         """Update the arch parameters."""
-        n_iter = 10
-        # save temporal values
-        reward_list, grad_list = [], []
-        # sample a minibatch
-        vd, vt = [None]*self.iter, [None]*self.iter
-        for i in range(self.iter):
-            vd[i], vt[i] = self.loader['arch'].next()
+        beta, n_iter = 0.99, 5
         bz = self.conf['mini_batch_size']
         ph = self.placeholder['arch']
+        data = [self.loader['arch'].next() for i in range(self.accum_grad)]
+        rewards, grads = [], []
 
         for _ in range(n_iter):
             reward = 0
             self._sample_search_net()
-            for i in range(self.iter):
-                ph['input'].d, ph['target'].d = vd[i], vt[i]
-                ph['loss'].forward(clear_no_need_grad=True)
+            for i in range(self.accum_grad):
+                ph['input'].d, ph['target'].d = data[i]
+                ph['loss'].forward(clear_buffer=True)
                 ph['err'].forward(clear_buffer=True)
-                monitor.update('arch_loss', ph['loss'].d * self.iter, bz)
+                monitor.update('arch_loss', ph['loss'].d * self.accum_grad, bz)
                 monitor.update('arch_err', ph['err'].d, bz)
                 reward += 1 - ph['err'].d
-
-            reward /= self.iter
+            reward /= self.accum_grad
+            # adding contraints
             for k, v in self.reg.items():
                 value = v['reg'].get_estimation(self.model)
                 reward *= (v['bound'] / value)**v['weight']
                 monitor.update(k, value, 1)
 
-            reward_list.append(reward)
+            rewards.append(reward)
+            grads.append([m._alpha.g for m in self.arch_modules])
 
-            grad_cur = []
-            for m in self.arch_modules:
-                probs = softmax(m._alpha.d.flat)
-                probs[m._active] -= 1
-                grad_cur.append(probs)
+        avg_reward = sum(rewards) / n_iter
+        self._reward = beta * avg_reward + (1 - beta) * self._reward
+        monitor.update('reward', self._reward, self.conf['batch_size'])
 
-            grad_list.append(grad_cur)
-
-        avg_reward = sum(reward_list) / n_iter
-
-        if self._avg_reward is None:
-            self._avg_reward = avg_reward
-        else:
-            self._avg_reward += 0.99 * (avg_reward - self._avg_reward)
-
+        # compute gradients
         for j, m in enumerate(self.arch_modules):
-            probs = np.zeros(m._alpha.shape).flatten()
-            m._alpha.grad.zero()
-            for i in range(n_iter):
-                probs += (reward_list[i] - self._avg_reward) * \
-                    grad_list[i][j]
-            m._alpha.g = probs.reshape(m._alpha.shape) / n_iter
+            m._alpha.g = sum(
+                (r - self._reward) * grads[i][j] for i, r in enumerate(rewards)
+            ) / n_iter
 
         self.optimizer['arch'].update()
-        monitor.update('reward', self._avg_reward, self.conf['batch_size'])
 
     def _get_statistics(self):
         stats = ''
@@ -211,7 +189,7 @@ class Searcher(object):
         ph = self.placeholder['model']
         image = ut.image_augmentation(ph['input'])
         ph['output'] = self.model(image).apply(persistent=True)
-        ph['loss'] = self.criteria(ph['output'], ph['target']) / self.iter
+        ph['loss'] = self.criteria(ph['output'], ph['target'])/self.accum_grad
         ph['err'] = self.evaluate(
             ph['output'].get_unlinked_variable(),
             ph['target']
@@ -230,15 +208,13 @@ class Searcher(object):
         self.model.apply(training=False)
         ph = self.placeholder['arch']
         ph['output'] = self.model(ph['input']).apply(persistent=True)
-        ph['loss'] = self.criteria(ph['output'], ph['target']) / self.iter
+        ph['loss'] = self.criteria(ph['output'], ph['target'])/self.accum_grad
         ph['err'] = self.evaluate(
             ph['output'].get_unlinked_variable(),
             ph['target']
         )
         ph['loss'].apply(persistent=True)
         ph['err'].apply(persistent=True)
-        # setup parameters
-        if len(self.optimizer['arch'].get_parameters()) == 0:
-            self.optimizer['arch'].set_parameters(
-                self.model.get_arch_parameters(grad_only=True)
-            )
+        self.optimizer['arch'].set_parameters(
+            self.model.get_arch_parameters(grad_only=True)
+        )

@@ -66,7 +66,7 @@ class LatencyEstimator(Estimator):
             state = module.training
             module.apply(training=False)  # turn off training
             # run profiler
-            nnabla_vars = [nn.Variable(s) for s in module.inputs]
+            nnabla_vars = [nn.Variable((1,) + s[1:]) for s in module.inputs]
             runner = GraphProfiler(module.call(*nnabla_vars),
                                    device_id=self._device_id,
                                    ext_name=self._ext_name,

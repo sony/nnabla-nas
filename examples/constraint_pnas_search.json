@@ -12,7 +12,7 @@
         "latency": {
             "name": "LatencyEstimator",
             "weight": 0.1,
-            "bound": 15,
+            "bound": 10,
             "device_id": 0,
             "ext_name": "cudnn"
         }
@@ -21,7 +21,7 @@
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 56250
+            "max_iter": 21093
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -42,9 +42,9 @@
         }
     },
     "epoch": 120,
-    "batch_size": 96,
-    "mini_batch_size": 48,
-    "warmup": 40,
+    "batch_size": 256,
+    "mini_batch_size": 128,
+    "warmup": 10,
     "model_name": "arch",
     "output_path": "log/pnas-con/search",
     "print_frequency": 20,

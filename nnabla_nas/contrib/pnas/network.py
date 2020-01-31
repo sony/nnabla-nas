@@ -4,7 +4,7 @@ import nnabla as nn
 import nnabla.functions as F
 
 from ... import module as Mo
-from ..darts import modules as darts
+from . import modules as pnas
 from ..misc import AuxiliaryHeadCIFAR, DropPath, MixedOp
 
 
@@ -15,14 +15,14 @@ class SearchNet(Mo.Module):
                  num_choices=4, multiplier=4, stem_multiplier=3):
         super().__init__()
         self._num_choices = num_choices
-        self._num_ops = len(darts.CANDIDATE_FUNC)
+        self._num_ops = len(pnas.CANDIDATE_FUNC)
         self._multiplier = multiplier
         self._init_channels = init_channels
 
         num_channels = stem_multiplier * init_channels
 
         # build the network
-        self._stem = darts.StemConv(in_channels, num_channels)
+        self._stem = pnas.StemConv(in_channels, num_channels)
         self._cells = self._init_cells(num_cells, num_channels)
         self._ave_pool = Mo.AvgPool(kernel=(8, 8))
         self._linear = Mo.Linear(self._last_channels, num_classes)
@@ -45,12 +45,11 @@ class SearchNet(Mo.Module):
             reduction_c = i in (num_cells // 3, 2 * num_cells // 3)
             channel_c *= reduction_c + 1
             cells.append(
-                darts.Cell(
+                pnas.Cell(
                     num_choices=self._num_choices,
                     multiplier=self._multiplier,
                     channels=(channel_p_p, channel_p, channel_c),
                     reductions=(reduction_p, reduction_c),
-                    mode='sample',
                     affine=True
                 )
             )
@@ -76,13 +75,6 @@ class SearchNet(Mo.Module):
                 param[key] = val
         return param
 
-    def get_arch_modules(self):
-        ans = []
-        for name, module in self.get_modules():
-            if isinstance(module, MixedOp):
-                ans.append(module)
-        return ans
-
 
 class TrainNet(Mo.Module):
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
@@ -100,7 +92,7 @@ class TrainNet(Mo.Module):
         num_channels = stem_multiplier * init_channels
 
         # initialize the arch parameters
-        self._stem = darts.StemConv(in_channels, num_channels)
+        self._stem = pnas.StemConv(in_channels, num_channels)
         self._cells = self._init_cells(num_cells, num_channels)
         self._ave_pool = Mo.AvgPool(kernel=(8, 8))
         self._linear = Mo.Linear(self._last_channels, num_classes)
@@ -177,20 +169,20 @@ class Cell(Mo.Module):
         self._prep = Mo.ModuleList()
         if reductions[0]:
             self._prep.append(
-                darts.FactorizedReduce(channels[0], channels[2], affine=affine))
+                pnas.FactorizedReduce(channels[0], channels[2], affine=affine))
         else:
             self._prep.append(
-                darts.ReLUConvBN(channels[0], channels[2], kernel=(1, 1),
-                                 affine=affine))
+                pnas.ReLUConvBN(channels[0], channels[2], kernel=(1, 1),
+                                affine=affine))
         self._prep.append(
-            darts.ReLUConvBN(channels[1], channels[2], kernel=(1, 1), affine=affine))
+            pnas.ReLUConvBN(channels[1], channels[2], kernel=(1, 1), affine=affine))
 
         # build choice blocks
         self._blocks = Mo.ModuleList()
         for i in range(num_choices):
             for j in range(i + 2):
                 self._blocks.append(
-                    darts.ChoiceBlock(
+                    pnas.ChoiceBlock(
                         in_channels=channels[2],
                         out_channels=channels[2],
                         is_reduced=j < 2 and reductions[1],
