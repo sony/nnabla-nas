@@ -2,11 +2,11 @@ from collections import OrderedDict
 
 import nnabla.functions as F
 import numpy as np
+from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
 
 from ... import module as Mo
 from ..misc import ReLUConvBN
-from nnabla.initializer import ConstantInitializer
 
 CANDIDATE_FUNC = OrderedDict([
     ('dil_conv_3x3', lambda channels, stride, affine:

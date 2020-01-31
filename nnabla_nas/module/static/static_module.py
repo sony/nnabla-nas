@@ -2,16 +2,19 @@
 Classes for graph based definition of DNN architectures and candidate spaces.
 """
 
-#from nnabla_nas.graph.profiling import *
-import numpy as np
+import operator
+
 import nnabla as nn
 import nnabla.functions as F
+#from nnabla_nas.graph.profiling import *
+import numpy as np
 from nnabla.initializer import (ConstantInitializer, UniformInitializer,
                                 calc_uniform_lim_glorot)
-from nnabla_nas.module.parameter import Parameter
-import nnabla_nas.module as smo
+
 import nnabla_nas.contrib.misc as misc
-import operator
+import nnabla_nas.module as smo
+from nnabla_nas.module.parameter import Parameter
+
 
 def _get_abs_string_index(obj, idx):
     """Get the absolute index for the list of modules"""
@@ -587,4 +590,3 @@ if __name__ == '__main__':
 
     print(latency)
     import pdb; pdb.set_trace()
-

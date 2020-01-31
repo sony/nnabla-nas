@@ -1,6 +1,8 @@
-from nnabla_nas.module import Module
-from nnabla.utils.profiler import GraphProfiler
 import nnabla as nn
+from nnabla.utils.profiler import GraphProfiler
+
+from nnabla_nas.module import Module
+
 
 class Profiler(object):
     def _profile(self, static_module, n_run):

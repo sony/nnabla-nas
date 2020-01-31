@@ -104,7 +104,7 @@ def dataset_transformer(conf):
         scale=255.0
     )
     train_transform = Compose([normalize])
-    if 'cutout' in conf and conf['cutout']:
+    if conf.get('cutout', False):
         train_transform.append(Cutout(conf['cutout_length']))
     valid_transform = Compose([normalize])
 

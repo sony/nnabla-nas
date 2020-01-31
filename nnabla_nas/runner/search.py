@@ -1,19 +1,18 @@
 import os
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
 import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
-from collections import Counter
 
-from ..contrib.darts.modules import CANDIDATE_FUNC
 from .. import utils as ut
+from ..contrib.darts.modules import CANDIDATE_FUNC
+from ..contrib.pnas import estimator as EST
 from ..dataset import DataLoader
 from ..dataset.cifar10 import cifar10
 from ..optimizer import Optimizer
 from ..visualization import visualize
-from ..contrib.pnas import estimator as EST
 
 
 class Searcher(object):

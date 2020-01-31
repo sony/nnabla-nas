@@ -21,7 +21,7 @@
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 35156
+            "max_iter": 21093
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -41,7 +41,7 @@
             "beta2": 0.999
         }
     },
-    "epoch": 200,
+    "epoch": 120,
     "batch_size": 256,
     "mini_batch_size": 64,
     "warmup": 10,

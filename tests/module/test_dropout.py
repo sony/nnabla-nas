@@ -2,7 +2,7 @@ import nnabla as nn
 import numpy as np
 import pytest
 
-from nnabla_nas.module import Conv, Module, Dropout
+from nnabla_nas.module import Conv, Dropout, Module
 
 
 class Block(Module):

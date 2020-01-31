@@ -1,10 +1,13 @@
-import numpy as np
-import nnabla as nn
 from collections import OrderedDict
+
+import nnabla as nn
+import numpy as np
 from nnabla.initializer import ConstantInitializer
+
 import nnabla_nas.module as mo
 import nnabla_nas.module.static.static_module as smo
 from nnabla_nas.module.parameter import Parameter
+
 
 #---------------------Definition of the candidate convolutions for the zoph search space-------------------------------
 class SepConv(smo.SepConv):

@@ -4,8 +4,8 @@ import nnabla as nn
 import nnabla.functions as F
 
 from ... import module as Mo
-from . import modules as pnas
 from ..misc import AuxiliaryHeadCIFAR, DropPath, MixedOp
+from . import modules as pnas
 
 
 class SearchNet(Mo.Module):
