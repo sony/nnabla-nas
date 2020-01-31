@@ -230,8 +230,6 @@ class InvertedResidualConv(Mo.Module):
         self._operators.append(ConvBNReLU6(hmaps, self._out_channels, kernel=(1, 1),
                     stride=(1, 1), pad=(0, 0), with_bias=False))
     
-        self._operators.append(Mo.ReLU6())
-
     def call(self, input):
         y = self._operators(input)
         if (self._stride == (1, 1) and self._in_channels == self._out_channels):

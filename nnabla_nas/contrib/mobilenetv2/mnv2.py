@@ -1,6 +1,4 @@
 import nnabla as nn
-from collections import OrderedDict
-from nnabla.initializer import ConstantInitializer
 import nnabla_nas.module.static.static_module as smo
 import nnabla_nas.contrib.misc as misc
 from nnabla_nas.module.parameter import Parameter
@@ -31,11 +29,10 @@ class InvertedResidualConv(misc.InvertedResidualConv, smo.Module):
 
 
 class Mnv2Classifier(smo.Graph):
-    def __init__(self, name, parents, n_classes=10, drop_rate=0.2, is_training=True):
+    def __init__(self, name, parents, n_classes=10, drop_rate=0.2):
         super(Mnv2Classifier, self).__init__(name, parents)
         self._n_classes = n_classes
         self._drop_rate = drop_rate
-        self._is_training = is_training
 
         self.append(smo.Dropout(name='{}/dropout'.format(self._name),
                                 parent=self.parent[0],
@@ -54,15 +51,13 @@ class Mnv2Architecture(smo.Graph):
                  first_maps=32,
                  last_maps=1280,
                  width_mult=1.0,
-                 n_classes=10,
-                 is_training=True):
+                 n_classes=10):
         super(Mnv2Architecture, self).__init__(name, parents)
         self._inverted_residual_setting = inverted_residual_setting
         self._n_classes = n_classes
         self._first_maps = first_maps
         self._last_maps = last_maps
         self._width_mult = width_mult
-        self._is_training = is_training
         
         # First Layer
         self.append(ConvBnRelu6(name="{}/first-conv".format(self._name),
@@ -80,7 +75,7 @@ class Mnv2Architecture(smo.Graph):
                 for i in range(n):
                     if i == 0:
                         stride = (1, 1)
-                        self.append(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}-{}-{}".format(self._name,t, c, n, s, i),
+                    self.append(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}-{}-{}".format(self._name,t, c, n, s, i),
                                                          parent=self[-1],
                                                          in_channels=self[-1].shape[1],
                                                          out_channels=maps,
@@ -129,71 +124,70 @@ class CandidatesCell(smo.Graph):
             self.append(Identity(name='{}/skip'.format(self._name), parent=[self.modules[-1]]))
             self.append(Join(name='{}/join'.format(self._name), parent=[self.modules[-1]], join_parameters=self._join_parameters, mode=self._join_mode))
 
-#class Mnv2SearchSpace(Graph):
-#    def __init__(self, name,
-#                 graph=None,
-#                 first_maps=32,
-#                 last_maps=1280,
-#                 n_classes=10,
-#                 *args, **kwargs):
-#        super(mnv2_search_space, self).__init__(name=name, graph=graph, *args, **kwargs)
-#        self._n_classes = n_classes
-#        self._first_maps = first_maps
-#        self._last_maps = last_maps
-#        blocks = []
-#        
-#        #Fixed setting
-#
-#        inverted_residual_setting = [
-#                                #c, s
-#                                [16, 1],
-#                                [24, 1],
-#                                [32, 2],
-#                                [64, 2],
-#                                [96, 1],
-#                                [160, 2],
-#                                [320, 1]]
-#
-#        #Search space setting
-#        t_set = [1, 3, 6, 12] # set of expension factors
-#        n_max = 4 # number of inverted residual per block (can be lower because of skip connection) 
-#
-#        # First Layer
-#        blocks.append(ConvBnRelu6(name="first-conv",
-#                                  graph=self,
-#                                  maps=int(first_maps),
-#                                  kernel=(3, 3),
-#                                  stride=(2, 2)))
-#        # Inverted residual blocks
-#        for c,s in inverted_residual_setting:
-#            for i in range(n_max):
-#                identity_skip = True
-#                if i == 0:
-#                    stride = (s, s)
-#                    identity_skip = False
-#                else:
-#                    stride = (1, 1) 
-#                # candidates_cell
-#                blocks.append(candidates_cell(name="cell-{}-{}-{}".format(c,s,i),
-#                                              graph=self,
-#                                              t_set=t_set,
-#                                              stride=stride,
-#                                              c=c,
-#                                              identity_skip=identity_skip))
-#                blocks[-1](blocks[-2]) #connect it to the previous vertice
-#
-#        # Last Layer
-#        blocks.append(ConvBnRelu6(name="last-conv",
-#                                  graph=self,
-#                                  maps=int(last_maps),
-#                                  kernel=(1, 1),
-#                                  pad=(0, 0)))
-#        blocks[-1](blocks[-2]) #connect it to the previous vertice
-#        
-#        # Classifier  
-#        blocks.append(mnv2_classifier(name="classifier", n_classes=self._n_classes))
-#        blocks[-1](blocks[-2]) #connect it to the previous vertice
-#
+class Mnv2SearchSpace(Graph):
+    def __init__(self, name, parents,
+                 first_maps=32,
+                 last_maps=1280,
+                 n_classes=10,
+                 *args, **kwargs):
+        super(mnv2_search_space, self).__init__(name=name, graph=graph, *args, **kwargs)
+        self._n_classes = n_classes
+        self._first_maps = first_maps
+        self._last_maps = last_maps
+        blocks = []
+        
+        #Fixed setting
+
+        inverted_residual_setting = [
+                                #c, s
+                                [16, 1],
+                                [24, 1],
+                                [32, 2],
+                                [64, 2],
+                                [96, 1],
+                                [160, 2],
+                                [320, 1]]
+
+        #Search space setting
+        t_set = [1, 3, 6, 12] # set of expension factors
+        n_max = 4 # number of inverted residual per block (can be lower because of skip connection) 
+
+        # First Layer
+        blocks.append(ConvBnRelu6(name="first-conv",
+                                  graph=self,
+                                  maps=int(first_maps),
+                                  kernel=(3, 3),
+                                  stride=(2, 2)))
+        # Inverted residual blocks
+        for c,s in inverted_residual_setting:
+            for i in range(n_max):
+                identity_skip = True
+                if i == 0:
+                    stride = (s, s)
+                    identity_skip = False
+                else:
+                    stride = (1, 1) 
+                # candidates_cell
+                blocks.append(candidates_cell(name="cell-{}-{}-{}".format(c,s,i),
+                                              graph=self,
+                                              t_set=t_set,
+                                              stride=stride,
+                                              c=c,
+                                              identity_skip=identity_skip))
+                blocks[-1](blocks[-2]) #connect it to the previous vertice
+
+        # Last Layer
+        blocks.append(ConvBnRelu6(name="last-conv",
+                                  graph=self,
+                                  maps=int(last_maps),
+                                  kernel=(1, 1),
+                                  pad=(0, 0)))
+        blocks[-1](blocks[-2]) #connect it to the previous vertice
+        
+        # Classifier  
+        blocks.append(mnv2_classifier(name="classifier", n_classes=self._n_classes))
+        blocks[-1](blocks[-2]) #connect it to the previous vertice
+
 
 
 if __name__ =='__main__':
