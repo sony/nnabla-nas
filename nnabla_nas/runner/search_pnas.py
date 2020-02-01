@@ -148,7 +148,7 @@ class Searcher(object):
         # adding contraints
         for k, v in self.reg.items():
             value = v['reg'].get_estimation(self.model)
-            reward *= (v['bound'] / value)**v['weight']
+            reward *= (value/v['bound'])**v['weight']
             monitor.update(k, value, 1)
         # compute gradients
         for j, m in enumerate(self.arch_modules):
@@ -156,7 +156,7 @@ class Searcher(object):
         self.optimizer['arch'].update()
         # update average reward
         self._reward = beta * reward + (1 - beta) * self._reward
-        monitor.update('reward', self._reward, self.conf['batch_size'])
+        monitor.update('penalty', self._reward, self.conf['batch_size'])
 
     def _get_statistics(self):
         stats = ''
