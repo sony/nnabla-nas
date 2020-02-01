@@ -88,7 +88,7 @@ class Searcher(object):
         conf = self.conf
         warmup = conf['warmup']
         one_epoch = len(self.loader['model']) // conf['batch_size']
-        n_iter = 5
+        n_iter = 1
         # monitor the training process
         monitor = ut.ProgressMeter(one_epoch//n_iter, path=conf['output_path'])
         self._reward = 0  # average reward
@@ -144,7 +144,7 @@ class Searcher(object):
             ph['err'].forward(clear_buffer=True)
             monitor.update('arch_loss', ph['loss'].d * self.accum_grad, bz)
             monitor.update('arch_err', ph['err'].d, bz)
-            reward += (1 - ph['err'].d) / self.accum_grad
+            reward += ph['loss'].d
         # adding contraints
         for k, v in self.reg.items():
             value = v['reg'].get_estimation(self.model)
@@ -152,7 +152,7 @@ class Searcher(object):
             monitor.update(k, value, 1)
         # compute gradients
         for j, m in enumerate(self.arch_modules):
-            m._alpha.g *= reward  # - self._reward
+            m._alpha.g *= self._reward - reward
         self.optimizer['arch'].update()
         # update average reward
         self._reward = beta * reward + (1 - beta) * self._reward
