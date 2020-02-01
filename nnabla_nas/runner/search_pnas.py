@@ -94,6 +94,7 @@ class Searcher(object):
         self._reward = 0  # average reward
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
+            print(f'Epoch {cur_epoch}')
             for i in range(one_epoch//n_iter):
                 for m in self.arch_modules:
                     m._update_active_idx()
