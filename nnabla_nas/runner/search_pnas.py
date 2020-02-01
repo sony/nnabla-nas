@@ -99,7 +99,7 @@ class Searcher(object):
                 for m in self.arch_modules:
                     m._update_active_idx()
                 self._update_model_step(monitor, n_iter)
-                if warmup == 0 and cur_epoch > 0:
+                if warmup == 0:
                     self._update_arch_step(monitor)
                 if i % (conf['print_frequency']//n_iter) == 0:
                     monitor.display(i)
@@ -144,19 +144,19 @@ class Searcher(object):
             ph['err'].forward(clear_buffer=True)
             monitor.update('arch_loss', ph['loss'].d * self.accum_grad, bz)
             monitor.update('arch_err', ph['err'].d, bz)
-            reward += ph['loss'].d
+            reward += (1 - ph['err'].d) / self.accum_grad
         # adding contraints
         for k, v in self.reg.items():
             value = v['reg'].get_estimation(self.model)
-            reward *= (value/v['bound'])**v['weight']
+            reward *= (v['bound'] / value)**v['weight']
             monitor.update(k, value, 1)
         # compute gradients
         for j, m in enumerate(self.arch_modules):
-            m._alpha.g *= self._reward - reward
+            m._alpha.g *= reward
         self.optimizer['arch'].update()
         # update average reward
         self._reward = beta * reward + (1 - beta) * self._reward
-        monitor.update('penalty', self._reward, self.conf['batch_size'])
+        monitor.update('reward', self._reward, self.conf['batch_size'])
 
     def _get_statistics(self):
         stats = ''

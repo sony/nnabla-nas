@@ -36,8 +36,8 @@
         "weight_decay": 0,
         "solver": {
             "name": "Adam",
-            "alpha": 0.001,
-            "beta1": 0,
+            "alpha": 3e-4,
+            "beta1": 0.5,
             "beta2": 0.999
         }
     },

@@ -51,7 +51,7 @@ class SampledOp(Mo.Module):
         idx = np.random.choice(len(pvals), p=pvals)
         pvals[idx] -= 1
 
-        self._alpha.g = -pvals
+        self._alpha.g = pvals
         self._active = idx
 
         for i, op in enumerate(self._ops):
