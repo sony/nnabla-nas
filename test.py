@@ -1,3 +1,5 @@
+from nnabla.utils.profiler import GraphProfiler
+from nnabla_nas.contrib.pnas.estimator import LatencyEstimator
 from collections import OrderedDict
 import time
 
@@ -56,7 +58,27 @@ conf = json.load(open('examples/tests.json'))
 
 Searcher(model, conf).run()
 
-nn.load_parameters('log/pnas-con/search/arch.h5')
-x = nn.get_parameters()
+# nn.load_parameters('log/pnas-con/search/arch.h5')
+# x = nn.get_parameters()
 
-print(x['input/_alpha'].d)
+# print(x['input/_alpha'].d)
+# e = LatencyEstimator(n_run=10)
+
+# # for m in range(10):
+# model.input._update_active_idx()
+# print(model.input._active)
+# x = nn.Variable((8, 3, 32, 32))
+# out = model(x)
+# print(e.get_estimation(model))
+
+# # runner = GraphProfiler(model.call(x),
+# #                        device_id=0,
+# #                        ext_name='cudnn',
+# #                        n_run=100)
+
+
+# # runner.time_profiling_whole_graph()
+# # print(runner.result)
+
+# # runner.run()
+# # print(runner.result)

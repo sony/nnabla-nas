@@ -151,7 +151,7 @@ class Searcher(object):
             monitor.update(k, value, 1)
         # compute gradients
         for j, m in enumerate(self.arch_modules):
-            m._alpha.g *= reward - self._reward
+            m._alpha.g *= reward  # - self._reward
         self.optimizer['arch'].update()
         # update average reward
         self._reward = beta * reward + (1 - beta) * self._reward

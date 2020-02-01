@@ -4,7 +4,7 @@
         "name": "pnas",
         "in_channels": 3,
         "init_channels": 36,
-        "num_cells": 10,
+        "num_cells": 15,
         "num_classes": 10,
         "num_choices": 4,
         "drop_path": 0.2,

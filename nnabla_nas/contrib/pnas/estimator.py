@@ -58,7 +58,7 @@ class LatencyEstimator(Estimator):
         if idm not in self.memo:
             self.memo[idm] = dict()
         mem = self.memo[idm]
-        key = '-'.join([str(k) for k in module.inputs])
+        key = '-'.join([str(k[1:]) for k in module.inputs])
 
         if key not in mem:
             if isinstance(module, (Identity, Zero)):
@@ -71,8 +71,8 @@ class LatencyEstimator(Estimator):
                                    device_id=self._device_id,
                                    ext_name=self._ext_name,
                                    n_run=self._n_run)
-            runner.time_profiling_forward()
-            mem[key] = float(runner.result['forward'][0].mean_time)
+            runner.run()
+            mem[key] = float(runner.result['forward_all'])
             module.apply(training=state)  # recover training state
 
         return mem[key]
