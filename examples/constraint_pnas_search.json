@@ -43,7 +43,7 @@
             "lr": 0.001
         }
     },
-    "epoch": 120,
+    "epoch": 150,
     "batch_size": 256,
     "mini_batch_size": 64,
     "warmup": 100,

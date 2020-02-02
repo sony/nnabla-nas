@@ -134,6 +134,7 @@ class Searcher(object):
         bz = self.conf['mini_batch_size']
         ph = self.placeholder['model']
         self._sample_train_net(key=key)
+        self.optimizer[key].zero_grad()
         for _ in range(self.accum_grad):
             ph['input'].d, ph['target'].d = self.loader['model'].next()
             ph['loss'].forward(clear_no_need_grad=True)
@@ -179,6 +180,7 @@ class Searcher(object):
             m._alpha.g = sum(
                 (r - self._reward) * grads[i][j] for i, r in enumerate(rewards)
             ) / n_iter
+            # print(m._alpha.g)
         self.optimizer['arch'].update()
 
     def _get_statistics(self):
