@@ -47,13 +47,12 @@ class SampledOp(Mo.Module):
 
     def _update_active_idx(self):
         """Update the current active index."""
-        pvals = softmax(self._alpha.d.flat)
-        idx = np.random.choice(len(pvals), p=pvals)
+        pvals = softmax(self._alpha.d)
+        idx = np.random.choice(len(pvals), replace=False, p=pvals)
         pvals[idx] -= 1
 
-        self._alpha.g = -pvals
+        self._alpha.g = pvals
         self._active = idx
-
         for i, op in enumerate(self._ops):
             op.apply(need_grad=(idx == i))
 

@@ -29,7 +29,7 @@ class Model(Module):
         self.input = SampledOp(operators=[
             Conv(3, 3, (3, 3), (1, 1)),
             Zero(),
-            # Identity()
+            Identity()
         ])
         self.linear = Linear(3*32*32, 10)
 

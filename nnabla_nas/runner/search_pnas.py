@@ -98,7 +98,8 @@ class Searcher(object):
         self._reward = 0  # average reward
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-            logger.info(f'Running epoch={cur_epoch}')
+            lr = self.optimizer['model'].get_learning_rate()
+            logger.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}')
             for i in range(one_epoch):
                 self._update_model_step(monitor)
                 self._update_arch_step(monitor)
@@ -123,7 +124,7 @@ class Searcher(object):
         for cur_epoch in range(self.conf['warmup']):
             monitor.reset()
             lr = self.optimizer['warmup'].get_learning_rate()
-            logger.info(f'warm-up epoch={cur_epoch}\tlr={lr}')
+            logger.info(f'warm-up epoch={cur_epoch}\tlr={lr:.5f}')
             for i in range(one_epoch):
                 self._update_model_step(monitor, key='warmup')
                 if i % (self.conf['print_frequency']) == 0:
@@ -140,8 +141,9 @@ class Searcher(object):
             ph['loss'].forward(clear_no_need_grad=True)
             ph['loss'].backward(clear_buffer=True)
             ph['err'].forward(clear_buffer=True)
-            monitor.update('model_loss', ph['loss'].d * self.accum_grad, bz)
-            monitor.update('model_err', ph['err'].d, bz)
+            loss, err = ph['loss'].d.copy(),  ph['err'].d.copy()
+            monitor.update('model_loss', loss * self.accum_grad, bz)
+            monitor.update('model_err', err, bz)
         self.optimizer[key].update()
 
     def _update_arch_step(self, monitor):
@@ -151,36 +153,32 @@ class Searcher(object):
         ph = self.placeholder['arch']
         data = [self.loader['arch'].next() for i in range(self.accum_grad)]
         rewards, grads = [], []
-
         for _ in range(n_iter):
             reward = 0
             self._sample_search_net()
-            self.optimizer['arch'].zero_grad()
             for i in range(self.accum_grad):
                 ph['input'].d, ph['target'].d = data[i]
                 ph['loss'].forward(clear_buffer=True)
                 ph['err'].forward(clear_buffer=True)
-                monitor.update('arch_loss', ph['loss'].d * self.accum_grad, bz)
-                monitor.update('arch_err', ph['err'].d, bz)
-                reward += (1 - ph['err'].d) / self.accum_grad
+                loss, err = ph['loss'].d.copy(),  ph['err'].d.copy()
+                monitor.update('arch_loss', loss * self.accum_grad, bz)
+                monitor.update('arch_err', err, bz)
+                reward += (1 - err) / self.accum_grad
             # adding contraints
             for k, v in self.reg.items():
                 value = v['reg'].get_estimation(self.model)
                 reward *= (v['bound'] / value)**v['weight']
                 monitor.update(k, value, 1)
             rewards.append(reward)
-            grads.append([m._alpha.g for m in self.arch_modules])
-
-        avg_reward = sum(rewards) / n_iter
-        self._reward = beta * avg_reward + (1 - beta) * self._reward
-        monitor.update('reward', self._reward, self.conf['batch_size'])
-
+            grads.append([m._alpha.g.copy() for m in self.arch_modules])
+            monitor.update('reward', reward, self.conf['batch_size'])
         # compute gradients
         for j, m in enumerate(self.arch_modules):
-            m._alpha.g = sum(
-                (r - self._reward) * grads[i][j] for i, r in enumerate(rewards)
-            ) / n_iter
+            m._alpha.grad.zero()
+            for i, r in enumerate(rewards):
+                m._alpha.g += (r - self._reward) * grads[i][j] / n_iter
         self.optimizer['arch'].update()
+        self._reward = beta*sum(rewards)/n_iter + (1 - beta)*self._reward
 
     def _get_statistics(self):
         stats = ''
