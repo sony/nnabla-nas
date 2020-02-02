@@ -12,7 +12,7 @@
         "latency": {
             "name": "LatencyEstimator",
             "weight": 0.1,
-            "bound": 5,
+            "bound": 0.03,
             "device_id": 0,
             "ext_name": "cudnn"
         }
