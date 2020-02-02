@@ -146,7 +146,7 @@ class Searcher(object):
 
     def _update_arch_step(self, monitor):
         """Update the arch parameters."""
-        beta, n_iter = 0.9, 10
+        beta, n_iter = 0.9, 5
         bz = self.conf['mini_batch_size']
         ph = self.placeholder['arch']
         data = [self.loader['arch'].next() for i in range(self.accum_grad)]
@@ -155,6 +155,7 @@ class Searcher(object):
         for _ in range(n_iter):
             reward = 0
             self._sample_search_net()
+            self.optimizer['arch'].zero_grad()
             for i in range(self.accum_grad):
                 ph['input'].d, ph['target'].d = data[i]
                 ph['loss'].forward(clear_buffer=True)
@@ -167,7 +168,6 @@ class Searcher(object):
                 value = v['reg'].get_estimation(self.model)
                 reward *= (v['bound'] / value)**v['weight']
                 monitor.update(k, value, 1)
-
             rewards.append(reward)
             grads.append([m._alpha.g for m in self.arch_modules])
 
@@ -180,7 +180,6 @@ class Searcher(object):
             m._alpha.g = sum(
                 (r - self._reward) * grads[i][j] for i, r in enumerate(rewards)
             ) / n_iter
-            # print(m._alpha.g)
         self.optimizer['arch'].update()
 
     def _get_statistics(self):

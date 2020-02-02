@@ -3,17 +3,13 @@
     "network": {
         "name": "pnas",
         "in_channels": 3,
-        "init_channels": 16,
-        "num_cells": 20,
+        "init_channels": 36,
+        "num_cells": 15,
         "num_classes": 10,
         "num_choices": 4
     },
+    "regularizer": {},
     "model_optimizer": {
-        "lr_scheduler": {
-            "name": "CosineScheduler",
-            "init_lr": 0.025,
-            "max_iter": 105469
-        },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
         "solver": {
@@ -22,21 +18,27 @@
         }
     },
     "arch_optimizer": {
-        "control_variate": 0.001,
-        "lr_scheduler": null,
         "grad_clip": 5.0,
         "weight_decay": 1e-3,
         "solver": {
             "name": "Adam",
-            "alpha": 0.01,
+            "alpha": 0.001,
             "beta1": 0.5,
             "beta2": 0.999
         }
     },
-    "epoch": 300,
-    "batch_size": 128,
-    "mini_batch_size": 128,
-    "warmup": 10,
+    "warmup_optimizer": {
+        "grad_clip": 5.0,
+        "weight_decay": 3e-4,
+        "solver": {
+            "name": "Momentum",
+            "lr": 0.025
+        }
+    },
+    "epoch": 150,
+    "batch_size": 256,
+    "mini_batch_size": 64,
+    "warmup": 100,
     "model_name": "arch",
     "output_path": "log/pnas/search",
     "print_frequency": 20,

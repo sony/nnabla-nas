@@ -22,7 +22,7 @@
         "weight_decay": 3e-4,
         "solver": {
             "name": "Momentum",
-            "lr": 0.001
+            "lr": 0.025
         }
     },
     "arch_optimizer": {
@@ -40,7 +40,7 @@
         "weight_decay": 3e-4,
         "solver": {
             "name": "Momentum",
-            "lr": 0.001
+            "lr": 0.025
         }
     },
     "epoch": 150,
