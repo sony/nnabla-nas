@@ -56,13 +56,16 @@ class Searcher(object):
 
         # solver configurations
         self.optimizer = dict()
-        for key in ['model', 'arch']:
+        for key in ['model', 'arch', 'warmup']:
             optim = conf[key + '_optimizer'].copy()
-            lr_scheduler = ut.get_object_from_dict(
-                module=LRS.__dict__,
-                args=optim.pop('lr_scheduler', None)
-            )
             solver = optim['solver']
+            lr_scheduler = None
+            if key != 'arch':
+                epoch = conf['epoch'] if key == 'model' else conf['warmup']
+                lr_scheduler = LRS.__dict__['CosineScheduler'](
+                    init_lr=solver['lr'],
+                    max_iter=epoch * split // conf['batch_size']
+                )
             self.optimizer[key] = Optimizer(
                 retain_state=True,
                 weight_decay=optim.pop('weight_decay', None),
@@ -86,24 +89,22 @@ class Searcher(object):
     def run(self):
         """Run the training process."""
         conf = self.conf
-        warmup = conf['warmup']
         one_epoch = len(self.loader['model']) // conf['batch_size']
-        n_iter = 1
-        # monitor the training process
-        monitor = ut.ProgressMeter(one_epoch//n_iter, path=conf['output_path'])
+        monitor = ut.ProgressMeter(one_epoch, path=conf['output_path'])
+
+        # start with warm up
+        self._warmup(monitor)
+
         self._reward = 0  # average reward
         for cur_epoch in range(conf['epoch']):
             monitor.reset()
-            print(f'Epoch {cur_epoch}')
-            for i in range(one_epoch//n_iter):
-                for m in self.arch_modules:
-                    m._update_active_idx()
-                self._update_model_step(monitor, n_iter)
-                if warmup == 0:
-                    self._update_arch_step(monitor)
-                if i % (conf['print_frequency']//n_iter) == 0:
+            logger.info(f'Running epoch={cur_epoch}')
+            for i in range(one_epoch):
+                self._update_model_step(monitor)
+                self._update_arch_step(monitor)
+                if i % (conf['print_frequency']) == 0:
                     monitor.display(i)
-            warmup -= warmup > 0
+
             # saving the architecture parameters
             nn.save_parameters(
                 os.path.join(conf['output_path'], conf['model_name']) + '.h5',
@@ -117,46 +118,68 @@ class Searcher(object):
 
         return self
 
-    def _update_model_step(self, monitor, n_iter=10):
+    def _warmup(self, monitor):
+        one_epoch = len(self.loader['model']) // self.conf['batch_size']
+        for cur_epoch in range(self.conf['warmup']):
+            monitor.reset()
+            lr = self.optimizer['warmup'].get_learning_rate()
+            logger.info(f'warm-up epoch={cur_epoch}\tlr={lr}')
+            for i in range(one_epoch):
+                self._update_model_step(monitor, key='warmup')
+                if i % (self.conf['print_frequency']) == 0:
+                    monitor.display(i)
+
+    def _update_model_step(self, monitor, key='model'):
         """Update the model parameters."""
         bz = self.conf['mini_batch_size']
         ph = self.placeholder['model']
-        self._sample_train_net()
-        for _ in range(n_iter):
-            for _ in range(self.accum_grad):
-                ph['input'].d, ph['target'].d = self.loader['model'].next()
-                ph['loss'].forward(clear_no_need_grad=True)
-                ph['loss'].backward(clear_buffer=True)
-                ph['err'].forward(clear_buffer=True)
-                monitor.update(
-                    'model_loss', ph['loss'].d * self.accum_grad, bz)
-                monitor.update('model_err', ph['err'].d, bz)
-            self.optimizer['model'].update()
+        self._sample_train_net(key=key)
+        for _ in range(self.accum_grad):
+            ph['input'].d, ph['target'].d = self.loader['model'].next()
+            ph['loss'].forward(clear_no_need_grad=True)
+            ph['loss'].backward(clear_buffer=True)
+            ph['err'].forward(clear_buffer=True)
+            monitor.update('model_loss', ph['loss'].d * self.accum_grad, bz)
+            monitor.update('model_err', ph['err'].d, bz)
+        self.optimizer[key].update()
 
     def _update_arch_step(self, monitor):
         """Update the arch parameters."""
-        beta, reward, bz = 0.9, 0, self.conf['mini_batch_size']
+        beta, n_iter = 0.9, 10
+        bz = self.conf['mini_batch_size']
         ph = self.placeholder['arch']
-        self._sample_search_net()
-        for i in range(self.accum_grad):
-            ph['input'].d, ph['target'].d = self.loader['arch'].next()
-            ph['loss'].forward(clear_buffer=True)
-            ph['err'].forward(clear_buffer=True)
-            monitor.update('arch_loss', ph['loss'].d * self.accum_grad, bz)
-            monitor.update('arch_err', ph['err'].d, bz)
-            reward += (1 - ph['err'].d) / self.accum_grad
-        # adding contraints
-        for k, v in self.reg.items():
-            value = v['reg'].get_estimation(self.model)
-            reward *= (v['bound'] / value)**v['weight']
-            monitor.update(k, value, 1)
+        data = [self.loader['arch'].next() for i in range(self.accum_grad)]
+        rewards, grads = [], []
+
+        for _ in range(n_iter):
+            reward = 0
+            self._sample_search_net()
+            for i in range(self.accum_grad):
+                ph['input'].d, ph['target'].d = data[i]
+                ph['loss'].forward(clear_buffer=True)
+                ph['err'].forward(clear_buffer=True)
+                monitor.update('arch_loss', ph['loss'].d * self.accum_grad, bz)
+                monitor.update('arch_err', ph['err'].d, bz)
+                reward += (1 - ph['err'].d) / self.accum_grad
+            # adding contraints
+            for k, v in self.reg.items():
+                value = v['reg'].get_estimation(self.model)
+                reward *= (v['bound'] / value)**v['weight']
+                monitor.update(k, value, 1)
+
+            rewards.append(reward)
+            grads.append([m._alpha.g for m in self.arch_modules])
+
+        avg_reward = sum(rewards) / n_iter
+        self._reward = beta * avg_reward + (1 - beta) * self._reward
+        monitor.update('reward', self._reward, self.conf['batch_size'])
+
         # compute gradients
         for j, m in enumerate(self.arch_modules):
-            m._alpha.g *= reward
+            m._alpha.g = sum(
+                (r - self._reward) * grads[i][j] for i, r in enumerate(rewards)
+            ) / n_iter
         self.optimizer['arch'].update()
-        # update average reward
-        self._reward = beta * reward + (1 - beta) * self._reward
-        monitor.update('reward', self._reward, self.conf['batch_size'])
 
     def _get_statistics(self):
         stats = ''
@@ -167,8 +190,10 @@ class Searcher(object):
             stats += name + f' = {ans[k]/total*100:.2f}%\t'
         return stats
 
-    def _sample_train_net(self):
+    def _sample_train_net(self, key='model'):
         """Sample a network for model update."""
+        for m in self.arch_modules:
+            m._update_active_idx()
         self.model.apply(training=True)
         ph = self.placeholder['model']
         image = ut.image_augmentation(ph['input'])
@@ -181,12 +206,14 @@ class Searcher(object):
         ph['loss'].apply(persistent=True)
         ph['err'].apply(persistent=True)
         # setup parameters
-        self.optimizer['model'].set_parameters(
+        self.optimizer[key].set_parameters(
             self.model.get_net_parameters(grad_only=True)
         )
 
     def _sample_search_net(self):
         """Sample a network for arch update."""
+        for m in self.arch_modules:
+            m._update_active_idx()
         self.model.apply(training=False)
         ph = self.placeholder['arch']
         ph['output'] = self.model(ph['input']).apply(persistent=True)

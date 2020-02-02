@@ -4,7 +4,7 @@
         "name": "pnas",
         "in_channels": 3,
         "init_channels": 36,
-        "num_cells": 10,
+        "num_cells": 15,
         "num_classes": 10,
         "num_choices": 4
     },
@@ -12,17 +12,12 @@
         "latency": {
             "name": "LatencyEstimator",
             "weight": 0.1,
-            "bound": 10,
+            "bound": 5,
             "device_id": 0,
             "ext_name": "cudnn"
         }
     },
     "model_optimizer": {
-        "lr_scheduler": {
-            "name": "CosineScheduler",
-            "init_lr": 0.025,
-            "max_iter": 21093
-        },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
         "solver": {
@@ -31,20 +26,27 @@
         }
     },
     "arch_optimizer": {
-        "lr_scheduler": null,
         "grad_clip": 5.0,
-        "weight_decay": 0,
+        "weight_decay": 1e-3,
         "solver": {
             "name": "Adam",
             "alpha": 0.001,
-            "beta1": 0,
+            "beta1": 0.5,
             "beta2": 0.999
         }
     },
-    "epoch": 120,
+    "warmup_optimizer": {
+        "grad_clip": 5.0,
+        "weight_decay": 3e-4,
+        "solver": {
+            "name": "Momentum",
+            "lr": 0.001
+        }
+    },
+    "epoch": 200,
     "batch_size": 256,
     "mini_batch_size": 64,
-    "warmup": 0,
+    "warmup": 100,
     "model_name": "arch",
     "output_path": "log/pnas-con/search",
     "print_frequency": 20,

@@ -18,33 +18,35 @@
         }
     },
     "model_optimizer": {
-        "lr_scheduler": {
-            "name": "CosineScheduler",
-            "init_lr": 0.025,
-            "max_iter": 35156
-        },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
         "solver": {
             "name": "Momentum",
-            "lr": 0.025
+            "lr": 0.001
         }
     },
     "arch_optimizer": {
-        "lr_scheduler": null,
         "grad_clip": 5.0,
-        "weight_decay": 0,
+        "weight_decay": 1e-3,
         "solver": {
             "name": "Adam",
-            "alpha": 3e-4,
+            "alpha": 0.001,
             "beta1": 0.5,
             "beta2": 0.999
         }
     },
-    "epoch": 200,
+    "warmup_optimizer": {
+        "grad_clip": 5.0,
+        "weight_decay": 3e-4,
+        "solver": {
+            "name": "Momentum",
+            "lr": 0.001
+        }
+    },
+    "epoch": 120,
     "batch_size": 256,
     "mini_batch_size": 64,
-    "warmup": 10,
+    "warmup": 100,
     "model_name": "arch",
     "output_path": "log/pnas-con/search",
     "print_frequency": 20,
