@@ -7,14 +7,15 @@
         "num_cells": 15,
         "num_classes": 10,
         "num_choices": 4,
-        "drop_path": 0,
+        "drop_path": 0.1,
+        "auxiliary": true,
         "genotype": "log/pnas/search/arch.h5"
     },
     "optimizer": {
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 29296
+            "max_iter": 78125
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -25,11 +26,12 @@
     },
     "output_path": "log/pnas/train",
     "epoch": 150,
-    "batch_size": 256,
-    "batch_size_train": 128,
-    "batch_size_valid": 100,
+    "batch_size": 96,
+    "batch_size_train": 48,
+    "batch_size_valid": 40,
     "model_name": "pnas.h5",
-    "auxiliary": false,
     "auxiliary_weight": 0.4,
+    "cutout": true,
+    "cutout_length": 16,
     "print_frequency": 50
 }

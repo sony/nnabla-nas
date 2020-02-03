@@ -80,10 +80,9 @@ class SearchNet(Mo.Module):
 class TrainNet(Mo.Module):
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
                  genotype, num_choices=4, multiplier=4, stem_multiplier=3,
-                 drop_path=0.2, num_ops=8, auxiliary=True):
+                 drop_path=0, auxiliary=False):
         super().__init__()
         self._num_choices = num_choices
-        self._num_ops = num_ops
         self._multiplier = multiplier
         self._init_channels = init_channels
         self._auxiliary = auxiliary
@@ -199,9 +198,9 @@ class Cell(Mo.Module):
             for j, h in enumerate(out):
                 b = self._blocks[offset + j]
                 temp = b(h)
-                if self.training and not isinstance(b._mixed, Mo.Identity):
-                    if self._drop_path > 0:
-                        temp = DropPath(self._drop_path)(temp)
+                if self.training and \
+                        not isinstance(b._mixed, (Mo.Identity, Mo.Zero)):
+                    temp = DropPath(self._drop_path)(temp)
                 out_temp.append(temp)
             s = sum(out_temp)
             offset += len(out)
