@@ -4,8 +4,9 @@ import nnabla as nn
 import nnabla.functions as F
 
 from ... import module as Mo
-from ..misc import AuxiliaryHeadCIFAR, DropPath, MixedOp
+from ..misc import AuxiliaryHeadCIFAR, DropPath
 from . import modules as pnas
+import numpy as np
 
 
 class SearchNet(Mo.Module):
@@ -106,10 +107,9 @@ class TrainNet(Mo.Module):
         nn.load_parameters(genotype)
         self.set_parameters(nn.get_parameters())
         for key, module in self.get_modules():
-            if isinstance(module, MixedOp):
-                module._mode = 'max'
-                module._update_active_idx()
-                module = module._ops[module._active]
+            if isinstance(module, pnas.ChoiceBlock):
+                idx = np.argmax(module._mixed._alpha.d)
+                module._mixed = module._mixed._ops[idx]
 
     def call(self, input):
         logits_aux = None
@@ -186,7 +186,6 @@ class Cell(Mo.Module):
                         in_channels=channels[2],
                         out_channels=channels[2],
                         is_reduced=j < 2 and reductions[1],
-                        mode='sample',
                         affine=affine
                     )
                 )
@@ -201,7 +200,8 @@ class Cell(Mo.Module):
                 b = self._blocks[offset + j]
                 temp = b(h)
                 if self.training and not isinstance(b._mixed, Mo.Identity):
-                    temp = DropPath(self._drop_path)(temp)
+                    if self._drop_path > 0:
+                        temp = DropPath(self._drop_path)(temp)
                 out_temp.append(temp)
             s = sum(out_temp)
             offset += len(out)
