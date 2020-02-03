@@ -15,7 +15,7 @@
         "lr_scheduler": {
             "name": "CosineScheduler",
             "init_lr": 0.025,
-            "max_iter": 78125
+            "max_iter": 156250
         },
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -25,7 +25,7 @@
         }
     },
     "output_path": "log/pnas-con/train",
-    "epoch": 150,
+    "epoch": 300,
     "batch_size": 96,
     "batch_size_train": 48,
     "batch_size_valid": 40,
