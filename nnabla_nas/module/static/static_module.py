@@ -10,7 +10,7 @@ from nnabla.initializer import (ConstantInitializer, UniformInitializer,
                                 calc_uniform_lim_glorot)
 from nnabla_nas.module.parameter import Parameter
 import nnabla_nas.module as mo
-import nnabla_nas.contrib.misc as misc
+from  ...contrib import misc
 import operator
 
 def _get_abs_string_index(obj, idx):
@@ -97,6 +97,21 @@ class Module(mo.Module):
         with outgoing edges).
         """
         return self._children
+
+    
+    @property
+    def training(self):
+        r"""The training mode of module."""
+        if '_training' not in self.__dict__:
+            self.__dict__['_training'] = True
+        return self._training
+    
+    @training.setter
+    def training(self, mode):
+        setattr(self, '_training', mode)
+        for k, module in self.modules.items():
+            if 'parent' not in k and 'child' not in k:
+                module.training = mode
 
     def _value_function(self, input):
         raise NotImplementedError
@@ -324,7 +339,7 @@ class Conv(mo.Conv, Module):
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
-class Linear(mo.Dropout, Module):
+class Linear(mo.Linear, Module):
     def __init__(self, name, parent, *args, **kwargs):
         mo.Linear.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
