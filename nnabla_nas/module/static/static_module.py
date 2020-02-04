@@ -337,6 +337,17 @@ class Conv(mo.Conv, Module):
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
+class Linear(mo.Dropout, Module):
+    def __init__(self, name, parent, *args, **kwargs):
+        mo.Linear.__init__(self, *args, **kwargs)
+        Module.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return mo.Linear.call(self, input)
+
+    def call(self, tag=None):
+        return Module.call(self, tag=tag)
+
 class DwConv(mo.DwConv, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.DwConv.__init__(self, *args, **kwargs)
@@ -412,6 +423,17 @@ class ReLU(mo.ReLU, Module):
         return mo.ReLU.call(self, input)
 
     @profile
+    def call(self, tag=None):
+        return Module.call(self, tag=tag)
+
+class Dropout(mo.Dropout, Module):
+    def __init__(self, name, parent, *args, **kwargs):
+        mo.Dropout.__init__(self, *args, **kwargs)
+        Module.__init__(self, name, parent)
+
+    def _value_function(self, input):
+        return mo.Dropout.call(self, input)
+
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 

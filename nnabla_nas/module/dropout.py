@@ -18,7 +18,7 @@ class Dropout(Module):
     """
 
     def __init__(self, drop_prob=0.5):
-        super().__init__()
+        Module.__init__(self)
         self._drop_prob = drop_prob
 
     def call(self, input):
