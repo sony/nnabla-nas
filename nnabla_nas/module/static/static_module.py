@@ -12,6 +12,7 @@ from nnabla_nas.module.parameter import Parameter
 import nnabla_nas.module as mo
 import nnabla_nas.contrib.misc as misc
 import operator
+import line_profiler
 
 def _get_abs_string_index(obj, idx):
     """Get the absolute index for the list of modules"""
@@ -38,6 +39,7 @@ class Module(mo.Module):
         A collection is a group of vertices, which belong together for some
         reason.
         """
+        self._parent = None
         self._init_parent(parent)
         self._children      = []
         self._name          = name
@@ -46,6 +48,7 @@ class Module(mo.Module):
         self._prof          = None
         self._shape         = None
         self._forward_tag   = False
+
         if eval_prob is None:
             self._eval_prob = nn.Variable.from_numpy_array(np.array(1.0))
         else:
@@ -98,16 +101,18 @@ class Module(mo.Module):
         """
         return self._children
 
+    @profile
     def _value_function(self, input):
         raise NotImplementedError
 
     def clear_value(self):
         self._value = None
 
+    @profile
     def call(self, tag=None):
         if tag is None or self._forward_tag != tag:
-            self._forward_tag   = not(self._forward_tag) #flip the tag
-            self._value         = self._value_function(self.parent(self._forward_tag))
+            self._forward_tag   = tag
+            self._value = self._value_function(self.parent(tag))
         return self._value
 
     def __call__(self, *args, **kargs):
@@ -197,6 +202,7 @@ class Graph(mo.ModuleList, Module):
         for gmi in self._graph_modules:
             gmi.clear_value()
 
+    @profile
     def call(self, tag=None):
         return self.output(tag=tag)
 
@@ -283,6 +289,7 @@ class Input(Module):
     def _profile(self, profiler, n_run=100):
         return 0.0
 
+    @profile
     def call(self, tag=None):
         return self._value_function(None)
 
@@ -291,9 +298,11 @@ class Identity(mo.Identity, Module):
         mo.Identity.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return mo.Identity.call(self, input)
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -303,9 +312,11 @@ class Zero(mo.Zero, Module):
         Module.__init__(self, name, parent, eval_prob=eval_prob)
         self._value = nn.Variable.from_numpy_array(np.zeros(self._parent.shape))
 
+    @profile
     def _value_function(self, input):
         return self._value
 
+    @profile
     def call(self, tag=None):
         self._forward_tag = tag
         return self._value_function(None)
@@ -318,9 +329,11 @@ class Conv(mo.Conv, Module):
         mo.Conv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return mo.Conv.call(self, input) #change to self.call
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -329,9 +342,11 @@ class DwConv(mo.DwConv, Module):
         mo.DwConv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return mo.DwConv.call(self, input)
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -340,9 +355,11 @@ class SepConv(misc.SepConv, Module):
         misc.SepConv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return misc.SepConv.call(self, input)
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -351,9 +368,11 @@ class MaxPool(mo.MaxPool, Module):
         mo.MaxPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return mo.MaxPool.call(self, input)
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -362,9 +381,11 @@ class AvgPool(mo.AvgPool, Module):
         mo.AvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return mo.AvgPool.call(self, input)
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -373,9 +394,11 @@ class GlobalAvgPool(mo.GlobalAvgPool, Module):
         mo.GlobalAvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return mo.GlobalAvgPool.call(self, input)
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -384,9 +407,11 @@ class ReLU(mo.ReLU, Module):
         mo.ReLU.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return mo.ReLU.call(self, input)
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -395,9 +420,11 @@ class BatchNormalization(mo.BatchNormalization, Module):
         mo.BatchNormalization.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
+    @profile
     def _value_function(self, input):
         return mo.BatchNormalization.call(self, input)
 
+    @profile
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
@@ -417,6 +444,7 @@ class Merging(mo.Merging, Module):
         else:
             raise Exception('At least one provided parent is not a static module!')
 
+    @profile
     def call(self, tag=None):
         if tag is None or self._forward_tag != tag:
             self._forward_tag   = not(self._forward_tag) #flip the tag
@@ -445,7 +473,7 @@ class Merging(mo.Merging, Module):
 #
 #        res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
 #        return res
-
+    @profile
     def _value_function(self, input):
         return mo.Merging.call(self,*input)
 
@@ -507,33 +535,36 @@ class Join(Module):
         else:
             raise Exception("Join only supports the modes: {}".format(self._supported_modes))
 
+    @profile
     def _value_function(self, input):
         """
         Aggregates all input tensors to one single input tensor (summing them up)
         """
-        def one_hot(x, n=len(input)):
-            return np.array([int(i == x) for i in range(n)])
+        #def one_hot(x, n=len(input)):
+        #    return np.array([int(i == x) for i in range(n)])
 
         res = 0.0
         if self.mode == 'linear':
             for pi, inpi in zip(self._sel_p, input):
                 res += pi.reshape((1,)*len(inpi.shape)) * inpi
         elif self.mode == 'sample':
-            self._sel_p.forward()
-            self._idx = np.random.choice(len(inputs), 1, p=self._sel_p.d)[0]
-            print('{} selects input {} with p={}'.format(self.name, self._idx, self._sel_p.d[self._idx]))
-            res = inputs[self._idx]
-            self._z = one_hot(self._idx)
-            self._score = self._z - self._sel_p.d
+            #self._sel_p.forward()
+            #self._idx = np.random.choice(len(input), 1, p=self._sel_p.d)[0]
+            #print('{} selects input {} with p={}'.format(self.name, self._idx, self._sel_p.d[self._idx]))
+            res = input[np.random.choice(8, 1, p=(1/8,1/8,1/8,1/8,1/8,1/8,1/8,1/8))[0]]
+            #self._z = one_hot(self._idx)
+            #self._score = self._z - self._sel_p.d
         elif self.mode == 'max':
-            #just pick the input channel with the highest probability!
-            self._idx = np.argmax(self._join_parameters.d)
-            res = inputs[self._idx]
-            self._z = one_hot(self._idx)
-            self._score = self._z - self._sel_p.d
-            print('{} selects input {}'.format(self.name, self._idx))
+            ##just pick the input channel with the highest probability!
+            #self._idx = np.argmax(self._join_parameters.d)
+            #res = input[self._idx]
+            #self._z = one_hot(self._idx)
+            #self._score = self._z - self._sel_p.d
+            #print('{} selects input {}'.format(self.name, self._idx))
+            res = input[0]
         return res
 
+    @profile
     def call(self, tag=None):
         if tag is None or self._forward_tag != tag:
             self._forward_tag   = not(self._forward_tag) #flip the tag

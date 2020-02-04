@@ -76,8 +76,8 @@ class Module(object):
             self.modules[name] = value
         elif isinstance(value, Parameter):
             self.parameters[name] = value
-        else:  # avoid conflict with property
-            object.__setattr__(self, name, value)
+        #else:  # avoid conflict with property
+        object.__setattr__(self, name, value)
 
     def __delattr__(self, name):
         if name in self.parameters:

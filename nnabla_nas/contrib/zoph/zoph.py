@@ -139,7 +139,7 @@ class ZophCell(smo.Graph):
         #in case of a reducing cell, we need to perform another max-pooling on all inputs
         if self._reducing:
             for i, pii in enumerate(projected_inputs):
-                self.append(smo.MaxPool(name='{}/shape_adapt_pool_{}'.format(self.name, i), parent=pii,
+                self.append(smo.MaxPool(name='{}/reduce_pool_{}'.format(self.name, i), parent=pii,
                                               kernel=(2,2), stride=(2,2)))
                 projected_inputs[i] = self[-1]
 
@@ -203,6 +203,10 @@ class ZophNetwork(smo.Graph):
 
 
 if __name__ == '__main__':
+    import nnabla
+
+    ctx = nnabla.ext_utils.get_extension_context('cudnn', device_id='0')
+    nn.set_default_context(ctx)
 
     input = smo.Input(name='input', value=nn.Variable((10,20,32,16)))
     input2 = smo.Input(name='input', value=nn.Variable((10,20,32,32)))
@@ -235,35 +239,46 @@ if __name__ == '__main__':
     #-------------------do the profiling results sum up to the correct value------------------
     from nnabla_nas.module.static import NNablaProfiler
     from nnabla.utils.profiler import GraphProfiler
-
     #-----profiling the whole graph at once---------
-    ctx = nn.context.get_current_context()
-    dev_idx = int(ctx.device_id)
-    nnabla_context = ctx.backend[0].split(':')[0]
-    total_latency = [] 
+    total_latency = []
     summed_latency = []
+    module_latencies = {ci: {} for ci in ZOPH_CANDIDATES}
 
     for i in range(10):
-        prof = GraphProfiler(out_9, device_id=dev_idx, ext_name=nnabla_context, n_run=10)
+        prof = GraphProfiler(out_9, device_id=0, ext_name='cudnn', n_run=10)
         prof.run()
         total_latency.append(float(prof.result['forward_all']))
 
-        #-----profiling each module individually--------
         profiler    = NNablaProfiler()
-
-        for mi in zoph_network.get_modules():
-            if isinstance(mi, smo.Module):
-                mi._profile = None #reset the profile
-
         latencies   = zoph_network.profile(profiler, n_run=10)
         summed_lat  = 0.0
         for li in latencies:
-            summed_latency.append(latencies[li])
+            summed_lat += latencies[li]
+
+        summed_latency.append(summed_lat)
+
+        #-----profiling each module individually--------
+        mods = zoph_network.get_modules()
+        for _,mi in mods:
+            if isinstance(mi, smo.Module):
+                for mli in module_latencies:
+                    if isinstance(mi, mli):
+                        try:
+                            module_latencies[mli][mi.shape].append(mi._prof)
+                        except:
+                            module_latencies[mli][mi.shape] = [mi._prof]
+                mi._prof = None #reset the profile
+
         print(i)
 
-    print('latency when profiling the whole graph at once is {}'.format(np.sum(np.array(total_latency))/10))
-    print('latency when profiling module by module is {}'.format(np.sum(np.array(summed_latency))/10))
-    
+    print('latency when profiling the whole graph at once is {}/{}'.format(np.mean(np.array(total_latency)), np.std(np.array(total_latency))))
+    print('latency when profiling module by module is {}/{}'.format(np.mean(np.array(summed_latency)), np.std(np.array(summed_latency))))
+
+    for mi in module_latencies:
+        for si in module_latencies[mi]:
+            print("Latency of module {} with shape {} is {}/{}".format(mi, si, np.mean(np.array(module_latencies[mi][si])), np.std(np.array(module_latencies[mi][si]))))
+
+    import pdb; pdb.set_trace()
     exp_lat     = zoph_network.get_exp_latency(profiler)
     import pdb; pdb.set_trace()
 
