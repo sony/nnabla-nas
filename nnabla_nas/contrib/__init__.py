@@ -1,3 +1,3 @@
-from . import darts, pnas
+from . import darts, pnas, mobilenetv2
 
-__all__ = ['darts', 'pnas']
+__all__ = ['darts', 'pnas', 'mobilenetv2']
