@@ -11,8 +11,8 @@ class Linear(Module):
     Applies a linear transformation to the incoming data: :math:`y = xA^T + b`
 
     Args:
-        in_features (int):
-        in_features (int):
+        in_features (int): The size of each input sample.
+        in_features (int): The size of each output sample.
         base_axis (int, optional): Dimensions up to `base_axis` are treated as
             the sample dimensions. Defaults to 1.
         w_init (:obj:`nnabla.initializer.BaseInitializer` or
@@ -25,13 +25,10 @@ class Linear(Module):
             initialized with zeros if `with_bias` is `True`.
         rng (numpy.random.RandomState): Random generator for Initializer.
         with_bias (bool): Specify whether to include the bias term.
-
     """
 
     def __init__(self, in_features, out_features, base_axis=1, w_init=None,
                  b_init=None, rng=None, bias=True):
-        super().__init__()
-
         if w_init is None:
             w_init = UniformInitializer(
                 calc_uniform_lim_glorot(in_features, out_features), rng=rng)
@@ -50,7 +47,7 @@ class Linear(Module):
     def call(self, input):
         return F.affine(input, self._W, self._b, self._base_axis)
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return (f'in_features={self._in_features}, '
                 f'out_features={self._out_features}, '
                 f'bias={self._b is not None}')

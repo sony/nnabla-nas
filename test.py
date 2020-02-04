@@ -1,7 +1,6 @@
-from nnabla.utils.profiler import GraphProfiler
-from nnabla_nas.contrib.pnas.estimator import LatencyEstimator
-from collections import OrderedDict
+import json
 import time
+from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
@@ -9,14 +8,13 @@ import numpy as np
 from nnabla import logger
 from nnabla.ext_utils import get_extension_context
 from nnabla.initializer import ConstantInitializer
+from nnabla.utils.profiler import GraphProfiler
 from scipy.special import softmax
 
 import nnabla_nas.utils as ut
-
+from nnabla_nas.contrib.pnas.estimator import LatencyEstimator
 from nnabla_nas.contrib.pnas.modules import CANDIDATE_FUNC, SampledOp
-from nnabla_nas.module import Module, Conv, Zero, Identity, Linear
-import json
-
+from nnabla_nas.module import Conv, Identity, Linear, Module, Zero
 from nnabla_nas.runner.search_pnas import Searcher
 
 ctx = get_extension_context('cudnn', device_id=1)

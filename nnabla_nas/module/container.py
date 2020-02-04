@@ -17,27 +17,43 @@ def _get_abs_string_index(obj, idx):
 
 class ModuleList(Module):
     r"""Hold submodules in a list. This implementation mainly follows
-    the Pytorch implementation."""
+    the Pytorch implementation.
 
+    Args:
+        modules (iterable, optional): An iterable of modules to add.
+    """
     def __init__(self, modules=None):
-        Module.__init__(self)
         if modules is not None:
             self += modules
 
     def append(self, module):
-        r"""Appends a given module to the end of the list."""
+        r"""Appends a given module to the end of the list.
+
+        Args:
+            module (Module): A module to append.
+        """
         if not isinstance(module, Module):
             ValueError(f'{module} is not an instance of Module.')
         setattr(self, str(len(self)), module)
         return self
 
     def extend(self, modules):
+        r"""Appends modules from a Python iterable to the end of the list.
+
+        Args:
+            modules (iterable): An iterable of modules to append.
+        """
         for module in modules:
             self.append(module)
         return self
 
     def insert(self, index, module):
-        r"""Insert a given module before a given index in the list."""
+        r"""Insert a given module before a given index in the list.
+
+        Args:
+            index (int): An index to insert.
+            module (Module): A module to insert.
+        """
         if not isinstance(module, Module):
             ValueError(f'{module} is not an instance of Module.')
         for i in range(len(self), index, -1):
@@ -75,32 +91,49 @@ class ModuleList(Module):
     def __iadd__(self, modules):
         return self.extend(modules)
 
-    def __key_format__(self, key):
+    def extra_format(self, key):
         return f'[{key}]'
 
 
 class ParameterList(Module):
-    r"""Hold parameters in a list."""
+    r"""Hold parameters in a list.
+
+    Args:
+        parameters (iterable, optional): An iterable of parameters to add.
+    """
 
     def __init__(self, parameters=None):
-        Module.__init__(self)
         if parameters is not None:
             self += parameters
 
     def append(self, parameter):
-        r"""Appends a given module to the end of the list."""
+        r"""Appends a given module to the end of the list.
+
+        Args:
+            parameter (Parameter): A parameter to append.
+        """
         if not isinstance(parameter, Parameter):
             ValueError(f'{parameter} is not an instance of Parameter.')
         setattr(self, str(len(self)), parameter)
         return self
 
     def extend(self, parameters):
+        """Extends an iterable of parameters to the end of the list.
+
+        Args:
+            parameters (iterable): An iterable of Parameters.
+        """
         for parameter in parameters:
             self.append(parameter)
         return self
 
     def insert(self, index, parameter):
-        r"""Insert a given parameter before a given index in the list."""
+        r"""Insert a given parameter before a given index in the list.
+
+        Args:
+            index (int): An index to insert.
+            parameter (Parameter): A parameter to insert.
+        """
         if not isinstance(parameter, Parameter):
             ValueError(f'{parameter} is not an instance of Parameter.')
         for i in range(len(self), index, -1):
@@ -139,7 +172,7 @@ class ParameterList(Module):
     def __iadd__(self, parameters):
         return self.extend(parameters)
 
-    def __key_format__(self, key):
+    def extra_format(self, key):
         return f'[{key}]'
 
 
@@ -149,7 +182,6 @@ class Sequential(ModuleList):
     constructor. Alternatively, an ordered dict of modules can also be
     passed in.
     """
-
     def __init__(self, *args):
         if len(args) == 1 and isinstance(args[0], OrderedDict):
             for key, module in args[0].items():

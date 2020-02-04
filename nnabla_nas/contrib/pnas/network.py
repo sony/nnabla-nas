@@ -2,11 +2,11 @@ from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
+import numpy as np
 
 from ... import module as Mo
 from ..misc import AuxiliaryHeadCIFAR, DropPath
 from . import modules as pnas
-import numpy as np
 
 
 class SearchNet(Mo.Module):

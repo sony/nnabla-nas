@@ -5,9 +5,9 @@ import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 
 import nnabla_nas.contrib as contrib
+from nnabla_nas.runner import Trainer
 # from nnabla_nas.runner import Searcher, Trainer
 from nnabla_nas.runner.search_pnas import Searcher
-from nnabla_nas.runner import Trainer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

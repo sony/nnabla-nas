@@ -14,11 +14,9 @@ class AuxiliaryHeadCIFAR(Mo.Module):
     Args:
         channels (:obj:`int`): The number of input channels.
         num_classes (:obj:`int`): The number of classes.
-
     """
 
     def __init__(self, channels, num_classes):
-        super().__init__()
         self._channels = channels
         self._num_classes = num_classes
         self._feature = Mo.Sequential(
@@ -40,7 +38,7 @@ class AuxiliaryHeadCIFAR(Mo.Module):
         out = self._classifier(out)
         return out
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return f'channels={self._channels}, num_classes={self._num_classes}'
 
 
@@ -50,11 +48,9 @@ class DropPath(Mo.Module):
     Args:
         drop_prob (:obj:`int`, optional): The probability of droping path.
             Defaults to 0.2.
-
     """
 
     def __init__(self, drop_prob=0.2):
-        super().__init__()
         self._drop_prob = drop_prob
 
     def call(self, input):
@@ -66,7 +62,7 @@ class DropPath(Mo.Module):
         out = F.mul2(out, mask)
         return out
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return f'drop_prob={self._drop_prob}'
 
 
@@ -86,40 +82,32 @@ class ReLUConvBN(Mo.Module):
             dimensions. Defaults to None.
         stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
             dimensions. Defaults to None.
-        affine (bool, optinal): A boolean value that when set to `True`,
-            this module has learnable batchnorm parameters. Defaults to `True`.
-
     """
 
     def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None, affine=True):
-        super().__init__()
-
+                 pad=None, stride=None):
         self._in_channels = in_channels
         self._out_channels = out_channels
         self._kernel = kernel
         self._pad = pad
         self._stride = stride
-        self._affine = affine
 
         self._operators = Mo.Sequential(
             Mo.ReLU(),
             Mo.Conv(in_channels, out_channels, kernel=kernel,
                     stride=stride, pad=pad, with_bias=False),
-            Mo.BatchNormalization(n_features=out_channels, n_dims=4,
-                                  fix_parameters=not affine)
+            Mo.BatchNormalization(n_features=out_channels, n_dims=4)
         )
 
     def call(self, input):
         return self._operators(input)
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return (f'in_channels={self._in_channels}, '
                 f'out_channels={self._out_channels}, '
                 f'kernel={self._kernel}, '
                 f'stride={self._stride}, '
-                f'pad={self._pad}, '
-                f'affine={self._affine}')
+                f'pad={self._pad}')
 
 
 class MixedOp(Mo.Module):
@@ -134,12 +122,9 @@ class MixedOp(Mo.Module):
             `sample`. Possible modes are `sample`, `full`, or `max`.
         alpha (Parameter, optional): The weights used to calculate the
             evaluation probabilities. Defaults to None.
-
     """
 
     def __init__(self, operators, mode='sample', alpha=None):
-        super().__init__()
-
         if mode not in ('max', 'sample', 'full'):
             raise ValueError(f'mode={mode} is not supported.')
 
@@ -185,7 +170,7 @@ class MixedOp(Mo.Module):
         self._alpha.g = np.reshape(-probs, self._alpha.shape)
         return self
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return f'num_ops={len(self._ops)}, mode={self._mode}'
 
 
@@ -193,8 +178,9 @@ class SepConv(Mo.DwConv):
     def __init__(self, out_channels, *args, **kwargs):
         Mo.DwConv.__init__(self, *args, **kwargs)
         self._out_channels = out_channels
-        self._conv_module_pw = Mo.Conv(self._in_channels, out_channels, kernel=(1, 1),
-                                       pad=None, group=1, rng=self._rng, with_bias=None)
+        self._conv_module_pw = Mo.Conv(self._in_channels, out_channels,
+                                       kernel=(1, 1), pad=None, group=1,
+                                       rng=self._rng, with_bias=False)
 
     def call(self, input):
         return self._conv_module_pw(Mo.DwConv.call(self, input))

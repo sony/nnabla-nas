@@ -17,6 +17,11 @@ from ..optimizer import Optimizer
 class Searcher(object):
     """
     Searching the best architecture.
+
+    Args:
+        model ([type]): [description]
+        conf ([type]): [description]
+
     """
 
     def __init__(self, model, conf):

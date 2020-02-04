@@ -8,7 +8,7 @@ from .parameter import Parameter
 
 
 class Conv(Module):
-    """N-D Convolution layer.
+    r"""N-D Convolution layer.
 
     Args:
         in_channels (:obj:`int`): Number of convolution kernels (which is
@@ -48,14 +48,11 @@ class Conv(Module):
         channel_last(bool, optional): If True, the last dimension is
             considered as channel dimension, a.k.a NHWC order. Defaults to
             `False`.
-
     """
     def __init__(self, in_channels, out_channels, kernel, pad=None,
                  stride=None, dilation=None, group=1, w_init=None, b_init=None,
                  base_axis=1, fix_parameters=False, rng=None, with_bias=True,
                  channel_last=False):
-        Module.__init__(self)
-
         if w_init is None:
             w_init = UniformInitializer(
                 calc_uniform_lim_glorot(
@@ -96,7 +93,7 @@ class Conv(Module):
                              self._pad, self._stride, self._dilation,
                              self._group, self._channel_last)
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return (f'in_channels={self._in_channels}, '
                 f'out_channels={self._out_channels}, '
                 f'kernel={self._kernel}, '
@@ -111,7 +108,7 @@ class Conv(Module):
 
 
 class DwConv(Module):
-    """N-D Depthwise Convolution layer.
+    r"""N-D Depthwise Convolution layer.
 
     Args:
         in_channels (:obj:`int`): Number of convolution kernels (which is
@@ -148,14 +145,11 @@ class DwConv(Module):
     References:
         - F. Chollet: Chollet, Francois. "Xception: Deep Learning with
         Depthwise Separable Convolutions. https://arxiv.org/abs/1610.02357
-
     """
 
     def __init__(self, in_channels, kernel, pad=None, stride=None,
                  dilation=None, multiplier=1, w_init=None, b_init=None,
                  base_axis=1, fix_parameters=False, rng=None, with_bias=True):
-        Module.__init__(self)
-
         if w_init is None:
             w_init = UniformInitializer(
                 calc_uniform_lim_glorot(
@@ -197,7 +191,7 @@ class DwConv(Module):
                                        self._stride, self._dilation,
                                        self._multiplier)
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return (f'in_channels={self._in_channels}, '
                 f'kernel={self._kernel}, '
                 f'stride={self._stride}, '
