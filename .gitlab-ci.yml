@@ -1,6 +1,7 @@
 image: "python"
 
 before_script:
+  - apt-get install cmake
   - pip install --proxy http://43.196.177.37:8881 -r requirements.txt
 
 stages:
