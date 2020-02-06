@@ -10,7 +10,7 @@ from nnabla.initializer import (ConstantInitializer, UniformInitializer,
                                 calc_uniform_lim_glorot)
 from nnabla_nas.module.parameter import Parameter
 import nnabla_nas.module as mo
-from  ...contrib import misc
+#from  ...contrib import misc
 import operator
 
 def _get_abs_string_index(obj, idx):
@@ -361,16 +361,16 @@ class DwConv(mo.DwConv, Module):
     def call(self, tag=None):
         return Module.call(self, tag=tag)
 
-class SepConv(misc.SepConv, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
-        misc.SepConv.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+#class SepConv(misc.SepConv, Module):
+#    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+#        misc.SepConv.__init__(self, *args, **kwargs)
+#        Module.__init__(self, name, parent, eval_prob=eval_prob)
 
-    def _value_function(self, input):
-        return misc.SepConv.call(self, input)
+#    def _value_function(self, input):
+#        return misc.SepConv.call(self, input)
 
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
+#    def call(self, tag=None):
+#        return Module.call(self, tag=tag)
 
 class MaxPool(mo.MaxPool, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
@@ -515,7 +515,7 @@ class Join(Module):
         self.mode = mode
 
         if join_parameters.size == len(parents):
-            self._join_parameters = F.reshape(join_parameters, shape=(len(parents),), inplace=False)
+            self._join_parameters = join_parameters
         else:
             raise Exception("The number of provided join parameters does not match the number of parents")
         self._sel_p = F.softmax(self._join_parameters)
