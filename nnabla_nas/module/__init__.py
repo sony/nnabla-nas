@@ -1,14 +1,21 @@
 from .batchnorm import BatchNormalization
-from .container import ModuleList, ParameterList, Sequential
-from .convolution import Conv, DwConv
+from .container import ModuleList
+from .container import ParameterList
+from .container import Sequential
+from .convolution import Conv
+from .convolution import DwConv
 from .dropout import Dropout
 from .identity import Identity
 from .linear import Linear
 from .merging import Merging
 from .module import Module
 from .parameter import Parameter
-from .pooling import AvgPool, GlobalAvgPool, MaxPool
-from .relu import LeakyReLU, ReLU, ReLU6
+from .pooling import AvgPool
+from .pooling import GlobalAvgPool
+from .pooling import MaxPool
+from .relu import LeakyReLU
+from .relu import ReLU
+from .relu import ReLU6
 from .zero import Zero
 
 __all__ = [

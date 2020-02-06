@@ -1,5 +1,6 @@
 import os
-from collections import Counter, OrderedDict
+from collections import Counter
+from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
@@ -8,7 +9,8 @@ from nnabla.logger import logger
 
 from .. import utils as ut
 from ..contrib.pnas import estimator as EST
-from ..contrib.pnas.modules import CANDIDATE_FUNC, SampledOp
+from ..contrib.pnas.modules import CANDIDATE_FUNC
+from ..contrib.pnas.modules import SampledOp
 from ..dataset import DataLoader
 from ..dataset.cifar10 import cifar10
 from ..optimizer import Optimizer

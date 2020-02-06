@@ -1,6 +1,7 @@
 import nnabla.functions as F
-from nnabla.initializer import (ConstantInitializer, UniformInitializer,
-                                calc_uniform_lim_glorot)
+from nnabla.initializer import ConstantInitializer
+from nnabla.initializer import UniformInitializer
+from nnabla.initializer import calc_uniform_lim_glorot
 
 from .module import Module
 from .parameter import Parameter
@@ -50,4 +51,5 @@ class Linear(Module):
     def extra_repr(self):
         return (f'in_features={self._in_features}, '
                 f'out_features={self._out_features}, '
+                f'base_axis={self._base_axis}, '
                 f'bias={self._b is not None}')

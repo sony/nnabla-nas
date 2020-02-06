@@ -7,7 +7,7 @@ from .parameter import Parameter
 
 def _get_abs_string_index(obj, idx):
     """Get the absolute index for the list of modules"""
-    idx = operator.index(idx)
+    idx = int(operator.index(idx))
     if not (-len(obj) <= idx < len(obj)):
         raise IndexError('index {} is out of range'.format(idx))
     if idx < 0:
@@ -22,6 +22,7 @@ class ModuleList(Module):
     Args:
         modules (iterable, optional): An iterable of modules to add.
     """
+
     def __init__(self, modules=None):
         if modules is not None:
             self += modules
@@ -91,8 +92,11 @@ class ModuleList(Module):
     def __iadd__(self, modules):
         return self.extend(modules)
 
-    def extra_format(self, key):
-        return f'[{key}]'
+    def extra_format(self):
+        return '[{}]'
+
+    def extra_repr(self):
+        return f'len={len(self)}'
 
 
 class ParameterList(Module):
@@ -172,8 +176,11 @@ class ParameterList(Module):
     def __iadd__(self, parameters):
         return self.extend(parameters)
 
-    def extra_format(self, key):
-        return f'[{key}]'
+    def extra_format(self):
+        return '[{}]'
+
+    def extra_repr(self):
+        return f'len={len(self)}'
 
 
 class Sequential(ModuleList):
@@ -182,6 +189,7 @@ class Sequential(ModuleList):
     constructor. Alternatively, an ordered dict of modules can also be
     passed in.
     """
+
     def __init__(self, *args):
         if len(args) == 1 and isinstance(args[0], OrderedDict):
             for key, module in args[0].items():

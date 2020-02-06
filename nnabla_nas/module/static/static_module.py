@@ -8,8 +8,9 @@ import nnabla as nn
 import nnabla.functions as F
 #from nnabla_nas.graph.profiling import *
 import numpy as np
-from nnabla.initializer import (ConstantInitializer, UniformInitializer,
-                                calc_uniform_lim_glorot)
+from nnabla.initializer import ConstantInitializer
+from nnabla.initializer import UniformInitializer
+from nnabla.initializer import calc_uniform_lim_glorot
 
 import nnabla_nas.contrib.misc as misc
 import nnabla_nas.module as smo

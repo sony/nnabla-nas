@@ -15,6 +15,7 @@ class Dropout(Module):
         drop_prob (:obj:`int`, optional): The probability of an element to be
             zeroed. Defaults to 0.5.
     """
+
     def __init__(self, drop_prob=0.5):
         self._drop_prob = drop_prob
 

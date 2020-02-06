@@ -1,54 +1,50 @@
 {
     "search": true,
+    "dataset": "cifar10",
+    "epoch": 150,
+    "batch_train": 256,
+    "batch_valid": 256,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 64,
+    "warmup": 0,
+    "output_path": "log/pnas-con/search",
+    "print_frequency": 20,
+    "train_portion": 0.9,
     "network": {
         "name": "pnas",
         "in_channels": 3,
         "init_channels": 36,
         "num_cells": 15,
         "num_classes": 10,
-        "num_choices": 4
+        "num_choices": 4,
+        "mode": "sample"
     },
-    "regularizer": {
-        "latency": {
-            "name": "LatencyEstimator",
-            "weight": 0.1,
-            "bound": 0.03,
-            "device_id": 0,
-            "ext_name": "cudnn"
+    "regularizer": {},
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.025
+            }
+        },
+        "valid": {
+            "grad_clip": 5.0,
+            "solver": {
+                "name": "Adam",
+                "alpha": 0.01,
+                "beta1": 0.0,
+                "beta2": 0.999
+            }
+        },
+        "warmup": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.025
+            }
         }
-    },
-    "model_optimizer": {
-        "grad_clip": 5.0,
-        "weight_decay": 3e-4,
-        "solver": {
-            "name": "Momentum",
-            "lr": 0.025
-        }
-    },
-    "arch_optimizer": {
-        "grad_clip": 5.0,
-        "weight_decay": 1e-3,
-        "solver": {
-            "name": "Adam",
-            "alpha": 0.01,
-            "beta1": 0,
-            "beta2": 0.999
-        }
-    },
-    "warmup_optimizer": {
-        "grad_clip": 5.0,
-        "weight_decay": 3e-4,
-        "solver": {
-            "name": "Momentum",
-            "lr": 0.001
-        }
-    },
-    "epoch": 200,
-    "batch_size": 256,
-    "mini_batch_size": 64,
-    "warmup": 5,
-    "model_name": "arch",
-    "output_path": "log/pnas-con/search",
-    "print_frequency": 20,
-    "train_portion": 0.9
+    }
 }

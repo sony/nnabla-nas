@@ -9,7 +9,9 @@ from nnabla.logger import logger
 from scipy.special import softmax
 from tensorboardX import SummaryWriter
 
-from .dataset.transformer import Compose, Cutout, Normalizer
+from .dataset.transformer import Compose
+from .dataset.transformer import Cutout
+from .dataset.transformer import Normalizer
 
 
 class ProgressMeter(object):
@@ -85,7 +87,7 @@ def sample(pvals, mode='sample'):
     """Return an index."""
     if mode == 'max':
         return np.argmax(pvals)
-    return np.random.choice(len(pvals), p=pvals, replace=True)
+    return np.random.choice(len(pvals), p=pvals, replace=False)
 
 
 def categorical_error(pred, label):
@@ -156,6 +158,21 @@ def drop_path(x):
     return x
 
 
+def load_parameters(path):
+    """Loads the parameters from a file.
+
+    Args:
+        path (str): The path to file.
+
+    Returns:
+        OrderedDict: An `OrderedDict` containing parameters.
+    """
+    with nn.parameter_scope('', OrderedDict()):
+        nn.load_parameters(path)
+        params = nn.get_parameters()
+    return params
+
+
 def write_to_json_file(content, file_path):
     with open(file_path, 'w+') as file:
         json.dump(content, file,
@@ -176,6 +193,7 @@ def get_params_size(params):
 
 def get_object_from_dict(module, args):
     if args is not None:
+        args = args.copy()
         class_name = args.pop('name')
         return module[class_name](**args)
     return None

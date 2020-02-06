@@ -4,9 +4,9 @@ import os
 import imageio
 from graphviz import Digraph
 
-from ..contrib.darts.modules import CANDIDATE_FUNC
+from ..contrib.darts.modules import CANDIDATES
 
-OPS = list(CANDIDATE_FUNC.keys())
+OPS = list(CANDIDATES.keys())
 
 
 def plot(choice, prob, filename):

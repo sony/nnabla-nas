@@ -2,7 +2,8 @@ import nnabla as nn
 import numpy as np
 from nnabla.utils.profiler import GraphProfiler
 
-from ...module import Identity, Zero
+from ...module import Identity
+from ...module import Zero
 
 
 class Estimator(object):

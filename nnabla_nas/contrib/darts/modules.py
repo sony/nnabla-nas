@@ -1,28 +1,24 @@
 from collections import OrderedDict
 
+import nnabla.functions as F
+from nnabla import logger
+from nnabla.initializer import ConstantInitializer
+from scipy.special import softmax
+
 from ... import module as Mo
+from ... import utils as ut
 from .. import misc
 
-CANDIDATE_FUNC = OrderedDict([
-    ('dil_conv_3x3', lambda channels, stride:
-        DDSConv(channels, channels, (3, 3),
-                pad=(2, 2), stride=(stride, stride))),
-    ('dil_conv_5x5', lambda channels, stride:
-        DDSConv(channels, channels, (5, 5), pad=(4, 4),
-                stride=(stride, stride))),
-    ('sep_conv_3x3', lambda channels, stride:
-        SepConv(channels, channels, (3, 3), pad=(1, 1),
-                stride=(stride, stride))),
-    ('sep_conv_5x5', lambda channels, stride:
-        SepConv(channels, channels, (5, 5), pad=(2, 2),
-                stride=(stride, stride))),
-    ('max_pool_3x3', lambda channels, stride:
-        Mo.MaxPool(kernel=(3, 3), stride=(stride, stride), pad=(1, 1))),
-    ('avg_pool_3x3', lambda channels, stride:
-        Mo.AvgPool(kernel=(3, 3), stride=(stride, stride), pad=(1, 1))),
-    ('skip_connect', lambda channels, stride:
-        FactorizedReduce(channels, channels) if stride > 1 else Mo.Identity()),
-    ('none', lambda channels, stride: Mo.Zero((stride, stride)))
+CANDIDATES = OrderedDict([
+    ('dil_conv_3x3', lambda c, s: DDSConv(c, c, (3, 3), (2, 2), (s, s))),
+    ('dil_conv_5x5', lambda c, s: DDSConv(c, c, (5, 5), (4, 4), (s, s))),
+    ('sep_conv_3x3', lambda c, s: SepConv(c, c, (3, 3), (1, 1), (s, s))),
+    ('sep_conv_5x5', lambda c, s: SepConv(c, c, (5, 5), (2, 2), (s, s))),
+    ('max_pool_3x3', lambda c, s: Mo.MaxPool((3, 3), (s, s), (1, 1))),
+    ('avg_pool_3x3', lambda c, s: Mo.AvgPool((3, 3), (s, s), (1, 1))),
+    ('skip_connect', lambda c, s: FactorizedReduce(c, c) if s > 1
+     else Mo.Identity()),
+    ('none', lambda c, s: Mo.Zero((s, s)))
 ])
 
 
@@ -158,6 +154,63 @@ class SepConv(Mo.Module):
                 f'stride={self._stride}')
 
 
+class MixedOp(Mo.Module):
+    r"""Mixed Operator layer.
+
+    Selects a single operator or a combination of different operators that are
+    allowed in this module.
+
+    Args:
+        operators (List of `Module`): A list of modules.
+        mode (str, optional): The selecting mode for this module. Defaults to
+            `full`. Possible modes are `sample`, `full`, or `max`.
+        alpha (Parameter, optional): The weights used to calculate the
+            evaluation probabilities. Defaults to None.
+    """
+
+    def __init__(self, operators, mode='full', alpha=None):
+        if mode not in ('max', 'sample', 'full'):
+            raise ValueError(f'mode={mode} is not supported.')
+
+        self._active = None  # save the active index
+        self._mode = mode
+        self._ops = Mo.ModuleList(operators)
+        self._alpha = alpha
+
+        if alpha is None:
+            n = len(operators)
+            shape = (n,) + (1, 1, 1, 1)
+            init = ConstantInitializer(0.0)
+            self._alpha = Mo.Parameter(shape, initializer=init)
+
+    def call(self, input):
+        if self._mode == 'full':
+            probs = F.softmax(self._alpha, axis=0)
+            return sum(op(input)*p for op, p in zip(self._ops, probs))
+
+        if self._active is None:
+            logger.warn('The active index was not initialized.')
+
+        return self._ops[self._active](input)
+
+    def update_active_index(self):
+        """Update index of the active operation."""
+        probs = softmax(self._alpha.d, axis=0)
+        self._active = ut.sample(
+            pvals=probs.flatten(),
+            mode=self._mode
+        )
+        # update gradients
+        probs[self._active] -= 1
+        self._alpha.g = probs
+
+        for i, op in enumerate(self._ops):
+            op.apply(need_grad=(self._active == i))
+
+    def extra_repr(self):
+        return f'num_ops={len(self._ops)}, mode={self._mode}'
+
+
 class ChoiceBlock(Mo.Module):
     r"""Choice block layer.
 
@@ -178,9 +231,9 @@ class ChoiceBlock(Mo.Module):
         self._out_channels = out_channels
         self._mode = mode
         stride = 2 if is_reduced else 1
-        self._mixed = misc.MixedOp(
+        self._mixed = MixedOp(
             operators=[func(in_channels, stride)
-                       for func in CANDIDATE_FUNC.values()],
+                       for func in CANDIDATES.values()],
             mode=mode,
             alpha=alpha
         )

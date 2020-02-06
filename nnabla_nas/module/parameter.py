@@ -19,6 +19,7 @@ class Parameter(nn.Variable):
             the parameter. :obj:`numpy.ndarray` can also be given to
             initialize parameters from numpy array data. Defaults to None.
     """
+
     def __new__(cls, shape, need_grad=True, initializer=None):
         assert shape is not None
         obj = super().__new__(cls, shape, need_grad)

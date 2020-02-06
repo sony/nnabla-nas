@@ -1,30 +1,36 @@
 import json
 from collections import OrderedDict
 
+import nnabla as nn
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
-from ..misc import AuxiliaryHeadCIFAR, DropPath, MixedOp
+from ..misc import AuxiliaryHeadCIFAR
+from ..misc import DropPath
+from ..misc import Model
 from . import modules as darts
 
 
-class SearchNet(Mo.Module):
+class SearchNet(Model):
     r"""SearchNet for DARTS."""
 
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
-                 num_choices=4, multiplier=4, stem_multiplier=3):
-        super().__init__()
-        self._num_choices = num_choices
-        self._num_ops = len(darts.CANDIDATE_FUNC)
-        self._multiplier = multiplier
+                 num_choices=4, multiplier=4, mode='full', shared=False,
+                 stem_multiplier=3):
+        self._in_channels = in_channels
         self._init_channels = init_channels
+        self._num_cells = num_cells
+        self._num_classes = num_classes
+        self._num_choices = num_choices
+        self._multiplier = multiplier
+        self._mode = mode
+        self._shared = shared
 
         num_channels = stem_multiplier * init_channels
 
         # initialize the arch parameters
-        self._alpha_normal = self._init_alpha(self._num_ops)
-        self._alpha_reduce = self._init_alpha(self._num_ops)
+        self._alpha = self._init_alpha() if shared else None
 
         # build the network
         self._stem = darts.StemConv(in_channels, num_channels)
@@ -39,74 +45,59 @@ class SearchNet(Mo.Module):
         out_c = self._ave_pool(out_c)
         return self._linear(out_c)
 
-    def _init_cells(self, num_cells, channel_c):
+    def _init_cells(self, num_cells, C):
         cells = Mo.ModuleList()
-
-        channel_p_p, channel_p, channel_c = channel_c, channel_c, \
-            self._init_channels
+        Cpp, Cp, C = C, C, self._init_channels
         reduction_p, reduction_c = False, False
-
         for i in range(num_cells):
             reduction_c = i in (num_cells // 3, 2 * num_cells // 3)
-            channel_c *= reduction_c + 1
+            C *= reduction_c + 1
             cells.append(
                 darts.Cell(
                     num_choices=self._num_choices,
                     multiplier=self._multiplier,
-                    channels=(channel_p_p, channel_p, channel_c),
+                    channels=(Cpp, Cp, C),
                     reductions=(reduction_p, reduction_c),
                     mode='full',
-                    alpha=self._alpha_reduce if reduction_c
-                    else self._alpha_normal
+                    alpha=self._alpha[reduction_c] if self._shared else None
                 )
             )
             reduction_p = reduction_c
-            channel_p_p, channel_p = channel_p, self._multiplier * channel_c
-
+            Cpp, Cp = Cp, self._multiplier * C
+            if i == 2 * num_cells // 3:
+                self._c_auxiliary = Cp
         # save the last channels for the last module
-        self._last_channels = channel_p
-
+        self._last_channels = Cp
         return cells
 
-    def _init_alpha(self, n):
-        alpha = []
-        for i in range(self._num_choices):
-            for _ in range(i + 2):
-                alpha_shape = (n,) + (1, 1, 1, 1)
-                alpha_init = ConstantInitializer(0.0)
-                alpha.append(Mo.Parameter(alpha_shape, initializer=alpha_init))
+    def _init_alpha(self):
+        r"""Returns a list of parameters."""
+        shape = (len(darts.CANDIDATES), 1, 1, 1, 1)
+        init = ConstantInitializer(0.0)
+        n = self._num_choices * (self._num_choices + 3) // 2
+        alpha = Mo.ModuleList()
+        for i in range(2):
+            params = [Mo.Parameter(shape, initializer=init) for _ in range(n)]
+            alpha.append(Mo.ParameterList(params))
         return alpha
 
     def get_net_parameters(self, grad_only=False):
-        param = OrderedDict()
-        for key, val in self.get_parameters(grad_only).items():
-            if '_alpha' not in key:
-                param[key] = val
-        return param
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' not in k])
 
     def get_arch_parameters(self, grad_only=False):
-        param = OrderedDict()
-        for i, alpha in enumerate(self._alpha_normal):
-            param['_alpha_normal_{}'.format(i)] = alpha
-        for i, alpha in enumerate(self._alpha_reduce):
-            param['_alpha_reduce_{}'.format(i)] = alpha
-        return param
-
-    def get_arch_modules(self):
-        ans = []
-        for name, module in self.get_modules():
-            if isinstance(module, MixedOp):
-                ans.append(module)
-        return ans
+        if self._shared:
+            return self._alpha.get_parameters()
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
 
 
-class TrainNet(Mo.Module):
+class TrainNet(Model):
     """TrainNet for DARTS."""
 
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
                  genotype, num_choices=4, multiplier=4, stem_multiplier=3,
                  drop_path=0.2, auxiliary=True):
-        super().__init__()
         self._num_ops = len(darts.CANDIDATE_FUNC)
         self._multiplier = multiplier
         self._init_channels = init_channels
@@ -165,13 +156,6 @@ class TrainNet(Mo.Module):
         self._last_channels = channel_p
 
         return cells
-
-    def get_arch_modues(self):
-        ans = []
-        for name, module in self.get_modules():
-            if isinstance(module, MixedOp):
-                ans.append(module)
-        return ans
 
 
 class Cell(Mo.Module):

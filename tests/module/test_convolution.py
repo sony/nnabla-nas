@@ -2,7 +2,9 @@ import nnabla as nn
 import numpy as np
 import pytest
 
-from nnabla_nas.module import Conv, DwConv, Parameter
+from nnabla_nas.module import Conv
+from nnabla_nas.module import DwConv
+from nnabla_nas.module import Parameter
 
 
 @pytest.mark.parametrize('fix_parameters', [True, False])

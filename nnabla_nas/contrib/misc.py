@@ -1,11 +1,21 @@
 import nnabla.functions as F
-import numpy as np
-from nnabla import logger
-from nnabla.initializer import ConstantInitializer
-from scipy.special import softmax
 
 from .. import module as Mo
-from .. import utils as ut
+
+
+class Model(Mo.Module):
+
+    def get_net_parameters(self, grad_only=False):
+        raise NotImplementedError
+
+    def get_arch_parameters(self, grad_only=False):
+        raise NotImplementedError
+
+    def sample(self):
+        pass
+
+    def arch_modules():
+        pass
 
 
 class AuxiliaryHeadCIFAR(Mo.Module):
@@ -108,70 +118,6 @@ class ReLUConvBN(Mo.Module):
                 f'kernel={self._kernel}, '
                 f'stride={self._stride}, '
                 f'pad={self._pad}')
-
-
-class MixedOp(Mo.Module):
-    r"""Mixed Operator layer.
-
-    Selects a single operator or a combination of different operators that are
-    allowed in this module.
-
-    Args:
-        operators (List of `Module`): A list of modules.
-        mode (str, optional): The selecting mode for this module. Defaults to
-            `sample`. Possible modes are `sample`, `full`, or `max`.
-        alpha (Parameter, optional): The weights used to calculate the
-            evaluation probabilities. Defaults to None.
-    """
-
-    def __init__(self, operators, mode='sample', alpha=None):
-        if mode not in ('max', 'sample', 'full'):
-            raise ValueError(f'mode={mode} is not supported.')
-
-        self._active = None  # save the active index
-        self._mode = mode
-        self._ops = Mo.ModuleList(operators)
-        self._alpha = alpha
-
-        if alpha is None:
-            n = len(operators)
-            alpha_shape = (n,) + (1, 1, 1, 1)
-            alpha_init = ConstantInitializer(0.0)
-            self._alpha = Mo.Parameter(
-                alpha_shape, initializer=alpha_init)
-
-    def call(self, input):
-        if self._mode == 'full':
-            out = [op(input) for op in self._ops]
-            out = F.stack(*out, axis=0)
-            out = F.mul2(out, F.softmax(self._alpha, axis=0))
-            return F.sum(out, axis=0)
-
-        if self._active is None:
-            logger.warn('The active index was not initialized.')
-
-        return self._ops[self._active](input)
-
-    def _update_active_idx(self):
-        """Update index of the active operation."""
-        # recompute active_idx
-        probs = softmax(self._alpha.d.flat)
-        self._active = ut.sample(
-            pvals=probs,
-            mode=self._mode
-        )
-        for i, op in enumerate(self._ops):
-            op.need_grad = (self._active == i)
-
-    def _update_alpha_grad(self):
-        """Update the gradients for parameter `alpha`."""
-        probs = softmax(self._alpha.d.flat)
-        probs[self._active] -= 1
-        self._alpha.g = np.reshape(-probs, self._alpha.shape)
-        return self
-
-    def extra_repr(self):
-        return f'num_ops={len(self._ops)}, mode={self._mode}'
 
 
 class SepConv(Mo.DwConv):

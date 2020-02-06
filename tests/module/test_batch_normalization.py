@@ -2,7 +2,8 @@ import nnabla as nn
 import numpy as np
 import pytest
 
-from nnabla_nas.module import BatchNormalization, Parameter
+from nnabla_nas.module import BatchNormalization
+from nnabla_nas.module import Parameter
 
 
 @pytest.mark.parametrize('fix_parameters', [True, False])

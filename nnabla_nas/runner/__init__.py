@@ -1,4 +1,3 @@
-from .search import Searcher
-from .validate import Trainer
+from .search import DartsSeacher, ProxylessNasSearcher
 
-__all__ = ['Searcher', 'Trainer']
+__all__ = ['DartsSeacher', 'ProxylessNasSearcher']

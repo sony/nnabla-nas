@@ -35,9 +35,7 @@ class Module(object):
 
     @training.setter
     def training(self, mode):
-        setattr(self, '_training', mode)
-        for module in self.modules.values():
-            module.training = mode
+        self.__dict__['_training'] = mode
 
     @property
     def need_grad(self):
@@ -48,20 +46,18 @@ class Module(object):
 
     @need_grad.setter
     def need_grad(self, mode):
-        setattr(self, '_need_grad', mode)
-        for module in self.modules.values():
-            module.need_grad = mode
+        self.__dict__['_need_grad'] = mode
 
     @property
-    def inputs(self):
-        r"""Return a list of inputs used during `call` function."""
-        if '_inputs' not in self.__dict__:
-            self.__dict__['_inputs'] = list()
+    def input_shapes(self):
+        r"""Return a list of input shapes used during `call` function."""
+        if '_input_shapes' not in self.__dict__:
+            self.__dict__['_input_shapes'] = list()
         return self._inputs
 
-    @inputs.setter
-    def inputs(self, v):
-        setattr(self, '_inputs', v)
+    @input_shapes.setter
+    def input_shapes(self, v):
+        setattr(self, '_input_shapes', v)
 
     def __getattr__(self, name):
         if name in self.modules:
@@ -90,14 +86,20 @@ class Module(object):
         else:
             object.__delattr__(self, name)
 
-    def apply(self, **kargs):
-        r"""Helper for setting property, then return self."""
-        for key, value in kargs.items():
-            setattr(self, key, value)
+    def apply(self, memo=None, **kargs):
+        r"""Helper for setting property recursively, then returns self."""
+        if memo is None:
+            memo = set()
+        if self not in memo:
+            memo.add(self)
+            for key, value in kargs.items():
+                setattr(self, key, value)
+            for module in self.modules.values():
+                module.apply(memo, **kargs)
         return self
 
     def get_modules(self, prefix='', memo=None):
-        r"""Return an iterator over all modules in the network, yielding
+        r"""Returns an iterator over all modules in the network, yielding
         both the name of the module as well as the module itself.
 
         Args:
@@ -164,16 +166,10 @@ class Module(object):
                         '`raise_if_missing` is specified '
                         'as True. Please turn off if you allow it.')
 
-    def extra_format(self, key):
-        r"""Set the submodule representation.
-
-        Args:
-            key (str): Format str for the attributes of module
-
-        Returns:
-            str: The output string.
+    def extra_format(self):
+        r"""Set the submodule representation format.
         """
-        return f'.{key}'
+        return '.{}'
 
     def extra_repr(self):
         r"""Set the extra representation for the module."""
@@ -184,8 +180,8 @@ class Module(object):
         main_str = f'{self.__class__.__name__}(' + self.extra_repr()
         sub_str = ''
         for key, module in self.modules.items():
-            m_repr = repr(module).split('\n')
-            head = [self.extra_format(key) + ': ' + m_repr.pop(0)]
+            m_repr = str(module).split('\n')
+            head = [self.extra_format().format(key) + ': ' + m_repr.pop(0)]
             tail = [m_repr.pop()] if len(m_repr) else []
             m_repr = [' '*2 + line for line in (head + m_repr + tail)]
             sub_str += '\n' + '\n'.join(m_repr)

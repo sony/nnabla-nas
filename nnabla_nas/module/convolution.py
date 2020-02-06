@@ -1,7 +1,8 @@
 import nnabla as nn
 import nnabla.functions as F
-from nnabla.initializer import (ConstantInitializer, UniformInitializer,
-                                calc_uniform_lim_glorot)
+from nnabla.initializer import ConstantInitializer
+from nnabla.initializer import UniformInitializer
+from nnabla.initializer import calc_uniform_lim_glorot
 
 from .module import Module
 from .parameter import Parameter
@@ -49,6 +50,7 @@ class Conv(Module):
             considered as channel dimension, a.k.a NHWC order. Defaults to
             `False`.
     """
+
     def __init__(self, in_channels, out_channels, kernel, pad=None,
                  stride=None, dilation=None, group=1, w_init=None, b_init=None,
                  base_axis=1, fix_parameters=False, rng=None, with_bias=True,

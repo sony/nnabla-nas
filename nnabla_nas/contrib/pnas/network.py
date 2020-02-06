@@ -5,28 +5,34 @@ import nnabla.functions as F
 import numpy as np
 
 from ... import module as Mo
-from ..misc import AuxiliaryHeadCIFAR, DropPath
-from . import modules as pnas
+from ..darts import modules as darts
+from ..misc import AuxiliaryHeadCIFAR
+from ..misc import DropPath
 
 
 class SearchNet(Mo.Module):
     r"""SearchNet for PNAS."""
 
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
-                 num_choices=4, multiplier=4, stem_multiplier=3):
-        super().__init__()
+                 num_choices=4, multiplier=4, stem_multiplier=3,
+                 mode='sample', shared=False):
         self._num_choices = num_choices
-        self._num_ops = len(pnas.CANDIDATE_FUNC)
+        self._num_ops = len(darts.CANDIDATES)
         self._multiplier = multiplier
         self._init_channels = init_channels
+        self._mode = mode
+        self._shared = shared
 
         num_channels = stem_multiplier * init_channels
 
         # build the network
-        self._stem = pnas.StemConv(in_channels, num_channels)
+        self._stem = darts.StemConv(in_channels, num_channels)
         self._cells = self._init_cells(num_cells, num_channels)
         self._ave_pool = Mo.AvgPool(kernel=(8, 8))
         self._linear = Mo.Linear(self._last_channels, num_classes)
+
+        self._arch_modules = [m for _, m in self.get_modules()
+                              if isinstance(m, darts.MixedOp)]
 
     def call(self, input):
         out_p = out_c = self._stem(input)
@@ -46,12 +52,13 @@ class SearchNet(Mo.Module):
             reduction_c = i in (num_cells // 3, 2 * num_cells // 3)
             channel_c *= reduction_c + 1
             cells.append(
-                pnas.Cell(
+                darts.Cell(
                     num_choices=self._num_choices,
                     multiplier=self._multiplier,
                     channels=(channel_p_p, channel_p, channel_c),
                     reductions=(reduction_p, reduction_c),
-                    affine=True
+                    mode=self._mode,
+                    alpha=self._alpha[reduction_c] if self._shared else None
                 )
             )
             reduction_p = reduction_c
@@ -75,6 +82,10 @@ class SearchNet(Mo.Module):
             if '_alpha' in key:
                 param[key] = val
         return param
+
+    def get_arch_modules(self):
+        return [m for _, m in self.get_modules()
+                if isinstance(m, darts.MixedOp)]
 
 
 class TrainNet(Mo.Module):
@@ -106,7 +117,7 @@ class TrainNet(Mo.Module):
         nn.load_parameters(genotype)
         self.set_parameters(nn.get_parameters())
         for key, module in self.get_modules():
-            if isinstance(module, pnas.ChoiceBlock):
+            if isinstance(module, darts.ChoiceBlock):
                 idx = np.argmax(module._mixed._alpha.d)
                 module._mixed = module._mixed._ops[idx]
 
@@ -168,20 +179,20 @@ class Cell(Mo.Module):
         self._prep = Mo.ModuleList()
         if reductions[0]:
             self._prep.append(
-                pnas.FactorizedReduce(channels[0], channels[2], affine=affine))
+                darts.FactorizedReduce(channels[0], channels[2], affine=affine))
         else:
             self._prep.append(
-                pnas.ReLUConvBN(channels[0], channels[2], kernel=(1, 1),
-                                affine=affine))
+                darts.ReLUConvBN(channels[0], channels[2], kernel=(1, 1),
+                                 affine=affine))
         self._prep.append(
-            pnas.ReLUConvBN(channels[1], channels[2], kernel=(1, 1), affine=affine))
+            darts.ReLUConvBN(channels[1], channels[2], kernel=(1, 1), affine=affine))
 
         # build choice blocks
         self._blocks = Mo.ModuleList()
         for i in range(num_choices):
             for j in range(i + 2):
                 self._blocks.append(
-                    pnas.ChoiceBlock(
+                    darts.ChoiceBlock(
                         in_channels=channels[2],
                         out_channels=channels[2],
                         is_reduced=j < 2 and reductions[1],
