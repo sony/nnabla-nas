@@ -1,7 +1,7 @@
 import nnabla as nn
 import nnabla_nas.module.static.static_module as smo
 import nnabla_nas.module as Mo
-from ...contrib import misc
+from nnabla_nas.contrib import misc
 from nnabla_nas.module.parameter import Parameter
 from collections import OrderedDict
 
@@ -106,10 +106,7 @@ class CandidatesCell(smo.Graph):
         self._identity_skip = identity_skip
         self._join_mode = join_mode
         if join_parameters is None:
-            self._join_parameters = Parameter(shape=(len(t_set)+int(identity_skip),))
-        else:
-            self._join_parameters = join_parameters
-
+            join_parameters = Parameter(shape=(len(t_set)+int(identity_skip),))
 
         for t in t_set:
             maps = c
@@ -124,7 +121,7 @@ class CandidatesCell(smo.Graph):
         # Join
         if identity_skip:
             self.append(smo.Identity(name='{}/skip'.format(self._name), parent=self._parent[0]))
-        self.append(smo.Join(name='{}/join'.format(self._name), parents=self[:], join_parameters=self._join_parameters, mode=self._join_mode))
+        self.append(smo.Join(name='{}/join'.format(self._name), parents=self[:], join_parameters=join_parameters, mode=self._join_mode))
 
 class Mnv2SearchSpace(smo.Graph):
     def __init__(self, name, parents,
@@ -143,7 +140,7 @@ class Mnv2SearchSpace(smo.Graph):
                                      #c, s
                                      [16, 1],
                                      [24, 1],
-                                     [32, 2],
+                                     [32, 1],
                                      [64, 2],
                                      [96, 1],
                                      [160, 2],
@@ -203,8 +200,10 @@ class SearchNet(Mo.Module):
                  first_maps=32,
                  last_maps=1280,
                  n_classes=10,
+                 genotype = None,
                  *args, **kwargs):
         super().__init__()
+
         # build the network
         self.input = smo.Input(name='arch_input', value=nn.Variable((32,3,32,32)))
         self.graph = Mnv2SearchSpace(name='mnv2',
@@ -212,6 +211,11 @@ class SearchNet(Mo.Module):
                                      first_maps=32,
                                      last_maps=1280,
                                      n_classes=10)
+        # load parameters
+        if genotype:
+            nn.load_parameters(genotype)
+            params = nn.get_parameters()
+            self.set_parameters(params)
 
     def call(self, input):
         self.input._value = input
@@ -232,6 +236,7 @@ class SearchNet(Mo.Module):
                 param[key] = val
         return param
 
+        
     def get_arch_modules(self):
         ans = []
         for name, module in self.get_modules():
@@ -240,13 +245,14 @@ class SearchNet(Mo.Module):
         return ans
 
 
+
 if __name__ =='__main__':
     ##################### EXAMPLE MNV2 simple net ############################ 
     inverted_residual_setting = [
             # t, c, n, s
             [1, 16, 1, 1],
             [6, 24, 2, 1], # NOTE: change stride 2 -> 1 for CIFAR10
-            [6, 32, 3, 2],
+            [6, 32, 3, 1],
             [6, 64, 4, 2],
             [6, 96, 3, 1],
             [6, 160, 3, 2],
@@ -265,25 +271,3 @@ if __name__ =='__main__':
     nn_out = mnv2_graph()
     print('output shape is {}'.format(nn_out.shape))
     
-    ################## EXAMPLE MNV2 search space ########################
-#    graph = Graph(name='graph2')
-#    input = Input(name='arch_input', graph=graph, nn_variable=nn.Variable((32,3,32,32)))
-#    mnv2_search_graph = mnv2_search_space(name='search_space',
-#                                  graph=graph,
-#                                  first_maps=32,
-#                                  last_maps=1280,
-#                                  n_classes=10)
-#    # Is that needed ? 
-#    mnv2_search_graph(input)
-#
-#    gvsg = graph.get_gv_graph()
-#    gvsg.render('mobilenetV2_Search')
-#    
-#    print ("building nnabla graph....")
-#    nn_out = graph.nnabla_out
-#    print('output shape is {}'.format(nn_out.shape))
-#    
-#    print ("Drawing nnabla graph....")
-#    import nnabla.experimental.viewers as V
-#    graph = V.SimpleGraph(verbose=False)
-#    graph.save(nn_out, "nn_graph_search")

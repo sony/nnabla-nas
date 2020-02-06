@@ -80,7 +80,10 @@ class Trainer(object):
         model.apply(training=True)
         train_input = nn.Variable((train_size, 3, 32, 32))
         train_target = nn.Variable((train_size, 1))
-        train_out, aux_out = model(ut.image_augmentation(train_input))
+        if conf['auxiliary']:
+            train_out, aux_out = model(ut.image_augmentation(train_input))
+        else:
+            train_out = model(ut.image_augmentation(train_input))
         train_out.apply(persistent=True)
         train_loss = criteria(train_out, train_target)/n_micros
         train_err = evaluate(train_out.get_unlinked_variable(), train_target)
@@ -102,7 +105,10 @@ class Trainer(object):
         model.apply(training=False)
         valid_input = nn.Variable((valid_size, 3, 32, 32))
         valid_target = nn.Variable((valid_size, 1))
-        valid_out, _ = model(valid_input)
+        if conf['auxiliary']:
+            valid_out, _ = model(valid_input)
+        else:
+            valid_out = model(valid_input)
         valid_out.apply(persistent=True)
         valid_out.apply(need_grad=False)
         valid_loss = criteria(valid_out, valid_target)

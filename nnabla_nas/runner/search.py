@@ -139,14 +139,14 @@ class Searcher(object):
 
             warmup -= warmup > 0
             # saving the architecture parameters
-            if conf['network']['name'] != 'pnas':
+            if conf['network']['name'] == 'darts':
                 ut.save_dart_arch(model, arch_file)
                 for tag, img in visualize(arch_file, out_path).items():
                     monitor.write_image(tag, img, cur_epoch)
-            else:
+            else:    
                 nn.save_parameters(model_path + '.h5',
                                    model.get_arch_parameters())
-                logger.info(self._get_statistics())
+                #logger.info(self._get_statistics())
 
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
