@@ -5,18 +5,18 @@
     "batch_size_valid": 256,
     "mini_batch_train": 64,
     "mini_batch_valid": 64,
-    "warmup": 0,
+    "warmup": 50,
     "cutout": 16,
     "print_frequency": 20,
     "train_portion": 0.9,
     "network": {
-        "name": "pnas",
+        "name": "darts",
         "in_channels": 3,
-        "init_channels": 16,
-        "num_cells": 5,
+        "init_channels": 36,
+        "num_cells": 15,
         "num_classes": 10,
         "num_choices": 4,
-        "shared": true,
+        "shared": false,
         "mode": "sample"
     },
     "optimizer": {
