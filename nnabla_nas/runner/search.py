@@ -146,7 +146,7 @@ class Searcher(object):
             else:
                 nn.save_parameters(model_path + '.h5',
                                    model.get_arch_parameters())
-                logger.info(self._get_statistics())
+#                logger.info(self._get_statistics())
 
             monitor.write(cur_epoch)
             logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %

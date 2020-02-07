@@ -10,9 +10,10 @@ from nnabla.initializer import (ConstantInitializer, UniformInitializer,
                                 calc_uniform_lim_glorot)
 from nnabla_nas.module.parameter import Parameter
 import nnabla_nas.module as mo
-import nnabla_nas.contrib.misc as misc
+from  nnabla_nas.contrib import misc
 import operator
 import line_profiler
+
 
 def _get_abs_string_index(obj, idx):
     """Get the absolute index for the list of modules"""
@@ -79,6 +80,13 @@ class Module(mo.Module):
         return self._shape
 
     @property
+    def input_shape(self):
+       if hasattr(self._parent , '__iter__'):
+          return [pi.shape for pi in self._parent]
+       else:
+          return [self._parent.shape]
+
+    @property
     def name(self):
         """
         A unique name within the graph this vertice lives in
@@ -101,22 +109,35 @@ class Module(mo.Module):
         """
         return self._children
 
-    @profile
-    def _value_function(self, input):
+
+    @property
+    def training(self):
+        r"""The training mode of module."""
+        if '_training' not in self.__dict__:
+            self.__dict__['_training'] = True
+        return self._training
+
+    @training.setter
+    def training(self, mode):
+        setattr(self, '_training', mode)
+        for k, module in self.modules.items():
+            if 'parent' not in k and 'child' not in k:
+                module.training = mode
+
+    def call(self, input): #
         raise NotImplementedError
 
     def clear_value(self):
         self._value = None
 
-    @profile
-    def call(self, tag=None):
+    def _recursive_call(self, tag=None, *args):
         if tag is None or self._forward_tag != tag:
             self._forward_tag   = tag
-            self._value = self._value_function(self.parent(tag))
+            self._value = self.call(self.parent(tag=tag, *args))
         return self._value
 
-    def __call__(self, *args, **kargs):
-        return self.call(*args, **kargs)
+    def __call__(self, tag=None, *args):
+        return self._recursive_call(tag=tag, *args)
 
     @property
     def eval_prob(self):
@@ -126,51 +147,8 @@ class Module(mo.Module):
     def eval_prob(self, value):
         self._eval_prob = value
 
-    #def _eval_prob_function(self, input):
-    #    res = {}
-    #
-    #    for ii in input:
-    #        res[ii] = input[ii]
-    #
-    #    res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
-    #    return res
-
-    def profile(self, profiler, n_run=100):
-        if self._prof is None:
-            self._prof = self._profile(profiler, n_run)
-        return self._prof
-
-    def _profile(self, profiler, n_run=100):
-        input = nn.Variable(shape=self.parent.shape)
-        out = self._value_function(input)
-        try:
-            return float(profiler.profile(out, n_run=n_run))
-        except:
-            print("Cannot profile module {}!".format(self.name))
-            return 0.0
-
-    def param_memory_size(self, bitwidth=32, div=8*2**20):
-        """
-        Returns the memory requirement to store the parameters of the vertice
-        :param bitwidth: integer, the bitwidth used to encode the parameters
-        :param div: integer, e.g. 8*2**20 if we want to have the complexity in MB
-        """
-        mem = 0.0
-        params = self.get_parameters()
-        for pi in params:
-            mem += bitwidth * np.prod(params[pi].shape) / div
-        return mem
-
-    def activation_memory_size(self, bitwidth=32, div=8*2**20):
-        """
-        Returns the memory requirement to store the activations of the vertice
-        :param bitwidth: integer, the bitwidth used to encode the parameters
-        :param div: integer, e.g. 8*2**20 if we want to have the complexity in MB
-        """
-        return bitwidth * np.prod(self.shape) / div
-
-    def get_exp_latency(self, profiler, n_run=10):
-        return self.profile(profiler, n_run=n_run)*self.eval_prob
+    def profile(self, estimator):
+        return stop
 
 #------------------------------------A graph of StaticModules--------------------------------------
 class Graph(mo.ModuleList, Module):
@@ -202,12 +180,8 @@ class Graph(mo.ModuleList, Module):
         for gmi in self._graph_modules:
             gmi.clear_value()
 
-    @profile
-    def call(self, tag=None):
-        return self.output(tag=tag)
-
-    #def eval_probs(self, clear_probs=False):
-    #    return self.output.eval_probs(clear_probs=clear_probs)
+    def _recursive_call(self, tag=None, *args): #
+        return self.output(tag=tag, *args)
 
     @property
     def shape(self):
@@ -265,20 +239,8 @@ class Input(Module):
         """
         self._parent = None
 
-    def _value_function(self, inputs):
+    def call(self, inputs):#
         return self._value
-
-    #def eval_probs(self, clear_probs=False):
-    #    if clear_probs:
-    #        self.clear_eval_probs()
-#
-#        if self._eval_probs is None:
-#            self._eval_probs = self._eval_prob_function(input={})
-#        return self._eval_probs
-
-#    def _eval_prob_function(self, input):
-#        #The input module has no parents, therefore we only return the evaluation probability of self
-#        return {self: nn.Variable.from_numpy_array(np.array(1.0))}
 
     def clear_value(self):
         """
@@ -286,25 +248,13 @@ class Input(Module):
         """
         pass
 
-    def _profile(self, profiler, n_run=100):
-        return 0.0
-
-    @profile
-    def call(self, tag=None):
-        return self._value_function(None)
+    def _recursive_call(self, tag=None, *args): #
+        return self.call(None)
 
 class Identity(mo.Identity, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.Identity.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
-
-    @profile
-    def _value_function(self, input):
-        return mo.Identity.call(self, input)
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
 
 class Zero(mo.Zero, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
@@ -312,143 +262,62 @@ class Zero(mo.Zero, Module):
         Module.__init__(self, name, parent, eval_prob=eval_prob)
         self._value = nn.Variable.from_numpy_array(np.zeros(self._parent.shape))
 
-    @profile
-    def _value_function(self, input):
+    def call(self, input):
         return self._value
 
-    @profile
-    def call(self, tag=None):
+    def _recursive_call(self, tag=None, *args):
         self._forward_tag = tag
-        return self._value_function(None)
-
-    #def _eval_prob_function(self, input): #a zero operation sets the evaluation pobabilities of all parents to 0
-    #    return {self: nn.Variable.from_numpy_array(np.array(1.0))}
+        return self.call(None)
 
 class Conv(mo.Conv, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.Conv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
-    @profile
-    def _value_function(self, input):
-        return mo.Conv.call(self, input) #change to self.call
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
-
-class Linear(mo.Dropout, Module):
+class Linear(mo.Linear, Module):
     def __init__(self, name, parent, *args, **kwargs):
         mo.Linear.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
-
-    def _value_function(self, input):
-        return mo.Linear.call(self, input)
-
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
 
 class DwConv(mo.DwConv, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.DwConv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
-    @profile
-    def _value_function(self, input):
-        return mo.DwConv.call(self, input)
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
-
 class SepConv(misc.SepConv, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         misc.SepConv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
-
-    @profile
-    def _value_function(self, input):
-        return misc.SepConv.call(self, input)
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
 
 class MaxPool(mo.MaxPool, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.MaxPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
-    @profile
-    def _value_function(self, input):
-        return mo.MaxPool.call(self, input)
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
-
 class AvgPool(mo.AvgPool, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.AvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
-
-    @profile
-    def _value_function(self, input):
-        return mo.AvgPool.call(self, input)
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
 
 class GlobalAvgPool(mo.GlobalAvgPool, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.GlobalAvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
-    @profile
-    def _value_function(self, input):
-        return mo.GlobalAvgPool.call(self, input)
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
-
 class ReLU(mo.ReLU, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.ReLU.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
-
-    @profile
-    def _value_function(self, input):
-        return mo.ReLU.call(self, input)
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
 
 class Dropout(mo.Dropout, Module):
     def __init__(self, name, parent, *args, **kwargs):
         mo.Dropout.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent)
 
-    def _value_function(self, input):
-        return mo.Dropout.call(self, input)
-
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
-
 class BatchNormalization(mo.BatchNormalization, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.BatchNormalization.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
-
-    @profile
-    def _value_function(self, input):
-        return mo.BatchNormalization.call(self, input)
-
-    @profile
-    def call(self, tag=None):
-        return Module.call(self, tag=tag)
 
 class Merging(mo.Merging, Module):
     def __init__(self, name, parents, mode, eval_prob=None, axis=1):
@@ -466,54 +335,17 @@ class Merging(mo.Merging, Module):
         else:
             raise Exception('At least one provided parent is not a static module!')
 
-    @profile
-    def call(self, tag=None):
+    def _recursive_call(self, tag=None, *args):
         if tag is None or self._forward_tag != tag:
             self._forward_tag   = not(self._forward_tag) #flip the tag
-            self._value         = self._value_function([pi(self._forward_tag) for pi in self.parent])
+            self._value         = self.call([pi(self._forward_tag, *args) for pi in self.parent])
         return self._value
-
-    #def eval_probs(self, clear_probs=False):
-    #    if clear_probs:
-    #        self.clear_eval_probs()
-#
-#        if self._eval_probs is None:
-#            self._eval_probs = self._eval_prob_function([pi.eval_probs(clear_probs) for pi in self.parent])
-#        return self._eval_probs
-
- #   def _eval_prob_function(self, input):
- #       res = {}
- #       for i, inpi in enumerate(input):  # dictionary
- #           for inpii in inpi: #dictionary element
- #               if inpii in res:
- #                   res[inpii].append(inpi[inpii])
- #               else:
- #                   res.update({inpii: [inpi[inpii]]})
-#
-#        for resi in res:
-#            res[resi] = 1.0 - F.prod(1.0 - F.stack(*res[resi]))
-#
-#        res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
-#        return res
-    @profile
-    def _value_function(self, input):
-        return mo.Merging.call(self,*input)
 
     def _shape_function(self):
         #we build a nummy nnabla graph to infer the shapes
         inputs = [nn.Variable(pi.shape) for pi in self.parent]
         dummy_graph  = self._value_function(inputs)
         return dummy_graph.shape
-
-    def _profile(self, profiler, n_run=100):
-        inputs = [nn.Variable(shape=pi.shape) for pi in self.parent]
-        out = self._value_function(inputs)
-        try:
-            return float(profiler.profile(out, n_run=n_run))
-        except:
-            print("Cannot profile module {}!".format(self.name))
-            return 0.0
-
 
 class Join(Module):
     def __init__(self, name, parents, join_parameters, mode='linear', *args, **kwargs):
@@ -557,61 +389,38 @@ class Join(Module):
         else:
             raise Exception("Join only supports the modes: {}".format(self._supported_modes))
 
-    @profile
-    def _value_function(self, input):
+    def call(self, input):
         """
         Aggregates all input tensors to one single input tensor (summing them up)
         """
-        #def one_hot(x, n=len(input)):
-        #    return np.array([int(i == x) for i in range(n)])
+        def one_hot(x, n=len(input)):
+            return np.array([int(i == x) for i in range(n)])
 
         res = 0.0
         if self.mode == 'linear':
             for pi, inpi in zip(self._sel_p, input):
                 res += pi.reshape((1,)*len(inpi.shape)) * inpi
         elif self.mode == 'sample':
-            #self._sel_p.forward()
-            #self._idx = np.random.choice(len(input), 1, p=self._sel_p.d)[0]
+            self._sel_p.forward()
+            self._idx = np.random.choice(len(input), 1, p=self._sel_p.d)[0]
             #print('{} selects input {} with p={}'.format(self.name, self._idx, self._sel_p.d[self._idx]))
-            res = input[np.random.choice(8, 1, p=(1/8,1/8,1/8,1/8,1/8,1/8,1/8,1/8))[0]]
-            #self._z = one_hot(self._idx)
-            #self._score = self._z - self._sel_p.d
+            res = input[self._idx]
+            self._z = one_hot(self._idx)
+            self._score = self._z - self._sel_p.d
         elif self.mode == 'max':
-            ##just pick the input channel with the highest probability!
-            #self._idx = np.argmax(self._join_parameters.d)
-            #res = input[self._idx]
-            #self._z = one_hot(self._idx)
-            #self._score = self._z - self._sel_p.d
+            #just pick the input channel with the highest probability!
+            self._idx = np.argmax(self._join_parameters.d)
+            res = input[self._idx]
+            self._z = one_hot(self._idx)
+            self._score = self._z - self._sel_p.d
             #print('{} selects input {}'.format(self.name, self._idx))
-            res = input[0]
         return res
 
-    @profile
-    def call(self, tag=None):
+    def _recursive_call(self, tag=None, *args):
         if tag is None or self._forward_tag != tag:
             self._forward_tag   = not(self._forward_tag) #flip the tag
-            self._value         = self._value_function([pi(self._forward_tag) for pi in self.parent])
+            self._value         = self.call([pi(self._forward_tag, *args) for pi in self.parent])
         return self._value
-
-    #def eval_probs(self, clear_probs=False):
-    #    if clear_probs:
-    #        self.clear_eval_probs()
-#
-#        if self._eval_probs is None:
-#            self._eval_probs = self._eval_prob_function([pi.eval_probs(clear_probs) for pi in self.parent])
-#        return self._eval_probs
-
- #   def _eval_prob_function(self, input):
- #       res = {}
- #       for i, inpi in enumerate(input):  # dictionary
- #           for inpii in inpi: #dictionary element
- #               if inpii in res:
- #               # we need to multiply all the evaluation probabilities of one input with the corresponding selection #probability
- #                   res[inpii] += inpi[inpii] * self._sel_p[i]
- #               else:
- #                   res.update({inpii: inpi[inpii] * self._sel_p[i]})
- #       res.update({self: nn.Variable.from_numpy_array(np.array(1.0))})
- #       return res
 
     def _shape_function(self):
         #we build a nummy nnabla graph to infer the shapes
@@ -619,18 +428,11 @@ class Join(Module):
         dummy_graph  = self._value_function(inputs)
         return dummy_graph.shape
 
-    def _profile(self, profiler, n_run=100):
-        inputs = [nn.Variable(shape=pi.shape) for pi in self.parent]
-        out = self._value_function(inputs)
-        try:
-            return float(profiler.profile(out, n_run=n_run))
-        except:
-            print("Cannot profile module {}!".format(self.name))
-            return 0.0
-
 
 if __name__ == '__main__':
     from nnabla_nas.module.static import NNablaProfiler
+    from nnabla_nas.utils import LatencyEstimator
+
     class MyGraph(Graph):
         def __init__(self, name, parents):
             Graph.__init__(self, name=name, parents=parents)
@@ -657,7 +459,9 @@ if __name__ == '__main__':
 
     sliced = myGraph[:1]
 
-    latency = myGraph.profile(NNablaProfiler(), n_run=10)
+    prof = LatencyEstimator()
+    lat = prof.predict(myGraph.modules['1'])
+    print("latency of module {} is {}".format(myGraph.modules['1'].name, lat))
 
     eval_p = {gm: myGraph.modules[gm].eval_prob for gm in myGraph.modules}
     for evi in eval_p:
@@ -667,6 +471,5 @@ if __name__ == '__main__':
             pass
         print("Module {} has evaluation probability {}".format(evi, eval_p[evi].d))
 
-    print(latency)
     import pdb; pdb.set_trace()
 

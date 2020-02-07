@@ -12,15 +12,21 @@ if __name__ == '__main__':
 
     input = smo.Input(name='input', value=nn.Variable((64,3,32,32)))
     zoph_network = ZophNetwork(name='network1', parents=[input])
-    input_d = np.random.randn(64, 3, 32, 32)
-
     network_modules = zoph_network.get_modules()
     for _,mi in network_modules:
         if isinstance(mi, smo.Join):
             print(mi.name)
             mi.mode = 'linear'
+    
+    input_d = np.random.randn(64, 3, 32, 32)
+    _ = zoph_network()
 
-    @profile
+    network_modules = zoph_network.get_modules()
+    for _,mi in network_modules:
+        if isinstance(mi, smo.Join):
+            print(mi.name)
+            mi.mode = 'sample'
+
     def forward_static():
         nn.set_auto_forward(False)
         start = time.time()
@@ -33,7 +39,6 @@ if __name__ == '__main__':
         return time.time() - start
 
 
-    @profile
     def forward_dynamic():
         nn.set_auto_forward(True)
 

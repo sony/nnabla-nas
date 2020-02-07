@@ -91,7 +91,6 @@ class Conv(Module):
         self._fix_parameters = fix_parameters
         self._rng = rng
 
-    @profile
     def call(self, input):
         return F.convolution(input, self._W, self._b, self._base_axis,
                              self._pad, self._stride, self._dilation,

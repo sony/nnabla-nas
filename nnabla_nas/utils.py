@@ -10,7 +10,7 @@ from scipy.special import softmax
 from tensorboardX import SummaryWriter
 
 from .dataset.transformer import Compose, Cutout, Normalizer
-
+from nnabla.utils.profiler import GraphProfiler
 
 class ProgressMeter(object):
     def __init__(self, num_batches, meters=[], path=None):
@@ -179,3 +179,79 @@ def get_object_from_dict(module, args):
         class_name = args.pop('name')
         return module[class_name](**args)
     return None
+
+class Estimator(object):
+    """Estimator base class."""
+    @property
+    def memo(self):
+        if '_memo' not in self.__dict__:
+            self._memo = dict()
+        return self._memo
+
+    def get_estimation(self, module):
+        """Returns the estimation of the whole module."""
+        return sum(self.predict(m) for _, m in module.get_modules()
+                   if len(m.modules) == 0 and m.need_grad)
+
+    def reset(self):
+        """Clear cache."""
+        self.memo.clear()
+
+    def predict(self, module):
+        """Predicts the estimation for a module."""
+        raise NotImplementedError
+
+
+class MemoryEstimator(Estimator):
+    """Estimator for the memory used."""
+
+    def predict(self, module):
+        idm = id(module)
+        if idm not in self.memo:
+            self.memo[idm] = sum(np.prod(p.shape)
+                                 for p in module.parameters.values())
+        return self.memo[idm]
+
+
+class LatencyEstimator(Estimator):
+    """Latency estimator.
+
+    Args:
+        device_id (int): gpu device id.
+        ext_name (str): Extension name. e.g. 'cpu', 'cuda', 'cudnn' etc.
+        n_run (int): This argument specifies how many times the each functions
+            execution time are measured. Default value is 10.
+    """
+
+    def __init__(self, n_run=10):
+        ctx = nn.context.get_current_context()
+        self._device_id = int(ctx.device_id)
+        self._ext_name = ctx.backend[0].split(':')[0]
+        self._n_run = n_run
+
+    def predict(self, module):
+        idm = id(module)
+        if idm not in self.memo:
+            self.memo[idm] = dict()
+        mem = self.memo[idm]
+        key = '-'.join([str(k) for k in module.inputs])
+
+        if key not in mem:
+            state = module.training
+            module.apply(training=False)  # turn off training
+
+            try:
+                # run profiler
+                nnabla_vars = [nn.Variable(s) for s in module.input_shape]
+                runner = GraphProfiler(module.call(*nnabla_vars),
+                                    device_id=self._device_id,
+                                    ext_name=self._ext_name,
+                                    n_run=self._n_run)
+                runner.time_profiling_forward()
+                mem[key] = float(runner.result['forward'][0].mean_time)
+            except:
+                mem[key] = float(0.0)
+                print("module {} cannot be profiled. Using latency 0.0 instead".format(key))
+            module.apply(training=state)  # recover training state
+        return mem[key]
+

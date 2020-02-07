@@ -6,6 +6,7 @@ from nnabla.initializer import ConstantInitializer
 import nnabla_nas.module as mo
 import nnabla_nas.module.static.static_module as smo
 from nnabla_nas.module.parameter import Parameter
+from nnabla_nas.module.estimator import LatencyEstimator
 
 #---------------------Definition of the candidate convolutions for the zoph search space-------------------------------
 class SepConv(smo.SepConv):
@@ -155,8 +156,8 @@ class ZophCell(smo.Graph):
 
 class ZophNetwork(smo.Graph):
     def __init__(self, name, parents, n_classes=10, stem_channels=64,
-                 cells=[ZophCell]*3, cell_depth=[7]*3, cell_channels=[64, 64, 128],
-                 reducing=[True]*3, join_parameters=[[None]*7]*3, candidates=ZOPH_CANDIDATES):
+                 cells=[ZophCell]*3, cell_depth=[7]*3, cell_channels=[64, 128, 256],
+                 reducing=[False, True, True], join_parameters=[[None]*7]*3, candidates=ZOPH_CANDIDATES):
         self._n_classes = n_classes
         self._stem_channels = stem_channels
         self._cells = cells
@@ -231,6 +232,12 @@ if __name__ == '__main__':
     out_8 = zoph_cell()
     out_9 = zoph_network()
 
+    params = zoph_network.get_parameters()
+    
+    zoph_network.set_parameters(params, raise_if_missing=True)
+
+
+
     #forward twice, just to get rid of the setup time when profiling
     for i in range(2):
         print("Warmup fw pass {}".format(i))
@@ -239,6 +246,9 @@ if __name__ == '__main__':
     #-------------------do the profiling results sum up to the correct value------------------
     from nnabla_nas.module.static import NNablaProfiler
     from nnabla.utils.profiler import GraphProfiler
+
+    profiler = LatencyEstimator()
+
     #-----profiling the whole graph at once---------
     total_latency = []
     summed_latency = []
