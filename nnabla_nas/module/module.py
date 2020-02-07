@@ -61,23 +61,23 @@ class Module(object):
         setattr(self, '_inputs', v)
 
     def __getattr__(self, name):
-        #if name in self.modules:
-        #    return self.modules[name]
-        #if name in self.parameters:
-        #    return self.parameters[name]
+        if name in self.modules:
+            return self.modules[name]
+        if name in self.parameters:
+            return self.parameters[name]
         return object.__getattr__(self, name)
 
     def __setattr__(self, name, value):
-        #def remove_from(*dicts):
-        #    for d in dicts:
-        #        d.pop(name, None)
-        #remove_from(self.__dict__, self.modules, self.parameters)
+        def remove_from(*dicts):
+            for d in dicts:
+                d.pop(name, None)
+        remove_from(self.__dict__, self.modules, self.parameters)
         if isinstance(value, Module):
             self.modules[name] = value
         elif isinstance(value, Parameter):
             self.parameters[name] = value
-        #else:  # avoid conflict with property
-        object.__setattr__(self, name, value)
+        else:  # avoid conflict with property
+            object.__setattr__(self, name, value)
 
     def __delattr__(self, name):
         if name in self.parameters:

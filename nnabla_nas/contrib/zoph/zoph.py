@@ -6,7 +6,6 @@ from nnabla.initializer import ConstantInitializer
 import nnabla_nas.module as mo
 import nnabla_nas.module.static.static_module as smo
 from nnabla_nas.module.parameter import Parameter
-from nnabla_nas.module.estimator import LatencyEstimator
 
 #---------------------Definition of the candidate convolutions for the zoph search space-------------------------------
 class SepConv(smo.SepConv):
@@ -26,8 +25,8 @@ class SepConv(smo.SepConv):
         self.bn = mo.BatchNormalization(n_features=self._out_channels, n_dims=4)
         self.relu = mo.ReLU()
 
-    def _value_function(self, input):
-        return self.relu(self.bn(smo.SepConv._value_function(self, smo.SepConv._value_function(self, input))))
+    def call(self, input):
+        return self.relu(self.bn(smo.SepConv.call(self, smo.SepConv.call(self, input))))
 
 class SepConv3x3(SepConv):
     def __init__(self, name, parent, channels, eval_prob=None):
@@ -53,8 +52,8 @@ class MaxPool3x3(smo.MaxPool):
         self.bn = mo.BatchNormalization(n_features=self.parent.shape[1], n_dims=4)
         self.relu= mo.ReLU()
 
-    def _value_function(self, input, *args, **kwargs):
-        return self.relu(self.bn(smo.MaxPool._value_function(self, input)))
+    def call(self, input):
+        return self.relu(self.bn(smo.MaxPool.call(self, input)))
 
 class AveragePool3x3(smo.AvgPool):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
@@ -62,8 +61,8 @@ class AveragePool3x3(smo.AvgPool):
         self.bn = mo.BatchNormalization(n_features=self.parent.shape[1], n_dims=4)
         self.relu= mo.ReLU()
 
-    def _value_function(self, input):
-        return self.relu(self.bn(smo.AvgPool._value_function(self, input)))
+    def call(self, input):
+        return self.relu(self.bn(smo.AvgPool.call(self, input)))
 
 #---------------------List of candidate layers for the zoph search space-------------------------------
 ZOPH_CANDIDATES = [SepConv3x3,
@@ -97,7 +96,7 @@ class ZophBlock(smo.Graph):
         self.append(input_con)
         input_conv = smo.Conv(name='{}/input_conv'.format(self.name), parent=input_con, in_channels=input_con.shape[1],
                               out_channels=self._channels, kernel=(1,1),
-                                eval_prob=F.sum(join_prob[:-1]))
+                              eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
 
         for i,ci in enumerate(self._candidates):
@@ -155,9 +154,10 @@ class ZophCell(smo.Graph):
         self.append(smo.Merging(name=self.name+'/output_concat', parents=cell_modules, mode='concat'))
 
 class ZophNetwork(smo.Graph):
-    def __init__(self, name, parents, n_classes=10, stem_channels=64,
+    def __init__(self, name, input_shape=(64,3,32,32), n_classes=10, stem_channels=64,
                  cells=[ZophCell]*3, cell_depth=[7]*3, cell_channels=[64, 128, 256],
-                 reducing=[False, True, True], join_parameters=[[None]*7]*3, candidates=ZOPH_CANDIDATES):
+                 reducing=[False, True, True], join_parameters=[[None]*7]*3, candidates=ZOPH_CANDIDATES, mode='sample'):
+        smo.Graph.__init__(self, name, None)
         self._n_classes = n_classes
         self._stem_channels = stem_channels
         self._cells = cells
@@ -166,12 +166,13 @@ class ZophNetwork(smo.Graph):
         self._join_parameters = join_parameters
         self._reducing = reducing
         self._candidates = candidates
-
-        smo.Graph.__init__(self, name, parents)
+        self._input_shape = input_shape
+        self._input = smo.Input(name='{}/input'.format(self.name), value=nn.Variable(self._input_shape))
+        self._mode = mode
 
         #1. add the stem convolutions
-        self.append(smo.Conv(name='{}/stem_conv_1'.format(self.name), parent=self.parent[0],
-                             in_channels=self.parent[0].shape[1], out_channels=self._stem_channels,
+        self.append(smo.Conv(name='{}/stem_conv_1'.format(self.name), parent=self._input,
+                             in_channels=self._input.shape[1], out_channels=self._stem_channels,
                              kernel=(3,3), pad=(1,1)))
         self.append(smo.Conv(name='{}/stem_conv_2'.format(self.name), parent=self[-1],
                              in_channels=self._stem_channels, out_channels=self._stem_channels,
@@ -194,6 +195,12 @@ class ZophNetwork(smo.Graph):
                              kernel=(1,1)))
         self.append(smo.GlobalAvgPool(name='{}/global_average_pool'.format(self.name), parent=self[-1]))
 
+        for mi in self.get_arch_modules():
+            mi.mode = self._mode
+
+    @property
+    def input_shape(self):
+        return self._input_shape
 
     def get_arch_modules(self):
         ans = []
@@ -202,6 +209,23 @@ class ZophNetwork(smo.Graph):
                 ans.append(module)
         return ans
 
+    def get_net_parameters(self, grad_only=False):
+        param = OrderedDict()
+        for key, val in self.get_parameters(grad_only).items():
+            if 'join' not in key:
+                param[key] = val
+        return param
+
+    def get_arch_parameters(self, grad_only=False):
+        param = OrderedDict()
+        for key, val in self.get_parameters(grad_only).items():
+            if 'join' in key:
+                param[key] = val
+        return param
+
+    def __call__(self, input):
+        self._input._value = input
+        return self._recursive_call()
 
 if __name__ == '__main__':
     import nnabla
@@ -211,6 +235,8 @@ if __name__ == '__main__':
 
     input = smo.Input(name='input', value=nn.Variable((10,20,32,16)))
     input2 = smo.Input(name='input', value=nn.Variable((10,20,32,32)))
+    nn_input = nn.Variable((128,3,32,32))
+
     sep_conv3x3 = SepConv3x3(name='conv1', parent=input, channels=30)
     sep_conv5x5 = SepConv5x5(name='conv2', parent=input, channels=30)
     dil_sep_conv3x3 = DilSepConv3x3(name='conv3', parent=input, channels=30)
@@ -219,7 +245,7 @@ if __name__ == '__main__':
     avg_pool3x3 = AveragePool3x3(name='pool2', parent=input)
     zoph_block = ZophBlock(name='block1', parents=[input, input], channels=20, candidates=ZOPH_CANDIDATES)
     zoph_cell = ZophCell(name='cell1', parents=[input, input2], candidates=ZOPH_CANDIDATES, channels=32)
-    zoph_network = ZophNetwork(name='network1', parents=[input2])
+    zoph_network = ZophNetwork(name='network1', input_shape=(128,3,32,32))
 
     #---------------------test graph setup--------------------------
     out_1 = sep_conv3x3()
@@ -230,65 +256,79 @@ if __name__ == '__main__':
     out_6 = avg_pool3x3()
     out_7 = zoph_block()
     out_8 = zoph_cell()
-    out_9 = zoph_network()
 
-    params = zoph_network.get_parameters()
-    
-    zoph_network.set_parameters(params, raise_if_missing=True)
+    import time
 
-
-
-    #forward twice, just to get rid of the setup time when profiling
-    for i in range(2):
-        print("Warmup fw pass {}".format(i))
+    start = time.time()
+    for i in range(100):
+        out_9 = zoph_network(nn_input)
+    print("sample time only is {}".format(time.time() - start))
+    start = time.time()
+    for i in range(100):
+        out_9 = zoph_network(nn_input)
         out_9.forward()
+    print("sample and inference time is {}".format(time.time() - start))
 
-    #-------------------do the profiling results sum up to the correct value------------------
-    from nnabla_nas.module.static import NNablaProfiler
-    from nnabla.utils.profiler import GraphProfiler
 
-    profiler = LatencyEstimator()
-
-    #-----profiling the whole graph at once---------
-    total_latency = []
-    summed_latency = []
-    module_latencies = {ci: {} for ci in ZOPH_CANDIDATES}
-
-    for i in range(10):
-        prof = GraphProfiler(out_9, device_id=0, ext_name='cudnn', n_run=10)
-        prof.run()
-        total_latency.append(float(prof.result['forward_all']))
-
-        profiler    = NNablaProfiler()
-        latencies   = zoph_network.profile(profiler, n_run=10)
-        summed_lat  = 0.0
-        for li in latencies:
-            summed_lat += latencies[li]
-
-        summed_latency.append(summed_lat)
-
-        #-----profiling each module individually--------
-        mods = zoph_network.get_modules()
-        for _,mi in mods:
-            if isinstance(mi, smo.Module):
-                for mli in module_latencies:
-                    if isinstance(mi, mli):
-                        try:
-                            module_latencies[mli][mi.shape].append(mi._prof)
-                        except:
-                            module_latencies[mli][mi.shape] = [mi._prof]
-                mi._prof = None #reset the profile
-
-        print(i)
-
-    print('latency when profiling the whole graph at once is {}/{}'.format(np.mean(np.array(total_latency)), np.std(np.array(total_latency))))
-    print('latency when profiling module by module is {}/{}'.format(np.mean(np.array(summed_latency)), np.std(np.array(summed_latency))))
-
-    for mi in module_latencies:
-        for si in module_latencies[mi]:
-            print("Latency of module {} with shape {} is {}/{}".format(mi, si, np.mean(np.array(module_latencies[mi][si])), np.std(np.array(module_latencies[mi][si]))))
+    #print all modules with shapes
+    modules = zoph_network.get_modules()
+    for _,mi in modules:
+        if isinstance(mi, smo.Module):
+            print("{}/{}".format(mi.name, mi.shape))
 
     import pdb; pdb.set_trace()
-    exp_lat     = zoph_network.get_exp_latency(profiler)
-    import pdb; pdb.set_trace()
+
+    ##forward twice, just to get rid of the setup time when profiling
+    #for i in range(2):
+        #print("Warmup fw pass {}".format(i))
+        #out_9.forward()
+
+    ##-------------------do the profiling results sum up to the correct value------------------
+    #from nnabla_nas.module.static import NNablaProfiler
+    #from nnabla.utils.profiler import GraphProfiler
+
+    #profiler = LatencyEstimator()
+
+    ##-----profiling the whole graph at once---------
+    #total_latency = []
+    #summed_latency = []
+    #module_latencies = {ci: {} for ci in ZOPH_CANDIDATES}
+
+    #for i in range(10):
+        #prof = GraphProfiler(out_9, device_id=0, ext_name='cudnn', n_run=10)
+        #prof.run()
+        #total_latency.append(float(prof.result['forward_all']))
+
+        #profiler    = NNablaProfiler()
+        #latencies   = zoph_network.profile(profiler, n_run=10)
+        #summed_lat  = 0.0
+        #for li in latencies:
+            #summed_lat += latencies[li]
+
+        #summed_latency.append(summed_lat)
+
+        ##-----profiling each module individually--------
+        #mods = zoph_network.get_modules()
+        #for _,mi in mods:
+            #if isinstance(mi, smo.Module):
+                #for mli in module_latencies:
+                    #if isinstance(mi, mli):
+                        #try:
+                            #module_latencies[mli][mi.shape].append(mi._prof)
+                        #except:
+                            #module_latencies[mli][mi.shape] = [mi._prof]
+                #mi._prof = None #reset the profile
+
+        #print(i)
+
+    #print('latency when profiling the whole graph at once is {}/{}'.format(np.mean(np.array(total_latency)), np.std(np.array(total_latency))))
+    #print('latency when profiling module by module is {}/{}'.format(np.mean(np.array(summed_latency)), np.std(np.array(summed_latency))))
+
+    #for mi in module_latencies:
+        #for si in module_latencies[mi]:
+            #print("Latency of module {} with shape {} is {}/{}".format(mi, si, np.mean(np.array(module_latencies[mi][si])), np.std(np.array(module_latencies[mi][si]))))
+
+    #import pdb; pdb.set_trace()
+    #exp_lat     = zoph_network.get_exp_latency(profiler)
+    #import pdb; pdb.set_trace()
 

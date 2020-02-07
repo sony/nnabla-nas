@@ -65,12 +65,12 @@ class Module(mo.Module):
             self._parent = parent
             self._parent.add_child(self)
         else:
-            raise RuntimeError
+            pass
 
     def _shape_function(self):
         #we build a nummy nnabla graph to infer the shapes
         input = nn.Variable(self.parent.shape)
-        dummy_graph  = self._value_function(input)
+        dummy_graph  = self.call(input)
         return dummy_graph.shape
 
     @property
@@ -132,8 +132,11 @@ class Module(mo.Module):
 
     def _recursive_call(self, tag=None, *args):
         if tag is None or self._forward_tag != tag:
-            self._forward_tag   = tag
+            self._forward_tag   = not self._forward_tag
+         #   print("building graph for {}".format(self.name))
             self._value = self.call(self.parent(tag=tag, *args))
+        #else:
+        #    print("reusing graph for {}".format(self.name))
         return self._value
 
     def __call__(self, tag=None, *args):
@@ -163,14 +166,17 @@ class Graph(mo.ModuleList, Module):
         return self[-1]
 
     def _init_parent(self, parent):
-        parent_type_mismatch = [not isinstance(pi, Module) for pi in parent]
-        self._parent=[]
-        if sum(parent_type_mismatch) == 0:
-            for pi in parent:
-                self._parent.append(pi)
-                pi._children.append(self)
+        if parent is not None:
+            parent_type_mismatch = [not isinstance(pi, Module) for pi in parent]
+            self._parent=[]
+            if sum(parent_type_mismatch) == 0:
+                for pi in parent:
+                    self._parent.append(pi)
+                    pi._children.append(self)
+            else:
+                raise Exception('At least one provided parent is not instance of class StaticModule')
         else:
-            raise Exception('At least one provided parent is not instance of class StaticModule')
+            pass
 
     def clear_value(self):
         for gmi in self._graph_modules:
@@ -181,6 +187,8 @@ class Graph(mo.ModuleList, Module):
             gmi.clear_value()
 
     def _recursive_call(self, tag=None, *args): #
+        if tag is None or self._forward_tag != tag:
+            self._forward_tag   = not self._forward_tag
         return self.output(tag=tag, *args)
 
     @property
@@ -266,7 +274,7 @@ class Zero(mo.Zero, Module):
         return self._value
 
     def _recursive_call(self, tag=None, *args):
-        self._forward_tag = tag
+        self._forward_tag = not self._forward_tag
         return self.call(None)
 
 class Conv(mo.Conv, Module):
@@ -337,14 +345,14 @@ class Merging(mo.Merging, Module):
 
     def _recursive_call(self, tag=None, *args):
         if tag is None or self._forward_tag != tag:
-            self._forward_tag   = not(self._forward_tag) #flip the tag
-            self._value         = self.call([pi(self._forward_tag, *args) for pi in self.parent])
+            self._forward_tag   = not self._forward_tag #flip the tag
+            self._value         = self.call(*[pi(self._forward_tag) for pi in self.parent])
         return self._value
 
     def _shape_function(self):
         #we build a nummy nnabla graph to infer the shapes
         inputs = [nn.Variable(pi.shape) for pi in self.parent]
-        dummy_graph  = self._value_function(inputs)
+        dummy_graph  = self.call(*inputs)
         return dummy_graph.shape
 
 class Join(Module):
@@ -360,7 +368,7 @@ class Join(Module):
         self.mode = mode
 
         if join_parameters.size == len(parents):
-            self._join_parameters = F.reshape(join_parameters, shape=(len(parents),), inplace=False)
+            self._join_parameters = join_parameters
         else:
             raise Exception("The number of provided join parameters does not match the number of parents")
         self._sel_p = F.softmax(self._join_parameters)
@@ -403,29 +411,24 @@ class Join(Module):
         elif self.mode == 'sample':
             self._sel_p.forward()
             self._idx = np.random.choice(len(input), 1, p=self._sel_p.d)[0]
-            #print('{} selects input {} with p={}'.format(self.name, self._idx, self._sel_p.d[self._idx]))
             res = input[self._idx]
-            self._z = one_hot(self._idx)
-            self._score = self._z - self._sel_p.d
+            #print("{} uses input {}".format(self.name, self._idx))
         elif self.mode == 'max':
             #just pick the input channel with the highest probability!
             self._idx = np.argmax(self._join_parameters.d)
             res = input[self._idx]
-            self._z = one_hot(self._idx)
-            self._score = self._z - self._sel_p.d
-            #print('{} selects input {}'.format(self.name, self._idx))
         return res
 
     def _recursive_call(self, tag=None, *args):
         if tag is None or self._forward_tag != tag:
-            self._forward_tag   = not(self._forward_tag) #flip the tag
+            self._forward_tag   = not self._forward_tag #flip the tag
             self._value         = self.call([pi(self._forward_tag, *args) for pi in self.parent])
         return self._value
 
     def _shape_function(self):
         #we build a nummy nnabla graph to infer the shapes
         inputs = [nn.Variable(pi.shape) for pi in self.parent]
-        dummy_graph  = self._value_function(inputs)
+        dummy_graph  = self.call(inputs)
         return dummy_graph.shape
 
 
