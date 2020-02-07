@@ -1,8 +1,11 @@
 import nnabla as nn
 import numpy as np
 
-from nnabla_nas.module import (Module, ModuleList, Parameter, ParameterList,
-                               Sequential)
+from nnabla_nas.module import Module
+from nnabla_nas.module import ModuleList
+from nnabla_nas.module import Parameter
+from nnabla_nas.module import ParameterList
+from nnabla_nas.module import Sequential
 
 
 class BasicUnit(Module):

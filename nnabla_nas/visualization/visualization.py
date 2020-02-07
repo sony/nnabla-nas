@@ -1,10 +1,12 @@
 import json
 import os
+
 import imageio
 from graphviz import Digraph
-from ..contrib.darts.modules import CANDIDATE_FUNC
 
-OPS = list(CANDIDATE_FUNC.keys())
+from ..contrib.darts.modules import CANDIDATES
+
+OPS = list(CANDIDATES.keys())
 
 
 def plot(choice, prob, filename):

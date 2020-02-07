@@ -2,17 +2,20 @@
 Classes for graph based definition of DNN architectures and candidate spaces.
 """
 
-#from nnabla_nas.graph.profiling import *
-import numpy as np
+import operator
+
 import nnabla as nn
 import nnabla.functions as F
-from nnabla.initializer import (ConstantInitializer, UniformInitializer,
-                                calc_uniform_lim_glorot)
+
+#from nnabla_nas.graph.profiling import *
+import numpy as np
+from nnabla.initializer import ConstantInitializer
+from nnabla.initializer import UniformInitializer
+from nnabla.initializer import calc_uniform_lim_glorot
+
+import nnabla_nas.contrib.misc as misc
+import nnabla_nas.module as smo
 from nnabla_nas.module.parameter import Parameter
-import nnabla_nas.module as mo
-from  nnabla_nas.contrib import misc
-import operator
-import line_profiler
 
 
 def _get_abs_string_index(obj, idx):
@@ -475,4 +478,3 @@ if __name__ == '__main__':
         print("Module {} has evaluation probability {}".format(evi, eval_p[evi].d))
 
     import pdb; pdb.set_trace()
-

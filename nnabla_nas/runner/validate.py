@@ -66,7 +66,6 @@ class Trainer(object):
         n_micros = batch_size // train_size
         one_train_epoch = len(self.loader['train']) // batch_size
         one_valid_epoch = len(self.loader['valid']) // valid_size
-        aux_weight = conf['auxiliary_weight'] / n_micros
 
         # monitor the training process
         monitor = ut.ProgressMeter(one_train_epoch, path=conf['output_path'])
@@ -87,8 +86,9 @@ class Trainer(object):
         train_out.apply(persistent=True)
         train_loss = criteria(train_out, train_target)/n_micros
         train_err = evaluate(train_out.get_unlinked_variable(), train_target)
-        if conf['auxiliary']:
-            train_loss += aux_weight*criteria(aux_out, train_target)
+        if model._auxiliary:
+            aux_weight = conf['auxiliary_weight'] / n_micros
+            train_loss += aux_weight * criteria(aux_out, train_target)
         train_loss.apply(persistent=True)
         train_err.apply(persistent=True)
         # assign parameters
@@ -96,10 +96,10 @@ class Trainer(object):
 
         # print a summary
         model_size = ut.get_params_size(optimizer.get_parameters())
-        aux_size = ut.get_params_size(
-            model._auxiliary_head.get_parameters()) if conf['auxiliary'] else 0
-        model_size = (model_size - aux_size) / 1e6
-        logger.info('Model size = {:.6f} MB'.format(model_size))
+        if model._auxiliary:
+            model_size -= ut.get_params_size(
+                model._auxiliary_head.get_parameters())
+        logger.info('Model size = {:.6f} MB'.format(model_size*1e-6))
 
         # sample a graph for validating
         model.apply(training=False)

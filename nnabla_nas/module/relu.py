@@ -19,7 +19,7 @@ class ReLU(Module):
     def call(self, input):
         return F.relu(input, inplace=self._inplace)
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return f'inplace={self._inplace}'
 
 
@@ -49,12 +49,11 @@ class LeakyReLU(Module):
     """
 
     def __init__(self, alpha=0.1, inplace=False):
-        super().__init__()
         self._alpha = alpha
         self._inplace = inplace
 
     def call(self, input):
         return F.leaky_relu(input, alpha=self._alpha, inplace=self._inplace)
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return f'alpha={self._alpha}, inplace={self._inplace}'

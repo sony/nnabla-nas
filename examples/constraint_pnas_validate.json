@@ -9,7 +9,7 @@
         "num_choices": 4,
         "drop_path": 0.1,
         "auxiliary": true,
-        "genotype": "log/pnas/search/arch.h5"
+        "genotype": "log/pnas-con/search/arch.h5"
     },
     "optimizer": {
         "lr_scheduler": {
@@ -24,7 +24,7 @@
             "lr": 0.025
         }
     },
-    "output_path": "log/pnas/train",
+    "output_path": "log/pnas-con/train",
     "epoch": 300,
     "batch_size": 96,
     "batch_size_train": 48,

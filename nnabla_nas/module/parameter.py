@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Parameter(nn.Variable):
-    """Parameter is a Variable.
+    r"""Parameter is a Variable.
     A kind of Variable that is to be considered a module parameter. Parameters
     are :class:`~nnabla.Variable` subclasses, that have a very special
     property when used with :class:`Module` s - when they're
@@ -24,17 +24,13 @@ class Parameter(nn.Variable):
         assert shape is not None
         obj = super().__new__(cls, shape, need_grad)
         if initializer is None:
-            # If initializer is not set, returns a new variable with zeros.
             obj.data.zero()
         elif isinstance(initializer, np.ndarray):
-            # Initialize by a numpy array.
             assert tuple(shape) == initializer.shape
             obj.d = initializer
         elif callable(initializer):
-            # Initialize by Initializer or callable object
             obj.d = initializer(shape=list(map(int, shape)))
         else:
-            # Invalid initialzier argument.
             raise ValueError(
                 '`initializer` must be either the: obj: `numpy.ndarray`'
                 'or an instance inherited from'
@@ -44,4 +40,5 @@ class Parameter(nn.Variable):
         return obj
 
     def __repr__(self):
-        return 'Parameter containing: ' + super().__repr__()
+        return (f'<Parameter({self.shape}, need_grad={self.need_grad})'
+                f' at {hex(id(self))}>')

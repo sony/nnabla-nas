@@ -2,7 +2,8 @@ import nnabla as nn
 import numpy as np
 from nnabla.utils.profiler import GraphProfiler
 
-from ...module import Identity, Zero
+from ...module import Identity
+from ...module import Zero
 
 
 class Estimator(object):
@@ -48,7 +49,7 @@ class LatencyEstimator(Estimator):
             execution time are measured. Default value is 10.
     """
 
-    def __init__(self, device_id=0, ext_name='cpu', n_run=10):
+    def __init__(self, device_id=0, ext_name='cudnn', n_run=10):
         self._device_id = device_id
         self._ext_name = ext_name
         self._n_run = n_run
@@ -58,7 +59,7 @@ class LatencyEstimator(Estimator):
         if idm not in self.memo:
             self.memo[idm] = dict()
         mem = self.memo[idm]
-        key = '-'.join([str(k) for k in module.inputs])
+        key = '-'.join([str(k[1:]) for k in module.inputs])
 
         if key not in mem:
             if isinstance(module, (Identity, Zero)):
@@ -66,13 +67,13 @@ class LatencyEstimator(Estimator):
             state = module.training
             module.apply(training=False)  # turn off training
             # run profiler
-            nnabla_vars = [nn.Variable(s) for s in module.inputs]
+            nnabla_vars = [nn.Variable((1,) + s[1:]) for s in module.inputs]
             runner = GraphProfiler(module.call(*nnabla_vars),
                                    device_id=self._device_id,
                                    ext_name=self._ext_name,
                                    n_run=self._n_run)
-            runner.time_profiling_forward()
-            mem[key] = float(runner.result['forward'][0].mean_time)
+            runner.run()
+            mem[key] = float(runner.result['forward_all'])
             module.apply(training=state)  # recover training state
 
         return mem[key]

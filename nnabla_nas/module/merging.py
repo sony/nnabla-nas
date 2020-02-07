@@ -11,11 +11,9 @@ class Merging(Module):
         mode (str): The merging mode ('concat', 'add').
         axis (int, optional): The axis for merging when 'concat' is used.
             Defaults to 1.
-
     """
 
     def __init__(self, mode, axis=1):
-        Module.__init__(self)
         if mode not in ('concat', 'add'):
             raise KeyError(f'{mode} is not supported.')
         self._mode = mode
@@ -24,11 +22,9 @@ class Merging(Module):
     def call(self, *input):
         if self._mode == 'concat' and len(input) > 1:
             return F.concatenate(*input, axis=self._axis)
-        elif self._mode == 'add':
+        if self._mode == 'add':
             return sum(input)
-        else:
-            raise RuntimeError
+        return input[0]
 
-
-    def __extra_repr__(self):
+    def extra_repr(self):
         return f'mode={self._mode}, axis={self._axis}'

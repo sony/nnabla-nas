@@ -8,7 +8,15 @@
         "num_classes": 10,
         "num_choices": 4
     },
-    "regularizer": {},
+    "regularizer": {
+        "latency": {
+            "name": "LatencyEstimator",
+            "weight": 0.1,
+            "bound": 5,
+            "device_id": 0,
+            "ext_name": "cudnn"
+        }
+    },
     "model_optimizer": {
         "grad_clip": 5.0,
         "weight_decay": 3e-4,
@@ -39,7 +47,7 @@
     "mini_batch_size": 64,
     "warmup": 50,
     "model_name": "arch",
-    "output_path": "log/pnas/search",
+    "output_path": "log/pnas-con/search",
     "print_frequency": 20,
     "train_portion": 0.9
 }

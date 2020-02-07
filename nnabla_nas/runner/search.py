@@ -1,208 +1,220 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import os
-from collections import OrderedDict
 
 import nnabla as nn
-import nnabla.functions as F
-import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
-from collections import Counter
 
-from ..contrib.darts.modules import CANDIDATE_FUNC
 from .. import utils as ut
-from ..dataset import DataLoader
-from ..dataset.cifar10 import cifar10
-from ..optimizer import Optimizer
-from ..visualization import visualize
+from ..utils import ProgressMeter
 
 
 class Searcher(object):
-    """
-    Searching the best architecture.
+    r"""Searching the best architecture.
+
+    Args:
+        model (``nnabla_nas.): [description]
+        placeholder ([type]): [description]
+        optimizer ([type]): [description]
+        dataloader ([type]): [description]
+        regularizer ([type]): [description]
+        criteria ([type]): [description]
+        evaluate ([type]): [description]
+        args ([type]): [description]
     """
 
-    def __init__(self, model, conf):
+    def __init__(self, model,  placeholder, optimizer, dataloader, regularizer,
+                 criteria, evaluate, args):
         self.model = model
-        self.arch_modules = model.get_arch_modules()
-        self.conf = conf
-        self.criteria = lambda o, t: F.mean(F.softmax_cross_entropy(o, t))
-        self.evaluate = lambda o, t:  F.mean(F.top_n_error(o, t))
-        self.w_micros = self.conf['batch_size'] // self.conf['mini_batch_size']
-        self.op_names = list(CANDIDATE_FUNC.keys())
+        self.criteria = criteria
+        self.evaluate = evaluate
+        self.dataloader = dataloader
+        self.regularizer = regularizer
+        self.optimizer = optimizer
+        self.placeholder = placeholder
+        self.args = args
 
-        # dataset configuration
-        data = cifar10(conf['mini_batch_size'], True)
-        train_transform, valid_transform = ut.dataset_transformer(conf)
-        split = int(conf['train_portion'] * data.size)
+        # aditional argurments
+        self.accum_train = self.args.bs_train // self.args.mbs_train
+        self.accum_valid = self.args.bs_valid // self.args.mbs_valid
+        self.one_epoch = len(self.dataloader['train']) // args.bs_train
+        self.monitor = ProgressMeter(self.one_epoch, path=args.output_path)
 
-        self.loader = {
-            'model': DataLoader(
-                data.slice(rng=None, slice_start=0, slice_end=split),
-                train_transform
-            ),
-            'arch': DataLoader(
-                data.slice(rng=None, slice_start=split, slice_end=data.size),
-                valid_transform
-            )
-        }
-
-        # solver configurations
-        self.optimizer = dict()
-        for key in ['model', 'arch']:
-            optim = conf[key + '_optimizer'].copy()
-            lr_scheduler = ut.get_object_from_dict(
-                module=LRS.__dict__,
-                args=optim.pop('lr_scheduler', None)
-            )
-            solver = optim['solver']
-            self.optimizer[key] = Optimizer(
-                retain_state=conf['network']['name'] == 'pnas',
-                weight_decay=optim.pop('weight_decay', None),
-                grad_clip=optim.pop('grad_clip', None),
-                lr_scheduler=lr_scheduler,
-                name=solver.pop('name'), **solver
-            )
-
-        # placeholders
-        self.placeholder = OrderedDict({
-            'model': {
-                'input':  nn.Variable((conf['mini_batch_size'], 3, 32, 32)),
-                'target': nn.Variable((conf['mini_batch_size'], 1))
-            },
-            'arch': {
-                'input': nn.Variable((conf['mini_batch_size'], 3, 32, 32)),
-                'target': nn.Variable((conf['mini_batch_size'], 1))
-            }
-        })
+        self.callback_on_start()
 
     def run(self):
         """Run the training process."""
-        conf = self.conf
-        model = self.model
-        optim = self.optimizer
-        one_epoch = len(self.loader['model']) // conf['batch_size']
-
-        out_path = conf['output_path']
-        model_path = os.path.join(out_path, conf['model_name'])
-        log_path = os.path.join(out_path, 'search_config.json')
-        arch_file = model_path + '.json'
-        warmup = conf['warmup']
-        need_resample = conf['network']['name'] == 'pnas'
-
-        # monitor the training process
-        monitor = ut.ProgressMeter(one_epoch, path=out_path)
-        logger.info('Experimental settings are saved to ' + log_path)
-        ut.write_to_json_file(content=conf, file_path=log_path)
-
-        # sample computational graphs
-        self._sample(verbose=True)
-
-        for cur_epoch in range(conf['epoch']):
-            monitor.reset()
-
-            for i in range(one_epoch):
-                if need_resample:
-                    self._sample()
-
-                reward = 0
-                for mode, ph in self.placeholder.items():
-                    optim[mode].zero_grad()
-                    training = (mode == 'model')
-
-                    for _ in range(self.w_micros):
-                        ph['input'].d, ph['target'].d = self.loader[mode].next()
-                        ph['loss'].forward(clear_no_need_grad=True)
-                        ph['err'].forward(clear_buffer=True)
-                        if training or not need_resample:
-                            ph['loss'].backward(clear_buffer=True)
-
-                        error = ph['err'].d.copy()
-                        loss = ph['loss'].d.copy()
-
-                        monitor.update(mode + '_loss', loss * self.w_micros,
-                                       conf['mini_batch_size'])
-                        monitor.update(mode + '_err', error,
-                                       conf['mini_batch_size'])
-
-                        # compute reward for reinfoce update
-                        reward += (1-training) * loss
-
-                    # update the model parameters or arch parameters for DARTS
-                    if training or (warmup == 0 and not need_resample):
-                        optim[mode].update()
-
-                if warmup == 0 and need_resample:
-                    self._reinforce_update(reward)
-                    optim['arch'].update()
-
-                if i % conf['print_frequency'] == 0:
-                    monitor.display(i)
-
-            warmup -= warmup > 0
-            # saving the architecture parameters
-            if conf['network']['name'] == 'darts':
-                ut.save_dart_arch(model, arch_file)
-                for tag, img in visualize(arch_file, out_path).items():
-                    monitor.write_image(tag, img, cur_epoch)
-            else:
-                nn.save_parameters(model_path + '.h5',
-                                   model.get_arch_parameters())
-
-            monitor.write(cur_epoch)
-            logger.info('Epoch %d: lr=%.5f\tErr=%.3f\tLoss=%.3f' %
-                        (cur_epoch, optim['model'].get_learning_rate(),
-                         monitor['arch_err'].avg, monitor['arch_loss'].avg))
-
-        monitor.close()
-
+        self._warmup()
+        for cur_epoch in range(self.args.epoch):
+            self.monitor.reset()
+            lr = self.optimizer['train'].get_learning_rate()
+            logger.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}')
+            for i in range(self.one_epoch):
+                self.callback_on_update_model()
+                self.callback_on_update_arch()
+                if i % (self.args.print_frequency) == 0:
+                    self.monitor.display(i)
+            self.callback_on_update()
+            self.monitor.write(cur_epoch)
+        self.callback_on_finish()
+        self.monitor.close()
         return self
 
-    def _get_statistics(self):
-        stats = ''
-        ans = Counter([m._active for m in self.arch_modules])
-        total = len(self.arch_modules)
-        for k in range(len(self.op_names)):
-            name = self.op_names[k]
-            stats += name + f' = {ans[k]/total*100:.2f}%\t'
-        return stats
+    def _warmup(self):
+        """Performs warmup for the model on training."""
+        for cur_epoch in range(self.args.warmup):
+            self.monitor.reset()
+            lr = self.optimizer['warmup'].get_learning_rate()
+            logger.info(f'warm-up epoch={cur_epoch}\tlr={lr:.5f}')
+            for i in range(self.one_epoch):
+                self.callback_on_update_model(key='warmup')
+                if i % (self.args.print_frequency) == 0:
+                    self.monitor.display(i)
 
-    def _reinforce_update(self, reward):
+    def update_graph(self, key='train'):
+        r"""Builds the graph and assigns parameters to the optimizer.
+
+        Args:
+            key (str, optional): Type of graph. Defaults to 'train'.
+        """
+        self.callback_on_sample_network()
+        self.model.apply(training=key != 'valid')
+        p = self.placeholder['valid' if key == 'valid' else 'train']
+        image = (ut.image_augmentation(p['input']) if key == 'valid'
+                 else p['input'])
+        accum = self.accum_valid if key == 'valid' else self.accum_train
+        p['output'] = self.model(image).apply(persistent=True)
+        p['loss'] = self.criteria(p['output'], p['target']) / accum
+        p['err'] = self.evaluate(
+            p['output'].get_unlinked_variable(),
+            p['target']
+        )
+        p['loss'].apply(persistent=True)
+        p['err'].apply(persistent=True)
+        # setup parameters
+        self.optimizer[key].set_parameters(
+            self.model.get_arch_parameters(grad_only=True) if key == 'valid'
+            else self.model.get_net_parameters(grad_only=True)
+        )
+
+    def callback_on_update(self):
+        r"""Calls this after one epoch."""
+        # save the model parameters
+        nn.save_parameters(
+            os.path.join(self.args.output_path, 'arch.h5'),
+            self.model.get_parameters()
+        )
+
+    def callback_on_sample_network(self):
+        r"""Calls this before sample a graph."""
+        pass
+
+    def callback_on_finish(self):
+        r"""Calls this after finishing the training."""
+        pass
+
+    def callback_on_start(self):
+        r"""Calls this on starting."""
+        pass
+
+    def callback_on_update_model(self):
+        r"""Calls this when updating the model parameters."""
+        raise NotImplementedError
+
+    def callback_on_update_arch(self):
+        r"""Calls this when updating the arch parameters."""
+        raise NotImplementedError
+
+
+class DartsSeacher(Searcher):
+
+    def callback_on_start(self):
+        self.update_graph('train')
+        self.update_graph('valid')
+
+    def callback_on_update_model(self, key='train'):
+        bz, p = self.args.mbs_train, self.placeholder['train']
+        self.optimizer[key].zero_grad()
+        for _ in range(self.accum_train):
+            p['input'].d, p['target'].d = self.dataloader['train'].next()
+            p['loss'].forward(clear_no_need_grad=True)
+            p['loss'].backward(clear_buffer=True)
+            p['err'].forward(clear_buffer=True)
+            loss, err = p['loss'].d.copy(),  p['err'].d.copy()
+            self.monitor.update('train_loss', loss * self.accum_train, bz)
+            self.monitor.update('train_err', err, bz)
+        self.optimizer[key].update()
+
+    def callback_on_update_arch(self):
+        bz, p = self.args.mbs_valid, self.placeholder['valid']
+        self.optimizer['valid'].zero_grad()
+        for i in range(self.accum_valid):
+            p['input'].d, p['target'].d = self.dataloader['valid'].next()
+            p['loss'].forward(clear_buffer=True)
+            p['err'].forward(clear_buffer=True)
+            loss, err = p['loss'].d.copy(),  p['err'].d.copy()
+            self.monitor.update('valid_loss', loss * self.accum_valid, bz)
+            self.monitor.update('valid_err', err, bz)
+        self.optimizer['valid'].update()
+
+
+class ProxylessNasSearcher(Searcher):
+
+    def callback_on_start(self):
+        self.arch_modules = self.model.get_arch_modules()
+        self._reward = 0
+
+    def callback_on_sample_network(self):
         for m in self.arch_modules:
-            m._update_alpha_grad()
-        # perform control variate
-        for v in self.optimizer['arch'].get_parameters().values():
-            v.g *= reward - self.conf['arch_optimizer']['control_variate']
+            m.update_active_index()
 
-    def _sample(self, verbose=False):
-        """Sample new graphs, one for model training and one for arch training."""
-        if self.conf['network']['name'] == 'pnas':
-            for m in self.arch_modules:
-                m._update_active_idx()
+    def callback_on_update_model(self, key='train'):
+        r"""Update the model parameters."""
+        self.update_graph(key)
+        bz, p = self.args.mbs_train, self.placeholder['train']
+        self.optimizer[key].zero_grad()
+        for _ in range(self.accum_train):
+            p['input'].d, p['target'].d = self.dataloader['train'].next()
+            p['loss'].forward(clear_no_need_grad=True)
+            p['loss'].backward(clear_buffer=True)
+            p['err'].forward(clear_buffer=True)
+            loss, err = p['loss'].d.copy(),  p['err'].d.copy()
+            self.monitor.update('train_loss', loss * self.accum_train, bz)
+            self.monitor.update('train_err', err, bz)
+        self.optimizer[key].update()
 
-        for mode, ph in self.placeholder.items():
-            training = (mode == 'model')
-            self.model.apply(training=training)
-
-            # loss and error
-            image = ut.image_augmentation(ph['input'])
-            ph['output'] = self.model(image).apply(persistent=True)
-            ph['loss'] = self.criteria(
-                ph['output'], ph['target']) / self.w_micros
-            ph['err'] = self.evaluate(
-                ph['output'].get_unlinked_variable(), ph['target'])
-            ph['loss'].apply(persistent=True)
-            ph['err'].apply(persistent=True)
-
-            # set parameters to the optimizer
-            params = self.model.get_net_parameters(grad_only=True) if training\
-                else self.model.get_arch_parameters(grad_only=True)
-            self.optimizer[mode].set_parameters(params)
-
-        if verbose:
-            model_size = ut.get_params_size(
-                self.optimizer['model'].get_parameters())/1e6
-            arch_size = ut.get_params_size(
-                self.optimizer['arch'].get_parameters())/1e6
-            logger.info('Model size={:.6f} MB\t Arch size={:.6f} MB'.format(
-                model_size, arch_size))
-
-        return self
+    def callback_on_update_arch(self):
+        r"""Update the arch parameters."""
+        beta, n_iter = 0.9, 5
+        bz, p = self.args.mbs_valid, self.placeholder['valid']
+        data = [self.dataloader['valid'].next()
+                for i in range(self.accum_valid)]
+        rewards, grads = [], []
+        for _ in range(n_iter):
+            reward = 0
+            self.update_graph('valid')
+            for i in range(self.accum_valid):
+                p['input'].d, p['target'].d = data[i]
+                p['loss'].forward(clear_buffer=True)
+                p['err'].forward(clear_buffer=True)
+                loss, err = p['loss'].d.copy(),   p['err'].d.copy()
+                reward += (1 - err) / self.accum_valid
+                self.monitor.update('valid_loss', loss * self.accum_valid, bz)
+                self.monitor.update('valid_err', err, bz)
+            # adding contraints
+            for k, v in self.regularizer.items():
+                value = v['reg'].get_estimation(self.model)
+                reward *= (v['bound'] / value)**v['weight']
+                self.monitor.update(k, value, 1)
+            rewards.append(reward)
+            grads.append([m._alpha.g.copy() for m in self.arch_modules])
+            self.monitor.update('reward', reward, self.args.bs_valid)
+        # compute gradients
+        for j, m in enumerate(self.arch_modules):
+            m._alpha.grad.zero()
+            for i, r in enumerate(rewards):
+                m._alpha.g += (r - self._reward) * grads[i][j] / n_iter
+        self.optimizer['valid'].update()
+        self._reward = beta*sum(rewards)/n_iter + (1 - beta)*self._reward

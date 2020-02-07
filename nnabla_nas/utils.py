@@ -9,8 +9,9 @@ from nnabla.logger import logger
 from scipy.special import softmax
 from tensorboardX import SummaryWriter
 
-from .dataset.transformer import Compose, Cutout, Normalizer
-from nnabla.utils.profiler import GraphProfiler
+from .dataset.transformer import Compose
+from .dataset.transformer import Cutout
+from .dataset.transformer import Normalizer
 
 class ProgressMeter(object):
     def __init__(self, num_batches, meters=[], path=None):
@@ -38,7 +39,7 @@ class ProgressMeter(object):
     def write_image(self, tag, image_tensor, n_iter):
         self.writer.add_image(tag, image_tensor, n_iter)
 
-    def update(self, tag, value, n):
+    def update(self, tag, value, n=1):
         if tag not in self.meters:
             self.meters[tag] = AverageMeter(tag, fmt=':5.3f')
         self.meters[tag].update(value, n)
@@ -85,7 +86,7 @@ def sample(pvals, mode='sample'):
     """Return an index."""
     if mode == 'max':
         return np.argmax(pvals)
-    return np.random.choice(len(pvals), p=pvals, replace=True)
+    return np.random.choice(len(pvals), p=pvals, replace=False)
 
 
 def categorical_error(pred, label):
@@ -104,7 +105,7 @@ def dataset_transformer(conf):
         scale=255.0
     )
     train_transform = Compose([normalize])
-    if 'cutout' in conf and conf['cutout']:
+    if conf.get('cutout', False):
         train_transform.append(Cutout(conf['cutout_length']))
     valid_transform = Compose([normalize])
 
@@ -156,6 +157,21 @@ def drop_path(x):
     return x
 
 
+def load_parameters(path):
+    """Loads the parameters from a file.
+
+    Args:
+        path (str): The path to file.
+
+    Returns:
+        OrderedDict: An `OrderedDict` containing parameters.
+    """
+    with nn.parameter_scope('', OrderedDict()):
+        nn.load_parameters(path)
+        params = nn.get_parameters()
+    return params
+
+
 def write_to_json_file(content, file_path):
     with open(file_path, 'w+') as file:
         json.dump(content, file,
@@ -176,6 +192,7 @@ def get_params_size(params):
 
 def get_object_from_dict(module, args):
     if args is not None:
+        args = args.copy()
         class_name = args.pop('name')
         return module[class_name](**args)
     return None

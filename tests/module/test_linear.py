@@ -2,7 +2,8 @@ import nnabla as nn
 import numpy as np
 import pytest
 
-from nnabla_nas.module import Linear, Parameter
+from nnabla_nas.module import Linear
+from nnabla_nas.module import Parameter
 
 
 @pytest.mark.parametrize('fix_parameters', [True, False])

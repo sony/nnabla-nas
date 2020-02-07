@@ -1,3 +1,4 @@
-from .network import SearchNet, TrainNet
+from .network import SearchNet
+from .network import TrainNet
 
 __all__ = ['SearchNet', 'TrainNet']

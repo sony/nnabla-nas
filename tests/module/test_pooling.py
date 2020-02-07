@@ -1,7 +1,9 @@
 import nnabla as nn
 import numpy as np
 
-from nnabla_nas.module import AvgPool, GlobalAvgPool, MaxPool
+from nnabla_nas.module import AvgPool
+from nnabla_nas.module import GlobalAvgPool
+from nnabla_nas.module import MaxPool
 
 
 def test_MaxPool():
