@@ -7,7 +7,6 @@ from scipy.special import softmax
 
 from ... import module as Mo
 from ... import utils as ut
-from .. import misc
 
 CANDIDATES = OrderedDict([
     ('dil_conv_3x3', lambda c, s: DDSConv(c, c, (3, 3), (2, 2), (s, s))),
@@ -20,6 +19,86 @@ CANDIDATES = OrderedDict([
      else Mo.Identity()),
     ('none', lambda c, s: Mo.Zero((s, s)))
 ])
+
+
+class DropPath(Mo.Module):
+    r"""Drop Path layer.
+
+    Args:
+        drop_prob (:obj:`int`, optional): The probability of droping path.
+            Defaults to 0.2.
+    """
+
+    def __init__(self, drop_prob=0.2):
+        self._drop_prob = drop_prob
+
+    def call(self, input):
+        if self._drop_prob == 0:
+            return input
+        mask = F.rand(shape=(input.shape[0], 1, 1, 1))
+        mask = F.greater_equal_scalar(mask, self._drop_prob)
+        out = F.mul_scalar(input, 1. / (1 - self._drop_prob))
+        out = F.mul2(out, mask)
+        return out
+
+    def extra_repr(self):
+        return f'drop_prob={self._drop_prob}'
+
+
+class ReLUConvBN(Mo.Module):
+    r"""ReLU-Convolution-BatchNormalization layer.
+
+    Args:
+        in_channels (:obj:`int`): Number of convolution kernels (which is
+            equal to the number of input channels).
+        out_channels (:obj:`int`): Number of convolution kernels (which is
+            equal to the number of output channels). For example, to apply
+            convolution on an input with 16 types of filters, specify 16.
+        kernel (:obj:`tuple` of :obj:`int`): Convolution kernel size. For
+            example, to apply convolution on an image with a 3 (height) by 5
+            (width) two-dimensional kernel, specify (3,5).
+        pad (:obj:`tuple` of :obj:`int`, optional): Padding sizes for
+            dimensions. Defaults to None.
+        stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
+            dimensions. Defaults to None.
+    """
+
+    def __init__(self, in_channels, out_channels, kernel,
+                 pad=None, stride=None):
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+        self._kernel = kernel
+        self._pad = pad
+        self._stride = stride
+
+        self._operators = Mo.Sequential(
+            Mo.ReLU(),
+            Mo.Conv(in_channels, out_channels, kernel=kernel,
+                    stride=stride, pad=pad, with_bias=False),
+            Mo.BatchNormalization(n_features=out_channels, n_dims=4)
+        )
+
+    def call(self, input):
+        return self._operators(input)
+
+    def extra_repr(self):
+        return (f'in_channels={self._in_channels}, '
+                f'out_channels={self._out_channels}, '
+                f'kernel={self._kernel}, '
+                f'stride={self._stride}, '
+                f'pad={self._pad}')
+
+
+class SepConv(Mo.DwConv):
+    def __init__(self, out_channels, *args, **kwargs):
+        Mo.DwConv.__init__(self, *args, **kwargs)
+        self._out_channels = out_channels
+        self._conv_module_pw = Mo.Conv(self._in_channels, out_channels,
+                                       kernel=(1, 1), pad=None, group=1,
+                                       rng=self._rng, with_bias=False)
+
+    def call(self, input):
+        return self._conv_module_pw(Mo.DwConv.call(self, input))
 
 
 class FactorizedReduce(Mo.Module):
@@ -300,9 +379,9 @@ class Cell(Mo.Module):
                 FactorizedReduce(channels[0], channels[2]))
         else:
             self._prep.append(
-                misc.ReLUConvBN(channels[0], channels[2], kernel=(1, 1)))
+                ReLUConvBN(channels[0], channels[2], kernel=(1, 1)))
         self._prep.append(
-            misc.ReLUConvBN(channels[1], channels[2], kernel=(1, 1)))
+            ReLUConvBN(channels[1], channels[2], kernel=(1, 1)))
 
         # build choice blocks
         self._blocks = Mo.ModuleList()

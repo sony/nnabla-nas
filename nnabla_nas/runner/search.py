@@ -15,7 +15,7 @@ class Searcher(object):
     r"""Searching the best architecture.
 
     Args:
-        model ([type]): [description]
+        model (``nnabla_nas.): [description]
         placeholder ([type]): [description]
         optimizer ([type]): [description]
         dataloader ([type]): [description]

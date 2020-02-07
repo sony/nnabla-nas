@@ -1,19 +1,28 @@
 import json
 from collections import OrderedDict
 
-import nnabla as nn
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
-from ..misc import AuxiliaryHeadCIFAR
-from ..misc import DropPath
-from ..misc import Model
+from ..model import Model
 from . import modules as darts
 
 
 class SearchNet(Model):
-    r"""SearchNet for DARTS."""
+    r"""DARTS: Differentiable Architecture Search
+
+        Args:
+            in_channels ([type]): [description]
+            init_channels ([type]): [description]
+            num_cells ([type]): [description]
+            num_classes ([type]): [description]
+            num_choices (int, optional): [description]. Defaults to 4.
+            multiplier (int, optional): [description]. Defaults to 4.
+            mode (str, optional): [description]. Defaults to 'full'.
+            shared (bool, optional): [description]. Defaults to False.
+            stem_multiplier (int, optional): [description]. Defaults to 3.
+        """
 
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
                  num_choices=4, multiplier=4, mode='full', shared=False,
@@ -46,6 +55,15 @@ class SearchNet(Model):
         return self._linear(out_c)
 
     def _init_cells(self, num_cells, C):
+        """Initializes the cells
+
+        Args:
+            num_cells ([type]): The number of cells.
+            C ([type]): The number of channels.
+
+        Returns:
+            [type]: [description]
+        """
         cells = Mo.ModuleList()
         Cpp, Cp, C = C, C, self._init_channels
         reduction_p, reduction_c = False, False
@@ -58,7 +76,7 @@ class SearchNet(Model):
                     multiplier=self._multiplier,
                     channels=(Cpp, Cp, C),
                     reductions=(reduction_p, reduction_c),
-                    mode='full',
+                    mode=self._mode,
                     alpha=self._alpha[reduction_c] if self._shared else None
                 )
             )
@@ -117,7 +135,7 @@ class TrainNet(Model):
 
         # auxiliary head
         if auxiliary:
-            self._auxiliary_head = AuxiliaryHeadCIFAR(
+            self._auxiliary_head = darts.AuxiliaryHeadCIFAR(
                 self._c_auxiliary, num_classes)
 
     def call(self, input):
@@ -200,7 +218,7 @@ class Cell(Mo.Module):
             for j, op in zip(idx, ops):
                 choice.append(op(out[j]))
                 if self.training and not isinstance(op, Mo.Identity):
-                    choice[-1] = DropPath(self._drop_path)(choice[-1])
+                    choice[-1] = darts.DropPath(self._drop_path)(choice[-1])
 
             out.append(F.add2(choice[0], choice[1]))
 
