@@ -3,10 +3,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-
+import numpy as np
+from collections import Counter
 import nnabla as nn
 from nnabla.logger import logger
-from ..contrib import darts
+from ..contrib.darts.modules import MixedOp, CANDIDATES
 
 from .. import utils as ut
 from ..utils import ProgressMeter
@@ -140,13 +141,14 @@ class Searcher(object):
         raise NotImplementedError
 
 
-class DartsSeacher(Searcher):
+class DartsSearcher(Searcher):
 
     def callback_on_start(self):
         self.callback_on_update_graph('train')
         self.callback_on_update_graph('valid')
 
     def callback_on_update_model(self, key='train'):
+        r"""Updates the model parameters."""
         bz, p = self.args.mbs_train, self.placeholder['train']
         self.optimizer[key].zero_grad()
         for _ in range(self.accum_train):
@@ -160,11 +162,13 @@ class DartsSeacher(Searcher):
         self.optimizer[key].update()
 
     def callback_on_update_arch(self):
+        r"""Updates the architecture parameters."""
         bz, p = self.args.mbs_valid, self.placeholder['valid']
         self.optimizer['valid'].zero_grad()
         for i in range(self.accum_valid):
             p['input'].d, p['target'].d = self.dataloader['valid'].next()
-            p['loss'].forward(clear_buffer=True)
+            p['loss'].forward(clear_no_need_grad=True)
+            p['loss'].backward(clear_buffer=True)
             p['err'].forward(clear_buffer=True)
             loss, err = p['loss'].d.copy(),  p['err'].d.copy()
             self.monitor.update('valid_loss', loss * self.accum_valid, bz)
@@ -172,17 +176,31 @@ class DartsSeacher(Searcher):
         self.optimizer['valid'].update()
 
     def callback_on_epoch_end(self):
+        r"""Prints the selection propability."""
         super().callback_on_epoch_end()
-        # visualize the cell
+        op_names = list(CANDIDATES.keys())
+        for alphas, t in zip(self.model._alpha, ['normal', 'reduction']):
+            count = {i: 0 for i in op_names}
+            for alpha in alphas:
+                idx = np.argmax(alpha.d.flat)
+                count[op_names[idx]] += 1
+            select = t + '\n'
+            for k, v in count.items():
+                select += f'{k} = {v/len(alphas)*100:.2f}%\t'
+            logger.info(select)
+
+    def callback_on_finish(self):
+        r"""Visualize the architecture for darts."""
+        ut.save_dart_arch(self.model, self.args.output_path)
 
 
 class ProxylessNasSearcher(Searcher):
 
     def callback_on_start(self):
-        # get the architecture modules
+        r"""Gets the architecture modules."""
         self.arch_modules = [
-            m for _, m in self.get_modules()
-            if isinstance(m, darts.MixedOp)
+            m for _, m in self.model.get_modules()
+            if isinstance(m, MixedOp)
         ]
         self._reward = 0
 
@@ -238,3 +256,13 @@ class ProxylessNasSearcher(Searcher):
                 m._alpha.g += (r - self._reward) * grads[i][j] / n_iter
         self.optimizer['valid'].update()
         self._reward = beta*sum(rewards)/n_iter + (1 - beta)*self._reward
+
+    def callback_on_finish(self):
+        """Prints the statistics on selected OPs."""
+        count = Counter([m._active for m in self.arch_modules])
+        op_names = list(CANDIDATES.keys())
+        total, stats = len(self.arch_modules), []
+        for k in range(len(op_names)):
+            name = op_names[k]
+            stats.append(name + f' = {count[k]/total*100:.2f}%\t')
+        logger.info(''.join(stats))

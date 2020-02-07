@@ -1,5 +1,5 @@
 # search DARTS
-python main.py -d 1 -f examples/darts_search.json
+python main.py -d 2 -f examples/darts_search.json --search -a DartsSearcher -o log/darts/search
 
 # validate DARTS
 python main.py -d 1 -f examples/darts_validate.json

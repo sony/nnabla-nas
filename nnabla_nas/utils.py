@@ -8,7 +8,7 @@ import numpy as np
 from nnabla.logger import logger
 from scipy.special import softmax
 from tensorboardX import SummaryWriter
-
+from .visualization import visualize
 from .dataset.transformer import Compose
 from .dataset.transformer import Cutout
 from .dataset.transformer import Normalizer
@@ -106,8 +106,8 @@ def dataset_transformer(conf):
         scale=255.0
     )
     train_transform = Compose([normalize])
-    if conf.get('cutout', False):
-        train_transform.append(Cutout(conf['cutout_length']))
+    if conf.get('cutout', 0) > 0:
+        train_transform.append(Cutout(conf['cutout']))
     valid_transform = Compose([normalize])
 
     return train_transform, valid_transform
@@ -133,15 +133,17 @@ def parse_weights(alpha, num_choices):
     return cell, prob, choice
 
 
-def save_dart_arch(model, file):
+def save_dart_arch(model, output_path):
     memo = dict()
     for name, alpha in zip(['normal', 'reduce'],
-                           [model._alpha_normal, model._alpha_reduce]):
+                           [model._alpha[0], model._alpha[1]]):
         for k, v in zip(['alpha', 'prob', 'choice'],
                         parse_weights(alpha, model._num_choices)):
             memo[name + '_' + k] = v
-    logger.info('Saving arch to {}'.format(file))
-    write_to_json_file(memo, file)
+    arch_file = output_path + 'darts.json'
+    logger.info('Saving arch to {}'.format(arch_file))
+    write_to_json_file(memo, arch_file)
+    visualize(arch_file, output_path)
 
 
 def drop_path(x):

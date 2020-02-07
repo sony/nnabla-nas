@@ -50,10 +50,6 @@ class Configuration(object):
         conf['warmup'] = conf.get('warmup', 0)
         self.warmup = conf['warmup']
 
-        # output path
-        conf['output_path'] = conf.get('output_path', 'log')
-        self.output_path = conf['output_path']
-
         # frequency of messages
         conf['print_frequency'] = conf.get('print_frequency', 20)
         self.print_frequency = conf['print_frequency']
@@ -61,6 +57,19 @@ class Configuration(object):
         # training portion
         conf['train_portion'] = conf.get('train_portion', 0.9)
         self.train_portion = conf['train_portion']
+
+        # output path
+        conf['output_path'] = conf.get('output_path', 'log')
+        self.output_path = conf['output_path']
+
+        # cutout
+        conf['cutout'] = conf.get('cutout', 0)
+        self.cutout = conf['cutout']
+
+    def summary(self):
+        r"""Returns a string summarizing the configurations."""
+        str_repr = [f'{k:15s}: {v}' for k, v in self.__dict__.items()]
+        return '\n'.join(str_repr)
 
 
 class OptionParser(object):

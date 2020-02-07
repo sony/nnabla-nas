@@ -6,16 +6,7 @@ import numpy as np
 
 from ... import module as Mo
 from ..darts import modules as darts
-from ..darts import network
 from ..misc import AuxiliaryHeadCIFAR
-
-
-class SearchNet(network.SearchNet):
-    r"""SearchNet for PNAS."""
-
-    def get_arch_modules(self):
-        return [m for _, m in self.get_modules()
-                if isinstance(m, darts.MixedOp)]
 
 
 class TrainNet(Mo.Module):

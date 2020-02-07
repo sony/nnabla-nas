@@ -10,19 +10,21 @@ from . import modules as darts
 
 
 class SearchNet(Model):
-    r"""DARTS: Differentiable Architecture Search
+    r"""DARTS: Differentiable Architecture Search.
 
-        Args:
-            in_channels ([type]): [description]
-            init_channels ([type]): [description]
-            num_cells ([type]): [description]
-            num_classes ([type]): [description]
-            num_choices (int, optional): [description]. Defaults to 4.
-            multiplier (int, optional): [description]. Defaults to 4.
-            mode (str, optional): [description]. Defaults to 'full'.
-            shared (bool, optional): [description]. Defaults to False.
-            stem_multiplier (int, optional): [description]. Defaults to 3.
-        """
+    This is the search space for DARTS.
+
+    Args:
+        in_channels ([type]): [description]
+        init_channels ([type]): [description]
+        num_cells ([type]): [description]
+        num_classes ([type]): [description]
+        num_choices (int, optional): [description]. Defaults to 4.
+        multiplier (int, optional): [description]. Defaults to 4.
+        mode (str, optional): [description]. Defaults to 'full'.
+        shared (bool, optional): [description]. Defaults to False.
+        stem_multiplier (int, optional): [description]. Defaults to 3.
+    """
 
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
                  num_choices=4, multiplier=4, mode='full', shared=False,
@@ -55,14 +57,14 @@ class SearchNet(Model):
         return self._linear(out_c)
 
     def _init_cells(self, num_cells, C):
-        """Initializes the cells
+        """Initializes the cells used in DARTS.
 
         Args:
-            num_cells ([type]): The number of cells.
-            C ([type]): The number of channels.
+            num_cells (int): The number of cells.
+            C (int): The number of channels.
 
         Returns:
-            [type]: [description]
+            ModuleList: List of cells.
         """
         cells = Mo.ModuleList()
         Cpp, Cp, C = C, C, self._init_channels
@@ -89,7 +91,12 @@ class SearchNet(Model):
         return cells
 
     def _init_alpha(self):
-        r"""Returns a list of parameters."""
+        r"""Returns a list of alpha parameters.
+
+        Returns:
+            ModuleList: List of alpha parameters. The first is used in a normal
+                cell and the second is used in the reduction cell.
+        """
         shape = (len(darts.CANDIDATES), 1, 1, 1, 1)
         init = ConstantInitializer(0.0)
         n = self._num_choices * (self._num_choices + 3) // 2
@@ -97,6 +104,7 @@ class SearchNet(Model):
         for i in range(2):
             params = [Mo.Parameter(shape, initializer=init) for _ in range(n)]
             alpha.append(Mo.ParameterList(params))
+
         return alpha
 
     def get_net_parameters(self, grad_only=False):
@@ -111,7 +119,7 @@ class SearchNet(Model):
 
 
 class TrainNet(Model):
-    """TrainNet for DARTS."""
+    """TrainNet used for DARTS."""
 
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
                  genotype, num_choices=4, multiplier=4, stem_multiplier=3,

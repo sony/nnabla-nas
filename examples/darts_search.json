@@ -1,43 +1,40 @@
 {
-    "search": true,
+    "dataset": "cifar10",
+    "epoch": 50,
+    "batch_size_train": 64,
+    "batch_size_valid": 64,
+    "mini_batch_train": 16,
+    "mini_batch_valid": 16,
+    "warmup": 0,
+    "cutout": 16,
+    "print_frequency": 20,
+    "train_portion": 0.5,
     "network": {
         "name": "darts",
         "in_channels": 3,
         "init_channels": 16,
         "num_cells": 8,
         "num_classes": 10,
-        "num_choices": 4
+        "shared": true,
+        "mode": "full"
     },
-    "model_optimizer": {
-        "lr_scheduler": {
-            "name": "CosineScheduler",
-            "init_lr": 0.025,
-            "max_iter": 19532
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.025
+            }
         },
-        "grad_clip": 5.0,
-        "weight_decay": 3e-4,
-        "solver": {
-            "name": "Momentum",
-            "lr": 0.025
+        "valid": {
+            "grad_clip": 5.0,
+            "solver": {
+                "name": "Adam",
+                "alpha": 0.01,
+                "beta1": 0.5,
+                "beta2": 0.999
+            }
         }
-    },
-    "arch_optimizer": {
-        "lr_scheduler": null,
-        "grad_clip": 5.0,
-        "weight_decay": 1e-3,
-        "solver": {
-            "name": "Adam",
-            "alpha": 3e-4,
-            "beta1": 0.5,
-            "beta2": 0.999
-        }
-    },
-    "epoch": 50,
-    "warmup": 0,
-    "batch_size": 64,
-    "model_name": "arch",
-    "output_path": "log/darts/search",
-    "train_portion": 0.5,
-    "mini_batch_size": 16,
-    "print_frequency": 20
+    }
 }

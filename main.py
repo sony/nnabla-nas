@@ -8,6 +8,7 @@ from nnabla.ext_utils import get_extension_context
 import args
 import nnabla_nas.contrib as contrib
 from nnabla_nas import runner
+from nnabla.logger import logger
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -19,9 +20,12 @@ if __name__ == "__main__":
     parser.add_argument('--search', '-s', action='store_true',
                         help='config file')
     parser.add_argument('--algorithm', '-a', type=str, default='DartsSeacher',
-                        help='Algorithm used to run')
+                        choices=runner.__all__, help='Algorithm used to run')
     parser.add_argument('--config-file', '-f', type=str, help='config file',
                         default=None)
+    parser.add_argument('--output-path', '-o', type=str, help='config file',
+                        default=None)
+
     options = parser.parse_args()
 
     config = json.load(open(options.config_file)) if options.config_file \
@@ -59,6 +63,8 @@ if __name__ == "__main__":
 
     # a placeholder to store input and output variables
     placeholder = args.PlaceholderParser(options).parse(config)
+
+    logger.info('Configurations:\n' + options.summary())
 
     runner.__dict__[config['algorithm']](
         model,
