@@ -6,15 +6,15 @@
     "batch_valid": 256,
     "mini_batch_train": 64,
     "mini_batch_valid": 64,
-    "warmup": 0,
+    "warmup": 1,
     "output_path": "log/pnas-con/search",
     "print_frequency": 20,
     "train_portion": 0.9,
     "network": {
-        "name": "pnas",
+        "name": "darts",
         "in_channels": 3,
         "init_channels": 36,
-        "num_cells": 15,
+        "num_cells": 4,
         "num_classes": 10,
         "num_choices": 4,
         "mode": "sample"

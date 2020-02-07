@@ -11,12 +11,6 @@ class Model(Mo.Module):
     def get_arch_parameters(self, grad_only=False):
         raise NotImplementedError
 
-    def sample(self):
-        pass
-
-    def arch_modules():
-        pass
-
 
 class AuxiliaryHeadCIFAR(Mo.Module):
     r"""Auxiliary head used for CIFAR10 dataset.
