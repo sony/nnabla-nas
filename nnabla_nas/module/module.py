@@ -53,7 +53,7 @@ class Module(object):
         r"""Return a list of input shapes used during `call` function."""
         if '_input_shapes' not in self.__dict__:
             self.__dict__['_input_shapes'] = list()
-        return self._inputs
+        return self._input_shapes
 
     @input_shapes.setter
     def input_shapes(self, v):
@@ -189,7 +189,7 @@ class Module(object):
         return main_str
 
     def __call__(self, *args, **kargs):
-        self.inputs = [x.shape for x in args]
+        self.input_shapes = [x.shape for x in args]
         return self.call(*args, **kargs)
 
     def call(self, *args, **kargs):

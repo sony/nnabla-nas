@@ -55,7 +55,7 @@ class Configuration(object):
         self.print_frequency = conf['print_frequency']
 
         # training portion
-        conf['train_portion'] = conf.get('train_portion', 0.9)
+        conf['train_portion'] = conf.get('train_portion', 1)
         self.train_portion = conf['train_portion']
 
         # output path

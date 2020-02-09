@@ -29,6 +29,8 @@ class Trainer(Runner):
                 self.model._auxiliary_head.get_parameters(grad_only=True))
         self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
 
+        assert len(self.dataloader['valid']) % self.args.mbs_valid == 0
+
     def run(self):
         """Run the training process."""
         for cur_epoch in range(self.args.epoch):

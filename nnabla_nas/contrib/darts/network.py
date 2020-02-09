@@ -84,7 +84,7 @@ class SearchNet(Model):
                     channels=(Cpp, Cp, C),
                     reductions=(reduction_p, reduction_c),
                     mode=self._mode,
-                    alpha=self._alpha[reduction_c]
+                    alpha=self._alpha[reduction_c] if self._shared else None
                 )
             )
             reduction_p = reduction_c

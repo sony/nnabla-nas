@@ -6,7 +6,6 @@
     "mini_batch_train": 16,
     "mini_batch_valid": 16,
     "warmup": 0,
-    "cutout": 16,
     "print_frequency": 20,
     "train_portion": 0.5,
     "network": {

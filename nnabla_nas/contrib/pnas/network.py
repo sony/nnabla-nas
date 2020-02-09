@@ -1,19 +1,32 @@
-from collections import OrderedDict
-
-import nnabla as nn
-import nnabla.functions as F
 import numpy as np
-
+from ...utils import load_parameters
 from ... import module as Mo
 from ..darts import modules as darts
 from ..misc import AuxiliaryHeadCIFAR
 
 
 class TrainNet(Mo.Module):
+    r"""TrainNet for ProxylessNAS
+
+    Args:
+        in_channels (int): The number of input channels.
+        init_channels (int): The initial number of channels on each cell.
+        num_cells (int): The number of cells.
+        num_classes (int): The number of classes.
+        genotype (str): A file path containing the network weights.
+        num_choices (int, optional): The number of choice blocks on each cell.
+            Defaults to 4.
+        multiplier (int, optional): The multiplier. Defaults to 4.
+        stem_multiplier (int, optional): The multiplier used for stem
+            convolution. Defaults to 3.
+        drop_path (float, optional): Probability of droping paths. Defaults to
+            0.
+        auxiliary (bool, optional): If uses auxiliary head. Defaults to False.
+    """
+
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
                  genotype, num_choices=4, multiplier=4, stem_multiplier=3,
                  drop_path=0, auxiliary=False):
-
         self._num_choices = num_choices
         self._multiplier = multiplier
         self._init_channels = init_channels
@@ -35,9 +48,8 @@ class TrainNet(Mo.Module):
                 self._c_auxiliary, num_classes)
 
         # load weights
-        nn.load_parameters(genotype)
-        self.set_parameters(nn.get_parameters())
-        for key, module in self.get_modules():
+        self.set_parameters(load_parameters(genotype))
+        for _, module in self.get_modules():
             if isinstance(module, darts.ChoiceBlock):
                 idx = np.argmax(module._mixed._alpha.d)
                 module._mixed = module._mixed._ops[idx]
@@ -69,8 +81,7 @@ class TrainNet(Mo.Module):
                      multiplier=self._multiplier,
                      channels=(channel_p_p, channel_p, channel_c),
                      reductions=(reduction_p, reduction_c),
-                     drop_path=self._drop_path,
-                     affine=True)
+                     drop_path=self._drop_path)
             )
             reduction_p = reduction_c
             channel_p_p, channel_p = channel_p, self._multiplier * channel_c
@@ -112,6 +123,7 @@ class Cell(Mo.Module):
                         is_reduced=j < 2 and reductions[1]
                     )
                 )
+        self._merge = Mo.Merging(mode='concat', axis=1)
 
     def call(self, *input):
         """Each cell has two inputs and one output."""
@@ -129,10 +141,4 @@ class Cell(Mo.Module):
             s = sum(out_temp)
             offset += len(out)
             out.append(s)
-        return F.concatenate(*out[-self._multiplier:], axis=1)
-
-    def extra_repr(self):
-        return (f'num_choices={self._num_choices}, '
-                f'multiplier={self._multiplier}, '
-                f'channels={self._channels}, '
-                f'mode={self._mode}')
+        return self._merge(*out[-self._multiplier:])

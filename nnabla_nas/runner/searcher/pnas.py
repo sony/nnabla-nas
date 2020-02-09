@@ -68,7 +68,7 @@ class ProxylessNasSearcher(Searcher):
             # adding contraints
             for k, v in self.regularizer.items():
                 value = v['reg'].get_estimation(self.model)
-                reward *= (v['bound'] / value)**v['weight']
+                reward *= (min(1.0, v['bound'] / value))**v['weight']
                 self.monitor.update(k, value, 1)
             rewards.append(reward)
             grads.append([m._alpha.g.copy() for m in self.arch_modules])
