@@ -81,11 +81,11 @@ class Trainer(Runner):
         r"""Calculates the error and saves the best parameters.
         """
         err = self.monitor['valid_err'].avg
-        self.monitor.info(f'Current error is {err:.2f}\n')
+        self.monitor.info(f'Current error is {err:.4f}\n')
         if self._best_err > err:
             self._best_err = err
             nn.save_parameters(
-                os.path.join(self.args.output_path, 'arch.h5'),
+                os.path.join(self.args.output_path, 'weights.h5'),
                 self.model.get_parameters()
             )
 

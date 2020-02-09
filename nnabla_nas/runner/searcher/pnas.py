@@ -48,8 +48,8 @@ class ProxylessNasSearcher(Searcher):
         r"""Update the arch parameters."""
         beta, n_iter = 0.9, 5
         bz, p = self.args.mbs_valid, self.placeholder['valid']
-        data = [self.dataloader['valid'].next()
-                for i in range(self.accum_valid)]
+        valid_data = [self.dataloader['valid'].next()
+                      for i in range(self.accum_valid)]
         rewards, grads = [], []
         for _ in range(n_iter):
             reward = 0
@@ -57,8 +57,8 @@ class ProxylessNasSearcher(Searcher):
             self.optimizer['valid'].set_parameters(
                 self.model.get_arch_parameters(grad_only=True)
             )
-            for i in range(self.accum_valid):
-                p['input'].d, p['target'].d = data[i]
+            for minibatch in valid_data:
+                p['input'].d, p['target'].d = minibatch
                 p['loss'].forward(clear_buffer=True)
                 p['err'].forward(clear_buffer=True)
                 loss, err = p['loss'].d.copy(), p['err'].d.copy()

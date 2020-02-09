@@ -14,6 +14,7 @@ python main.py -d 2 --search \
                -f examples/pnas_search.json \
                -a ProxylessNasSearcher \
                -o log/pnas/search
+
 # train PNAS
 python main.py -d 2 \
                -f examples/pnas_train.json \

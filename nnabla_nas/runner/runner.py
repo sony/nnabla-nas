@@ -71,35 +71,34 @@ class Runner(ABC):
         Args:
             key (str, optional): Type of graph. Defaults to 'train'.
         """
+        assert key in ('train', 'valid', 'warmup')
+
         self.callback_on_sample_graph()
         self.model.apply(training=key != 'valid')
-
         p = self.placeholder['valid' if key == 'valid' else 'train']
-
         image = p['input'] if key == 'valid' else ut.data_augment(p['input'])
         accum = self.accum_valid if key == 'valid' else self.accum_train
 
-        output = self.model(image)
-
         # output features
+        output, aux = self.model(image), None
         if isinstance(output, tuple):
-            aux = output[1]
-            w = self.args.aux_weight
+            aux, w = output[1], self.args.aux_weight
             p['output'] = output[0]
         else:
             p['output'] = output
+        p['output'].apply(persistent=True)
+
         # loss function
         p['loss'] = self.criteria(p['output'], p['target']) / accum
-        if isinstance(output, tuple) and aux is not None:
+        if aux is not None:
             p['loss'] += w * self.criteria(aux, p['target']) / accum
-        # top_1_error
+        p['loss'].apply(persistent=True)
+
+        # top_n_error
         p['err'] = self.evaluate(
-            p['output'].get_unlinked_variable(),
+            p['output'].get_unlinked_variable().apply(need_grad=False),
             p['target']
         )
-        # setup persistent flags.
-        p['output'].apply(persistent=True)
-        p['loss'].apply(persistent=True)
         p['err'].apply(persistent=True)
 
     @abstractmethod
