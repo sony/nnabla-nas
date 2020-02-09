@@ -97,6 +97,8 @@ class Configuration(object):
         parser = PlaceholderParser(self)
         options['placeholder'] = parser.parse(conf.get('placeholder', dict()))
 
+        if os.path.isdir(conf['output_path']):
+            os.mkdir(conf['output_path'])
         file = os.path.join(conf['output_path'], 'config.json')
         logger.info(f'Saving the configurations to {file}')
         ut.write_to_json_file(conf, file)
