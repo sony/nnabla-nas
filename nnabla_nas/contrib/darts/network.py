@@ -5,9 +5,9 @@ import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
+from ..misc import AuxiliaryHeadCIFAR
 from ..model import Model
 from . import modules as darts
-from ..misc import AuxiliaryHeadCIFAR
 
 
 class SearchNet(Model):
@@ -148,7 +148,7 @@ class TrainNet(Model):
 
     def __init__(self, in_channels, init_channels, num_cells, num_classes,
                  genotype, num_choices=4, multiplier=4, stem_multiplier=3,
-                 drop_path=0.2, auxiliary=True):
+                 drop_path=0, auxiliary=False):
         self._num_ops = len(darts.CANDIDATES)
         self._multiplier = multiplier
         self._init_channels = init_channels
@@ -234,9 +234,7 @@ class Cell(Mo.Module):
         for i in range(len(cell_arch)):
             for (op_idx, choice_idx) in cell_arch[str(i + 2)]:
                 stride = 2 if reductions[-1] and choice_idx < 2 else 1
-                self._blocks.append(
-                    candidates[op_idx](channels[2], stride, True)
-                )
+                self._blocks.append(candidates[op_idx](channels[2], stride))
                 self._indices.append(choice_idx)
 
     def call(self, *input):

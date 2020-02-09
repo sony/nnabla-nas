@@ -1,0 +1,31 @@
+{
+    "dataset": "cifar10",
+    "epoch": 600,
+    "batch_size_train": 96,
+    "batch_size_valid": 40,
+    "mini_batch_train": 48,
+    "mini_batch_valid": 40,
+    "warmup": 0,
+    "cutout": 16,
+    "aux_weight": 0.4,
+    "print_frequency": 50,
+    "network": {
+        "name": "darts",
+        "in_channels": 3,
+        "init_channels": 36,
+        "num_cells": 20,
+        "num_classes": 10,
+        "auxiliary": true,
+        "genotype": "log/darts/search/arch.json"
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.025
+            }
+        }
+    }
+}

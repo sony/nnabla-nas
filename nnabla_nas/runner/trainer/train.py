@@ -26,7 +26,7 @@ class Trainer(Runner):
         )
         if hasattr(self.model, '_auxiliary_head'):
             model_size -= ut.get_params_size(
-                self.model._auxiliary_head.get_parameters())
+                self.model._auxiliary_head.get_parameters(grad_only=True))
         self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
 
     def run(self):
@@ -39,7 +39,7 @@ class Trainer(Runner):
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
                 if i % (self.args.print_frequency) == 0:
-                    self.monitor.display(i)
+                    self.monitor.display(i, ['train_loss', 'train_err'])
 
             for i in tqdm(range(self.one_epoch_valid)):
                 self.valid_on_batch()
@@ -79,9 +79,16 @@ class Trainer(Runner):
         r"""Calculates the error and saves the best parameters.
         """
         err = self.monitor['valid_err'].avg
+        self.monitor.info(f'Current error is {err:.2f}\n')
         if self._best_err > err:
             self._best_err = err
             nn.save_parameters(
                 os.path.join(self.args.output_path, 'arch.h5'),
                 self.model.get_parameters()
             )
+
+    def callback_on_finish(self):
+        pass
+
+    def callback_on_sample_graph(self):
+        pass

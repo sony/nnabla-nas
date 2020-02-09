@@ -2,7 +2,7 @@ import nnabla as nn
 import numpy as np
 import pytest
 
-from nnabla_nas.contrib.misc import MixedOp
+from nnabla_nas.contrib.darts.modules import MixedOp
 from nnabla_nas.module import Conv
 from nnabla_nas.module import Module
 
@@ -30,8 +30,7 @@ def test_mixedop(mode, in_channels, out_channels):
     input = nn.Variable([8, in_channels, 32, 32])
 
     if mode != 'full':
-        module._sel._update_active_idx()
-        module._sel._update_alpha_grad()
+        module._sel.update_active_index()
 
     output = module(input)
     assert output.shape == (8, out_channels, 32, 32)

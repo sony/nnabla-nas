@@ -179,7 +179,7 @@ def save_dart_arch(model, output_path):
         for k, v in zip(['alpha', 'prob', 'choice'],
                         parse_weights(alpha, model._num_choices)):
             memo[name + '_' + k] = v
-    arch_file = output_path + 'darts.json'
+    arch_file = output_path + 'arch.json'
     logger.info('Saving arch to {}'.format(arch_file))
     write_to_json_file(memo, arch_file)
     visualize(arch_file, output_path)
@@ -222,6 +222,14 @@ def write_to_json_file(content, file_path):
 
 
 def data_augment(image):
+    r"""Performs standard data augmentations.
+
+    Args:
+        image (numpy.array): The input image.
+
+    Returns:
+        numpy.array: The output.
+    """
     out = F.random_crop(F.pad(image, (4, 4, 4, 4)), shape=(image.shape))
     out = F.image_augmentation(out, flip_lr=True)
     out.need_grad = False

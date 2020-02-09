@@ -90,7 +90,7 @@ class Runner(ABC):
             p['output'] = output
         # loss function
         p['loss'] = self.criteria(p['output'], p['target']) / accum
-        if isinstance(output, tuple):
+        if isinstance(output, tuple) and aux is not None:
             p['loss'] += w * self.criteria(aux, p['target']) / accum
         # top_1_error
         p['err'] = self.evaluate(
