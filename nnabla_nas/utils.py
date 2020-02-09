@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from collections import OrderedDict
 
 import nnabla as nn
@@ -8,45 +9,83 @@ import numpy as np
 from nnabla.logger import logger
 from scipy.special import softmax
 from tensorboardX import SummaryWriter
-from .visualization import visualize
+
 from .dataset.transformer import Compose
 from .dataset.transformer import Cutout
 from .dataset.transformer import Normalizer
+from .visualization import visualize
 
 
 class ProgressMeter(object):
-    def __init__(self, num_batches, meters=[], path=None):
+    r"""A Progress Meter.
+
+        Args:
+            num_batches (int): The number of batches per epoch.
+            path (str, optional): Path to save tensorboard and log file.
+            Defaults to None.
+    """
+
+    def __init__(self, num_batches, path=None):
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
         self.meters = OrderedDict()
-        for m in meters:
-            self.meters[m.name] = m
-        self.writer = SummaryWriter(os.path.join(path, 'tensorboard'))
+        self.terminal = sys.stdout
+        self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
+        self.file = open(os.path.join(path, 'log.txt'), 'w')
+
+    def info(self, message, view=True):
+        """Shows a message.
+
+        Args:
+            message (str): The message.
+            view (bool, optional): If shows to terminal. Defaults to True.
+        """
+        if view:
+            self.terminal.write(message)
+            self.terminal.flush()
+        self.file.write(message)
+        self.file.flush()
 
     def display(self, batch, key=None):
+        """Displays current values for meters.
+
+        Args:
+            batch (int): The number of batch.
+            key ([type], optional): [description]. Defaults to None.
+        """
+
         entries = [self.batch_fmtstr.format(batch)]
         key = key or [m.name for m in self.meters.values()]
-        entries += [str(meter)
-                    for meter in self.meters.values() if meter.name in key]
-        print('\t'.join(entries))
+        entries += [str(meter) for meter in self.meters.values()
+                    if meter.name in key]
+        self.info('\t'.join(entries) + '\n')
 
     def __getitem__(self, key):
         return self.meters[key]
 
     def write(self, n_iter):
-        if self.writer is not None:
-            for m in self.meters.values():
-                self.writer.add_scalar(m.name, m.avg, n_iter)
+        r"""Writes info to tensorboard
 
-    def write_image(self, tag, image_tensor, n_iter):
-        self.writer.add_image(tag, image_tensor, n_iter)
+        Args:
+            n_iter (int): The n-th iteration.
+        """
+        for m in self.meters.values():
+            self.tb.add_scalar(m.name, m.avg, n_iter)
 
     def update(self, tag, value, n=1):
+        r"""Updates the meter.
+
+        Args:
+            tag (str): The tag name.
+            value (number): The value to update.
+            n (int, optional): The len of minibatch. Defaults to 1.
+        """
         if tag not in self.meters:
             self.meters[tag] = AverageMeter(tag, fmt=':5.3f')
         self.meters[tag].update(value, n)
 
     def close(self):
-        self.writer.close()
+        self.tb.close()
+        self.file.close()
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
@@ -182,7 +221,7 @@ def write_to_json_file(content, file_path):
                   default=lambda o: '<not serializable>')
 
 
-def image_augmentation(image):
+def data_augment(image):
     out = F.random_crop(F.pad(image, (4, 4, 4, 4)), shape=(image.shape))
     out = F.image_augmentation(out, flip_lr=True)
     out.need_grad = False

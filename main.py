@@ -4,11 +4,11 @@ import json
 import nnabla as nn
 import nnabla.functions as F
 from nnabla.ext_utils import get_extension_context
+from nnabla.logger import logger
 
 import args
 import nnabla_nas.contrib as contrib
 from nnabla_nas import runner
-from nnabla.logger import logger
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

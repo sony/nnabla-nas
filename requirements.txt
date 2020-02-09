@@ -7,3 +7,4 @@ nnabla_ext_cuda101
 tensorboardX
 tqdm
 graphviz
+sklearn

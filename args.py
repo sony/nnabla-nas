@@ -66,6 +66,10 @@ class Configuration(object):
         conf['cutout'] = conf.get('cutout', 0)
         self.cutout = conf['cutout']
 
+        # auxiliar weights
+        conf['aux_weight'] = conf.get('aux_weight', 0)
+        self.aux_weight = conf['aux_weight']
+
     def summary(self):
         r"""Returns a string summarizing the configurations."""
         str_repr = [f'{k:15s}: {v}' for k, v in self.__dict__.items()]
@@ -80,7 +84,7 @@ class OptionParser(object):
         raise NotImplementedError
 
     def summary(self):
-        return self.conf
+        return self.options
 
 
 class OptimizerParser(OptionParser):
@@ -167,15 +171,11 @@ class DataloaderParser(OptionParser):
         opts = self.options
         # dataset configuration
         if conf['search']:
-            data = dataset.__dict__[conf.get('dataset')](
-                opts.mbs_train, True)
-            split = int(opts.train_portion * data.size)
-            data_train = data.slice(slice_start=0, slice_end=split, rng=None)
-            data_valid = data.slice(slice_start=split, slice_end=data.size,
-                                    rng=None)
-            # TODO: how to split data from training set. Now it doesn't work
-            # if mbs_train is different from mbs_valid
-            assert opts.mbs_train == opts.mbs_valid
+            data_train, data_valid = dataset.__dict__[conf.get('dataset')](
+                batch_size=(opts.mbs_train, opts.mbs_valid),
+                portion=opts.train_portion,
+                shuffle=True
+            )
         else:
             data_train = dataset.__dict__[opts.dataset](opts.mbs_train, True)
             data_valid = dataset.__dict__[opts.dataset](opts.mbs_valid, False)
