@@ -3,9 +3,6 @@ import numpy as np
 from nnabla.logger import logger
 from nnabla.utils.profiler import GraphProfiler
 
-from ...module import Identity
-from ...module import Zero
-
 
 class Estimator(object):
     """Estimator base class."""
