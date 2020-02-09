@@ -4,10 +4,9 @@ import json
 import nnabla as nn
 import nnabla.functions as F
 from nnabla.ext_utils import get_extension_context
-from nnabla.logger import logger
 
-import args
 import nnabla_nas.contrib as contrib
+from args import Configuration
 from nnabla_nas import runner
 
 if __name__ == "__main__":
@@ -46,33 +45,17 @@ if __name__ == "__main__":
     model = algorithm.SearchNet(**attributes) if config['search'] else \
         algorithm.TrainNet(**attributes)
 
-    options = args.Configuration(config)
-
-    # define contraints
-    regularizer = args.RegularizerParser(options).parse(config)
-
-    # define dataloader for training and validating
-    dataloader = args.DataloaderParser(options).parse(config)
-
-    # define optimizer
-    max_iter = (len(dataloader['train']) * options.epoch
-                // options.mbs_train)
-    opt_parser = args.OptimizerParser(options, max_iter=max_iter)
-
-    optimizer = opt_parser.parse(config.get('optimizer', dict()))
-
-    # a placeholder to store input and output variables
-    placeholder = args.PlaceholderParser(options).parse(config)
-
-    logger.info('Configurations:\n' + options.summary())
+    # Get all arguments for the runner
+    conf = Configuration(config)
+    loader = conf.parse()
 
     runner.__dict__[config['algorithm']](
         model,
-        placeholder=placeholder,
-        optimizer=optimizer,
-        dataloader=dataloader,
-        regularizer=regularizer,
+        placeholder=loader['placeholder'],
+        optimizer=loader['optimizer'],
+        dataloader=loader['dataloader'],
+        regularizer=loader['regularizer'],
         criteria=lambda o, t: F.mean(F.softmax_cross_entropy(o, t)),
         evaluate=lambda o, t: F.mean(F.top_n_error(o, t)),
-        args=options
+        args=conf
     ).run()

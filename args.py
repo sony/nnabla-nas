@@ -1,7 +1,9 @@
+import os
 from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.utils.learning_rate_scheduler as LRS
+from nnabla.logger import logger
 
 from nnabla_nas import dataset
 from nnabla_nas import utils as ut
@@ -70,27 +72,55 @@ class Configuration(object):
         conf['aux_weight'] = conf.get('aux_weight', 0)
         self.aux_weight = conf['aux_weight']
 
-    def summary(self):
-        r"""Returns a string summarizing the configurations."""
-        str_repr = [f'{k:15s}: {v}' for k, v in self.__dict__.items()]
-        return '\n'.join(str_repr)
+        self.conf = conf
+
+    def parse(self):
+        r"""Returns a dict containing options for a Runner."""
+        conf = self.conf.copy()
+        options = dict()
+
+        # define contraints
+        parser = RegularizerParser(self)
+        options['regularizer'] = parser.parse(conf.get('regularizer', dict()))
+        conf['regularizer'] = parser.summary().copy()
+
+        # define dataloader for training and validating
+        parser = DataloaderParser(self)
+        options['dataloader'] = parser.parse(conf)
+
+        # define optimizer
+        parser = OptimizerParser(self, len(options['dataloader']['train']))
+        options['optimizer'] = parser.parse(conf.get('optimizer', dict()))
+        conf['optimizer'] = parser.summary().copy()
+
+        # a placeholder to store input and output variables
+        parser = PlaceholderParser(self)
+        options['placeholder'] = parser.parse(conf.get('placeholder', dict()))
+
+        file = os.path.join(conf['output_path'], 'config.json')
+        logger.info(f'Saving the configurations to {file}')
+        ut.write_to_json_file(conf, file)
+
+        return options
 
 
 class OptionParser(object):
-    def __init__(self, options: Configuration):
+    def __init__(self, options):
         self.options = options
+        self.conf = dict()
 
     def parse(self, args: dict):
         raise NotImplementedError
 
     def summary(self):
-        return self.options
+        return self.conf
 
 
 class OptimizerParser(OptionParser):
-    def __init__(self, configuration, max_iter):
+    def __init__(self, configuration, n):
         self.conf = configuration
-        self.max_iter = max_iter
+        self.iter_train = n * self.conf.epoch // self.conf.bs_train
+        self.iter_warm = n * self.conf.warmup // self.conf.bs_train
 
     def parse(self, args):
         conf = args.copy()
@@ -113,7 +143,9 @@ class OptimizerParser(OptionParser):
                 optim['lr_scheduler'] = dict()
                 optim['lr_scheduler']['name'] = 'CosineScheduler'
                 optim['lr_scheduler']['lr'] = optim['solver'].get('lr', 0.01)
-                optim['lr_scheduler']['max_iter'] = self.max_iter
+                optim['lr_scheduler']['max_iter'] = (
+                    self.iter_train if key == 'train' else self.iter_warm
+                )
                 lr_scheduler = LRS.__dict__['CosineScheduler'](
                     init_lr=optim['lr_scheduler']['lr'],
                     max_iter=optim['lr_scheduler']['max_iter']
@@ -135,16 +167,19 @@ class OptimizerParser(OptionParser):
 
 class RegularizerParser(OptionParser):
 
-    def parse(self, conf):
+    def parse(self, args):
+        conf = args.copy()
         regularizer = dict()
-        args = conf.get('regularizer', dict())
         for k, v in args.items():
-            args = v.copy()
+            opt = v.copy()
             regularizer[k] = dict()
-            regularizer[k]['bound'] = args.pop('bound', 0)
-            regularizer[k]['weight'] = args.pop('weight', 0)
-            regularizer[k]['reg'] = EST.__dict__[
-                args.pop('name', 'LatencyEstimator')](**args)
+            regularizer[k]['bound'] = opt.pop('bound', 0)
+            regularizer[k]['weight'] = opt.pop('weight', 0)
+            v['bound'] = regularizer[k]['bound']
+            v['weight'] = regularizer[k]['weight']
+            v['name'] = opt.pop('name', 'LatencyEstimator')
+            regularizer[k]['reg'] = EST.__dict__[v['name']](**opt)
+        self.conf = conf
         return regularizer
 
 
