@@ -57,6 +57,7 @@ class ConvBNReLU6(Mo.Module):
                 f'group={self._group}, '
                 f'fix_parameters={self._fix_parameters}')
 
+
 class InvertedResidualConv(Mo.Module):
     r"""Inverted Residual Convolution as defined in the 
     MobileNetV2 paper [Sandler2018].
@@ -90,33 +91,32 @@ class InvertedResidualConv(Mo.Module):
         self._kernel = kernel
         self._pad = pad
         self._stride = stride
-        self._expansion_factor=expansion_factor
+        self._expansion_factor = expansion_factor
         self._fix_parameters = fix_parameters
 
         self._operators = Mo.Sequential()
 
-        #number of feature maps in the middle layers
+        # number of feature maps in the middle layers
         hmaps = round(in_channels * self._expansion_factor)
-        
-        #PW1 (only if expansion)
+
+        # PW1 (only if expansion)
         if self._expansion_factor > 1:
             self._operators.append(ConvBNReLU6(in_channels, hmaps, kernel=(1, 1),
-                        stride=(1, 1), pad=(0, 0), with_bias=False))
-        
-        #DW2
+                                               stride=(1, 1), pad=(0, 0), with_bias=False))
+
+        # DW2
         self._operators.append(ConvBNReLU6(hmaps, hmaps, kernel=self._kernel,
-                    stride=self._stride, pad=self._pad, group= hmaps, with_bias=False))
-            
-        #PW3 
+                                           stride=self._stride, pad=self._pad, group=hmaps, with_bias=False))
+
+        # PW3
         self._operators.append(ConvBNReLU6(hmaps, self._out_channels, kernel=(1, 1),
-                    stride=(1, 1), pad=(0, 0), with_bias=False))
-    
+                                           stride=(1, 1), pad=(0, 0), with_bias=False))
+
     def call(self, input):
         y = self._operators(input)
         if (self._stride == (1, 1) and self._in_channels == self._out_channels):
             y = y + input
         return y
-
 
     def __extra_repr__(self):
         return (f'in_channels={self._in_channels}, '

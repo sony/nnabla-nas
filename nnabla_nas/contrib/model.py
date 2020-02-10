@@ -38,4 +38,5 @@ class Model(Mo.Module):
         return ''
 
     def save(self, output_path=None):
+        r"""Save the model."""
         pass

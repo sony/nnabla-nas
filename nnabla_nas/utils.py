@@ -249,7 +249,7 @@ def get_params_size(params):
 
     Args:
         params (OrderedDict): The dictionary containing parameters.
-
+    
     Returns:
         int: The total number of parameters.
     """

@@ -1,40 +1,9 @@
+
 import nnabla as nn
-import numpy as np
 from nnabla.logger import logger
 from nnabla.utils.profiler import GraphProfiler
 
-
-class Estimator(object):
-    """Estimator base class."""
-    @property
-    def memo(self):
-        if '_memo' not in self.__dict__:
-            self._memo = dict()
-        return self._memo
-
-    def get_estimation(self, module):
-        """Returns the estimation of the whole module."""
-        return sum(self.predict(m) for _, m in module.get_modules()
-                   if len(m.modules) == 0 and m.need_grad)
-
-    def reset(self):
-        """Clear cache."""
-        self.memo.clear()
-
-    def predict(self, module):
-        """Predicts the estimation for a module."""
-        raise NotImplementedError
-
-
-class MemoryEstimator(Estimator):
-    """Estimator for the memory used."""
-
-    def predict(self, module):
-        idm = id(module)
-        if idm not in self.memo:
-            self.memo[idm] = sum(np.prod(p.shape)
-                                 for p in module.parameters.values())
-        return self.memo[idm]
+from .estimator import Estimator
 
 
 class LatencyEstimator(Estimator):
