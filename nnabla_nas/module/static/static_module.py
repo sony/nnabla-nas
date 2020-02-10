@@ -14,6 +14,7 @@ from nnabla.initializer import UniformInitializer
 from nnabla.initializer import calc_uniform_lim_glorot
 
 import nnabla_nas.contrib.misc as misc
+import nnabla_nas.module as mo
 import nnabla_nas.module as smo
 from nnabla_nas.module.parameter import Parameter
 
@@ -51,7 +52,6 @@ class Module(mo.Module):
         self._eval_probs    = None
         self._prof          = None
         self._shape         = None
-        self._forward_tag   = False
 
         if eval_prob is None:
             self._eval_prob = nn.Variable.from_numpy_array(np.array(1.0))
@@ -133,17 +133,15 @@ class Module(mo.Module):
     def clear_value(self):
         self._value = None
 
-    def _recursive_call(self, tag=None, *args):
-        if tag is None or self._forward_tag != tag:
-            self._forward_tag   = not self._forward_tag
-         #   print("building graph for {}".format(self.name))
-            self._value = self.call(self.parent(tag=tag, *args))
+    def _recursive_call(self):
+        if self._value is None:
+            self._value = self.call(self.parent())
         #else:
         #    print("reusing graph for {}".format(self.name))
         return self._value
 
-    def __call__(self, tag=None, *args):
-        return self._recursive_call(tag=tag, *args)
+    def __call__(self):
+        return self._recursive_call()
 
     @property
     def eval_prob(self):
@@ -155,6 +153,9 @@ class Module(mo.Module):
 
     def profile(self, estimator):
         return stop
+
+    def reset_value(self):
+        self._value = None
 
 #------------------------------------A graph of StaticModules--------------------------------------
 class Graph(mo.ModuleList, Module):
@@ -181,18 +182,8 @@ class Graph(mo.ModuleList, Module):
         else:
             pass
 
-    def clear_value(self):
-        for gmi in self._graph_modules:
-            gmi.clear_value()
-
-    def clear_probs(self):
-        for gmi in self._graph_modules:
-            gmi.clear_value()
-
-    def _recursive_call(self, tag=None, *args): #
-        if tag is None or self._forward_tag != tag:
-            self._forward_tag   = not self._forward_tag
-        return self.output(tag=tag, *args)
+    def _recursive_call(self): #
+        return self.output()
 
     @property
     def shape(self):
@@ -233,6 +224,14 @@ class Graph(mo.ModuleList, Module):
             exp_latency += self.modules[mi].get_exp_latency(profiler, n_run)
         return exp_latency
 
+    def reset_value(self):
+        for mi in self.modules:
+            try:
+                self._value = None
+                self.modules[mi].reset_value()
+            except:
+                pass #dynamic modules have no reset_value
+
 #------------------------------------Some basic StaticModules------------------------------
 class Input(Module):
     def __init__(self, name, value=None, eval_prob=None, *args, **kwargs):
@@ -241,8 +240,8 @@ class Input(Module):
         parent, it is the identity op, which just feeds the aggregated inputs to the output.
         """
         Module.__init__(self, name=name, parent=None, eval_prob=eval_prob)
-        self._value     = value
-        self._shape     = self._value.shape
+        self._inp_value = value
+        self._shape     = self._inp_value.shape
 
     def _init_parent(self, parent):
         """
@@ -251,34 +250,29 @@ class Input(Module):
         self._parent = None
 
     def call(self, inputs):#
-        return self._value
+        return self._inp_value
 
-    def clear_value(self):
-        """
-        We are not allowed to clear the value of an input vertice!
-        """
-        pass
-
-    def _recursive_call(self, tag=None, *args): #
+    def _recursive_call(self): #
         return self.call(None)
+
+
 
 class Identity(mo.Identity, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
-        mo.Identity.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
 class Zero(mo.Zero, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.Zero.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
-        self._value = nn.Variable.from_numpy_array(np.zeros(self._parent.shape))
+        self._inp_value = nn.Variable.from_numpy_array(np.zeros(self._parent.shape))
 
     def call(self, input):
-        return self._value
+        return self._inp_value
 
-    def _recursive_call(self, tag=None, *args):
-        self._forward_tag = not self._forward_tag
+    def _recursive_call(self):
         return self.call(None)
+
 
 class Conv(mo.Conv, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
@@ -346,10 +340,9 @@ class Merging(mo.Merging, Module):
         else:
             raise Exception('At least one provided parent is not a static module!')
 
-    def _recursive_call(self, tag=None, *args):
-        if tag is None or self._forward_tag != tag:
-            self._forward_tag   = not self._forward_tag #flip the tag
-            self._value         = self.call(*[pi(self._forward_tag) for pi in self.parent])
+    def _recursive_call(self):
+        if self._value is None:
+            self._value         = self.call(*[pi() for pi in self.parent])
         return self._value
 
     def _shape_function(self):
@@ -404,28 +397,26 @@ class Join(Module):
         """
         Aggregates all input tensors to one single input tensor (summing them up)
         """
-        def one_hot(x, n=len(input)):
-            return np.array([int(i == x) for i in range(n)])
-
         res = 0.0
         if self.mode == 'linear':
             for pi, inpi in zip(self._sel_p, input):
                 res += pi.reshape((1,)*len(inpi.shape)) * inpi
-        elif self.mode == 'sample':
-            self._sel_p.forward()
-            self._idx = np.random.choice(len(input), 1, p=self._sel_p.d)[0]
-            res = input[self._idx]
-            #print("{} uses input {}".format(self.name, self._idx))
-        elif self.mode == 'max':
-            #just pick the input channel with the highest probability!
-            self._idx = np.argmax(self._join_parameters.d)
-            res = input[self._idx]
+        elif self.mode == 'sample' or self.mode == 'max':
+            res = input
         return res
 
-    def _recursive_call(self, tag=None, *args):
-        if tag is None or self._forward_tag != tag:
-            self._forward_tag   = not self._forward_tag #flip the tag
-            self._value         = self.call([pi(self._forward_tag, *args) for pi in self.parent])
+    def _recursive_call(self):
+        if self._value is None:
+            if self.mode == 'linear':
+                self._value = self.call([pi() for pi in self.parent])
+            elif self.mode == 'sample':
+                self._sel_p.forward()
+                self._idx = np.random.choice(len(self.parent), 1, p=self._sel_p.d)[0]
+                self._value = self.call(self.parent[self._idx]())
+            elif self.mode == 'max':
+                self._idx = np.argmax(self._join_parameters.d)
+                self._value = self.call(self.parent[self._idx]())
+        #print(self._value)
         return self._value
 
     def _shape_function(self):

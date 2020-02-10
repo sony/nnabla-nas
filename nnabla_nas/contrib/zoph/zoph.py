@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import nnabla as nn
+import nnabla.functions as F
 import numpy as np
 from nnabla.initializer import ConstantInitializer
 
@@ -211,6 +212,19 @@ class ZophNetwork(smo.Graph):
                 ans.append(module)
         return ans
 
+    def get_net_modules(self, active_only=False):
+        ans = []
+        for name, module in self.get_modules():
+            if isinstance(module, smo.Module) and not isinstance(module, smo.Join):
+                if active_only:
+                    if module._value is not None:
+                        ans.append(module)
+                    else:
+                        pass
+                else:
+                    ans.append(module)
+        return ans
+
     def get_net_parameters(self, grad_only=False):
         param = OrderedDict()
         for key, val in self.get_parameters(grad_only).items():
@@ -226,6 +240,7 @@ class ZophNetwork(smo.Graph):
         return param
 
     def __call__(self, input):
+        self.reset_value()
         self._input._value = input
         return self._recursive_call()
 
@@ -258,15 +273,17 @@ if __name__ == '__main__':
     out_6 = avg_pool3x3()
     out_7 = zoph_block()
     out_8 = zoph_cell()
+    out_9 = zoph_network(nn_input)
 
+    #import pdb; pdb.set_trace()
     import time
 
     start = time.time()
-    for i in range(100):
+    for i in range(500):
         out_9 = zoph_network(nn_input)
     print("sample time only is {}".format(time.time() - start))
     start = time.time()
-    for i in range(100):
+    for i in range(500):
         out_9 = zoph_network(nn_input)
         out_9.forward()
     print("sample and inference time is {}".format(time.time() - start))
