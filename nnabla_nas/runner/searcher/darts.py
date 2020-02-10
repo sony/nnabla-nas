@@ -1,10 +1,7 @@
 import os
 
 import nnabla as nn
-import numpy as np
 
-from ... import utils as ut
-from ...contrib.darts.modules import CANDIDATES
 from .search import Searcher
 
 
@@ -54,11 +51,9 @@ class DartsSearcher(Searcher):
         r"""Saves parameters and prints the selection propability."""
         nn.save_parameters(
             os.path.join(self.args.output_path, 'arch.h5'),
-            self.model.get_parameters()
+            self.model.get_arch_parameters()
         )
-        
         self.monitor.info(self.model.summary() + '\n')
 
     def callback_on_finish(self):
-        r"""Visualize the architecture for darts."""
-        ut.save_dart_arch(self.model, self.args.output_path)
+        self.model.save(self.args.output_path)

@@ -1,9 +1,7 @@
 import os
-from collections import Counter
 
 import nnabla as nn
 
-from ...contrib.darts.modules import CANDIDATES
 from ...contrib.darts.modules import MixedOp
 from .search import Searcher
 
@@ -81,19 +79,10 @@ class ProxylessNasSearcher(Searcher):
         self.optimizer['valid'].update()
         self._reward = beta*sum(rewards)/n_iter + (1 - beta)*self._reward
 
-    def callback_on_finish(self):
-        r"""Prints the statistics on selected OPs."""
-        count = Counter([m._active for m in self.arch_modules])
-        op_names = list(CANDIDATES.keys())
-        total, stats = len(self.arch_modules), []
-        for k in range(len(op_names)):
-            name = op_names[k]
-            stats.append(name + f' = {count[k]/total*100:.2f}%\t')
-        self.monitor.info(''.join(stats) + '\n')
-
     def callback_on_epoch_end(self):
         r"""Calls this after one epoch."""
         nn.save_parameters(
             os.path.join(self.args.output_path, 'arch.h5'),
             self.model.get_parameters()
         )
+        self.monitor.info(self.model.summary() + '\n')

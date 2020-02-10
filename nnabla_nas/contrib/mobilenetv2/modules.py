@@ -1,5 +1,6 @@
 from ... import module as Mo
 
+
 class ConvBNReLU6(Mo.Module):
     r"""Convolution-BatchNormalization-ReLU6 layer.
 
@@ -125,5 +126,3 @@ class InvertedResidualConv(Mo.Module):
                 f'pad={self._pad}, '
                 f'expension_factor={self._expansion_factor}, '
                 f'fix_parameters={self._fix_parameters}')
-
-

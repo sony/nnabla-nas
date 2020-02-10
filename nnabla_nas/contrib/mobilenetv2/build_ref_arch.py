@@ -1,6 +1,7 @@
-from mnv2 import SearchNet
-import nnabla_nas.module.static.static_module as smo
 import nnabla as nn
+
+import nnabla_nas.module.static.static_module as smo
+from mnv2 import SearchNet
 
 # build the network
 inp = smo.Input(name='arch_input', value=nn.Variable((32,3,32,32)))
@@ -22,5 +23,3 @@ for k,v in graph.get_arch_parameters().items():
 
 
 nn.save_parameters('reference_arch.h5', graph.get_arch_parameters())
-
-

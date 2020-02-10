@@ -36,3 +36,6 @@ class Model(Mo.Module):
     def summary(self):
         r"""Returns string printed at each epoch of training."""
         return ''
+
+    def save(self, output_path=None):
+        pass

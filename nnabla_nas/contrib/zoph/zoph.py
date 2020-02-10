@@ -268,4 +268,3 @@ if __name__ == '__main__':
     
     exp_lat     = zoph_network.get_exp_latency(profiler)
     import pdb; pdb.set_trace()
-

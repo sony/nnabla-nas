@@ -1,9 +1,13 @@
-import nnabla as nn
-import nnabla_nas.module.static.static_module as smo
-from . import modules as Mo
-from nnabla_nas.module.parameter import Parameter
 from collections import OrderedDict
+
+import nnabla as nn
+
+import nnabla_nas.module.static.static_module as smo
+from nnabla_nas.module.parameter import Parameter
+
 from ..model import Model
+from . import modules as Mo
+
 
 class ConvBnRelu6(Mo.ConvBNReLU6, smo.Module):
     def __init__(self, name, parent, *args, **kwargs):
@@ -269,4 +273,3 @@ if __name__ =='__main__':
     print ("building nnabla graph....")
     nn_out = mnv2_graph()
     print('output shape is {}'.format(nn_out.shape))
-    
