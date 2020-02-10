@@ -6,7 +6,7 @@
     "mini_batch_train": 64,
     "mini_batch_valid": 100,
     "cutout": 16,
-    "warmup": 0,
+    "warmup": 50,
     "print_frequency": 20,
     "network": {
         "name": "pnas",
