@@ -10,7 +10,7 @@
     "print_frequency": 20,
     "train_portion": 0.9,
     "network": {
-        "name": "darts",
+        "search_space": "darts",
         "in_channels": 3,
         "init_channels": 36,
         "num_cells": 15,

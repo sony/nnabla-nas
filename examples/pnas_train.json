@@ -9,7 +9,7 @@
     "warmup": 0,
     "print_frequency": 20,
     "network": {
-        "name": "pnas",
+        "search_space": "pnas",
         "in_channels": 3,
         "init_channels": 36,
         "num_cells": 15,
