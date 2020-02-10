@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # build the model
     attributes = config['network'].copy()
-    algorithm = contrib.__dict__[attributes.pop('name')]
+    algorithm = contrib.__dict__[attributes.pop('search_space')]
 
     model = algorithm.SearchNet(**attributes) if config['search'] else \
         algorithm.TrainNet(**attributes)

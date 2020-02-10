@@ -10,7 +10,7 @@
     "aux_weight": 0.4,
     "print_frequency": 50,
     "network": {
-        "name": "darts",
+        "search_space": "darts",
         "in_channels": 3,
         "init_channels": 36,
         "num_cells": 20,
