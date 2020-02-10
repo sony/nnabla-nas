@@ -179,7 +179,7 @@ def save_dart_arch(model, output_path):
         for k, v in zip(['alpha', 'prob', 'choice'],
                         parse_weights(alpha, model._num_choices)):
             memo[name + '_' + k] = v
-    arch_file = output_path + 'arch.json'
+    arch_file = os.path.join(output_path, 'arch.json')
     logger.info('Saving arch to {}'.format(arch_file))
     write_to_json_file(memo, arch_file)
     visualize(arch_file, output_path)
