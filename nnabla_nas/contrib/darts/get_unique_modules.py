@@ -1,4 +1,5 @@
 import nnabla as nn
+
 from nnabla_nas.contrib.darts import SearchNet
 
 net = SearchNet(3, 36, 15, 10)
@@ -21,4 +22,3 @@ for mi in mods:
 
 
 import pdb;pdb.set_trace()
- 

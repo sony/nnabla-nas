@@ -1,45 +1,49 @@
 {
-    "search": true,
+    "dataset": "cifar10",
+    "epoch": 150,
+    "batch_size_train": 256,
+    "batch_size_valid": 256,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 64,
+    "warmup": 50,
+    "cutout": 16,
+    "print_frequency": 20,
+    "train_portion": 0.9,
     "network": {
-        "name": "pnas",
+        "name": "darts",
         "in_channels": 3,
         "init_channels": 36,
         "num_cells": 15,
         "num_classes": 10,
-        "num_choices": 4
+        "num_choices": 4,
+        "shared": false,
+        "mode": "sample"
     },
-    "regularizer": {},
-    "model_optimizer": {
-        "grad_clip": 5.0,
-        "weight_decay": 3e-4,
-        "solver": {
-            "name": "Momentum",
-            "lr": 0.025
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.025
+            }
+        },
+        "valid": {
+            "grad_clip": 5.0,
+            "solver": {
+                "name": "Adam",
+                "alpha": 0.01,
+                "beta1": 0.5,
+                "beta2": 0.999
+            }
+        },
+        "warmup": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.025
+            }
         }
-    },
-    "arch_optimizer": {
-        "grad_clip": 5.0,
-        "solver": {
-            "name": "Adam",
-            "alpha": 0.01,
-            "beta1": 0.0,
-            "beta2": 0.999
-        }
-    },
-    "warmup_optimizer": {
-        "grad_clip": 5.0,
-        "weight_decay": 3e-4,
-        "solver": {
-            "name": "Momentum",
-            "lr": 0.025
-        }
-    },
-    "epoch": 150,
-    "batch_size": 256,
-    "mini_batch_size": 64,
-    "warmup": 50,
-    "model_name": "arch",
-    "output_path": "log/pnas/search",
-    "print_frequency": 20,
-    "train_portion": 0.9
+    }
 }

@@ -1,9 +1,11 @@
-import numpy as np
+import time
+
 import nnabla as nn
 import nnabla.functions as F
-from nnabla_nas.contrib.zoph.zoph import ZophNetwork
+import numpy as np
+
 import nnabla_nas.module.static.static_module as smo
-import time
+from nnabla_nas.contrib.zoph.zoph import ZophNetwork
 
 if __name__ == '__main__':
 
@@ -54,5 +56,3 @@ if __name__ == '__main__':
 
     print("Without auto-forward, inference of 100 different networks took {}".format(forward_static()))
     #print("With auto-forward, inference of 100 different networks took {}".format(forward_dynamic()))
-
-

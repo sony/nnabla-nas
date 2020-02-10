@@ -1,11 +1,13 @@
+import os
 from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.utils.learning_rate_scheduler as LRS
+from nnabla.logger import logger
 
 from nnabla_nas import dataset
 from nnabla_nas import utils as ut
-from nnabla_nas.contrib.pnas import estimator as EST
+from nnabla_nas.contrib import estimator as EST
 from nnabla_nas.dataset import DataLoader
 from nnabla_nas.optimizer import Optimizer
 
@@ -50,22 +52,64 @@ class Configuration(object):
         conf['warmup'] = conf.get('warmup', 0)
         self.warmup = conf['warmup']
 
-        # output path
-        conf['output_path'] = conf.get('output_path', 'log')
-        self.output_path = conf['output_path']
-
         # frequency of messages
         conf['print_frequency'] = conf.get('print_frequency', 20)
         self.print_frequency = conf['print_frequency']
 
         # training portion
-        conf['train_portion'] = conf.get('train_portion', 0.9)
+        conf['train_portion'] = conf.get('train_portion', 1)
         self.train_portion = conf['train_portion']
+
+        # output path
+        conf['output_path'] = conf.get('output_path', 'log')
+        self.output_path = conf['output_path']
+
+        # cutout
+        conf['cutout'] = conf.get('cutout', 0)
+        self.cutout = conf['cutout']
+
+        # auxiliar weights
+        conf['aux_weight'] = conf.get('aux_weight', 0)
+        self.aux_weight = conf['aux_weight']
+
+        self.conf = conf
+
+    def parse(self):
+        r"""Returns a dict containing options for a Runner."""
+        conf = self.conf.copy()
+        options = dict()
+
+        # define contraints
+        parser = RegularizerParser(self)
+        options['regularizer'] = parser.parse(conf.get('regularizer', dict()))
+        conf['regularizer'] = parser.summary().copy()
+
+        # define dataloader for training and validating
+        parser = DataloaderParser(self)
+        options['dataloader'] = parser.parse(conf)
+
+        # define optimizer
+        parser = OptimizerParser(self, len(options['dataloader']['train']))
+        options['optimizer'] = parser.parse(conf.get('optimizer', dict()))
+        conf['optimizer'] = parser.summary().copy()
+
+        # a placeholder to store input and output variables
+        parser = PlaceholderParser(self)
+        options['placeholder'] = parser.parse(conf.get('placeholder', dict()))
+
+        if not os.path.isdir(conf['output_path']):
+            os.makedirs(conf['output_path'])
+        file = os.path.join(conf['output_path'], 'config.json')
+        logger.info(f'Saving the configurations to {file}')
+        ut.write_to_json_file(conf, file)
+
+        return options
 
 
 class OptionParser(object):
-    def __init__(self, options: Configuration):
+    def __init__(self, options):
         self.options = options
+        self.conf = dict()
 
     def parse(self, args: dict):
         raise NotImplementedError
@@ -75,9 +119,10 @@ class OptionParser(object):
 
 
 class OptimizerParser(OptionParser):
-    def __init__(self, configuration, max_iter):
+    def __init__(self, configuration, n):
         self.conf = configuration
-        self.max_iter = max_iter
+        self.iter_train = n * self.conf.epoch // self.conf.bs_train
+        self.iter_warm = n * self.conf.warmup // self.conf.bs_train
 
     def parse(self, args):
         conf = args.copy()
@@ -92,15 +137,16 @@ class OptimizerParser(OptionParser):
             lr_scheduler = None
 
             if optim['lr_scheduler'] is not None:
-                lr_scheduler = ut.get_object_from_dict(
-                    module=LRS.__dict__,
-                    args=optim.pop('lr_scheduler', None)
-                )
+                scheduler_params = optim.pop('lr_scheduler').copy()
+                class_name = scheduler_params.pop('name')
+                lr_scheduler = LRS.__dict__[class_name](**scheduler_params)
             elif key != 'valid':
                 optim['lr_scheduler'] = dict()
                 optim['lr_scheduler']['name'] = 'CosineScheduler'
                 optim['lr_scheduler']['lr'] = optim['solver'].get('lr', 0.01)
-                optim['lr_scheduler']['max_iter'] = self.max_iter
+                optim['lr_scheduler']['max_iter'] = (
+                    self.iter_train if key == 'train' else self.iter_warm
+                )
                 lr_scheduler = LRS.__dict__['CosineScheduler'](
                     init_lr=optim['lr_scheduler']['lr'],
                     max_iter=optim['lr_scheduler']['max_iter']
@@ -122,16 +168,19 @@ class OptimizerParser(OptionParser):
 
 class RegularizerParser(OptionParser):
 
-    def parse(self, conf):
+    def parse(self, args):
+        conf = args.copy()
         regularizer = dict()
-        args = conf.get('regularizer', dict())
         for k, v in args.items():
-            args = v.copy()
+            opt = v.copy()
             regularizer[k] = dict()
-            regularizer[k]['bound'] = args.pop('bound', 0)
-            regularizer[k]['weight'] = args.pop('weight', 0)
-            regularizer[k]['reg'] = EST.__dict__[
-                args.pop('name', 'LatencyEstimator')](**args)
+            regularizer[k]['bound'] = opt.pop('bound', 0)
+            regularizer[k]['weight'] = opt.pop('weight', 0)
+            v['bound'] = regularizer[k]['bound']
+            v['weight'] = regularizer[k]['weight']
+            v['name'] = opt.pop('name', 'LatencyEstimator')
+            regularizer[k]['reg'] = EST.__dict__[v['name']](**opt)
+        self.conf = conf
         return regularizer
 
 
@@ -158,15 +207,11 @@ class DataloaderParser(OptionParser):
         opts = self.options
         # dataset configuration
         if conf['search']:
-            data = dataset.__dict__[conf.get('dataset')](
-                opts.mbs_train, True)
-            split = int(opts.train_portion * data.size)
-            data_train = data.slice(slice_start=0, slice_end=split, rng=None)
-            data_valid = data.slice(slice_start=split, slice_end=data.size,
-                                    rng=None)
-            # TODO: how to split data from training set. Now it doesn't work
-            # if mbs_train is different from mbs_valid
-            assert opts.mbs_train == opts.mbs_valid
+            data_train, data_valid = dataset.__dict__[conf.get('dataset')](
+                batch_size=(opts.mbs_train, opts.mbs_valid),
+                portion=opts.train_portion,
+                shuffle=True
+            )
         else:
             data_train = dataset.__dict__[opts.dataset](opts.mbs_train, True)
             data_valid = dataset.__dict__[opts.dataset](opts.mbs_valid, False)

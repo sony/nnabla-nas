@@ -1,4 +1,5 @@
-from .search import DartsSeacher
-from .search import ProxylessNasSearcher
+from .searcher import DartsSearcher
+from .searcher import ProxylessNasSearcher
+from .trainer import Trainer
 
-__all__ = ['DartsSeacher', 'ProxylessNasSearcher']
+__all__ = ['DartsSearcher', 'ProxylessNasSearcher', 'Trainer']

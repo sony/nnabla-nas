@@ -5,3 +5,4 @@ pytest
 tensorboardX
 tqdm
 graphviz
+sklearn

@@ -89,18 +89,6 @@ class ReLUConvBN(Mo.Module):
                 f'pad={self._pad}')
 
 
-class SepConv(Mo.DwConv):
-    def __init__(self, out_channels, *args, **kwargs):
-        Mo.DwConv.__init__(self, *args, **kwargs)
-        self._out_channels = out_channels
-        self._conv_module_pw = Mo.Conv(self._in_channels, out_channels,
-                                       kernel=(1, 1), pad=None, group=1,
-                                       rng=self._rng, with_bias=False)
-
-    def call(self, input):
-        return self._conv_module_pw(Mo.DwConv.call(self, input))
-
-
 class FactorizedReduce(Mo.Module):
     r"""Factorize-Reduction layer.
 
@@ -264,8 +252,9 @@ class MixedOp(Mo.Module):
 
     def call(self, input):
         if self._mode == 'full':
-            probs = F.softmax(self._alpha, axis=0)
-            return sum(op(input)*p for op, p in zip(self._ops, probs))
+            out = F.stack(*[op(input) for op in self._ops], axis=0)
+            out = F.mul2(out, F.softmax(self._alpha, axis=0))
+            return F.sum(out, axis=0)
 
         if self._active is None:
             logger.warn('The active index was not initialized.')

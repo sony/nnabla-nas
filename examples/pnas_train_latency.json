@@ -1,0 +1,31 @@
+{
+    "dataset": "cifar10",
+    "epoch": 150,
+    "batch_size_train": 256,
+    "batch_size_valid": 100,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 100,
+    "cutout": 16,
+    "warmup": 0,
+    "print_frequency": 20,
+    "network": {
+        "name": "pnas",
+        "in_channels": 3,
+        "init_channels": 36,
+        "num_cells": 15,
+        "num_classes": 10,
+        "num_choices": 4,
+        "auxiliary": false,
+        "genotype": "log/pnas-lat/search/arch.h5"
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.025
+            }
+        }
+    }
+}

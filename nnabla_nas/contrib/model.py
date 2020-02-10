@@ -20,7 +20,7 @@ class Model(Mo.Module):
         raise NotImplementedError
 
     def get_arch_parameters(self, grad_only=False):
-        """Returns an `OrderedDict` containing all architecture parameters of
+        r"""Returns an `OrderedDict` containing all architecture parameters of
             the model.
 
         Args:
@@ -32,3 +32,10 @@ class Model(Mo.Module):
             NotImplementedError: [description]
         """
         raise NotImplementedError
+
+    def summary(self):
+        r"""Returns string printed at each epoch of training."""
+        return ''
+
+    def save(self, output_path=None):
+        pass
