@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+import numpy as np
 
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
@@ -142,6 +143,20 @@ class SearchNet(Model):
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
 
+    def summary(self):
+        r"""Summary of the model."""
+        str_summary = ''
+        op_names = list(darts.CANDIDATES.keys())
+        for alphas, t in zip(self._alpha, ['normal', 'reduction']):
+            count = {i: 0 for i in op_names}
+            for alpha in alphas:
+                idx = np.argmax(alpha.d.flat)
+                count[op_names[idx]] += 1
+            select = t + ' cell:\n'
+            for k, v in count.items():
+                select += f'{k} = {v/len(alphas)*100:.2f}%\t'
+            str_summary += select + '\n'
+        return str_summary
 
 class TrainNet(Model):
     """TrainNet used for DARTS."""

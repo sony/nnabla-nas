@@ -14,7 +14,7 @@
         "first_maps": 32,
         "last_maps": 1280,
         "n_classes": 10,
-        "genotype": "log/mnv2/search/mnv2_search.h5"
+        "genotype": "log/mnv2/search/arch.h5"
     },
     "optimizer": {
         "train": {

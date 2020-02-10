@@ -56,16 +56,8 @@ class DartsSearcher(Searcher):
             os.path.join(self.args.output_path, 'arch.h5'),
             self.model.get_parameters()
         )
-        op_names = list(CANDIDATES.keys())
-        for alphas, t in zip(self.model._alpha, ['normal', 'reduction']):
-            count = {i: 0 for i in op_names}
-            for alpha in alphas:
-                idx = np.argmax(alpha.d.flat)
-                count[op_names[idx]] += 1
-            select = t + ' cell:\n'
-            for k, v in count.items():
-                select += f'{k} = {v/len(alphas)*100:.2f}%\t'
-            self.monitor.info(select + '\n')
+        
+        self.monitor.info(self.model.summary() + '\n')
 
     def callback_on_finish(self):
         r"""Visualize the architecture for darts."""
