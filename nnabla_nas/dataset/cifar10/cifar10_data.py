@@ -91,7 +91,8 @@ def data_iterator_cifar10(batch_size,
     '''
     Provide DataIterator with :py:class:`Cifar10DataSource`
     with_memory_cache and with_file_cache option's default value is all False,
-    because :py:class:`Cifar10DataSource` is able to store all data into memory.
+    because :py:class:`Cifar10DataSource` is able to store all data into
+    memory.
 
     '''
     if train and portion < 1:
@@ -118,11 +119,12 @@ def data_iterator_cifar10(batch_size,
         )
         return train, valid
 
-    return data_iterator(Cifar10DataSource(train=train, shuffle=shuffle, rng=rng),
-                         batch_size,
-                         rng,
-                         with_memory_cache,
-                         with_file_cache)
+    return data_iterator(Cifar10DataSource(
+        train=train, shuffle=shuffle, rng=rng),
+        batch_size,
+        rng,
+        with_memory_cache,
+        with_file_cache)
 
 
 def download_data():

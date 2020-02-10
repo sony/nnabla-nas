@@ -137,10 +137,9 @@ class OptimizerParser(OptionParser):
             lr_scheduler = None
 
             if optim['lr_scheduler'] is not None:
-                lr_scheduler = ut.get_object_from_dict(
-                    module=LRS.__dict__,
-                    args=optim.pop('lr_scheduler', None)
-                )
+                scheduler_params = optim.pop('lr_scheduler').copy()
+                class_name = scheduler_params.pop('name')
+                lr_scheduler = LRS.__dict__[class_name](**scheduler_params)
             elif key != 'valid':
                 optim['lr_scheduler'] = dict()
                 optim['lr_scheduler']['name'] = 'CosineScheduler'

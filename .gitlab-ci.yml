@@ -9,7 +9,7 @@ stages:
 
 flake8:
   stage: Analyze
-  allow_failure: true
+  allow_failure: false
   script:
     - flake8 . --max-line-length=120
 
@@ -17,7 +17,7 @@ pylint:
   stage: Analyze
   allow_failure: true
   script:
-    - pylint .
+    - pylint ./nnabla_nas/
 
 unit_test:
   stage: Test

@@ -27,7 +27,7 @@ class Compose(object):
         for t in self.transforms:
             img = t(img)
         return img
-    
+
     def append(self, transform):
         self.transforms.append(transform)
 
@@ -38,6 +38,7 @@ class Compose(object):
             format_string += '    {0}'.format(t)
         format_string += '\n)'
         return format_string
+
 
 class Cutout(object):
     def __init__(self, length):

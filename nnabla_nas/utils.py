@@ -22,7 +22,7 @@ class ProgressMeter(object):
         Args:
             num_batches (int): The number of batches per epoch.
             path (str, optional): Path to save tensorboard and log file.
-            Defaults to None.
+                Defaults to None.
     """
 
     def __init__(self, num_batches, path=None):
@@ -33,7 +33,7 @@ class ProgressMeter(object):
         self.file = open(os.path.join(path, 'log.txt'), 'w')
 
     def info(self, message, view=True):
-        """Shows a message.
+        r"""Shows a message.
 
         Args:
             message (str): The message.
@@ -46,7 +46,7 @@ class ProgressMeter(object):
         self.file.flush()
 
     def display(self, batch, key=None):
-        """Displays current values for meters.
+        r"""Displays current values for meters.
 
         Args:
             batch (int): The number of batch.
@@ -84,6 +84,7 @@ class ProgressMeter(object):
         self.meters[tag].update(value, n)
 
     def close(self):
+        r"""Closes all the file descriptors."""
         self.tb.close()
         self.file.close()
 
@@ -93,12 +94,13 @@ class ProgressMeter(object):
         return '[' + fmt + '/' + fmt.format(num_batches) + ']'
 
     def reset(self):
+        r"""Resets the ProgressMeter."""
         for m in self.meters.values():
             m.reset()
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value"""
+    r"""Computes and stores the average and current value."""
 
     def __init__(self, name, fmt=':f'):
         self.name = name
@@ -123,22 +125,30 @@ class AverageMeter(object):
 
 
 def sample(pvals, mode='sample'):
-    """Return an index."""
+    r"""Returns random int according the sampling `mode` (e.g., `max`, `full`,
+        or `sample`).
+
+    Args:
+        pvals (np.array): The probability values.
+        mode (str, optional): The sampling `mode`. Defaults to 'sample'.
+
+    Returns:
+        [type]: [description]
+    """
     if mode == 'max':
         return np.argmax(pvals)
     return np.random.choice(len(pvals), p=pvals, replace=False)
 
 
-def categorical_error(pred, label):
-    """
-    Compute categorical error given score vectors and labels as
-    numpy.ndarray.
-    """
-    pred_label = pred.argmax(1)
-    return (pred_label != label.flat).mean()
-
-
 def dataset_transformer(conf):
+    r"""Returns data transformers for training and validating the model.
+
+    Args:
+        conf (dict): A dictionary containning configurations.
+
+    Returns:
+        (Transformer, Transformer): Training and validating transformers.
+    """
     normalize = Normalizer(
         mean=(0.49139968, 0.48215827, 0.44653124),
         std=(0.24703233, 0.24348505, 0.26158768),
@@ -173,6 +183,12 @@ def parse_weights(alpha, num_choices):
 
 
 def save_dart_arch(model, output_path):
+    r"""Saves DARTS architecture.
+
+    Args:
+        model (Model): The model.
+        output_path (str): Where to save the architecture.
+    """
     memo = dict()
     for name, alpha in zip(['normal', 'reduce'],
                            [model._alpha[0], model._alpha[1]]):
@@ -185,22 +201,8 @@ def save_dart_arch(model, output_path):
     visualize(arch_file, output_path)
 
 
-def drop_path(x):
-    """Drop path function. Taken from Yashima code"""
-    drop_prob = nn.parameter.get_parameter_or_create(
-        "drop_rate",
-        shape=(1, 1, 1, 1),
-        need_grad=False
-    )
-    mask = F.rand(shape=(x.shape[0], 1, 1, 1))
-    mask = F.greater_equal(mask, drop_prob)
-    x = F.div2(x, 1 - drop_prob)
-    x = F.mul2(x, mask)
-    return x
-
-
 def load_parameters(path):
-    """Loads the parameters from a file.
+    r"""Loads the parameters from a file.
 
     Args:
         path (str): The path to file.
@@ -215,6 +217,12 @@ def load_parameters(path):
 
 
 def write_to_json_file(content, file_path):
+    r"""Saves a dictionary to a json file.
+
+    Args:
+        content (dict): The content to save.
+        file_path (str): The file path. 
+    """
     with open(file_path, 'w+') as file:
         json.dump(content, file,
                   ensure_ascii=False, indent=4,
@@ -237,12 +245,12 @@ def data_augment(image):
 
 
 def get_params_size(params):
+    r"""Calculates the size of parameters.
+
+    Args:
+        params (OrderedDict): The dictionary containing parameters.
+
+    Returns:
+        int: The total number of parameters.
+    """
     return np.sum(np.prod(p.shape) for p in params.values())
-
-
-def get_object_from_dict(module, args):
-    if args is not None:
-        args = args.copy()
-        class_name = args.pop('name')
-        return module[class_name](**args)
-    return None
