@@ -155,7 +155,7 @@ class SearchNet(Model):
             for k in range(len(op_names)):
                 name = op_names[k]
                 stats.append(name + f' = {count[k]/total*100:.2f}%\t')
-            str_summary += join(stats) + '\n'
+            str_summary += ''.join(stats) + '\n'
         else:
             # compute statics
             op_names = list(darts.CANDIDATES.keys())
