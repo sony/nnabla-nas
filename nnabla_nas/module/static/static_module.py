@@ -8,7 +8,6 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 
-import nnabla_nas.contrib.misc as misc
 import nnabla_nas.module as mo
 from nnabla_nas.module.parameter import Parameter
 

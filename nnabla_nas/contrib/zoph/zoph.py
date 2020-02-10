@@ -6,15 +6,15 @@ import numpy as np
 from nnabla.initializer import ConstantInitializer
 
 import nnabla_nas.module as mo
-import nnabla_nas.module.static.static_module as smo
+from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
-
+import nnabla_nas.contrib.misc as misc
 
 # ---------------------Definition of the candidate convolutions for the zoph search space-------------------------------
-class SepConv(misc.SepConv, Module):
+class SepConv(misc.SepConv, smo.Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         misc.SepConv.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+        smo.Module.__init__(self, name, parent, eval_prob=eval_prob)
 
 
 class SepConvBN(SepConv):
@@ -25,7 +25,7 @@ class SepConvBN(SepConv):
         else:
             pad = tuple([(ki//2)*di for ki, di in zip(kernel, dilation)])
 
-        smo.SepConv.__init__(self, name=name, parent=parent, in_channels=parent.shape[1],
+        SepConv.__init__(self, name=name, parent=parent, in_channels=parent.shape[1],
                              out_channels=parent.shape[1],
                              kernel=kernel, pad=pad,
                              dilation=dilation, with_bias=False,
@@ -35,7 +35,7 @@ class SepConvBN(SepConv):
         self.relu = mo.ReLU()
 
     def call(self, input):
-        return self.relu(self.bn(smo.SepConv.call(self, smo.SepConv.call(self, input))))
+        return self.relu(self.bn(SepConv.call(self, SepConv.call(self, input))))
 
 
 class SepConv3x3(SepConvBN):
@@ -263,9 +263,9 @@ class ZophNetwork(smo.Graph):
 
 
 if __name__ == '__main__':
-    import nnabla
+    from nnabla.ext_utils import get_extension_context
 
-    ctx = nnabla.ext_utils.get_extension_context('cudnn', device_id='0')
+    ctx = get_extension_context('cudnn', device_id='0')
     nn.set_default_context(ctx)
 
     input = smo.Input(name='input', value=nn.Variable((10, 20, 32, 16)))
