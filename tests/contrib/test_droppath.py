@@ -2,8 +2,9 @@ import nnabla as nn
 import numpy as np
 import pytest
 
-from nnabla_nas.contrib.misc import DropPath
-from nnabla_nas.module import Conv, Module
+from nnabla_nas.contrib.darts.modules import DropPath
+from nnabla_nas.module import Conv
+from nnabla_nas.module import Module
 
 
 class Block(Module):

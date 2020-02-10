@@ -1,7 +1,9 @@
 import nnabla as nn
 import numpy as np
 
-from nnabla_nas.module import LeakyReLU, ReLU, ReLU6
+from nnabla_nas.module import LeakyReLU
+from nnabla_nas.module import ReLU
+from nnabla_nas.module import ReLU6
 
 
 def test_ReLU():

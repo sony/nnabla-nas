@@ -1,5 +1,6 @@
+from .profiling import NNablaProfiler
+from .profiling import Profiler
 from .static_module import *
-from .profiling import Profiler, NNablaProfiler
 
 __all__ = [
     'Module',

@@ -45,5 +45,12 @@
                 "lr": 0.025
             }
         }
+    },
+    "regularizer": {
+        "latency": {
+            "name": "LatencyEstimator",
+            "weight": 0.1,
+            "bound": 5.0
+        }
     }
 }

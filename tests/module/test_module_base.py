@@ -95,4 +95,4 @@ def test_inputs():
     inputs = nn.Variable(input_shape)
     module(inputs)
 
-    assert input_shape == module.inputs[0]
+    assert input_shape == module.input_shapes[0]

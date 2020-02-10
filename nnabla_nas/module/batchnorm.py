@@ -45,15 +45,8 @@ class BatchNormalization(Module):
             - Ioffe and Szegedy, Batch Normalization: Accelerating Deep
             Network Training by Reducing Internal Covariate Shift.
             https://arxiv.org/abs/1502.03167
-
-        The shape of parameters has the same number of dimensions with the
-        input data, and the shapes in ``axes`` has the same dimensions with
-        the input, while the rest has ``1``. If an input is 4-dim and
-        ``axes=[1]``, the parameter shape will be
-        ``param_shape = np.mean(inp.d, axis=(0, 2, 3), keepdims=True).shape``
-        (using numpy expression as an example).
         """
-        Module.__init__(self)
+
         assert len(axes) == 1
 
         shape_stat = [1 for _ in range(n_dims)]
@@ -92,7 +85,7 @@ class BatchNormalization(Module):
                                      self._decay_rate, self._eps,
                                      self.training, self._output_stat)
 
-    def __extra_repr__(self):
+    def extra_repr(self):
         return (f'n_features={self._n_features}, '
                 f'fix_parameters={self._fix_parameters}, '
                 f'eps={self._eps}, '

@@ -5,6 +5,7 @@ from nnabla.logger import logger
 from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
 from nnabla.utils.data_source_loader import download
+from sklearn.model_selection import train_test_split
 
 
 class Cifar10DataSource(DataSource):
@@ -82,6 +83,7 @@ class Cifar10DataSource(DataSource):
 
 def data_iterator_cifar10(batch_size,
                           train=True,
+                          portion=1,
                           rng=None,
                           shuffle=True,
                           with_memory_cache=False,
@@ -89,11 +91,94 @@ def data_iterator_cifar10(batch_size,
     '''
     Provide DataIterator with :py:class:`Cifar10DataSource`
     with_memory_cache and with_file_cache option's default value is all False,
-    because :py:class:`Cifar10DataSource` is able to store all data into memory.
+    because :py:class:`Cifar10DataSource` is able to store all data into
+    memory.
 
     '''
-    return data_iterator(Cifar10DataSource(train=train, shuffle=shuffle, rng=rng),
-                         batch_size,
-                         rng,
-                         with_memory_cache,
-                         with_file_cache)
+    if train and portion < 1:
+        images, labels = download_data()
+        train_size = int(len(labels) * portion)
+        X_train, X_test, y_train, y_test = train_test_split(
+            images, labels,
+            stratify=labels,
+            train_size=train_size
+        )
+        train = data_iterator(
+            CifarDataSource(X_train, y_train, shuffle=shuffle, rng=rng),
+            batch_size[0],
+            rng,
+            with_memory_cache,
+            with_file_cache
+        )
+        valid = data_iterator(
+            CifarDataSource(X_test, y_test, shuffle=shuffle, rng=rng),
+            batch_size[1],
+            rng,
+            with_memory_cache,
+            with_file_cache
+        )
+        return train, valid
+
+    return data_iterator(Cifar10DataSource(
+        train=train, shuffle=shuffle, rng=rng),
+        batch_size,
+        rng,
+        with_memory_cache,
+        with_file_cache)
+
+
+def download_data():
+    data_uri = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
+    logger.info('Getting labeled data from {}.'.format(data_uri))
+    r = download(data_uri)  # file object returned
+    with tarfile.open(fileobj=r, mode="r:gz") as fpin:
+        images = []
+        labels = []
+        for member in fpin.getmembers():
+            if "data_batch" not in member.name:
+                continue
+            fp = fpin.extractfile(member)
+            data = np.load(fp, encoding="bytes", allow_pickle=True)
+            images.append(data[b"data"])
+            labels.append(data[b"labels"])
+        size = 50000
+        images = np.concatenate(images).reshape(size, 3, 32, 32)
+        labels = np.concatenate(labels).reshape(-1, 1)
+    return (images, labels)
+
+
+class CifarDataSource(DataSource):
+
+    def _get_data(self, position):
+        image = self._images[self._indexes[position]]
+        label = self._labels[self._indexes[position]]
+        return (image, label)
+
+    def __init__(self, images, labels, shuffle=False, rng=None):
+        super(CifarDataSource, self).__init__(shuffle=shuffle, rng=rng)
+        self._train = True
+        self._images = images
+        self._labels = labels
+        self._size = self._labels.size
+        self._variables = ('x', 'y')
+        if rng is None:
+            rng = np.random.RandomState(313)
+        self.rng = rng
+        self.reset()
+
+    def reset(self):
+        if self._shuffle:
+            self._indexes = self.rng.permutation(self._size)
+        else:
+            self._indexes = np.arange(self._size)
+        super(CifarDataSource, self).reset()
+
+    @property
+    def images(self):
+        """Get copy of whole data with a shape of (N, 1, H, W)."""
+        return self._images.copy()
+
+    @property
+    def labels(self):
+        """Get copy of whole label with a shape of (N, 1)."""
+        return self._labels.copy()

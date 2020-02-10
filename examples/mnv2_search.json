@@ -1,21 +1,19 @@
 {
     "dataset": "cifar10",
-    "epoch": 50,
-    "batch_size_train": 64,
+    "batch_size_train": 128,
     "batch_size_valid": 64,
-    "mini_batch_train": 16,
-    "mini_batch_valid": 16,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 64,
     "warmup": 0,
     "print_frequency": 20,
     "train_portion": 0.5,
+    "output_path": "log/mnv2/search",
     "network": {
-        "search_space": "darts",
-        "in_channels": 3,
-        "init_channels": 16,
-        "num_cells": 8,
-        "num_classes": 10,
-        "shared": true,
-        "mode": "full"
+        "search_space": "mobilenetv2",
+        "name": "mnv2",
+	"first_maps": 32,
+        "last_maps": 1280,
+        "n_classes": 10
     },
     "optimizer": {
         "train": {
@@ -23,14 +21,14 @@
             "weight_decay": 3e-4,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.025
+                "lr": 0.1
             }
         },
         "valid": {
             "grad_clip": 5.0,
             "solver": {
                 "name": "Adam",
-                "alpha": 0.01,
+                "alpha": 3e-4,
                 "beta1": 0.5,
                 "beta2": 0.999
             }

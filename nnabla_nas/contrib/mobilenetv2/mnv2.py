@@ -1,30 +1,33 @@
-import nnabla as nn
-import nnabla_nas.module.static.static_module as smo
-import nnabla_nas.module as Mo
-from nnabla_nas.contrib import misc
-from nnabla_nas.module.parameter import Parameter
 from collections import OrderedDict
 
+import nnabla as nn
 
-class ConvBnRelu6(misc.ConvBNReLU6, smo.Module):
+import nnabla_nas.module.static.static_module as smo
+from nnabla_nas.module.parameter import Parameter
+
+from ..model import Model
+from . import modules as Mo
+
+
+class ConvBnRelu6(Mo.ConvBNReLU6, smo.Module):
     def __init__(self, name, parent, *args, **kwargs):
-        misc.ConvBNReLU6.__init__(self, *args, **kwargs)
+        Mo.ConvBNReLU6.__init__(self, *args, **kwargs)
         smo.Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return misc.ConvBNReLU6.call(self, input)
+        return Mo.ConvBNReLU6.call(self, input)
 
     def call(self, tag=None):
         return smo.Module.call(self, tag=tag)
 
 
-class InvertedResidualConv(misc.InvertedResidualConv, smo.Module):
+class InvertedResidualConv(Mo.InvertedResidualConv, smo.Module):
     def __init__(self, name, parent, *args, **kwargs):
-        misc.InvertedResidualConv.__init__(self, *args, **kwargs)
+        Mo.InvertedResidualConv.__init__(self, *args, **kwargs)
         smo.Module.__init__(self, name, parent)
 
     def _value_function(self, input):
-        return misc.InvertedResidualConv.call(self, input)
+        return Mo.InvertedResidualConv.call(self, input)
 
     def call(self, tag=None):
         return smo.Module.call(self, tag=tag)
@@ -193,7 +196,7 @@ class Mnv2SearchSpace(smo.Graph):
 
 
 
-class SearchNet(Mo.Module):
+class SearchNet(Model):
     r"""SearchNet for MobileNetV2."""
 
     def __init__(self,
@@ -270,4 +273,3 @@ if __name__ =='__main__':
     print ("building nnabla graph....")
     nn_out = mnv2_graph()
     print('output shape is {}'.format(nn_out.shape))
-    

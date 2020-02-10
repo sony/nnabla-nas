@@ -1,10 +1,19 @@
 import json
 import os
+
 import imageio
 from graphviz import Digraph
-from ..contrib.darts.modules import CANDIDATE_FUNC
 
-OPS = list(CANDIDATE_FUNC.keys())
+OPS = [
+    'dil_conv_3x3',
+    'dil_conv_5x5',
+    'sep_conv_3x3',
+    'sep_conv_5x5',
+    'max_pool_3x3',
+    'avg_pool_3x3',
+    'skip_connect',
+    'none'
+]
 
 
 def plot(choice, prob, filename):

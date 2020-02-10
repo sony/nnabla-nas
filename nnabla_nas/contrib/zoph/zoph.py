@@ -1,11 +1,13 @@
-import numpy as np
-import nnabla as nn
-import nnabla.functions as F
 from collections import OrderedDict
+
+import nnabla as nn
+import numpy as np
 from nnabla.initializer import ConstantInitializer
+
 import nnabla_nas.module as mo
 import nnabla_nas.module.static.static_module as smo
 from nnabla_nas.module.parameter import Parameter
+
 
 #---------------------Definition of the candidate convolutions for the zoph search space-------------------------------
 class SepConv(smo.SepConv):
@@ -266,4 +268,3 @@ if __name__ == '__main__':
     
     exp_lat     = zoph_network.get_exp_latency(profiler)
     import pdb; pdb.set_trace()
-
