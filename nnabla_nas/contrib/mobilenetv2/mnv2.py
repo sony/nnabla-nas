@@ -2,12 +2,11 @@ from collections import OrderedDict
 
 import nnabla as nn
 
-from ...module.static import static_module as smo
+from ... import utils as ut
 from ...module import Parameter
-
+from ...module.static import static_module as smo
 from ..model import Model
 from . import modules as Mo
-from ... import utils as ut
 
 
 class ConvBnRelu6(Mo.ConvBNReLU6, smo.Module):
