@@ -34,6 +34,7 @@ class AuxiliaryHeadCIFAR(Mo.Module):
     def extra_repr(self):
         return f'channels={self._channels}, num_classes={self._num_classes}'
 
+
 class SepConv(Mo.DwConv):
     def __init__(self, out_channels, *args, **kwargs):
         Mo.DwConv.__init__(self, *args, **kwargs)

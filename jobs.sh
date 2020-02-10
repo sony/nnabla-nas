@@ -33,13 +33,6 @@ python main.py -d 3 \
                -a Trainer \
                -o log/pnas-lat/train
 
-
-# search DARTS
-python main.py -d 1 --search \
-               -f examples/darts_search.json  \
-               -a DartsSearcher \
-               -o log/darts/search
-
 # search mnv2
 python main.py -d 1 --search \
                -f examples/mnv2_search.json  \

@@ -6,11 +6,7 @@ import operator
 
 import nnabla as nn
 import nnabla.functions as F
-#from nnabla_nas.graph.profiling import *
 import numpy as np
-from nnabla.initializer import ConstantInitializer
-from nnabla.initializer import UniformInitializer
-from nnabla.initializer import calc_uniform_lim_glorot
 
 import nnabla_nas.contrib.misc as misc
 import nnabla_nas.module as mo
@@ -274,12 +270,6 @@ class Linear(mo.Linear, Module):
 class DwConv(mo.DwConv, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.DwConv.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
-
-
-class SepConv(misc.SepConv, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
-        misc.SepConv.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
 
 

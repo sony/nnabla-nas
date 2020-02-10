@@ -11,7 +11,13 @@ from nnabla_nas.module.parameter import Parameter
 
 
 # ---------------------Definition of the candidate convolutions for the zoph search space-------------------------------
-class SepConv(smo.SepConv):
+class SepConv(misc.SepConv, Module):
+    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+        misc.SepConv.__init__(self, *args, **kwargs)
+        Module.__init__(self, name, parent, eval_prob=eval_prob)
+
+
+class SepConvBN(SepConv):
     def __init__(self, name, parent, out_channels, kernel, dilation, eval_prob=None):
 
         if dilation is None:
@@ -32,24 +38,24 @@ class SepConv(smo.SepConv):
         return self.relu(self.bn(smo.SepConv.call(self, smo.SepConv.call(self, input))))
 
 
-class SepConv3x3(SepConv):
+class SepConv3x3(SepConvBN):
     def __init__(self, name, parent, channels, eval_prob=None):
-        SepConv.__init__(self, name, parent, channels, (3, 3), None, eval_prob=eval_prob)
+        SepConvBN.__init__(self, name, parent, channels, (3, 3), None, eval_prob=eval_prob)
 
 
-class SepConv5x5(SepConv):
+class SepConv5x5(SepConvBN):
     def __init__(self, name, parent, channels, eval_prob=None):
-        SepConv.__init__(self, name, parent, channels, (5, 5), None, eval_prob=eval_prob)
+        SepConvBN.__init__(self, name, parent, channels, (5, 5), None, eval_prob=eval_prob)
 
 
-class DilSepConv3x3(SepConv):
+class DilSepConv3x3(SepConvBN):
     def __init__(self, name, parent, channels, eval_prob=None):
-        SepConv.__init__(self, name, parent, channels, (3, 3), (2, 2), eval_prob=eval_prob)
+        SepConvBN.__init__(self, name, parent, channels, (3, 3), (2, 2), eval_prob=eval_prob)
 
 
-class DilSepConv5x5(SepConv):
+class DilSepConv5x5(SepConvBN):
     def __init__(self, name, parent, channels, eval_prob=None):
-        SepConv.__init__(self, name, parent, channels, (5, 5), (2, 2), eval_prob=eval_prob)
+        SepConvBN.__init__(self, name, parent, channels, (5, 5), (2, 2), eval_prob=eval_prob)
 
 
 # ---------------------Definition of the candidate pooling operations for the zoph search space-------------------------------
