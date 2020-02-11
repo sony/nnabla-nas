@@ -61,9 +61,9 @@ class Module(object):
 
     def __getattr__(self, name):
         if name in self.modules:
-            return self.modules[name]
+           return self.modules[name]
         if name in self.parameters:
-            return self.parameters[name]
+           return self.parameters[name]
         return object.__getattr__(self, name)
 
     def __setattr__(self, name, value):
