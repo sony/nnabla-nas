@@ -11,14 +11,14 @@
     "network": {
         "search_space": "mobilenetv2",
         "name": "mnv2",
-	"first_maps": 32,
+        "first_maps": 32,
         "last_maps": 1280,
         "n_classes": 10
     },
     "optimizer": {
         "train": {
             "grad_clip": 5.0,
-            "weight_decay": 3e-4,
+            "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
                 "lr": 0.1
