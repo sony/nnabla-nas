@@ -203,6 +203,36 @@ class Mnv2SearchSpace(smo.Graph):
                 n_classes=self._n_classes))
 
 
+def build_ref_arch(outfile='reference_arch'):
+    r"""Save the genotype of the reference architecture
+
+    Args:
+        outfile (:obj:`string`, optional): The output h5 file
+            Defaults to `./reference_arch`
+    """
+    # build the network
+    inp = smo.Input(name='arch_input', value=nn.Variable((32,3,32,32)))
+    graph = SearchNet(name='mnv2',
+                 first_maps=32,
+                 last_maps=1280,
+                 n_classes=10)
+
+
+    arch = [0,4,4,4,2,2,4,4,2,2,2,4,2,2,2,2,2,2,2,4,2,2,2,4,2,4,4,4] 
+
+    t_set = [1,3,6,12,0]
+
+    i=0
+    for k,v in graph.get_arch_parameters().items():
+        print("{} : residual block with t= {}".format(k, t_set[arch[i]]))
+        v.d[arch[i]] = 1.0
+        i+=1
+
+
+    nn.save_parameters(outfile + '.h5', graph.get_arch_parameters())
+
+
+
 class SearchNet(Model, smo.Graph):
     r"""SearchNet for MobileNetV2."""
 
