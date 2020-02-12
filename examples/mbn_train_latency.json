@@ -12,7 +12,7 @@
         "search_space": "mbn",
         "num_classes": 10,
         "mode": "sample",
-        "genotype": "log/mbn/search/arch.h5"
+        "genotype": "log/mbn-lat/search/arch.h5"
     },
     "optimizer": {
         "train": {

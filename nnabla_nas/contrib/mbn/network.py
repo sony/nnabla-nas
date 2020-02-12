@@ -49,7 +49,7 @@ class SearchNet(Model):
         block = block or InvertedResidual
         in_channels = 32
         last_channel = 1280
-        n_max = 5
+        n_max = 4
 
         if settings is None:
             settings = [
