@@ -150,7 +150,7 @@ class SearchNet(Model):
         str_summary = ''
         if not self._shared:
             arch_modules = [m for _, m in self.get_modules()
-                    if isinstance(m, darts.MixedOp)]
+                            if isinstance(m, darts.MixedOp)]
             count = Counter([m._active for m in arch_modules])
             op_names = list(darts.CANDIDATES.keys())
             total, stats = len(arch_modules), []

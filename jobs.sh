@@ -27,6 +27,17 @@ python main.py -d 3 --search \
                -a ProxylessNasSearcher \
                -o log/pnas-lat/search
 
+
+# search mbn
+python main.py -d 1 --search \
+               -f examples/mbn_search.json \
+               -a ProxylessNasSearcher \
+               -o log/mbn/search
+
+
+
+
+
 # train PNAS with latency constraints
 python main.py -d 3 \
                -f examples/pnas_train_latency.json \
