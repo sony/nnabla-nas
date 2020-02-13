@@ -1,10 +1,10 @@
-import numpy as np
-import nnabla.functions as F
 import nnabla as nn
+import nnabla.functions as F
+import numpy as np
 
 
-class Normalizer(object):
-    r"""Normalize a input image with mean and standard deviation.
+class Normalize(object):
+    r"""Normalizes a input image with mean and standard deviation.
 
     Given mean: ``(M1,...,Mn)`` and std: ``(S1,..,Sn)`` for ``n`` channels,
     this transform will normalize each channel of the input image i.e.
@@ -61,7 +61,7 @@ class Compose(object):
         format_string = self.__class__.__name__ + '('
         for t in self.transforms:
             format_string += '\n'
-            format_string += '    {0}'.format(t)
+            format_string += '    {0}'.format(str(t))
         format_string += '\n)'
         return format_string
 
@@ -124,8 +124,10 @@ class Resize(object):
         return out
 
     def __str__(self):
-        return (self.__class__.__name__
-                + f'(size={self._size}, interpolation={self._interpolation})')
+        return self.__class__.__name__ + (
+            f'(size={self._size}, '
+            f'interpolation={self._interpolation})'
+        )
 
 
 class CenterCrop(object):

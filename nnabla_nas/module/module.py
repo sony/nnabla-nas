@@ -148,7 +148,7 @@ class Module(object):
         Args:
             params (OrderedDict): The parameters which will be loaded.
             raise_if_missing (bool, optional): Raise exception if some
-                parameters are missing. Defaults to False.
+                parameters are missing. Defaults to `False`.
 
         Raises:
             ValueError: Parameters are not found.

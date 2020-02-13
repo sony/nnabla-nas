@@ -1,6 +1,3 @@
-import os
-
-import nnabla as nn
 
 from .search import Searcher
 
@@ -46,14 +43,3 @@ class DartsSearcher(Searcher):
             self.monitor.update('valid_loss', loss * self.accum_valid, bz)
             self.monitor.update('valid_err', err, bz)
         self.optimizer['valid'].update()
-
-    def callback_on_epoch_end(self):
-        r"""Saves parameters and prints the selection propability."""
-        nn.save_parameters(
-            os.path.join(self.args.output_path, 'arch.h5'),
-            self.model.get_arch_parameters()
-        )
-        self.monitor.info(self.model.summary() + '\n')
-
-    def callback_on_finish(self):
-        self.model.save(self.args.output_path)

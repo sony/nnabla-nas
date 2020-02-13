@@ -6,14 +6,11 @@ from collections import OrderedDict
 import nnabla as nn
 import nnabla.functions as F
 import numpy as np
-from nnabla.logger import logger
-from scipy.special import softmax
 from tensorboardX import SummaryWriter
 
 from .dataset.transformer import Compose
 from .dataset.transformer import Cutout
-from .dataset.transformer import Normalizer
-from .visualization import visualize
+from .dataset.transformer import Normalize
 
 
 class ProgressMeter(object):
@@ -149,7 +146,7 @@ def dataset_transformer(conf):
     Returns:
         (Transformer, Transformer): Training and validating transformers.
     """
-    normalize = Normalizer(
+    normalize = Normalize(
         mean=(0.49139968, 0.48215827, 0.44653124),
         std=(0.24703233, 0.24348505, 0.26158768),
         scale=1./255.0
@@ -160,45 +157,6 @@ def dataset_transformer(conf):
     valid_transform = Compose([normalize])
 
     return train_transform, valid_transform
-
-
-def parse_weights(alpha, num_choices):
-    offset = 0
-    cell, prob, choice = dict(), dict(), dict()
-    for i in range(num_choices):
-        cell[i + 2], prob[i + 2] = list(), list()
-        W = [softmax(alpha[j + offset].d.flatten()) for j in range(i + 2)]
-        # Note: Zero Op shouldn't be included
-        edges = sorted(range(i + 2), key=lambda k: -max(W[k][:-1]))
-        for j, k in enumerate(edges):
-            if j < 2:  # select the first two best Ops
-                idx = np.argmax(W[k][:-1])
-                cell[i + 2].append([int(idx), k])
-                prob[i + 2].append(float(W[k][idx]))
-                choice[k + offset] = int(idx)
-            else:  # assign Zero Op to the rest
-                choice[k + offset] = int(len(W[k]) - 1)
-        offset += i + 2
-    return cell, prob, choice
-
-
-def save_dart_arch(model, output_path):
-    r"""Saves DARTS architecture.
-
-    Args:
-        model (Model): The model.
-        output_path (str): Where to save the architecture.
-    """
-    memo = dict()
-    for name, alpha in zip(['normal', 'reduce'],
-                           [model._alpha[0], model._alpha[1]]):
-        for k, v in zip(['alpha', 'prob', 'choice'],
-                        parse_weights(alpha, model._num_choices)):
-            memo[name + '_' + k] = v
-    arch_file = os.path.join(output_path, 'arch.json')
-    logger.info('Saving arch to {}'.format(arch_file))
-    write_to_json_file(memo, arch_file)
-    visualize(arch_file, output_path)
 
 
 def load_parameters(path):
@@ -221,7 +179,7 @@ def write_to_json_file(content, file_path):
 
     Args:
         content (dict): The content to save.
-        file_path (str): The file path. 
+        file_path (str): The file path.
     """
     with open(file_path, 'w+') as file:
         json.dump(content, file,

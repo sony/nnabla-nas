@@ -1,7 +1,3 @@
-import os
-
-import nnabla as nn
-
 from ...contrib.darts.modules import MixedOp
 from .search import Searcher
 
@@ -78,17 +74,3 @@ class ProxylessNasSearcher(Searcher):
                 m._alpha.g += (r - self._reward) * grads[i][j] / n_iter
         self.optimizer['valid'].update()
         self._reward = beta*sum(rewards)/n_iter + (1 - beta)*self._reward
-
-    def callback_on_epoch_end(self):
-        r"""Calls this after one epoch."""
-        nn.save_parameters(
-            os.path.join(self.args.output_path, 'arch.h5'),
-            self.model.get_arch_parameters()
-        )
-        self.monitor.info(self.model.summary() + '\n')
-
-    def callback_on_finish(self):
-        nn.save_parameters(
-            os.path.join(self.args.output_path, 'arch_included_weights.h5'),
-            self.model.get_parameters()
-        )
