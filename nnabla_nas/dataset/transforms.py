@@ -23,8 +23,7 @@ class Normalize(object):
         self._scale = scale
 
     def __call__(self, input):
-        out = F.mul_scalar(input, self._scale)
-        out = F.sub2(input, self._mean)
+        out = F.mul_scalar(input, self._scale) - self._mean
         out = F.div2(out, self._std)
         return out
 
@@ -53,7 +52,7 @@ class Compose(object):
         r"""Appends a transfomer to the end.
 
         Args:
-            transform (Transformer): The transformer to append.
+            transform (Transformer): The transforme to append.
         """
         self.transforms.append(transform)
 

@@ -8,9 +8,9 @@ import nnabla.functions as F
 import numpy as np
 from tensorboardX import SummaryWriter
 
-from .dataset.transformer import Compose
-from .dataset.transformer import Cutout
-from .dataset.transformer import Normalize
+from .dataset.transforms import Compose
+from .dataset.transforms import Cutout
+from .dataset.transforms import Normalize
 
 
 class ProgressMeter(object):
