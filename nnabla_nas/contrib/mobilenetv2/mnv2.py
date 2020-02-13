@@ -76,7 +76,8 @@ class Mnv2Architecture(smo.Graph):
                     stride = (1, 1)
                 self.append(
                     InvertedResidualConv(
-                        name="{}/inv-resblock-{}-{}-{}-{}-{}".format(self._name, t, c, n, s, i),
+                        name="{}/inv-resblock-{}-{}-{}-{}-{}".format(
+                            self._name, t, c, n, s, i),
                         parent=self[-1],
                         in_channels=self[-1].shape[1],
                         out_channels=maps, kernel=(3, 3),
@@ -100,7 +101,8 @@ class Mnv2Architecture(smo.Graph):
 
 
 class CandidatesCell(smo.Graph):
-    def __init__(self, name, parents, t_set, stride, c, identity_skip, join_mode='linear', join_parameters=None):
+    def __init__(self, name, parents, t_set, stride, c, identity_skip,
+                 join_mode='linear', join_parameters=None):
         super(CandidatesCell, self).__init__(name=name, parents=parents)
         self._t_set = t_set
         self._stride = stride
@@ -112,9 +114,12 @@ class CandidatesCell(smo.Graph):
 
         for t in t_set:
             maps = c
-            self.append(InvertedResidualConv(name="{}/inv-resblock-{}-{}-{}".format(self._name, t, maps, stride[0]),
-                                             parent=self._parent[0],
-                                             in_channels=self._parent[0].shape[1],
+            rname = "{}/inv-resblock-{}-{}-{}".format(self._name, t, maps,
+                                                      stride[0])
+            prev = self._parent[0]
+            self.append(InvertedResidualConv(name=rname,
+                                             parent=prev,
+                                             in_channels=prev.shape[1],
                                              out_channels=maps,
                                              kernel=(3, 3),
                                              pad=(1, 1),
@@ -122,7 +127,8 @@ class CandidatesCell(smo.Graph):
                                              expansion_factor=t))
         # Join
         if identity_skip:
-            self.append(smo.Identity(name='{}/skip'.format(self._name), parent=self._parent[0]))
+            self.append(smo.Identity(
+                name='{}/skip'.format(self._name), parent=prev))
         self.append(
             smo.Join(
                 name='{}/join'.format(self._name),
@@ -144,7 +150,7 @@ class Mnv2SearchSpace(smo.Graph):
 
         # Fixed setting
         inverted_residual_setting = [
-            #c, s
+            # c, s
             [16, 1],
             [24, 1],
             [32, 1],
@@ -153,11 +159,13 @@ class Mnv2SearchSpace(smo.Graph):
             [160, 2],
             [320, 1]]
 
-        #inverted_residual_setting = [[16, 1],[24,1]]
+        # inverted_residual_setting = [[16, 1],[24,1]]
 
         # Search space setting
         t_set = [1, 3, 6, 12]  # set of expension factors
-        n_max = 4  # number of inverted residual per block (can be lower because of skip connection)
+        # number of inverted residual per block
+        # (can be lower because of skip connection)
+        n_max = 4
 
         # First Layer
         self.append(ConvBnRelu6(name="{}/first-conv".format(self._name),
@@ -179,7 +187,8 @@ class Mnv2SearchSpace(smo.Graph):
                 else:
                     stride = (1, 1)
                 # candidates_cell
-                self.append(CandidatesCell(name="cell-{}-{}-{}".format(c, s, i),
+                cname = "cell-{}-{}-{}".format(c, s, i)
+                self.append(CandidatesCell(name=cname,
                                            parents=[self[-1]],
                                            t_set=t_set,
                                            stride=stride,
@@ -201,6 +210,33 @@ class Mnv2SearchSpace(smo.Graph):
                 name="{}/classifier".format(self._name),
                 parents=[self[-1]],
                 n_classes=self._n_classes))
+
+
+def build_ref_arch(outfile='reference_arch'):
+    r"""Save the genotype of the reference architecture
+
+    Args:
+        outfile (:obj:`string`, optional): The output h5 file
+            Defaults to `./reference_arch`
+    """
+    # build the network
+    graph = SearchNet(name='mnv2',
+                      first_maps=32,
+                      last_maps=1280,
+                      n_classes=10)
+
+    arch = [0, 4, 4, 4, 2, 2, 4, 4, 2, 2, 2, 4, 2,
+            2, 2, 2, 2, 2, 2, 4, 2, 2, 2, 4, 2, 4, 4, 4]
+
+    t_set = [1, 3, 6, 12, 0]
+
+    i = 0
+    for k, v in graph.get_arch_parameters().items():
+        print("{} : residual block with t= {}".format(k, t_set[arch[i]]))
+        v.d[arch[i]] = 1.0
+        i += 1
+
+    nn.save_parameters(outfile + '.h5', graph.get_arch_parameters())
 
 
 class SearchNet(Model, smo.Graph):
@@ -258,8 +294,8 @@ class SearchNet(Model, smo.Graph):
 
 
 if __name__ == '__main__':
-    ##################### EXAMPLE MNV2 simple net ############################
-    inverted_residual_setting = [
+    # ########## EXAMPLE MNV2 simple net ############
+    setting = [
         # t, c, n, s
         [1, 16, 1, 1],
         [6, 24, 2, 1],  # NOTE: change stride 2 -> 1 for CIFAR10
@@ -272,7 +308,7 @@ if __name__ == '__main__':
     input = smo.Input(name='arch_input', value=nn.Variable((32, 3, 32, 32)))
     mnv2_graph = Mnv2Architecture(name='mv2',
                                   parents=[input],
-                                  inverted_residual_setting=inverted_residual_setting,
+                                  inverted_residual_setting=setting,
                                   first_maps=32,
                                   last_maps=1280,
                                   width_mult=1.0,
