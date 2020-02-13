@@ -9,8 +9,8 @@ from nnabla_nas import dataset
 from nnabla_nas import utils as ut
 from nnabla_nas.contrib import estimator as EST
 from nnabla_nas.dataset import DataLoader
-from nnabla_nas.optimizer import Optimizer
 from nnabla_nas.dataset import transforms
+from nnabla_nas.optimizer import Optimizer
 
 
 class Configuration(object):
