@@ -66,6 +66,7 @@ class InvertedResidual(Mo.Module):
         self._stride = stride
         self._in_channels = in_channels
         self._out_channels = out_channels
+        self._kernel = kernel
         self._expand_ratio = expand_ratio
 
         hidden_dim = int(round(in_channels * expand_ratio))
