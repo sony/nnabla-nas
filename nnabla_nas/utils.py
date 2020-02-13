@@ -8,9 +8,7 @@ import nnabla.functions as F
 import numpy as np
 from tensorboardX import SummaryWriter
 
-from .dataset.transforms import Compose
 from .dataset.transforms import Cutout
-from .dataset.transforms import Normalize
 
 
 class ProgressMeter(object):
@@ -141,7 +139,7 @@ def dataset_transformer(conf):
     r"""Returns data transformers for training and validating the model.
 
     Args:
-        conf (dict): A dictionary containning configurations.
+        conf (dict): A dictionary containing configurations.
 
     Returns:
         (Transformer, Transformer): Training and validating transformers.
