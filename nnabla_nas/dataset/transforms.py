@@ -23,7 +23,8 @@ class Normalize(object):
         self._scale = scale
 
     def __call__(self, input):
-        out = F.mul_scalar(input, self._scale) - self._mean
+        out = F.mul_scalar(input, self._scale)
+        out = F.sub2(out, self._mean)
         out = F.div2(out, self._std)
         return out
 
@@ -130,28 +131,60 @@ class Resize(object):
 
 
 class CenterCrop(object):
-    def __init__(self):
-        pass
+    def __call__(self, input):
+        raise NotImplementedError
 
 
 class RandomCrop(object):
-    def __init__(self):
-        super().__init__()
+    r"""RandomCrop randomly extracts a portion of an array.
+
+    Args:
+        shape ([type]): [description]
+        pad_width (tuple of `int`, optional): Iterable of *before* and *after*
+            pad values. Defaults to None. Pad the input N-D array `x` over the
+            number of dimensions given by half the length of the `pad_width`
+            iterable, where every two values in `pad_width` determine the
+            before and after pad size of an axis. The `pad_width` iterable
+            must hold an even number of positive values which may cover all or
+            fewer dimensions of the input variable `x`.
+    """
+
+    def __init__(self, shape, pad_width=None):
+        self._shape = shape
+        self._pad_width = pad_width
+
+    def __call__(self, input):
+        if self._pad_width is not None:
+            input = F.pad(input, self._pad_width)
+        return F.random_crop(input, shape=self._shape)
+
+    def __str__(self):
+        return self.__class__.__name__ + (
+            f'(shape={self._shape}, '
+            f'pad_width={self._pad_width})'
+        )
 
 
 class RandomHorizontalFlip(object):
-    def __init__(self):
-        super().__init__()
+
+    def __call__(self, input):
+        return F.image_augmentation(input, flip_lr=True)
+
+    def __str__(self):
+        return self.__class__.__name__ + '(p=0.5)'
 
 
 class RandomRotation(object):
-    def __init__(self):
-        super().__init__()
+    def __call__(self, input):
+        raise NotImplementedError
 
 
 class RandomVerticalFlip(object):
-    def __init__(self):
-        super().__init__()
+    def __call__(self, input):
+        return F.image_augmentation(input, flip_ud=True)
+
+    def __str__(self):
+        return self.__class__.__name__ + '(p=0.5)'
 
 
 class Lambda(object):
@@ -162,8 +195,8 @@ class Lambda(object):
     """
 
     def __init__(self, func):
-        assert callable(func), repr(type(func).__name__) + \
-            " object is not callable"
+        assert callable(func), repr(type(func).__name__)
+        + " object is not callable"
         self._func = func
 
     def __call__(self, input):
