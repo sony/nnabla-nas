@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     config = json.load(open(options.config_file)) if options.config_file \
         else dict()
-    config.update(vars(options))
+    config.update({k: v for k, v in vars(options).items() if v is not None})
 
     # setup context for nnabla
     ctx = get_extension_context(
