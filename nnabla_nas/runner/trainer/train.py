@@ -21,11 +21,11 @@ class Trainer(Runner):
         self._best_err = 1.0
 
         # calculate the model size
-        model_size = ut.get_params_size(
+        model_size = ut.count_parameters(
             self.optimizer['train'].get_parameters()
         )
         if hasattr(self.model, '_auxiliary_head'):
-            model_size -= ut.get_params_size(
+            model_size -= ut.count_parameters(
                 self.model._auxiliary_head.get_parameters(grad_only=True))
         self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
 

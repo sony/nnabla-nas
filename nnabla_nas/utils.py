@@ -152,7 +152,7 @@ def dataset_transformer(conf):
     normalize = Normalizer(
         mean=(0.49139968, 0.48215827, 0.44653124),
         std=(0.24703233, 0.24348505, 0.26158768),
-        scale=255.0
+        scale=1./255.0
     )
     train_transform = Compose([normalize])
     if conf.get('cutout', 0) > 0:
@@ -244,12 +244,12 @@ def data_augment(image):
     return out
 
 
-def get_params_size(params):
-    r"""Calculates the size of parameters.
+def count_parameters(params):
+    r"""Counts the number of parameters.
 
     Args:
         params (OrderedDict): The dictionary containing parameters.
-    
+
     Returns:
         int: The total number of parameters.
     """

@@ -1,13 +1,13 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from ... import module as Mo
+from ...utils import load_parameters
+from ..model import Model
+from .modules import ChoiceBlock
 from .modules import ConvBNReLU
 from .modules import InvertedResidual
-from .modules import ChoiceBlock
-
-from ..model import Model
-from ...utils import load_parameters
-from collections import OrderedDict
 
 
 def _make_divisible(x, divisible_by=8):
