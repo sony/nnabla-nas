@@ -25,7 +25,7 @@ class DartsSearcher(Searcher):
             p['loss'].forward(clear_no_need_grad=True)
             p['loss'].backward(clear_buffer=True)
             p['err'].forward(clear_buffer=True)
-            loss, err = p['loss'].d.copy(),  p['err'].d.copy()
+            loss, err = p['loss'].d.copy(), p['err'].d.copy()
             self.monitor.update('train_loss', loss * self.accum_train, bz)
             self.monitor.update('train_err', err, bz)
         self.optimizer[key].update()

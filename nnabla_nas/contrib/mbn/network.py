@@ -17,7 +17,7 @@ def _make_divisible(x, divisible_by=8):
 
 
 class SearchNet(Model):
-    r"""MobileNet V2.
+    r"""MobileNet V2 search space.
 
     This implementation is based on the PyTorch implementation.
 
@@ -30,8 +30,15 @@ class SearchNet(Model):
         round_nearest (int, optional): Round the number of channels in
             each layer to be a multiple of this number. Set to 1 to turn
             off rounding.
+        n_max (int, optional): The number of blocks. Defaults to 4.
         block: Module specifying inverted residual building block for
             mobilenet
+
+    References:
+    [1] Sandler, M., Howard, A., Zhu, M., Zhmoginov, A. and Chen, L.C., 2018.
+        Mobilenetv2: Inverted residuals and linear bottlenecks. In Proceedings
+        of the IEEE conference on computer vision and pattern recognition
+        (pp. 4510-4520).
     """
 
     def __init__(self,
@@ -40,6 +47,7 @@ class SearchNet(Model):
                  settings=None,
                  round_nearest=8,
                  block=None,
+                 n_max=4,
                  mode='full'):
 
         self._num_classes = num_classes
@@ -49,7 +57,6 @@ class SearchNet(Model):
         block = block or InvertedResidual
         in_channels = 32
         last_channel = 1280
-        n_max = 4
 
         if settings is None:
             settings = [
@@ -145,91 +152,49 @@ class SearchNet(Model):
 
 
 class TrainNet(SearchNet):
+    r"""MobileNet V2 Train Net.
+
+    Args:
+        num_classes (int): Number of classes
+        width_mult (float, optional): Width multiplier - adjusts number of
+            channels in each layer by this amount
+        settings (list, optional): Network structure.
+            Defaults to None.
+        round_nearest (int, optional): Round the number of channels in
+            each layer to be a multiple of this number. Set to 1 to turn
+            off rounding.
+        n_max (int, optional): The number of blocks. Defaults to 4.
+        block: Module specifying inverted residual building block for
+            mobilenet. Defaults to None.
+        mode (str, optional): The sampling strategy ('full', 'max', 'sample').
+            Defaults to 'full'.
+        genotype(str, optional): The path to architecture file. Defaults to
+            None.
+
+    References:
+    [1] Sandler, M., Howard, A., Zhu, M., Zhmoginov, A. and Chen, L.C., 2018.
+        Mobilenetv2: Inverted residuals and linear bottlenecks. In Proceedings
+        of the IEEE conference on computer vision and pattern recognition
+        (pp. 4510-4520).
+    """
+
     def __init__(self,
                  num_classes=1000,
                  width_mult=1.0,
                  settings=None,
                  round_nearest=8,
+                 n_max=4,
                  block=None,
                  mode='full',
                  genotype=None):
 
         super().__init__(num_classes=num_classes, width_mult=width_mult,
                          settings=settings, round_nearest=round_nearest,
-                         block=block, mode=mode)
+                         n_max=n_max, block=block, mode=mode)
 
-        self.set_parameters(load_parameters(genotype))
-        for _, module in self.get_modules():
-            if isinstance(module, ChoiceBlock):
-                idx = np.argmax(module._mixed._alpha.d)
-                module._mixed = module._mixed._ops[idx]
-
-        # def _make_divisible(v, divisor, min_value=None):
-        #     r"""This function is taken from the original tf repo.
-        #     It ensures that all layers have a channel number that is divisible by 8.
-        #     """
-        #     if min_value is None:
-        #         min_value = divisor
-        #     new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
-        #     # Make sure that round down does not go down by more than 10%.
-        #     if new_v < 0.9 * v:
-        #         new_v += divisor
-        #     return new_v
-
-        # class MobileNetV2(Mo.Module):
-        #     """MobileNetV2
-
-        #     Args:
-        #         Mo ([type]): [description]
-        #         n_class (int, optional): [description]. Defaults to 10.
-        #         input_size (int, optional): [description]. Defaults to 32.
-        #         width_mult ([type], optional): [description]. Defaults to 1..
-        #     """
-
-        #     def __init__(self, n_class=10, input_size=32, width_mult=1.):
-
-        #         block = InvertedResidual
-        #         input_channel = 32
-        #         last_channel = 1280
-        #         settings = [
-        #             # t, c, n, s
-        #             [1, 16, 1, 1],
-        #             [6, 24, 2, 1],
-        #             [6, 32, 3, 1],
-        #             [6, 64, 4, 2],
-        #             [6, 96, 3, 1],
-        #             [6, 160, 3, 2],
-        #             [6, 320, 1, 1],
-        #         ]
-
-        #         # building first layer
-        #         assert input_size % 32 == 0
-        #         # input_channel = make_divisible(input_channel * width_mult)
-        #         # first channel is always 32!
-        #         self.last_channel = (make_divisible(last_channel * width_mult)
-        #                              if width_mult > 1.0 else last_channel)
-        #         self.features = Mo.Sequential()
-        #         self.features.append(ConvBN(3, input_channel, (2, 2)))
-
-        #         # building inverted residual blocks
-        #         for t, c, n, s in settings:
-        #             output_channel = make_divisible(c * width_mult) if t > 1 else c
-        #             for i in range(4):
-        #                 if i == 0:
-        #                     self.features.append(block(input_channel, output_channel,
-        #                                                s, expand_ratio=t))
-        #                 else:
-        #                     self.features.append(block(input_channel, output_channel,
-        #                                                1, expand_ratio=t))
-        #                 input_channel = output_channel
-        #         # building last several layers
-        #         self.features.append(Conv1x1BN(input_channel, self.last_channel))
-        #         self.features.append(Mo.AvgPool((4, 4)))
-        #         self.features.append(Mo.Dropout(0.2))
-        #         # building classifier
-        #         self.classifier = Mo.Linear(self.last_channel, n_class)
-
-        #     def call(self, x):
-        #         x = self.features(x)
-        #         x = self.classifier(x)
-        #         return x
+        if genotype is not None:
+            self.set_parameters(load_parameters(genotype))
+            for _, module in self.get_modules():
+                if isinstance(module, ChoiceBlock):
+                    idx = np.argmax(module._mixed._alpha.d)
+                    module._mixed = module._mixed._ops[idx]
