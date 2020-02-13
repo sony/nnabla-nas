@@ -1,13 +1,13 @@
+import nnabla as nn
+import numpy as np
+import pytest
+from nnabla.testing import assert_allclose
+
 from nnabla_nas.dataset.transforms import Normalize
-from nnabla_nas.dataset.transforms import Resize
+from nnabla_nas.dataset.transforms import RandomCrop
 from nnabla_nas.dataset.transforms import RandomHorizontalFlip
 from nnabla_nas.dataset.transforms import RandomVerticalFlip
-from nnabla_nas.dataset.transforms import RandomCrop
-
-import numpy as np
-import nnabla as nn
-from nnabla.testing import assert_allclose
-import pytest
+from nnabla_nas.dataset.transforms import Resize
 
 
 def test_normalize():

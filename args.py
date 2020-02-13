@@ -10,6 +10,7 @@ from nnabla_nas import utils as ut
 from nnabla_nas.contrib import estimator as EST
 from nnabla_nas.dataset import DataLoader
 from nnabla_nas.optimizer import Optimizer
+from nnabla_nas.dataset import transforms
 
 
 class Configuration(object):
@@ -79,7 +80,7 @@ class Configuration(object):
         conf = self.conf.copy()
         options = dict()
 
-        # define contraints
+        # define constraints
         parser = RegularizerParser(self)
         options['regularizer'] = parser.parse(conf.get('regularizer', dict()))
         conf['regularizer'] = parser.summary().copy()
@@ -87,6 +88,10 @@ class Configuration(object):
         # define dataloader for training and validating
         parser = DataloaderParser(self)
         options['dataloader'] = parser.parse(conf)
+
+        # define data augmentation for training and validating
+        parser = TransformParser(self)
+        options['transform'] = parser.parse(conf)
 
         # define optimizer
         parser = OptimizerParser(self, len(options['dataloader']['train']))
@@ -221,4 +226,25 @@ class DataloaderParser(OptionParser):
         return {
             'train': DataLoader(data_train, train_transform),
             'valid': DataLoader(data_valid, valid_transform)
+        }
+
+
+class TransformParser(OptionParser):
+
+    def parse(self, conf):
+        # TODO: setup data augmentation from config files
+        opts = self.options
+        mean = (0.49139968, 0.48215827, 0.44653124),
+        std = (0.24703233, 0.24348505, 0.26158768),
+        scale = 1./255.0
+        pad_width = (4, 4, 4, 4)
+        return {
+            'train': transforms.Compose([
+                transforms.Normalize(mean=mean, std=std, scale=scale),
+                transforms.RandomCrop(opts.input_shape, pad_width=pad_width),
+                transforms.RandomHorizontalFlip()
+            ]),
+            'valid': transforms.Compose([
+                transforms.Normalize(mean=mean, std=std, scale=scale)
+            ])
         }

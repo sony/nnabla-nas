@@ -1,6 +1,7 @@
 import nnabla as nn
-import numpy as np
 import nnabla.functions as F
+import numpy as np
+from nnabla.testing import assert_allclose
 
 # from nnabla_nas.contrib.mbn.modules import *
 # from nnabla_nas.contrib.mbn.network import SearchNet
@@ -17,7 +18,6 @@ import nnabla.functions as F
 #     print(k, np.argmax(v.d.flatten()))
 
 
-from nnabla.testing import assert_allclose
 
 x = np.arange(27).reshape(1, 3, 3, 3)
 m = np.arange(3).reshape(1, 3, 1, 1)

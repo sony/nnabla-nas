@@ -1,7 +1,6 @@
 from abc import ABC
 from abc import abstractmethod
 
-from .. import utils as ut
 from ..utils import ProgressMeter
 
 
@@ -31,6 +30,7 @@ class Runner(ABC):
                  placeholder,
                  optimizer,
                  dataloader,
+                 transform,
                  criteria,
                  evaluate,
                  args,
@@ -40,6 +40,7 @@ class Runner(ABC):
         self.criteria = criteria
         self.evaluate = evaluate
         self.dataloader = dataloader
+        self.transform = transform
         self.regularizer = regularizer
         self.optimizer = optimizer
         self.placeholder = placeholder
@@ -76,11 +77,12 @@ class Runner(ABC):
         self.callback_on_sample_graph()
         self.model.apply(training=key != 'valid')
         p = self.placeholder['valid' if key == 'valid' else 'train']
-        image = p['input'] if key == 'valid' else ut.data_augment(p['input'])
+
+        transform = self.transform['valid' if key == 'valid' else 'train']
         accum = self.accum_valid if key == 'valid' else self.accum_train
 
         # output features
-        output, aux = self.model(image), None
+        output, aux = self.model(transform(p['input'])), None
         if isinstance(output, tuple):
             aux, w = output[1], self.args.aux_weight
             p['output'] = output[0]

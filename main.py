@@ -54,6 +54,7 @@ if __name__ == "__main__":
         placeholder=loader['placeholder'],
         optimizer=loader['optimizer'],
         dataloader=loader['dataloader'],
+        transform=loader['transform'],
         regularizer=loader['regularizer'],
         criteria=lambda o, t: F.mean(F.softmax_cross_entropy(o, t)),
         evaluate=lambda o, t: F.mean(F.top_n_error(o, t)),

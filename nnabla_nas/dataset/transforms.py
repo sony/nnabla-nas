@@ -96,8 +96,7 @@ class Cutout(object):
         x1 = np.clip(x - self._length // 2, 0, w)
         x2 = np.clip(x + self._length // 2, 0, w)
         mask[y1: y2, x1: x2] = 0.
-        image *= mask
-        return image
+        return image * mask
 
     def __str__(self):
         return self.__class__.__name__ + f'(length={self._length})'
@@ -128,11 +127,6 @@ class Resize(object):
             f'(size={self._size}, '
             f'interpolation={self._interpolation})'
         )
-
-
-class CenterCrop(object):
-    def __call__(self, input):
-        raise NotImplementedError
 
 
 class RandomCrop(object):
@@ -166,9 +160,20 @@ class RandomCrop(object):
 
 
 class RandomHorizontalFlip(object):
+    r"""Horizontally flip the given Image randomly with a probability 0.5."""
 
     def __call__(self, input):
         return F.image_augmentation(input, flip_lr=True)
+
+    def __str__(self):
+        return self.__class__.__name__ + '(p=0.5)'
+
+
+class RandomVerticalFlip(object):
+    r"""Vertically flip the given PIL Image randomly with a probability 0.5."""
+
+    def __call__(self, input):
+        return F.image_augmentation(input, flip_ud=True)
 
     def __str__(self):
         return self.__class__.__name__ + '(p=0.5)'
@@ -179,12 +184,9 @@ class RandomRotation(object):
         raise NotImplementedError
 
 
-class RandomVerticalFlip(object):
+class CenterCrop(object):
     def __call__(self, input):
-        return F.image_augmentation(input, flip_ud=True)
-
-    def __str__(self):
-        return self.__class__.__name__ + '(p=0.5)'
+        raise NotImplementedError
 
 
 class Lambda(object):
