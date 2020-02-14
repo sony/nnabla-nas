@@ -39,4 +39,4 @@ class MyModel(Model):
 
 if __name__ == '__main__':
     net = MyModel()
-    print(net)
+    print(net)  # model summary

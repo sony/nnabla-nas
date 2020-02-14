@@ -62,7 +62,9 @@ pytest .
 
 ### Examples
 
-The example below shows how to use NnablaNAS to search a good neural architecture.
+The example below shows how to use NnablaNAS. 
+
+We construct a search space by relaxing the layer that the network can have. Our search space encodes that the network chooses between Convolution, MaxPooling, and Identity for the first layer.
 
 ```python
 from collections import OrderedDict
