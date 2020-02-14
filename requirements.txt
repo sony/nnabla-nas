@@ -2,6 +2,7 @@ flake8
 pylint
 mypy
 pytest
+pytest-cov
 tensorboardX
 tqdm
 graphviz
