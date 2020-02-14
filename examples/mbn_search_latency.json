@@ -3,29 +3,24 @@
     "epoch": 150,
     "batch_size_train": 256,
     "batch_size_valid": 256,
-    "mini_batch_train": 128,
-    "mini_batch_valid": 128,
+    "mini_batch_train": 256,
+    "mini_batch_valid": 256,
     "warmup": 50,
     "cutout": 16,
-    "print_frequency": 20,
+    "print_frequency": 50,
     "train_portion": 0.9,
     "network": {
-        "search_space": "darts",
-        "in_channels": 3,
-        "init_channels": 36,
-        "num_cells": 15,
+        "search_space": "mbn",
         "num_classes": 10,
-        "num_choices": 4,
-        "shared": false,
         "mode": "sample"
     },
     "optimizer": {
         "train": {
             "grad_clip": 5.0,
-            "weight_decay": 3e-4,
+            "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.025
+                "lr": 0.1
             }
         },
         "valid": {
@@ -39,11 +34,18 @@
         },
         "warmup": {
             "grad_clip": 5.0,
-            "weight_decay": 3e-4,
+            "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
                 "lr": 0.025
             }
+        }
+    },
+    "regularizer": {
+        "latency": {
+            "name": "LatencyEstimator",
+            "weight": 0.1,
+            "bound": 2.0
         }
     }
 }
