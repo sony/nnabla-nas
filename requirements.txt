@@ -3,6 +3,7 @@ pylint
 mypy
 pytest
 pytest-cov
+h5py
 tensorboardX
 tqdm
 graphviz
