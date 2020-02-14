@@ -17,7 +17,7 @@ class Zero(Module):
 
     def call(self, input):
         if self._stride[0] > 1:
-            input = input[:, :, ::self._stride[0], ::self._stride[1]]
+            input = F.max_pooling(input, kernel=(1, 1), stride=self._stride)
         return F.mul_scalar(input, 0.0)
 
     def extra_repr(self):
