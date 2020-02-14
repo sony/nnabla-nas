@@ -7,15 +7,15 @@ Neural Architecture Search is a Python package that provides methods for neural 
 
 - A top level graph to define candidate architectures for convolutional neural networks (CNNs)
 - Profilers to measure the hardware demands of neural architectures (latency, number of parameters, etc...)
-- Searcher algorithms to learn the architecture and model parameters (e.g., `DartsSearcher` and `ProxylessNasSearcher`)
-- Regularizers (e.g., `LatencyEstimator` and `MemoryEstimator`) which can be used to enforce hardware constraints
+- Searcher algorithms to learn the architecture and model parameters (e.g., [`DartsSearcher`](nnabla_nas/runner/searcher/darts.py) and [`ProxylessNasSearcher`](nnabla_nas/runner/searcher/pnas.py))
+- Regularizers (e.g., [`LatencyEstimator`](nnabla_nas/contrib/estimator/latency.py) and [`MemoryEstimator`](nnabla_nas/contrib/estimator/memory.py)) which can be used to enforce hardware constraints
 
 
 NnablaNAS aims to make the architecture search research more reusable and reproducible by providing them with a modular framework that they can use to implement new search algorithms and new search spaces while reusing code.
 
 - [Neural Architecture Search for Neural Network Libraries](#neural-architecture-search-for-neural-network-libraries)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
+  - [Getting started](#getting-started)
+    - [Dependencies](#dependencies)
     - [Installation](#installation)
     - [Examples](#examples)
   - [Features](#features)
@@ -27,17 +27,17 @@ NnablaNAS aims to make the architecture search research more reusable and reprod
   - [Contribution Guide](#contribution-guide)
   - [License](#license)
 
-## Getting Started
+## Getting started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
-### Prerequisites
 
-What things you need to install the software and how to install them
+### Dependencies
 
-```
-Give examples
-```
+- numpy
+- sklearn
+- graphviz
+- nnabla
+- nnabla-ext
 
 ### Installation
 
@@ -65,12 +65,50 @@ pytest .
 The example below shows how to use NnablaNAS to search a good neural architecture.
 
 ```python
-import nnabla as nn
-import nnabla_nas
+from collections import OrderedDict
 
+from nnabla_nas import module as Mo
+from nnabla_nas.contrib.darts.modules import MixedOp
+from nnabla_nas.contrib.model import Model
+
+
+class MyModel(Model):
+    def __init__(self):
+        self._block = MixedOp(
+            operators=[
+                Mo.Conv(in_channels=3, out_channels=3, kernel=(3, 3), pad=(1, 1)),
+                Mo.MaxPool(kernel=(3, 3), stride=(1, 1), pad=(1, 1)),
+                Mo.Identity()
+            ],
+            mode='full'
+        )
+        self._classifier = Mo.Sequential(
+            Mo.ReLU(),
+            Mo.GlobalAvgPool(),
+            Mo.Linear(3, 10)
+        )
+
+    def call(self, input):
+        out = self._block(input)
+        out = self._classifier(out)
+        return out
+
+    def get_arch_parameters(self, grad_only=False):
+        r"""Returns an `OrderedDict` containing architecture parameters."""
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
+
+    def get_net_parameters(self, grad_only=False):
+        r"""Returns an `OrderedDict` containing model parameters."""
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' not in k])
+
+if __name__ == '__main__':
+    net = MyModel()
+    print(net)
 ```
 
-The tutorials and examples cover additional aspects of NnablaNAS.
+The [tutorials](docs/tutorial.md) and [examples](docs/examples.md) cover additional aspects of NnablaNAS.
 
 ## Features
 
@@ -96,9 +134,8 @@ You can then build the documentation by running ``make <format>`` from the
 
 ## Contribution Guide
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
+Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## License
 
-`nnabla_nas` is Apache-style licensed, as found in the LICENSE file.
+NnablaNAS is Apache-style licensed, as found in the [LICENSE](LICENSE) file.
