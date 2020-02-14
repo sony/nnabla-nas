@@ -17,5 +17,6 @@ flake8:
 
 unit_test:
   stage: Test
+  allow_failure: True
   script:
-    - pytest -v
+    - pytest --cov=./
