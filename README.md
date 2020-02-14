@@ -1,4 +1,8 @@
 
+[![pipeline status](https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/badges/master/pipeline.svg)](https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/commits/master)
+[![coverage report](https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/badges/master/coverage.svg)](https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/commits/master)
+
+
 ![nnabla Logo](docs/sources/images/nnabla.png)
 
 # Neural Architecture Search for Neural Network Libraries
