@@ -4,7 +4,7 @@ from ... import module as Mo
 from .modules import ConvBNReLU
 from .modules import InvertedResidual
 from .modules import ChoiceBlock
-
+from .modules import CANDIDATES
 from ..model import Model
 from ...utils import load_parameters
 from collections import OrderedDict
@@ -84,11 +84,11 @@ class SearchNet(Model):
         # building inverted residual blocks
         for k, (c, s) in enumerate(settings):
             output_channel = _make_divisible(c * width_mult, round_nearest)
-            n_iter = n_max if k > 0 else 1
+            n_iter = n_max
             for i in range(n_iter):
                 stride = s if i == 0 else 1
                 # if k == 0:
-                #     block(in_channels, output_channel, stride, expand_ratio=1)
+                #   block(in_channels, output_channel, stride, expand_ratio=1)
                 features.append(
                     ChoiceBlock(in_channels, output_channel,
                                 stride=stride, mode=mode, is_skipped=i > 0)
@@ -164,72 +164,41 @@ class TrainNet(SearchNet):
                 idx = np.argmax(module._mixed._alpha.d)
                 module._mixed = module._mixed._ops[idx]
 
-        # def _make_divisible(v, divisor, min_value=None):
-        #     r"""This function is taken from the original tf repo.
-        #     It ensures that all layers have a channel number that is divisible by 8.
-        #     """
-        #     if min_value is None:
-        #         min_value = divisor
-        #     new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
-        #     # Make sure that round down does not go down by more than 10%.
-        #     if new_v < 0.9 * v:
-        #         new_v += divisor
-        #     return new_v
 
-        # class MobileNetV2(Mo.Module):
-        #     """MobileNetV2
+class RefNet(SearchNet):
+    def __init__(self,
+                 num_classes=1000,
+                 width_mult=1.0,
+                 settings=None,
+                 round_nearest=8,
+                 block=None,
+                 mode='full',
+                 genotype=None):
 
-        #     Args:
-        #         Mo ([type]): [description]
-        #         n_class (int, optional): [description]. Defaults to 10.
-        #         input_size (int, optional): [description]. Defaults to 32.
-        #         width_mult ([type], optional): [description]. Defaults to 1..
-        #     """
+        super().__init__(num_classes=num_classes, width_mult=width_mult,
+                         settings=settings, round_nearest=round_nearest,
+                         block=block, mode=mode)
+        ref_setting = [
+            # t, c, n, s
+            [1, 16, 1, 1],
+            [6, 24, 2, 1],
+            [6, 32, 3, 1],
+            [6, 64, 4, 2],
+            [6, 96, 3, 1],
+            [6, 160, 3, 2],
+            [6, 320, 1, 1]]
 
-        #     def __init__(self, n_class=10, input_size=32, width_mult=1.):
+        arch_idx = self.get_ops_idx(ref_setting)
+        i = 0
+        for k, v in self.get_arch_parameters().items():
+            v.d[arch_idx[i]] = 1.0
+            i += 1
+        nn.save_parameters('mbn_ref_arch.h5', self.get_arch_parameters())
 
-        #         block = InvertedResidual
-        #         input_channel = 32
-        #         last_channel = 1280
-        #         settings = [
-        #             # t, c, n, s
-        #             [1, 16, 1, 1],
-        #             [6, 24, 2, 1],
-        #             [6, 32, 3, 1],
-        #             [6, 64, 4, 2],
-        #             [6, 96, 3, 1],
-        #             [6, 160, 3, 2],
-        #             [6, 320, 1, 1],
-        #         ]
 
-        #         # building first layer
-        #         assert input_size % 32 == 0
-        #         # input_channel = make_divisible(input_channel * width_mult)
-        #         # first channel is always 32!
-        #         self.last_channel = (make_divisible(last_channel * width_mult)
-        #                              if width_mult > 1.0 else last_channel)
-        #         self.features = Mo.Sequential()
-        #         self.features.append(ConvBN(3, input_channel, (2, 2)))
-
-        #         # building inverted residual blocks
-        #         for t, c, n, s in settings:
-        #             output_channel = make_divisible(c * width_mult) if t > 1 else c
-        #             for i in range(4):
-        #                 if i == 0:
-        #                     self.features.append(block(input_channel, output_channel,
-        #                                                s, expand_ratio=t))
-        #                 else:
-        #                     self.features.append(block(input_channel, output_channel,
-        #                                                1, expand_ratio=t))
-        #                 input_channel = output_channel
-        #         # building last several layers
-        #         self.features.append(Conv1x1BN(input_channel, self.last_channel))
-        #         self.features.append(Mo.AvgPool((4, 4)))
-        #         self.features.append(Mo.Dropout(0.2))
-        #         # building classifier
-        #         self.classifier = Mo.Linear(self.last_channel, n_class)
-
-        #     def call(self, x):
-        #         x = self.features(x)
-        #         x = self.classifier(x)
-        #         return x
+    def get_ops_idx(self, setting):
+        ops = list()
+        for t,c,n,s in setting:
+            for m in range(4):
+                ops += [list(CANDIDATES).index('InvertedResidual_t{}_k3'.format(t)) if m < n else list(CANDIDATES).index('skip_connect'.format(t))]
+        return ops
