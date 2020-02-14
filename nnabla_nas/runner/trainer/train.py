@@ -87,6 +87,3 @@ class Trainer(Runner):
 
     def callback_on_finish(self):
         pass
-
-    def callback_on_sample_graph(self):
-        pass

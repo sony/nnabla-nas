@@ -1,4 +1,3 @@
-from ...contrib.darts.modules import MixedOp
 from .search import Searcher
 
 
@@ -8,17 +7,8 @@ class ProxylessNasSearcher(Searcher):
     """
 
     def callback_on_start(self):
-        r"""Gets the architecture modules."""
-        self.arch_modules = [
-            m for _, m in self.model.get_modules()
-            if isinstance(m, MixedOp)
-        ]
+        r"""Gets the architecture parameters."""
         self._reward = 0
-
-    def callback_on_sample_graph(self):
-        r"""Samples a new graph."""
-        for m in self.arch_modules:
-            m.update_active_index()
 
     def train_on_batch(self, key='train'):
         r"""Update the model parameters."""
@@ -48,9 +38,8 @@ class ProxylessNasSearcher(Searcher):
         for _ in range(n_iter):
             reward = 0
             self.update_graph('valid')
-            self.optimizer['valid'].set_parameters(
-                self.model.get_arch_parameters(grad_only=True)
-            )
+            arch_params = self.model.get_arch_parameters(grad_only=True)
+            self.optimizer['valid'].set_parameters(arch_params)
             for minibatch in valid_data:
                 p['input'].d, p['target'].d = minibatch
                 p['loss'].forward(clear_buffer=True)
@@ -59,18 +48,18 @@ class ProxylessNasSearcher(Searcher):
                 reward += (1 - err) / self.accum_valid
                 self.monitor.update('valid_loss', loss * self.accum_valid, bz)
                 self.monitor.update('valid_err', err, bz)
-            # adding contraints
+            # adding constraints
             for k, v in self.regularizer.items():
                 value = v['reg'].get_estimation(self.model)
                 reward *= (min(1.0, v['bound'] / value))**v['weight']
                 self.monitor.update(k, value, 1)
             rewards.append(reward)
-            grads.append([m._alpha.g.copy() for m in self.arch_modules])
+            grads.append([m.g.copy() for m in arch_params.values()])
             self.monitor.update('reward', reward, self.args.bs_valid)
         # compute gradients
-        for j, m in enumerate(self.arch_modules):
-            m._alpha.grad.zero()
+        for j, m in enumerate(arch_params.values()):
+            m.grad.zero()
             for i, r in enumerate(rewards):
-                m._alpha.g += (r - self._reward) * grads[i][j] / n_iter
+                m.g += (r - self._reward) * grads[i][j] / n_iter
         self.optimizer['valid'].update()
         self._reward = beta*sum(rewards)/n_iter + (1 - beta)*self._reward

@@ -74,7 +74,6 @@ class Runner(ABC):
         """
         assert key in ('train', 'valid', 'warmup')
 
-        self.callback_on_sample_graph()
         self.model.apply(training=key != 'valid')
         p = self.placeholder['valid' if key == 'valid' else 'train']
 
@@ -116,11 +115,6 @@ class Runner(ABC):
     @abstractmethod
     def callback_on_epoch_end(self):
         r"""Calls this after one epoch."""
-        pass
-
-    @abstractmethod
-    def callback_on_sample_graph(self):
-        r"""Calls this before sample a graph."""
         pass
 
     @abstractmethod

@@ -149,28 +149,14 @@ class SearchNet(Model):
     def summary(self):
         r"""Summary of the model."""
         stats = []
-        if not self._shared:
-            arch_modules = [m for _, m in self.get_modules()
-                            if isinstance(m, darts.MixedOp)]
-            count = Counter([m._active for m in arch_modules])
-            op_names = list(darts.CANDIDATES.keys())
-            total = len(arch_modules)
-            for k in range(len(op_names)):
-                name = op_names[k]
-                stats.append(name + f' = {count[k]/total*100:.2f}%\t')
-            return ''.join(stats)
-        # compute statics
+        arch_params = self.get_arch_parameters()
+        count = Counter([np.argmax(m.d.flat) for m in arch_params.values()])
         op_names = list(darts.CANDIDATES.keys())
-        for alphas, t in zip(self._alpha, ['normal', 'reduction']):
-            count = {i: 0 for i in op_names}
-            for alpha in alphas:
-                idx = np.argmax(alpha.d.flat)
-                count[op_names[idx]] += 1
-            select = t + ' cell:\n'
-            for k, v in count.items():
-                select += f'{k} = {v/len(alphas)*100:.2f}%\t'
-            stats.append(select)
-        return '\n'.join(stats)
+        total = len(arch_params)
+        for k in range(len(op_names)):
+            name = op_names[k]
+            stats.append(name + f' = {count[k]/total*100:.2f}%\t')
+        return ''.join(stats)
 
     def save_parameters(self, path=None, params=None, grad_only=False):
         super().save_parameters(path, params=params, grad_only=grad_only)
