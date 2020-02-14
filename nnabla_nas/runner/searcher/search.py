@@ -57,10 +57,6 @@ class Searcher(Runner):
             params=self.model.get_net_parameters()
         )
 
-    def callback_on_sample_graph(self):
-        r"""Calls this before sample a graph."""
-        pass
-
     def callback_on_start(self):
         r"""Calls this on starting the training."""
         pass

@@ -29,9 +29,6 @@ def test_mixedop(mode, in_channels, out_channels):
     module = Block(in_channels, out_channels, mode)
     input = nn.Variable([8, in_channels, 32, 32])
 
-    if mode != 'full':
-        module._sel.update_active_index()
-
     output = module(input)
     assert output.shape == (8, out_channels, 32, 32)
 
