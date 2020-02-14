@@ -1,22 +1,31 @@
 
 ![nnabla Logo](docs/sources/images/nnabla.png)
 
-# Neural Architecture Search (NAS) for NNabla
-This toolbox provides methods for neural hardware aware neural architecture search 
-for NNabla, i.e., it implements tools for
+# Neural Architecture Search for Neural Network Libraries
 
-1. A top level graph to define candidate architectures for convolutional neural networks (CNNs).
-2. Profilers to measure the hardware demands of neural architectures (latency, #parameters, ...).
-3. Searcher algorithms to learn the architecture and model parameters (DARTS, ProxylessNAS).
-4. Regularizers which can be used to enforce hardware constraints.
+Neural Architecture Search is a Python package that provides methods for neural hardware aware neural architecture search for NNabla
 
-This package has been tested, using the environment
-described [here](/environment.txt).
+- A top level graph to define candidate architectures for convolutional neural networks (CNNs)
+- Profilers to measure the hardware demands of neural architectures (latency, number of parameters, etc...)
+- Searcher algorithms to learn the architecture and model parameters (e.g., `DartsSearcher` and `ProxylessNasSearcher`)
+- Regularizers (e.g., `LatencyEstimator` and `MemoryEstimator`) which can be used to enforce hardware constraints
 
-## Table of contents
-* [Getting Started](#Getting-Started)
-* [Installation](#Installation)
-* [Documentation](#Documentation)
+
+NnablaNAS aims to make the architecture search research more reusable and reproducible by providing them with a modular framework that they can use to implement new search algorithms and new search spaces while reusing code.
+
+- [Neural Architecture Search for Neural Network Libraries](#neural-architecture-search-for-neural-network-libraries)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+    - [Examples](#examples)
+  - [Features](#features)
+    - [Search Spaces](#search-spaces)
+    - [Searcher Algorithms](#searcher-algorithms)
+    - [Logging](#logging)
+    - [Visualization](#visualization)
+  - [Documentation](#documentation)
+  - [Contribution Guide](#contribution-guide)
+  - [License](#license)
 
 ## Getting Started
 
@@ -32,10 +41,46 @@ Give examples
 
 ### Installation
 
-Install `nnabla_nas` by the following command
+For a local installation, run the following code snippet:
+
+```bash
+git clone git@gitlab.stc.eu.sony.com:bacnguyencong/nnabla_nas.git
+cd nnabla_nas
 ```
+
+Install NnablaNAS by the following command
+
+```bash
 pip install -r requirements.txt
 ```
+
+Run tests to check for correctness:
+
+```bash
+pytest .
+```
+
+### Examples
+
+The example below shows how to use NnablaNAS to search a good neural architecture.
+
+```python
+import nnabla as nn
+import nnabla_nas
+
+```
+
+The tutorials and examples cover additional aspects of NnablaNAS.
+
+## Features
+
+### Search Spaces
+
+### Searcher Algorithms
+
+### Logging
+
+### Visualization
 
 ## Documentation
 
