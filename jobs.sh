@@ -51,7 +51,7 @@ python main.py -d 0 --search \
 
 # train zoph network 
 python main.py -d 0 \
-               -f examples/pnas_zoph_train.json \
+               -f examples/zoph_train.json \
                -a Trainer 
                -o log/zoph/train
 

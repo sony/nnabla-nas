@@ -5,7 +5,7 @@
     "batch_size_valid": 256,
     "mini_batch_train": 64,
     "mini_batch_valid": 64,
-    "warmup": 50,
+    "warmup": 0,
     "cutout": 16,
     "print_frequency": 20,
     "train_portion": 0.9,
@@ -14,7 +14,7 @@
         "search_space": "zoph",
         "name": "zoph",
 	"n_classes": 10,
-        "stem_channels": 64,
+        "stem_channels": 128,
         "mode": "sample"
     },
     "optimizer": {
@@ -23,7 +23,7 @@
             "weight_decay": 3e-4,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.01
+                "lr": 0.025
             }
         },
         "valid": {
@@ -40,7 +40,7 @@
             "weight_decay": 3e-4,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.01
+                "lr": 0.025
             }
         }
     }

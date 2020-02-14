@@ -9,7 +9,7 @@ from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
 from nnabla_nas.contrib import misc
 from nnabla_nas.contrib.model import Model
-
+from ...utils import load_parameters
 
 class SepConv(misc.SepConv, smo.Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
@@ -125,6 +125,13 @@ class ZophBlock(smo.Graph):
                               out_channels=self._channels, kernel=(1, 1),
                               eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
+        self.append(smo.BatchNormalization(name='{}/input_conv_bn'.format(self.name),
+                                           parent=self[-1],
+                                           n_dims=4,
+                                           n_features=self._channels))
+
+        self.append(smo.ReLU(name='{}/input_conv/relu'.format(self.name),
+                             parent=self[-1]))
 
         for i, ci in enumerate(self._candidates):
             self.append(ci(name='{}/candidate_{}'.format(self.name, i),
@@ -132,7 +139,7 @@ class ZophBlock(smo.Graph):
                            channels=self._channels,
                            eval_prob=join_prob[i]))
         self.append(smo.Join(name='{}/join'.format(self.name),
-                             parents=self[2:],
+                             parents=self[4:],
                              join_parameters=self._join_parameters))
 
 
@@ -160,6 +167,12 @@ class ZophCell(smo.Graph):
                                  parent=ii, in_channels=ii.shape[1],
                                  out_channels=self._channels,
                                  kernel=(1, 1), with_bias=False))
+            self.append(smo.BatchNormalization(name='{}/input_bn_{}'.format(self.name, i),
+                                           parent=self[-1],
+                                           n_dims=4,
+                                           n_features=self._channels))
+            self.append(smo.ReLU(name='{}/input_conv_{}/relu'.format(self.name, i),
+                        parent=self[-1]))
             projected_inputs.append(self[-1])
 
         # perform shape adaptation, using pooling, if needed
@@ -197,12 +210,15 @@ class ZophCell(smo.Graph):
 
 class SearchNet(Model, smo.Graph):
     def __init__(self, name, input_shape=(3, 32, 32),
-                 n_classes=10, stem_channels=64,
+                 n_classes=10, stem_channels=128,
                  cells=[ZophCell]*3, cell_depth=[7]*3,
-                 cell_channels=[64, 128, 256],
+                 cell_channels=[128, 256, 512],
                  reducing=[False, True, True],
                  join_parameters=[[None]*7]*3,
                  candidates=ZOPH_CANDIDATES, mode='sample'):
+        
+        #import pdb;
+        #pdb.set_trace()
         smo.Graph.__init__(self, name, None)
         self._n_classes = n_classes
         self._stem_channels = stem_channels
@@ -217,18 +233,30 @@ class SearchNet(Model, smo.Graph):
             name='{}/input'.format(self.name),
             value=nn.Variable(self._input_shape))
         self._mode = mode
+         
         # 1. add the stem convolutions
         self.append(smo.Conv(name='{}/stem'
                              '_conv_1'.format(self.name), parent=self._input,
                              in_channels=self._input.shape[1],
                              out_channels=self._stem_channels,
-                             kernel=(3, 3), pad=(1, 1)))
+                             kernel=(7, 7), pad=(1, 1)))
+        self.append(smo.BatchNormalization(name='{}/stem_bn'.format(self.name),
+                                           parent=self[-1], n_dims=4,
+                                           n_features=self._stem_channels))
+        self.append(smo.ReLU(name='{}/stem_relu'.format(self.name),
+                             parent=self[-1]))
         self.append(smo.Conv(name='{}/stem'
                              '_conv_2'.format(self.name), parent=self[-1],
                              in_channels=self._stem_channels,
                              out_channels=self._stem_channels,
                              kernel=(3, 3), pad=(1, 1)))
-
+        self.append(smo.BatchNormalization(name='{}/stem2_bn'.format(self.name),
+                                           parent=self[-1],
+                                           n_dims=4,
+                                           n_features=self._stem_channels))
+        self.append(smo.ReLU(name='{}/stem2_relu'.format(self.name),
+                             parent=self[-1]))
+        
         # 2. add the cells using shared architecture parameters
         for i, celli in enumerate(zip(self._cells, self._cell_depth,
                                       self._cell_channels,
@@ -247,11 +275,36 @@ class SearchNet(Model, smo.Graph):
                              in_channels=self[-1].shape[1],
                              out_channels=self._n_classes,
                              kernel=(1, 1)))
+        
+        self.append(smo.BatchNormalization(name='{}/output_bn'.format(self.name),
+                                           parent=self[-1],
+                                           n_dims=4,
+                                           n_features=self._n_classes))
+        self.append(smo.ReLU(name='{}/output_relu'.format(self.name),
+                             parent=self[-1]))
+        
+
         self.append(smo.GlobalAvgPool(
             name='{}/global_average_pool'.format(self.name), parent=self[-1]))
 
         for mi in self.get_arch_modules():
             mi.mode = self._mode
+
+        self.modules_to_profile = [smo.Identity,
+                                   smo.Zero,
+                                   smo.Conv,
+                                   smo.Join,
+                                   smo.ReLU,
+                                   smo.BatchNormalization,
+                                   smo.Merging,
+                                   SepConv3x3,
+                                   SepConv5x5,
+                                   DilSepConv3x3,
+                                   DilSepConv5x5,
+                                   MaxPool3x3,
+                                   AveragePool3x3,
+                                   smo.MaxPool,
+                                   smo.GlobalAvgPool]
 
     @property
     def input_shape(self):
@@ -292,21 +345,53 @@ class SearchNet(Model, smo.Graph):
                 param[key] = val
         return param
 
+    def get_latency(self, estimator, active_only=True):
+        latencies = {}
+        for mi in self.get_net_modules(active_only=active_only):
+            if type(mi) in self.modules_to_profile:
+                latencies[mi.name] = estimator.predict(mi)
+        return latencies
+
     def __call__(self, input):
         self.reset_value()
         self._input._inp_value = input
         return self._recursive_call()
 
 
+class TrainNet(SearchNet):
+    def __init__(self, name, input_shape=(3, 32, 32),
+                 n_classes=10, stem_channels=128,
+                 cells=[ZophCell]*3, cell_depth=[7]*3,
+                 cell_channels=[128, 256, 512],
+                 reducing=[False, True, True],
+                 join_parameters=[[None]*7]*3,
+                 candidates=ZOPH_CANDIDATES, 
+                 param_path=None):
+        SearchNet.__init__(self, name=name,
+                           input_shape=input_shape,
+                           n_classes=n_classes,
+                           stem_channels=stem_channels,
+                           cells=cells, cell_depth=cell_depth,
+                           reducing=reducing,
+                           join_parameters=join_parameters,
+                           candidates=ZOPH_CANDIDATES,
+                           mode='max')
+
+        if param_path is not None:
+           self.set_parameters(load_parameters(param_path)) 
+           import pdb; pdb.set_trace()
+
 if __name__ == '__main__':
     from nnabla.ext_utils import get_extension_context
+    from nnabla_nas.contrib.estimator import LatencyEstimator
+    from nnabla.utils.profiler import GraphProfiler
 
     ctx = get_extension_context('cudnn', device_id='0')
     nn.set_default_context(ctx)
 
-    input = smo.Input(name='input', value=nn.Variable((10, 20, 32, 16)))
-    input2 = smo.Input(name='input', value=nn.Variable((10, 20, 32, 32)))
-    nn_input = nn.Variable((128, 3, 32, 32))
+    input = smo.Input(name='input', value=nn.Variable((1, 3, 32, 32)))
+    input2 = smo.Input(name='input', value=nn.Variable((1, 3, 32, 32)))
+    nn_input = nn.Variable((1, 3, 32, 32))
     sep_conv3x3 = SepConv3x3(name='conv1', parent=input, channels=30)
     sep_conv5x5 = SepConv5x5(name='conv2', parent=input, channels=30)
     dil_sep_conv3x3 = DilSepConv3x3(name='conv3', parent=input, channels=30)
@@ -333,6 +418,24 @@ if __name__ == '__main__':
     out_7 = zoph_block()
     out_8 = zoph_cell()
     out_9 = zoph_network(nn_input)
+
+    # ------------------profile module by module----------------
+    estimator = LatencyEstimator()
+    latencies = zoph_network.get_latency(estimator, active_only=True)
+    cum_lat = sum([latencies[mi] for mi in latencies])
+    print("The cumulative latency is {}".format(cum_lat))
+
+    # ------------profile the whole graph at once----------------
+    ctx = nn.context.get_current_context()
+    device_id = int(ctx.device_id)
+    ext_name = ctx.backend[0].split(':')[0]
+    profiler = GraphProfiler(out_9,
+                            device_id=device_id,
+                            ext_name=ext_name,
+                            n_run=10)
+    profiler.run()
+    tot_latency = float(profiler.result['forward_all'])
+    print("The total latency is {}".format(tot_latency))
 
     import pdb
     pdb.set_trace()

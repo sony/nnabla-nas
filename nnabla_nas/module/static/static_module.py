@@ -71,7 +71,7 @@ class Module(mo.Module):
         self._shape = value
 
     @property
-    def input_shape(self):
+    def input_shapes(self):
         if hasattr(self._parent, '__iter__'):
             return [pi.shape for pi in self._parent]
         else:
@@ -106,6 +106,7 @@ class Module(mo.Module):
     def _recursive_call(self):
         if self._value is None:
             self._value = self.call(self.parent())
+            self.apply(need_grad=True)
         # else:
         #    print("reusing graph for {}".format(self.name))
         return self._value
@@ -123,6 +124,7 @@ class Module(mo.Module):
 
     def reset_value(self):
         self._value = None
+        self.apply(need_grad=False)
         self.shape = -1
 # ------------------------------------A graph of StaticModules----------------
 
@@ -393,9 +395,16 @@ class Join(Module):
                 self._value = self.call([pi() for pi in self.parent])
             elif self.mode == 'sample':
                 self._sel_p.forward()
+                #print(self._sel_p.d)
                 self._idx = np.random.choice(
                     len(self.parent), 1, p=self._sel_p.d)[0]
                 self._value = self.call(self.parent[self._idx]())
+
+                # update the score function
+                score = self._sel_p.d
+                score[self._idx] -= 1
+                self._join_parameters.g = score
+                # print('{}/{}'.format(self.name,score[0]))
             elif self.mode == 'max':
                 self._idx = np.argmax(self._join_parameters.d)
                 self._value = self.call(self.parent[self._idx]())
