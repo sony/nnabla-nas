@@ -1,6 +1,3 @@
-import os
-
-import nnabla as nn
 
 from .search import Searcher
 
@@ -28,7 +25,7 @@ class DartsSearcher(Searcher):
             p['loss'].forward(clear_no_need_grad=True)
             p['loss'].backward(clear_buffer=True)
             p['err'].forward(clear_buffer=True)
-            loss, err = p['loss'].d.copy(),  p['err'].d.copy()
+            loss, err = p['loss'].d.copy(), p['err'].d.copy()
             self.monitor.update('train_loss', loss * self.accum_train, bz)
             self.monitor.update('train_err', err, bz)
         self.optimizer[key].update()
@@ -46,14 +43,3 @@ class DartsSearcher(Searcher):
             self.monitor.update('valid_loss', loss * self.accum_valid, bz)
             self.monitor.update('valid_err', err, bz)
         self.optimizer['valid'].update()
-
-    def callback_on_epoch_end(self):
-        r"""Saves parameters and prints the selection propability."""
-        nn.save_parameters(
-            os.path.join(self.args.output_path, 'arch.h5'),
-            self.model.get_arch_parameters()
-        )
-        self.monitor.info(self.model.summary() + '\n')
-
-    def callback_on_finish(self):
-        self.model.save(self.args.output_path)

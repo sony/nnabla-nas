@@ -1,6 +1,5 @@
 import os
 
-import nnabla as nn
 from tqdm import tqdm
 
 from ... import utils as ut
@@ -21,11 +20,11 @@ class Trainer(Runner):
         self._best_err = 1.0
 
         # calculate the model size
-        model_size = ut.get_params_size(
+        model_size = ut.count_parameters(
             self.optimizer['train'].get_parameters()
         )
         if hasattr(self.model, '_auxiliary_head'):
-            model_size -= ut.get_params_size(
+            model_size -= ut.count_parameters(
                 self.model._auxiliary_head.get_parameters(grad_only=True))
         self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
 
@@ -78,16 +77,13 @@ class Trainer(Runner):
             self.monitor.update('valid_err', err, bz)
 
     def callback_on_epoch_end(self):
-        r"""Calculates the error and saves the best parameters.
-        """
+        r"""Calculates the error and saves the best parameters."""
         err = self.monitor['valid_err'].avg
         self.monitor.info(f'Current error is {err:.4f}\n')
         if self._best_err > err:
             self._best_err = err
-            nn.save_parameters(
-                os.path.join(self.args.output_path, 'weights.h5'),
-                self.model.get_parameters()
-            )
+            path = os.path.join(self.args.output_path, 'weights.h5')
+            self.model.save_parameters(path)
 
     def callback_on_finish(self):
         pass

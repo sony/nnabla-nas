@@ -1,3 +1,5 @@
+import os
+
 from ..runner import Runner
 
 
@@ -42,14 +44,21 @@ class Searcher(Runner):
 
     def callback_on_epoch_end(self):
         r"""Calls this after one epoch."""
-        pass
-
-    def callback_on_sample_graph(self):
-        r"""Calls this before sample a graph."""
-        pass
+        self.model.save_parameters(
+            path=os.path.join(self.args.output_path, 'arch.h5'),
+            params=self.model.get_arch_parameters()
+        )
+        self.monitor.info(self.model.summary() + '\n')
 
     def callback_on_finish(self):
         r"""Calls this on finishing the training."""
+        self.model.save_parameters(
+            path=os.path.join(self.args.output_path, 'weights.h5'),
+            params=self.model.get_net_parameters()
+        )
+
+    def callback_on_sample_graph(self):
+        r"""Calls this before sample a graph."""
         pass
 
     def callback_on_start(self):
