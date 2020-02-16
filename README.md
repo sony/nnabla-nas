@@ -7,7 +7,7 @@
 
 # Neural Architecture Search for Neural Network Libraries
 
-Neural Architecture Search is a Python package that provides methods for neural hardware aware neural architecture search for NNabla
+NnablaNAS is a Python package that provides methods for neural hardware aware neural architecture search for NNabla
 
 - A top level graph to define candidate architectures for convolutional neural networks (CNNs)
 - Profilers to measure the hardware demands of neural architectures (latency, number of parameters, etc...)
@@ -19,29 +19,20 @@ NnablaNAS aims to make the architecture search research more reusable and reprod
 
 - [Neural Architecture Search for Neural Network Libraries](#neural-architecture-search-for-neural-network-libraries)
   - [Getting started](#getting-started)
-    - [Dependencies](#dependencies)
     - [Installation](#installation)
     - [Examples](#examples)
   - [Features](#features)
-    - [Search Spaces](#search-spaces)
-    - [Searcher Algorithms](#searcher-algorithms)
+    - [Search spaces](#search-spaces)
+    - [Searcher algorithms](#searcher-algorithms)
     - [Logging](#logging)
     - [Visualization](#visualization)
   - [Documentation](#documentation)
-  - [Contribution Guide](#contribution-guide)
+  - [Contribution](#contribution)
   - [License](#license)
 
 ## Getting started
 
-
-
-### Dependencies
-
-- numpy
-- sklearn
-- graphviz
-- nnabla
-- nnabla-ext
+Here we show how to install NnablaNAS and build a simple search space.
 
 ### Installation
 
@@ -52,7 +43,7 @@ git clone git@gitlab.stc.eu.sony.com:bacnguyencong/nnabla_nas.git
 cd nnabla_nas
 ```
 
-Install NnablaNAS by the following command
+Install dependecies for NnablaNAS by the following command
 
 ```bash
 pip install -r requirements.txt
@@ -118,11 +109,25 @@ The [tutorials](docs/tutorial.md) and [examples](docs/examples.md) cover additio
 
 ## Features
 
-### Search Spaces
+The main features of NnablaNAS are 
 
-### Searcher Algorithms
+### Search spaces
+
+Search spaces are constructed using Modules. Modules are composed of layers, which receives nnabla Variable as input and computes Variable as output. Modules can also contain other Modules, allowing to nest them in a tree structure. One can assign the submodules as regular attributes. All search space components should inherit from `nnabla_nas.module.Module` and override the `call()` method. Please refer to [`nnabla_nas/module/module.py`](nnabla_nas/module/module.py).
+
+A new model should inherit API from the class [`nnabla_nas.contrib.model.Model`](nnabla_nas/contrib/model.py). The base API for `Model` has two methods, `get_arch_parameters()`
+and `get_net_parameters()` that return the architecture parameters and model parameters, respectively.
+
+### Searcher algorithms
+
+An Searcher interacts with the search space through a simple API. A searcher samples a model from the search space by assigning values to the architecture parameters. The results from sampled architecture is then used to update the architecture parameters of the search space. A searcher also updates the model parameters. A new Searcher should inherit API from [`nnabla_nas.runner.searcher.search.Searcher`](nnabla_nas/runner/searcher/search.py). This class has two methods `train_on_batch()` and `valid_on_batch()` which should be redefined by users. 
+
+There are two searcher algorithms implemented in NnablaNAS, including [`DartsSearcher`](nnabla_nas/runner/searcher/darts.py) and [`ProxylessNasSearcher`](nnabla_nas/runner/searcher/pnas.py).
 
 ### Logging
+
+When running the architecture search, the evaluations in the sarch space are logged. We mantain a folder to keep track of the parameters, predictions (e.g., loss, error, number of parameters, and latency). Users can easily monitor the training curves with [`TensorboardX`](https://tensorboardx.readthedocs.io/en/latest/tutorial.html).
+
 
 ### Visualization
 
@@ -138,7 +143,7 @@ pip install -r requirements.txt
 You can then build the documentation by running ``make <format>`` from the
 ``docs/`` folder. Run ``make`` to get a list of all available output formats.
 
-## Contribution Guide
+## Contribution
 
 Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
