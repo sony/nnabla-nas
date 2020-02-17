@@ -7,6 +7,7 @@ import operator
 
 import nnabla as nn
 import nnabla.functions as F
+from nnabla.logger import logger
 import numpy as np
 
 import nnabla_nas.module as mo
@@ -429,8 +430,8 @@ class Graph(mo.ModuleList, Module):
         for mi in self.modules:
             try:
                 self.modules[mi].reset_value()
-            except:
-                print("reset failed")  # dynamic modules have no reset_value
+            except Exception as ex:
+                logger.warning("reset failed")  # dynamic modules have no reset_value
 
     def get_gv_graph(self, active_only=True,
                      color_map={Join: 'blue',
@@ -451,13 +452,16 @@ class Graph(mo.ModuleList, Module):
         for mi in modules:
             try:
                 mi._eval_prob.forward()
-            except:
-                pass
+            except Exception as ex:
+                logger.warning("eval_prob of {} "
+                "cannot be forwarded".format(mi.name))
             caption = mi.name + "\n p: {:3.4f}ms".format(mi.eval_prob.d)
             try:
                 graph.attr('node', color=color_map[type(mi)])
-            except:
+            except Exception as ex:
                 graph.attr('node', color='black')
+                logger.warning("node type {} "
+                "not specified in color_map.".format(type(mi)))
             graph.node(mi.name, caption)
 
         # 3. add the edges
