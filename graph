@@ -1,0 +1,593 @@
+digraph network1 {
+	node [color=black]
+	"network1/stem_conv_1" [label="network1/stem_conv_1
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/stem_bn" [label="network1/stem_bn
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/stem_relu" [label="network1/stem_relu
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/stem_conv_2" [label="network1/stem_conv_2
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/stem2_bn" [label="network1/stem2_bn
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/stem2_relu" [label="network1/stem2_relu
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_0/input_conv_0" [label="network1/cell_0/input_conv_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_0/input_bn_0" [label="network1/cell_0/input_bn_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_0/input_conv_0/relu" [label="network1/cell_0/input_conv_0/relu
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_0/input_conv_1" [label="network1/cell_0/input_conv_1
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_0/input_bn_1" [label="network1/cell_0/input_bn_1
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_0/input_conv_1/relu" [label="network1/cell_0/input_conv_1/relu
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_0/zoph_block_0/input_con" [label="network1/cell_0/zoph_block_0/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_0/input_conv" [label="network1/cell_0/zoph_block_0/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_0/candidate_0" [label="network1/cell_0/zoph_block_0/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_0/zoph_block_0/join" [label="network1/cell_0/zoph_block_0/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_0/zoph_block_1/input_con" [label="network1/cell_0/zoph_block_1/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_1/input_conv" [label="network1/cell_0/zoph_block_1/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_1/candidate_0" [label="network1/cell_0/zoph_block_1/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_0/zoph_block_1/join" [label="network1/cell_0/zoph_block_1/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_0/zoph_block_2/input_con" [label="network1/cell_0/zoph_block_2/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_2/input_conv" [label="network1/cell_0/zoph_block_2/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_2/candidate_0" [label="network1/cell_0/zoph_block_2/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_0/zoph_block_2/join" [label="network1/cell_0/zoph_block_2/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_0/zoph_block_3/input_con" [label="network1/cell_0/zoph_block_3/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_3/input_conv" [label="network1/cell_0/zoph_block_3/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_3/candidate_0" [label="network1/cell_0/zoph_block_3/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_0/zoph_block_3/join" [label="network1/cell_0/zoph_block_3/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_0/zoph_block_4/input_con" [label="network1/cell_0/zoph_block_4/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_4/input_conv" [label="network1/cell_0/zoph_block_4/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_4/candidate_0" [label="network1/cell_0/zoph_block_4/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_0/zoph_block_4/join" [label="network1/cell_0/zoph_block_4/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_0/zoph_block_5/input_con" [label="network1/cell_0/zoph_block_5/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_5/input_conv" [label="network1/cell_0/zoph_block_5/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_5/candidate_0" [label="network1/cell_0/zoph_block_5/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_0/zoph_block_5/join" [label="network1/cell_0/zoph_block_5/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_0/zoph_block_6/input_con" [label="network1/cell_0/zoph_block_6/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_6/input_conv" [label="network1/cell_0/zoph_block_6/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_0/zoph_block_6/candidate_0" [label="network1/cell_0/zoph_block_6/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_0/zoph_block_6/join" [label="network1/cell_0/zoph_block_6/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_0/output_concat" [label="network1/cell_0/output_concat
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_1/input_conv_0" [label="network1/cell_1/input_conv_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_1/input_bn_0" [label="network1/cell_1/input_bn_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_1/input_conv_0/relu" [label="network1/cell_1/input_conv_0/relu
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_1/input_conv_1" [label="network1/cell_1/input_conv_1
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_1/input_bn_1" [label="network1/cell_1/input_bn_1
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_1/input_conv_1/relu" [label="network1/cell_1/input_conv_1/relu
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_1/reduce_pool_0" [label="network1/cell_1/reduce_pool_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_1/reduce_pool_1" [label="network1/cell_1/reduce_pool_1
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_1/zoph_block_0/input_con" [label="network1/cell_1/zoph_block_0/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_0/input_conv" [label="network1/cell_1/zoph_block_0/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_0/candidate_0" [label="network1/cell_1/zoph_block_0/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_1/zoph_block_0/join" [label="network1/cell_1/zoph_block_0/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_1/zoph_block_1/input_con" [label="network1/cell_1/zoph_block_1/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_1/input_conv" [label="network1/cell_1/zoph_block_1/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_1/candidate_0" [label="network1/cell_1/zoph_block_1/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_1/zoph_block_1/join" [label="network1/cell_1/zoph_block_1/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_1/zoph_block_2/input_con" [label="network1/cell_1/zoph_block_2/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_2/input_conv" [label="network1/cell_1/zoph_block_2/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_2/candidate_0" [label="network1/cell_1/zoph_block_2/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_1/zoph_block_2/join" [label="network1/cell_1/zoph_block_2/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_1/zoph_block_3/input_con" [label="network1/cell_1/zoph_block_3/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_3/input_conv" [label="network1/cell_1/zoph_block_3/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_3/candidate_0" [label="network1/cell_1/zoph_block_3/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_1/zoph_block_3/join" [label="network1/cell_1/zoph_block_3/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_1/zoph_block_4/input_con" [label="network1/cell_1/zoph_block_4/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_4/input_conv" [label="network1/cell_1/zoph_block_4/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_4/candidate_0" [label="network1/cell_1/zoph_block_4/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_1/zoph_block_4/join" [label="network1/cell_1/zoph_block_4/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_1/zoph_block_5/input_con" [label="network1/cell_1/zoph_block_5/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_5/input_conv" [label="network1/cell_1/zoph_block_5/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_5/candidate_0" [label="network1/cell_1/zoph_block_5/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_1/zoph_block_5/join" [label="network1/cell_1/zoph_block_5/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_1/zoph_block_6/input_con" [label="network1/cell_1/zoph_block_6/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_6/input_conv" [label="network1/cell_1/zoph_block_6/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_1/zoph_block_6/candidate_0" [label="network1/cell_1/zoph_block_6/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_1/zoph_block_6/join" [label="network1/cell_1/zoph_block_6/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_1/output_concat" [label="network1/cell_1/output_concat
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/input_conv_0" [label="network1/cell_2/input_conv_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/input_bn_0" [label="network1/cell_2/input_bn_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/input_conv_0/relu" [label="network1/cell_2/input_conv_0/relu
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/input_conv_1" [label="network1/cell_2/input_conv_1
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/input_bn_1" [label="network1/cell_2/input_bn_1
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/input_conv_1/relu" [label="network1/cell_2/input_conv_1/relu
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/shape_adapt_pool_0" [label="network1/cell_2/shape_adapt_pool_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/reduce_pool_0" [label="network1/cell_2/reduce_pool_0
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/cell_2/reduce_pool_1" [label="network1/cell_2/reduce_pool_1
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_2/zoph_block_0/input_con" [label="network1/cell_2/zoph_block_0/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_0/input_conv" [label="network1/cell_2/zoph_block_0/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_0/candidate_0" [label="network1/cell_2/zoph_block_0/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_2/zoph_block_0/join" [label="network1/cell_2/zoph_block_0/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_2/zoph_block_1/input_con" [label="network1/cell_2/zoph_block_1/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_1/input_conv" [label="network1/cell_2/zoph_block_1/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_1/candidate_0" [label="network1/cell_2/zoph_block_1/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_2/zoph_block_1/join" [label="network1/cell_2/zoph_block_1/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_2/zoph_block_2/input_con" [label="network1/cell_2/zoph_block_2/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_2/input_conv" [label="network1/cell_2/zoph_block_2/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_2/candidate_0" [label="network1/cell_2/zoph_block_2/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_2/zoph_block_2/join" [label="network1/cell_2/zoph_block_2/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_2/zoph_block_3/input_con" [label="network1/cell_2/zoph_block_3/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_3/input_conv" [label="network1/cell_2/zoph_block_3/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_3/candidate_0" [label="network1/cell_2/zoph_block_3/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_2/zoph_block_3/join" [label="network1/cell_2/zoph_block_3/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_2/zoph_block_4/input_con" [label="network1/cell_2/zoph_block_4/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_4/input_conv" [label="network1/cell_2/zoph_block_4/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_4/candidate_0" [label="network1/cell_2/zoph_block_4/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_2/zoph_block_4/join" [label="network1/cell_2/zoph_block_4/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_2/zoph_block_5/input_con" [label="network1/cell_2/zoph_block_5/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_5/input_conv" [label="network1/cell_2/zoph_block_5/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_5/candidate_0" [label="network1/cell_2/zoph_block_5/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_2/zoph_block_5/join" [label="network1/cell_2/zoph_block_5/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_2/zoph_block_6/input_con" [label="network1/cell_2/zoph_block_6/input_con
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_6/input_conv" [label="network1/cell_2/zoph_block_6/input_conv
+ p: 0.8750ms"]
+	node [color=black]
+	"network1/cell_2/zoph_block_6/candidate_0" [label="network1/cell_2/zoph_block_6/candidate_0
+ p: 0.1250ms"]
+	node [color=blue]
+	"network1/cell_2/zoph_block_6/join" [label="network1/cell_2/zoph_block_6/join
+ p: 1.0000ms"]
+	node [color=green]
+	"network1/cell_2/output_concat" [label="network1/cell_2/output_concat
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/output_conv_1" [label="network1/output_conv_1
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/output_bn" [label="network1/output_bn
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/output_relu" [label="network1/output_relu
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/global_average_pool" [label="network1/global_average_pool
+ p: 1.0000ms"]
+	node [color=black]
+	"network1/output_reshape" [label="network1/output_reshape
+ p: 1.0000ms"]
+	"network1/stem_conv_1" -> "network1/stem_bn" [label="(1, 128, 32, 32)"]
+	"network1/stem_bn" -> "network1/stem_relu" [label="(1, 128, 32, 32)"]
+	"network1/stem_relu" -> "network1/stem_conv_2" [label="(1, 128, 32, 32)"]
+	"network1/stem_conv_2" -> "network1/stem2_bn" [label="(1, 128, 32, 32)"]
+	"network1/stem2_bn" -> "network1/stem2_relu" [label="(1, 128, 32, 32)"]
+	"network1/stem_relu" -> "network1/cell_0/input_conv_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0" -> "network1/cell_0/input_bn_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_bn_0" -> "network1/cell_0/input_conv_0/relu" [label="(1, 128, 32, 32)"]
+	"network1/stem2_relu" -> "network1/cell_0/input_conv_1" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1" -> "network1/cell_0/input_bn_1" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_bn_1" -> "network1/cell_0/input_conv_1/relu" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0/relu" -> "network1/cell_0/zoph_block_0/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1/relu" -> "network1/cell_0/zoph_block_0/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/input_con" -> "network1/cell_0/zoph_block_0/input_conv" [label="(1, 256, 32, 32)"]
+	"network1/cell_0/zoph_block_0/input_conv" -> "network1/cell_0/zoph_block_0/candidate_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/candidate_0" -> "network1/cell_0/zoph_block_0/join" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0/relu" -> "network1/cell_0/zoph_block_1/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1/relu" -> "network1/cell_0/zoph_block_1/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/join" -> "network1/cell_0/zoph_block_1/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_1/input_con" -> "network1/cell_0/zoph_block_1/input_conv" [label="(1, 384, 32, 32)"]
+	"network1/cell_0/zoph_block_1/input_conv" -> "network1/cell_0/zoph_block_1/candidate_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_1/candidate_0" -> "network1/cell_0/zoph_block_1/join" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0/relu" -> "network1/cell_0/zoph_block_2/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1/relu" -> "network1/cell_0/zoph_block_2/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/join" -> "network1/cell_0/zoph_block_2/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_1/join" -> "network1/cell_0/zoph_block_2/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_2/input_con" -> "network1/cell_0/zoph_block_2/input_conv" [label="(1, 512, 32, 32)"]
+	"network1/cell_0/zoph_block_2/input_conv" -> "network1/cell_0/zoph_block_2/candidate_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_2/candidate_0" -> "network1/cell_0/zoph_block_2/join" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0/relu" -> "network1/cell_0/zoph_block_3/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1/relu" -> "network1/cell_0/zoph_block_3/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/join" -> "network1/cell_0/zoph_block_3/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_1/join" -> "network1/cell_0/zoph_block_3/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_2/join" -> "network1/cell_0/zoph_block_3/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_3/input_con" -> "network1/cell_0/zoph_block_3/input_conv" [label="(1, 640, 32, 32)"]
+	"network1/cell_0/zoph_block_3/input_conv" -> "network1/cell_0/zoph_block_3/candidate_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_3/candidate_0" -> "network1/cell_0/zoph_block_3/join" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0/relu" -> "network1/cell_0/zoph_block_4/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1/relu" -> "network1/cell_0/zoph_block_4/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/join" -> "network1/cell_0/zoph_block_4/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_1/join" -> "network1/cell_0/zoph_block_4/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_2/join" -> "network1/cell_0/zoph_block_4/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_3/join" -> "network1/cell_0/zoph_block_4/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_4/input_con" -> "network1/cell_0/zoph_block_4/input_conv" [label="(1, 768, 32, 32)"]
+	"network1/cell_0/zoph_block_4/input_conv" -> "network1/cell_0/zoph_block_4/candidate_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_4/candidate_0" -> "network1/cell_0/zoph_block_4/join" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0/relu" -> "network1/cell_0/zoph_block_5/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1/relu" -> "network1/cell_0/zoph_block_5/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/join" -> "network1/cell_0/zoph_block_5/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_1/join" -> "network1/cell_0/zoph_block_5/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_2/join" -> "network1/cell_0/zoph_block_5/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_3/join" -> "network1/cell_0/zoph_block_5/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_4/join" -> "network1/cell_0/zoph_block_5/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_5/input_con" -> "network1/cell_0/zoph_block_5/input_conv" [label="(1, 896, 32, 32)"]
+	"network1/cell_0/zoph_block_5/input_conv" -> "network1/cell_0/zoph_block_5/candidate_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_5/candidate_0" -> "network1/cell_0/zoph_block_5/join" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0/relu" -> "network1/cell_0/zoph_block_6/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1/relu" -> "network1/cell_0/zoph_block_6/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/join" -> "network1/cell_0/zoph_block_6/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_1/join" -> "network1/cell_0/zoph_block_6/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_2/join" -> "network1/cell_0/zoph_block_6/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_3/join" -> "network1/cell_0/zoph_block_6/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_4/join" -> "network1/cell_0/zoph_block_6/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_5/join" -> "network1/cell_0/zoph_block_6/input_con" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_6/input_con" -> "network1/cell_0/zoph_block_6/input_conv" [label="(1, 1024, 32, 32)"]
+	"network1/cell_0/zoph_block_6/input_conv" -> "network1/cell_0/zoph_block_6/candidate_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_6/candidate_0" -> "network1/cell_0/zoph_block_6/join" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_0/relu" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/input_conv_1/relu" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_0/join" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_1/join" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_2/join" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_3/join" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_4/join" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_5/join" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/cell_0/zoph_block_6/join" -> "network1/cell_0/output_concat" [label="(1, 128, 32, 32)"]
+	"network1/stem2_relu" -> "network1/cell_1/input_conv_0" [label="(1, 128, 32, 32)"]
+	"network1/cell_1/input_conv_0" -> "network1/cell_1/input_bn_0" [label="(1, 256, 32, 32)"]
+	"network1/cell_1/input_bn_0" -> "network1/cell_1/input_conv_0/relu" [label="(1, 256, 32, 32)"]
+	"network1/cell_0/output_concat" -> "network1/cell_1/input_conv_1" [label="(1, 1152, 32, 32)"]
+	"network1/cell_1/input_conv_1" -> "network1/cell_1/input_bn_1" [label="(1, 256, 32, 32)"]
+	"network1/cell_1/input_bn_1" -> "network1/cell_1/input_conv_1/relu" [label="(1, 256, 32, 32)"]
+	"network1/cell_1/input_conv_0/relu" -> "network1/cell_1/reduce_pool_0" [label="(1, 256, 32, 32)"]
+	"network1/cell_1/input_conv_1/relu" -> "network1/cell_1/reduce_pool_1" [label="(1, 256, 32, 32)"]
+	"network1/cell_1/reduce_pool_0" -> "network1/cell_1/zoph_block_0/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_1" -> "network1/cell_1/zoph_block_0/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/input_con" -> "network1/cell_1/zoph_block_0/input_conv" [label="(1, 512, 16, 16)"]
+	"network1/cell_1/zoph_block_0/input_conv" -> "network1/cell_1/zoph_block_0/candidate_0" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/candidate_0" -> "network1/cell_1/zoph_block_0/join" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_0" -> "network1/cell_1/zoph_block_1/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_1" -> "network1/cell_1/zoph_block_1/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/join" -> "network1/cell_1/zoph_block_1/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_1/input_con" -> "network1/cell_1/zoph_block_1/input_conv" [label="(1, 768, 16, 16)"]
+	"network1/cell_1/zoph_block_1/input_conv" -> "network1/cell_1/zoph_block_1/candidate_0" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_1/candidate_0" -> "network1/cell_1/zoph_block_1/join" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_0" -> "network1/cell_1/zoph_block_2/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_1" -> "network1/cell_1/zoph_block_2/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/join" -> "network1/cell_1/zoph_block_2/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_1/join" -> "network1/cell_1/zoph_block_2/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_2/input_con" -> "network1/cell_1/zoph_block_2/input_conv" [label="(1, 1024, 16, 16)"]
+	"network1/cell_1/zoph_block_2/input_conv" -> "network1/cell_1/zoph_block_2/candidate_0" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_2/candidate_0" -> "network1/cell_1/zoph_block_2/join" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_0" -> "network1/cell_1/zoph_block_3/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_1" -> "network1/cell_1/zoph_block_3/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/join" -> "network1/cell_1/zoph_block_3/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_1/join" -> "network1/cell_1/zoph_block_3/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_2/join" -> "network1/cell_1/zoph_block_3/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_3/input_con" -> "network1/cell_1/zoph_block_3/input_conv" [label="(1, 1280, 16, 16)"]
+	"network1/cell_1/zoph_block_3/input_conv" -> "network1/cell_1/zoph_block_3/candidate_0" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_3/candidate_0" -> "network1/cell_1/zoph_block_3/join" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_0" -> "network1/cell_1/zoph_block_4/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_1" -> "network1/cell_1/zoph_block_4/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/join" -> "network1/cell_1/zoph_block_4/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_1/join" -> "network1/cell_1/zoph_block_4/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_2/join" -> "network1/cell_1/zoph_block_4/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_3/join" -> "network1/cell_1/zoph_block_4/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_4/input_con" -> "network1/cell_1/zoph_block_4/input_conv" [label="(1, 1536, 16, 16)"]
+	"network1/cell_1/zoph_block_4/input_conv" -> "network1/cell_1/zoph_block_4/candidate_0" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_4/candidate_0" -> "network1/cell_1/zoph_block_4/join" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_0" -> "network1/cell_1/zoph_block_5/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_1" -> "network1/cell_1/zoph_block_5/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/join" -> "network1/cell_1/zoph_block_5/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_1/join" -> "network1/cell_1/zoph_block_5/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_2/join" -> "network1/cell_1/zoph_block_5/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_3/join" -> "network1/cell_1/zoph_block_5/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_4/join" -> "network1/cell_1/zoph_block_5/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_5/input_con" -> "network1/cell_1/zoph_block_5/input_conv" [label="(1, 1792, 16, 16)"]
+	"network1/cell_1/zoph_block_5/input_conv" -> "network1/cell_1/zoph_block_5/candidate_0" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_5/candidate_0" -> "network1/cell_1/zoph_block_5/join" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_0" -> "network1/cell_1/zoph_block_6/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_1" -> "network1/cell_1/zoph_block_6/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/join" -> "network1/cell_1/zoph_block_6/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_1/join" -> "network1/cell_1/zoph_block_6/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_2/join" -> "network1/cell_1/zoph_block_6/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_3/join" -> "network1/cell_1/zoph_block_6/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_4/join" -> "network1/cell_1/zoph_block_6/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_5/join" -> "network1/cell_1/zoph_block_6/input_con" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_6/input_con" -> "network1/cell_1/zoph_block_6/input_conv" [label="(1, 2048, 16, 16)"]
+	"network1/cell_1/zoph_block_6/input_conv" -> "network1/cell_1/zoph_block_6/candidate_0" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_6/candidate_0" -> "network1/cell_1/zoph_block_6/join" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_0" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/reduce_pool_1" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_0/join" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_1/join" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_2/join" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_3/join" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_4/join" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_5/join" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_1/zoph_block_6/join" -> "network1/cell_1/output_concat" [label="(1, 256, 16, 16)"]
+	"network1/cell_0/output_concat" -> "network1/cell_2/input_conv_0" [label="(1, 1152, 32, 32)"]
+	"network1/cell_2/input_conv_0" -> "network1/cell_2/input_bn_0" [label="(1, 512, 32, 32)"]
+	"network1/cell_2/input_bn_0" -> "network1/cell_2/input_conv_0/relu" [label="(1, 512, 32, 32)"]
+	"network1/cell_1/output_concat" -> "network1/cell_2/input_conv_1" [label="(1, 2304, 16, 16)"]
+	"network1/cell_2/input_conv_1" -> "network1/cell_2/input_bn_1" [label="(1, 512, 16, 16)"]
+	"network1/cell_2/input_bn_1" -> "network1/cell_2/input_conv_1/relu" [label="(1, 512, 16, 16)"]
+	"network1/cell_2/input_conv_0/relu" -> "network1/cell_2/shape_adapt_pool_0" [label="(1, 512, 32, 32)"]
+	"network1/cell_2/shape_adapt_pool_0" -> "network1/cell_2/reduce_pool_0" [label="(1, 512, 16, 16)"]
+	"network1/cell_2/input_conv_1/relu" -> "network1/cell_2/reduce_pool_1" [label="(1, 512, 16, 16)"]
+	"network1/cell_2/reduce_pool_0" -> "network1/cell_2/zoph_block_0/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_1" -> "network1/cell_2/zoph_block_0/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/input_con" -> "network1/cell_2/zoph_block_0/input_conv" [label="(1, 1024, 8, 8)"]
+	"network1/cell_2/zoph_block_0/input_conv" -> "network1/cell_2/zoph_block_0/candidate_0" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/candidate_0" -> "network1/cell_2/zoph_block_0/join" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_0" -> "network1/cell_2/zoph_block_1/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_1" -> "network1/cell_2/zoph_block_1/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/join" -> "network1/cell_2/zoph_block_1/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_1/input_con" -> "network1/cell_2/zoph_block_1/input_conv" [label="(1, 1536, 8, 8)"]
+	"network1/cell_2/zoph_block_1/input_conv" -> "network1/cell_2/zoph_block_1/candidate_0" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_1/candidate_0" -> "network1/cell_2/zoph_block_1/join" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_0" -> "network1/cell_2/zoph_block_2/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_1" -> "network1/cell_2/zoph_block_2/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/join" -> "network1/cell_2/zoph_block_2/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_1/join" -> "network1/cell_2/zoph_block_2/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_2/input_con" -> "network1/cell_2/zoph_block_2/input_conv" [label="(1, 2048, 8, 8)"]
+	"network1/cell_2/zoph_block_2/input_conv" -> "network1/cell_2/zoph_block_2/candidate_0" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_2/candidate_0" -> "network1/cell_2/zoph_block_2/join" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_0" -> "network1/cell_2/zoph_block_3/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_1" -> "network1/cell_2/zoph_block_3/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/join" -> "network1/cell_2/zoph_block_3/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_1/join" -> "network1/cell_2/zoph_block_3/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_2/join" -> "network1/cell_2/zoph_block_3/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_3/input_con" -> "network1/cell_2/zoph_block_3/input_conv" [label="(1, 2560, 8, 8)"]
+	"network1/cell_2/zoph_block_3/input_conv" -> "network1/cell_2/zoph_block_3/candidate_0" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_3/candidate_0" -> "network1/cell_2/zoph_block_3/join" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_0" -> "network1/cell_2/zoph_block_4/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_1" -> "network1/cell_2/zoph_block_4/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/join" -> "network1/cell_2/zoph_block_4/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_1/join" -> "network1/cell_2/zoph_block_4/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_2/join" -> "network1/cell_2/zoph_block_4/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_3/join" -> "network1/cell_2/zoph_block_4/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_4/input_con" -> "network1/cell_2/zoph_block_4/input_conv" [label="(1, 3072, 8, 8)"]
+	"network1/cell_2/zoph_block_4/input_conv" -> "network1/cell_2/zoph_block_4/candidate_0" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_4/candidate_0" -> "network1/cell_2/zoph_block_4/join" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_0" -> "network1/cell_2/zoph_block_5/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_1" -> "network1/cell_2/zoph_block_5/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/join" -> "network1/cell_2/zoph_block_5/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_1/join" -> "network1/cell_2/zoph_block_5/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_2/join" -> "network1/cell_2/zoph_block_5/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_3/join" -> "network1/cell_2/zoph_block_5/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_4/join" -> "network1/cell_2/zoph_block_5/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_5/input_con" -> "network1/cell_2/zoph_block_5/input_conv" [label="(1, 3584, 8, 8)"]
+	"network1/cell_2/zoph_block_5/input_conv" -> "network1/cell_2/zoph_block_5/candidate_0" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_5/candidate_0" -> "network1/cell_2/zoph_block_5/join" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_0" -> "network1/cell_2/zoph_block_6/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_1" -> "network1/cell_2/zoph_block_6/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/join" -> "network1/cell_2/zoph_block_6/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_1/join" -> "network1/cell_2/zoph_block_6/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_2/join" -> "network1/cell_2/zoph_block_6/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_3/join" -> "network1/cell_2/zoph_block_6/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_4/join" -> "network1/cell_2/zoph_block_6/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_5/join" -> "network1/cell_2/zoph_block_6/input_con" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_6/input_con" -> "network1/cell_2/zoph_block_6/input_conv" [label="(1, 4096, 8, 8)"]
+	"network1/cell_2/zoph_block_6/input_conv" -> "network1/cell_2/zoph_block_6/candidate_0" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_6/candidate_0" -> "network1/cell_2/zoph_block_6/join" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_0" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/reduce_pool_1" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_0/join" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_1/join" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_2/join" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_3/join" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_4/join" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_5/join" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/zoph_block_6/join" -> "network1/cell_2/output_concat" [label="(1, 512, 8, 8)"]
+	"network1/cell_2/output_concat" -> "network1/output_conv_1" [label="(1, 4608, 8, 8)"]
+	"network1/output_conv_1" -> "network1/output_bn" [label="(1, 10, 8, 8)"]
+	"network1/output_bn" -> "network1/output_relu" [label="(1, 10, 8, 8)"]
+	"network1/output_relu" -> "network1/global_average_pool" [label="(1, 10, 8, 8)"]
+	"network1/global_average_pool" -> "network1/output_reshape" [label="(1, 10, 1, 1)"]
+}

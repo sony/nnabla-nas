@@ -4,7 +4,7 @@ import nnabla as nn
 
 from ... import utils as ut
 from ...module import Parameter
-from ...module.static import static_module as smo
+from ...module import static as smo
 from ..model import Model
 from . import modules as Mo
 
