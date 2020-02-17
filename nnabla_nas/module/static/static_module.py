@@ -1,15 +1,19 @@
 """
-Classes for graph based definition of DNN architectures and candidate spaces.
+Defintion of static modules. Static modules are handy for Neural Architecture
+Search (NAS), because they encode the graph structure.
 """
 
 import operator
 
 import nnabla as nn
 import nnabla.functions as F
+from nnabla.logger import logger
 import numpy as np
 
 import nnabla_nas.module as mo
 from nnabla_nas.module.parameter import Parameter
+
+from graphviz import Digraph
 
 
 def _get_abs_string_index(obj, idx):
@@ -25,18 +29,7 @@ def _get_abs_string_index(obj, idx):
 class Module(mo.Module):
     def __init__(self, name, parent=None, eval_prob=None, *args, **kwargs):
         """
-        A vertice is a computational node in a DNN architecture.
-        It has a unique name, and a reference to a graph object where it lives in.
-        You can provide collections (a list of strings). A collection is a group
-        of vertices which share common properties or belong together because of
-        a certain reason.
-
-        :param name: string, the unique name of the vertice which identifies it.
-        The name must be unique within the graph the vertice lives in.
-        :param parent: list, list of parent vertices
-        :collections: list of strings, the collections this vertice belongs to.
-        A collection is a group of vertices, which belong together for some
-        reason.
+        A static module has a name and parent modules.
         """
         self._parent = None
         self._init_parent(parent)
@@ -45,7 +38,7 @@ class Module(mo.Module):
         self._value = None
         self._eval_probs = None
         self._prof = None
-        self._shape = None
+        self._shape = -1
 
         if eval_prob is None:
             self._eval_prob = nn.Variable.from_numpy_array(np.array(1.0))
@@ -72,12 +65,16 @@ class Module(mo.Module):
 
     @property
     def shape(self):
-        if self._shape is None:
+        if self._shape == -1:
             self._shape = self._shape_function()
         return self._shape
 
+    @shape.setter
+    def shape(self, value):
+        self._shape = value
+
     @property
-    def input_shape(self):
+    def input_shapes(self):
         if hasattr(self._parent, '__iter__'):
             return [pi.shape for pi in self._parent]
         else:
@@ -109,12 +106,10 @@ class Module(mo.Module):
     def call(self, input):
         raise NotImplementedError
 
-    def clear_value(self):
-        self._value = None
-
     def _recursive_call(self):
         if self._value is None:
             self._value = self.call(self.parent())
+            self.need_grad = True
         # else:
         #    print("reusing graph for {}".format(self.name))
         return self._value
@@ -130,98 +125,27 @@ class Module(mo.Module):
     def eval_prob(self, value):
         self._eval_prob = value
 
-    def reset_value(self):
-        self._value = None
-
-# ------------------------------------A graph of StaticModules--------------------------------------
-
-
-class Graph(mo.ModuleList, Module):
-    # Graph is derived from Op, such that we can realize nested graphs!
-    def __init__(self, name, parents=None, eval_prob=None, *args, **kwargs):
-        mo.ModuleList.__init__(self, *args, **kwargs)
-        Module.__init__(self, name=name, parent=parents, eval_prob=eval_prob)
-        self._output = None
-
     @property
     def output(self):
-        return self[-1]
-
-    def _init_parent(self, parent):
-        if parent is not None:
-            parent_type_mismatch = [not isinstance(pi, Module) for pi in parent]
-            self._parent = []
-            if sum(parent_type_mismatch) == 0:
-                for pi in parent:
-                    self._parent.append(pi)
-                    pi._children.append(self)
-            else:
-                raise Exception('At least one provided parent is not instance of class StaticModule')
-        else:
-            pass
-
-    def _recursive_call(self):
-        return self.output()
-
-    @property
-    def shape(self):
-        """
-        The output determines the shape of the graph.
-        """
-        if self._shape is None:
-            self._shape = self.output.shape
-        return self._shape
-
-    def _profile(self, profiler, n_run=100):
-        """
-        Compared to a single vertice, we need to profile all vertices which are nested in this graph.
-        """
-        result = {}
-        for mi in self.get_modules():
-            if isinstance(mi[1], Module):
-                if mi[1] != self and not isinstance(mi[1], Graph):
-                    result[mi[1].name] = mi[1].profile(profiler, n_run=n_run)
-                else:
-                    print("do not profile {}".format(mi[1].name))
-        return result
-
-    def __getitem__(self, index):
-        if isinstance(index, slice):
-            return Graph(name=self._name + '/'+str(index),
-                         parents=self._parent,
-                         modules=list(self.modules.values())[index])
-        index = _get_abs_string_index(self, index)
-        return self.modules[index]
-
-    def __delitem__(self, index):
-        raise RuntimeError
-
-    def get_exp_latency(self, profiler, n_run=10):
-        exp_latency = 0
-        for mi in self.modules:
-            exp_latency += self.modules[mi].get_exp_latency(profiler, n_run)
-        return exp_latency
+        return self
 
     def reset_value(self):
-        for mi in self.modules:
-            try:
-                self._value = None
-                self.modules[mi].reset_value()
-            except:
-                pass  # dynamic modules have no reset_value
-
-# ------------------------------------Some basic StaticModules------------------------------
+        self._value = None
+        self.apply(need_grad=False)
+        self.shape = -1
 
 
+# ------------------------------------Some basic StaticModules----------------
 class Input(Module):
     def __init__(self, name, value=None, eval_prob=None, *args, **kwargs):
         """
-        An input op to the graph, which can store input values to propagate through the graph. If the input node has
-        parent, it is the identity op, which just feeds the aggregated inputs to the output.
+        An input op to the graph, which can store input values
+        to propagate through the graph. If the input node has
+        parent, it is the identity op, which
+        just feeds the aggregated inputs to the output.
         """
         Module.__init__(self, name=name, parent=None, eval_prob=eval_prob)
         self._inp_value = value
-        self._shape = self._inp_value.shape
 
     def _init_parent(self, parent):
         """
@@ -233,7 +157,14 @@ class Input(Module):
         return self._inp_value
 
     def _recursive_call(self):
+        self.need_grad = True
         return self.call(None)
+
+    def _shape_function(self):
+        return self._inp_value.shape
+
+    def reset_value(self):
+        self.shape = -1
 
 
 class Identity(mo.Identity, Module):
@@ -245,12 +176,19 @@ class Zero(mo.Zero, Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         mo.Zero.__init__(self, *args, **kwargs)
         Module.__init__(self, name, parent, eval_prob=eval_prob)
-        self._inp_value = nn.Variable.from_numpy_array(np.zeros(self._parent.shape))
+        self._inp_value = nn.Variable.from_numpy_array(
+            np.zeros(self._parent.shape))
 
     def call(self, input):
+        self._inp_value = nn.Variable.from_numpy_array(
+            np.zeros(self._parent.shape))
         return self._inp_value
 
+    def _shape_function(self):
+        return self._parent.shape
+
     def _recursive_call(self):
+        self.need_grad = True
         return self.call(None)
 
 
@@ -322,11 +260,13 @@ class Merging(mo.Merging, Module):
                 self._parent.append(pi)
                 pi._children.append(self)
         else:
-            raise Exception('At least one provided parent is not a static module!')
+            raise Exception(
+                'At least one provided parent is not a static module!')
 
     def _recursive_call(self):
         if self._value is None:
             self._value = self.call(*[pi() for pi in self.parent])
+            self.need_grad = True
         return self._value
 
     def _shape_function(self):
@@ -336,14 +276,24 @@ class Merging(mo.Merging, Module):
         return dummy_graph.shape
 
 
+class Collapse(Module):
+    def call(self, input):
+        return F.reshape(input,
+                         shape=(input.shape[0], input.shape[1]))
+
+
 class Join(Module):
-    def __init__(self, name, parents, join_parameters, mode='linear', *args, **kwargs):
+    def __init__(self, name, parents, join_parameters,
+                 mode='linear', *args, **kwargs):
         """
-        :param join_parameters: nnabla variable of shape (#parents,1), the logits for the join operations
+        :param join_parameters: nnabla variable of shape
+        (#parents,1), the logits for the join operations
         :param mode: string, the mode we use to join (linear, sample, max)
         """
         if len(parents) < 2:
-            raise Exception("Join vertice {} must have at least 2 inputs, but has {}.".format(self.name, len(parent)))
+            raise Exception("Join vertice {} must have at "
+                            "least 2 inputs, but has {}.".format(
+                                    self.name, len(parents)))
 
         self._supported_modes = ['linear', 'sample', 'max']
         self.mode = mode
@@ -351,7 +301,9 @@ class Join(Module):
         if join_parameters.size == len(parents):
             self._join_parameters = join_parameters
         else:
-            raise Exception("The number of provided join parameters does not match the number of parents")
+            raise Exception(
+                "The number of provided join parameters does not"
+                " match the number of parents")
         self._sel_p = F.softmax(self._join_parameters)
 
         Module.__init__(self, name=name, parent=parents, *args, **kwargs)
@@ -365,7 +317,8 @@ class Join(Module):
                 self._parent.append(pi)
                 pi._children.append(self)
         else:
-            raise Exception('At least one provided parent is not a static module!')
+            raise Exception(
+                'At least one provided parent is not a static module!')
 
     @property
     def mode(self):
@@ -376,11 +329,21 @@ class Join(Module):
         if m in self._supported_modes:
             self._mode = m
         else:
-            raise Exception("Join only supports the modes: {}".format(self._supported_modes))
+            raise Exception("Join only supports the modes: {}".format(
+                self._supported_modes))
+
+    @property
+    def _alpha(self):
+        return self._join_parameters
+
+    @_alpha.setter
+    def _alpha(self, value):
+        self._alpha = value
 
     def call(self, input):
         """
-        Aggregates all input tensors to one single input tensor (summing them up)
+        Aggregates all input tensors to one single
+        input tensor (summing them up)
         """
         res = 0.0
         if self.mode == 'linear':
@@ -392,12 +355,20 @@ class Join(Module):
 
     def _recursive_call(self):
         if self._value is None:
+            self.need_grad = True
             if self.mode == 'linear':
                 self._value = self.call([pi() for pi in self.parent])
             elif self.mode == 'sample':
                 self._sel_p.forward()
-                self._idx = np.random.choice(len(self.parent), 1, p=self._sel_p.d)[0]
+                self._idx = np.random.choice(
+                    len(self.parent), 1, p=self._sel_p.d)[0]
                 self._value = self.call(self.parent[self._idx]())
+
+                # update the score function
+                score = self._sel_p.d
+                score[self._idx] -= 1
+                self._join_parameters.g = score
+                # print('{}/{}'.format(self.name,score[0]))
             elif self.mode == 'max':
                 self._idx = np.argmax(self._join_parameters.d)
                 self._value = self.call(self.parent[self._idx]())
@@ -405,14 +376,126 @@ class Join(Module):
         return self._value
 
     def _shape_function(self):
-        # we build a nummy nnabla graph to infer the shapes
-        inputs = [nn.Variable(pi.shape) for pi in self.parent]
+        if self.mode == 'linear':
+            inputs = [nn.Variable(pi.shape) for pi in self.parent]
+        elif self.mode == 'sample' or self.mode == 'max':
+            inputs = nn.Variable(self.parent[0].shape)
         dummy_graph = self.call(inputs)
         return dummy_graph.shape
+# ------------------------------------A graph of StaticModules----------------
+
+
+class Graph(mo.ModuleList, Module):
+    # Graph is derived from Op, such that we can realize nested graphs!
+    def __init__(self, name, parents=None, eval_prob=None, *args, **kwargs):
+        mo.ModuleList.__init__(self, *args, **kwargs)
+        Module.__init__(self, name=name, parent=parents, eval_prob=eval_prob)
+        self._output = None
+
+    @property
+    def output(self):
+        return self[-1]
+
+    def _init_parent(self, parent):
+        if parent is not None:
+            parent_type_mismatch = [
+                not isinstance(pi, Module) for pi in parent]
+            self._parent = []
+            if sum(parent_type_mismatch) == 0:
+                for pi in parent:
+                    self._parent.append(pi)
+                    pi._children.append(self)
+            else:
+                raise Exception('At least one provided parent'
+                                ' is not instance of class StaticModule')
+        else:
+            pass
+
+    def _recursive_call(self):
+        return self.output()
+
+    @property
+    def shape(self):
+        """
+        The output determines the shape of the graph.
+        """
+        return self.output.shape
+
+    @shape.setter
+    def shape(self, value):
+        self.output.shape = value
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            return Graph(name=self._name + '/'+str(index),
+                         parents=self._parent,
+                         modules=list(self.modules.values())[index])
+        index = _get_abs_string_index(self, index)
+        return self.modules[index]
+
+    def __delitem__(self, index):
+        raise RuntimeError
+
+    def reset_value(self):
+        for mi in self.modules:
+            try:
+                self.modules[mi].reset_value()
+            except Exception:
+                pass
+
+    def get_gv_graph(self, active_only=True,
+                     color_map={Join: 'blue',
+                                Merging: 'green',
+                                Zero: 'red'}):
+        graph = Digraph(name=self.name)
+        # 1. get all the static modules in the graph
+        if active_only:
+            modules = [mi for _, mi in self.get_modules() if
+                       isinstance(mi, Module) and
+                       type(mi) != Graph and
+                       mi._value is not None]
+        else:
+            modules = [mi for _, mi in self.get_modules()
+                       if isinstance(mi, Module) and type(mi) != Graph]
+
+        # 2. add these static modules as vertices to the graph
+        for mi in modules:
+            try:
+                mi._eval_prob.forward()
+            except Exception:
+                pass
+            caption = mi.name + "\n p: {:3.4f}ms".format(mi.eval_prob.d)
+            try:
+                graph.attr('node', color=color_map[type(mi)])
+            except Exception:
+                pass
+            graph.node(mi.name, caption)
+
+        # 3. add the edges
+        for mi in modules:
+            parents = mi.parent
+            if parents is not None:
+                if type(parents) == list:
+                    for pi in parents:
+                        if active_only:
+                            if pi.output._value is not None:
+                                graph.edge(pi.output.name, mi.name,
+                                           label=str(pi.output.shape))
+                        else:
+                            graph.edge(pi.output.name, mi.name,
+                                       label=str(pi.output.shape))
+                else:
+                    if active_only:
+                        if parents.output._value is not None:
+                            graph.edge(parents.output.name, mi.name,
+                                       label=str(parents.shape))
+                    else:
+                        graph.edge(parents.output.name, mi.name,
+                                   label=str(parents.output.shape))
+        return graph
 
 
 if __name__ == '__main__':
-    from nnabla_nas.module.static import NNablaProfiler
     from nnabla_nas.utils import LatencyEstimator
 
     class MyGraph(Graph):
@@ -422,18 +505,19 @@ if __name__ == '__main__':
             join_param = Parameter(shape=(3,))
             join_prob = F.softmax(join_param)
 
-            self.append(Input(name='input_2', value=nn.Variable((10, 20, 32, 32)),
+            self.append(Input(name='input_2',
+                              value=nn.Variable((10, 20, 32, 32)),
                               eval_prob=join_prob[0]+join_prob[1]))
-            self.append(Conv(name='conv', parent=self[-1], in_channels=20, out_channels=20, kernel=(3, 3), pad=(1, 1),
+            self.append(Conv(name='conv', parent=self[-1], in_channels=20,
+                             out_channels=20, kernel=(3, 3), pad=(1, 1),
                              eval_prob=join_prob[0]))
-            self.append(Input(name='input_3', value=nn.Variable((10, 20, 32, 32)),
+            self.append(Input(name='input_3',
+                              value=nn.Variable((10, 20, 32, 32)),
                               eval_prob=join_prob[2]))
             self.append(Join(name='join',
                              parents=self,
                              mode='linear',
                              join_parameters=join_param))
-            #self.append(Join(name='join', parent=self[-1], join_parameters=Parameter(shape=(2,))))
-#            self.append(Merge(name='merge', parent=[self[-1], self[0]]))
 
     input_module_1 = Input(name='input_1', value=nn.Variable((10, 20, 32, 32)))
     myGraph = MyGraph(name='myGraph', parents=[input_module_1])
@@ -449,9 +533,10 @@ if __name__ == '__main__':
     for evi in eval_p:
         try:
             eval_p[evi].forward()
-        except:
-            pass
-        print("Module {} has evaluation probability {}".format(evi, eval_p[evi].d))
+        except Exception as ex:
+            logger.warning(str(ex))
+        print("Module {} has evaluation probability {}".format(
+            evi, eval_p[evi].d))
 
     import pdb
     pdb.set_trace()

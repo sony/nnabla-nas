@@ -32,6 +32,8 @@ class Trainer(Runner):
 
     def run(self):
         """Run the training process."""
+        self.callback_on_start()
+
         for cur_epoch in range(self.args.epoch):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
@@ -86,7 +88,4 @@ class Trainer(Runner):
             self.model.save_parameters(path)
 
     def callback_on_finish(self):
-        pass
-
-    def callback_on_sample_graph(self):
         pass

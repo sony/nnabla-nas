@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 import nnabla.functions as F
-from nnabla import logger
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
 
@@ -256,12 +255,12 @@ class MixedOp(Mo.Module):
             out = F.mul2(out, F.softmax(self._alpha, axis=0))
             return F.sum(out, axis=0)
 
-        if self._active is None:
-            logger.warn('The active index was not initialized.')
+        # update active index
+        self._update_active_index()
 
         return self._ops[self._active](input)
 
-    def update_active_index(self):
+    def _update_active_index(self):
         """Update index of the active operation."""
         probs = softmax(self._alpha.d, axis=0)
         self._active = ut.sample(
