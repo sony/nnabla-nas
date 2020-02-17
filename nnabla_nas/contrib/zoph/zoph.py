@@ -323,7 +323,8 @@ class SearchNet(Model, smo.Graph):
                 MaxPool3x3,
                 AveragePool3x3,
                 smo.MaxPool,
-                smo.GlobalAvgPool]
+                smo.GlobalAvgPool,
+                smo.Collapse]
 
     @property
     def input_shape(self):
