@@ -11,12 +11,12 @@ stages:
 
 flake8:
   stage: Analyze
-  allow_failure: True
+  allow_failure: False
   script:
     - flake8 . --max-line-length=120
 
 unit_test:
   stage: Test
-  allow_failure: True
+  allow_failure: False
   script:
     - pytest --cov=./
