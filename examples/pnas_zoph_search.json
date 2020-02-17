@@ -5,7 +5,7 @@
     "batch_size_valid": 256,
     "mini_batch_train": 64,
     "mini_batch_valid": 64,
-    "warmup": 10,
+    "warmup": 20,
     "cutout": 16,
     "print_frequency": 20,
     "train_portion": 0.9,
