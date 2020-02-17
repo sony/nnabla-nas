@@ -9,7 +9,7 @@ stages:
 
 flake8:
   stage: Analyze
-  allow_failure: False
+  allow_failure: True
   script:
     - flake8 . --max-line-length=120
 
