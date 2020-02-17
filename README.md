@@ -118,6 +118,20 @@ Search spaces are constructed using Modules. Modules are composed of layers, whi
 A new model should inherit API from the class [`nnabla_nas.contrib.model.Model`](nnabla_nas/contrib/model.py). The base API for `Model` has two methods, `get_arch_parameters()`
 and `get_net_parameters()` that return the architecture parameters and model parameters, respectively.
 
+
+```python
+from nnabla_nas.contrib.model import Model
+
+class MyModel(Model):
+
+    def get_arch_parameters(self, grad_only=False):
+        # TODO: write your code here
+
+    def get_net_parameters(self, grad_only=False):
+        # TODO: write your code here
+```
+
+
 ### Searcher algorithms
 
 An Searcher interacts with the search space through a simple API. A searcher samples a model from the search space by assigning values to the architecture parameters. The results from sampled architecture is then used to update the architecture parameters of the search space. A searcher also updates the model parameters. A new Searcher should inherit API from [`nnabla_nas.runner.searcher.search.Searcher`](nnabla_nas/runner/searcher/search.py). This class has two methods `train_on_batch()` and `valid_on_batch()` which should be redefined by users. 
@@ -135,6 +149,9 @@ class MyAlgorithm(Searcher):
     
     def valid_on_batch(self):
         # TODO: write your code here
+    
+    def callback_on_finish(self):
+        # TODO: write your code here
 ```
 
 There are two searcher algorithms implemented in NnablaNAS, including [`DartsSearcher`](nnabla_nas/runner/searcher/darts.py) and [`ProxylessNasSearcher`](nnabla_nas/runner/searcher/pnas.py).
@@ -143,14 +160,17 @@ There are two searcher algorithms implemented in NnablaNAS, including [`DartsSea
 
 When running the architecture search, the evaluations in the sarch space are logged. We mantain a folder to keep track of the parameters, predictions (e.g., loss, error, number of parameters, and latency). Users can easily monitor the training curves with [`TensorboardX`](https://tensorboardx.readthedocs.io/en/latest/tutorial.html).
 
-<img src="docs/sources/images/tensorboard.png" alt="drawing" width="800"/>
+<p align="center">
+<img src="docs/sources/images/tensorboard.png" alt="drawing" width="700"/>
+</p>
 
 ### Visualization
 
 Visualization is useful for debugging and illustrating the search space. One can easily check whether the search space was build correctly. So far, only DARTS search space is supported.
 
+<p align="center">
 <img src="docs/sources/images/darts_normal.png" alt="drawing" width="700"/>
-
+</p>
 
 ## Documentation
 
