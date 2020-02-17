@@ -17,13 +17,15 @@ class ConvBNReLU6(Mo.Module):
             dimensions. Defaults to None.
         stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
             dimensions. Defaults to None.
-        fix_parameters (bool, optinal): A boolean value that when set to `False`,
-            this module has learnable batchnorm parameters. Defaults to `False`.
+        fix_parameters (bool, optinal): A boolean value that when
+            set to `False`, this module has learnable batchnorm parameters.
+            Defaults to `False`.
 
     """
 
     def __init__(self, in_channels, out_channels, kernel,
-                 pad=None, stride=None, with_bias=True, group=1, fix_parameters=False):
+                 pad=None, stride=None, with_bias=True,
+                 group=1, fix_parameters=False):
         Mo.Module.__init__(self)
 
         self._in_channels = in_channels
@@ -59,7 +61,7 @@ class ConvBNReLU6(Mo.Module):
 
 
 class InvertedResidualConv(Mo.Module):
-    r"""Inverted Residual Convolution as defined in the 
+    r"""Inverted Residual Convolution as defined in the
     MobileNetV2 paper [Sandler2018].
 
     Args:
@@ -76,9 +78,9 @@ class InvertedResidualConv(Mo.Module):
         stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
             dimensions. Defaults to None.
         expansion_factor (:obj:`int`): Expansion factor
-        fix_parameters (bool, optinal): A boolean value that when set to `False`,
-            this module has learnable batchnorm parameters. Defaults to `False`.
-
+        fix_parameters (bool, optinal): A boolean value that when
+            set to `False`, this module has learnable batchnorm parameters.
+            Defaults to `False`.
     """
 
     def __init__(self, in_channels, out_channels, kernel,
@@ -101,20 +103,26 @@ class InvertedResidualConv(Mo.Module):
 
         # PW1 (only if expansion)
         if self._expansion_factor > 1:
-            self._operators.append(ConvBNReLU6(in_channels, hmaps, kernel=(1, 1),
-                                               stride=(1, 1), pad=(0, 0), with_bias=False))
+            self._operators.append(ConvBNReLU6(in_channels, hmaps,
+                                               kernel=(1, 1),
+                                               stride=(1, 1),
+                                               pad=(0, 0),
+                                               with_bias=False))
 
         # DW2
         self._operators.append(ConvBNReLU6(hmaps, hmaps, kernel=self._kernel,
-                                           stride=self._stride, pad=self._pad, group=hmaps, with_bias=False))
+                                           stride=self._stride, pad=self._pad,
+                                           group=hmaps, with_bias=False))
 
         # PW3
-        self._operators.append(ConvBNReLU6(hmaps, self._out_channels, kernel=(1, 1),
-                                           stride=(1, 1), pad=(0, 0), with_bias=False))
+        self._operators.append(ConvBNReLU6(hmaps, self._out_channels,
+                                           kernel=(1, 1), stride=(1, 1),
+                                           pad=(0, 0), with_bias=False))
 
     def call(self, input):
         y = self._operators(input)
-        if (self._stride == (1, 1) and self._in_channels == self._out_channels):
+        if (self._stride == (1, 1) and
+                self._in_channels == self._out_channels):
             y = y + input
         return y
 

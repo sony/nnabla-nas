@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     config = json.load(open(options.config_file)) if options.config_file \
         else dict()
-    config.update(vars(options))
+    config.update({k: v for k, v in vars(options).items() if v is not None})
 
     # setup context for nnabla
     ctx = get_extension_context(
@@ -54,6 +54,7 @@ if __name__ == "__main__":
         placeholder=loader['placeholder'],
         optimizer=loader['optimizer'],
         dataloader=loader['dataloader'],
+        transform=loader['transform'],
         regularizer=loader['regularizer'],
         criteria=lambda o, t: F.mean(F.softmax_cross_entropy(o, t)),
         evaluate=lambda o, t: F.mean(F.top_n_error(o, t)),

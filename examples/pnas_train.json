@@ -1,12 +1,13 @@
 {
     "dataset": "cifar10",
-    "epoch": 150,
+    "epoch": 600,
     "batch_size_train": 256,
     "batch_size_valid": 100,
     "mini_batch_train": 64,
     "mini_batch_valid": 100,
     "cutout": 16,
     "warmup": 0,
+    "aux_weight": 0.4,
     "print_frequency": 20,
     "network": {
         "search_space": "pnas",
@@ -15,7 +16,8 @@
         "num_cells": 15,
         "num_classes": 10,
         "num_choices": 4,
-        "auxiliary": false,
+        "auxiliary": true,
+        "drop_path": 0.1,
         "genotype": "log/pnas/search/arch.h5"
     },
     "optimizer": {

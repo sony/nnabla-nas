@@ -46,9 +46,10 @@ class LatencyEstimator(Estimator):
                                        n_run=self._n_run)
                 runner.run()
                 latency = float(runner.result['forward_all'])
-            except:  # noqa
+            except Exception as err:
                 latency = 0
                 logger.warning(f'Latency calculation fails: {idm}[{key}]')
+                logger.warning(str(err))
 
             mem[key] = latency
             module.apply(training=state)  # recover training state
