@@ -12,6 +12,7 @@ from .static_module import Merging
 from .static_module import Module
 from .static_module import ReLU
 from .static_module import Zero
+from .static_module import Collapse
 
 __all__ = [
     'Module',
@@ -27,5 +28,6 @@ __all__ = [
     'ReLU',
     'BatchNormalization',
     'Merging',
-    'Join'
+    'Join',
+    'Collapse'
 ]

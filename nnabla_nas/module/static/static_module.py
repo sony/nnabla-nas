@@ -109,7 +109,7 @@ class Module(mo.Module):
     def _recursive_call(self):
         if self._value is None:
             self._value = self.call(self.parent())
-            self.apply(need_grad=True)
+            self.need_grad = True
         # else:
         #    print("reusing graph for {}".format(self.name))
         return self._value
@@ -157,6 +157,7 @@ class Input(Module):
         return self._inp_value
 
     def _recursive_call(self):
+        self.need_grad = True
         return self.call(None)
 
     def _shape_function(self):
@@ -187,6 +188,7 @@ class Zero(mo.Zero, Module):
         return self._parent.shape
 
     def _recursive_call(self):
+        self.need_grad = True
         return self.call(None)
 
 
@@ -264,6 +266,7 @@ class Merging(mo.Merging, Module):
     def _recursive_call(self):
         if self._value is None:
             self._value = self.call(*[pi() for pi in self.parent])
+            self.need_grad = True
         return self._value
 
     def _shape_function(self):
@@ -271,6 +274,12 @@ class Merging(mo.Merging, Module):
         inputs = [nn.Variable(pi.shape) for pi in self.parent]
         dummy_graph = self.call(*inputs)
         return dummy_graph.shape
+
+
+class Collapse(Module):
+    def call(self, input):
+        return F.reshape(input,
+                         shape=(input.shape[0], input.shape[1]))
 
 
 class Join(Module):
@@ -346,6 +355,7 @@ class Join(Module):
 
     def _recursive_call(self):
         if self._value is None:
+            self.need_grad = True
             if self.mode == 'linear':
                 self._value = self.call([pi() for pi in self.parent])
             elif self.mode == 'sample':
@@ -430,9 +440,8 @@ class Graph(mo.ModuleList, Module):
         for mi in self.modules:
             try:
                 self.modules[mi].reset_value()
-            except Exception as ex:
-                logger.warning("reset failed")
-                logger.warning(str(ex))
+            except Exception:
+                pass
 
     def get_gv_graph(self, active_only=True,
                      color_map={Join: 'blue',
@@ -453,18 +462,13 @@ class Graph(mo.ModuleList, Module):
         for mi in modules:
             try:
                 mi._eval_prob.forward()
-            except Exception as ex:
-                logger.warning("eval_prob of {} "
-                               "cannot be forwarded".format(mi.name))
-                logger.warning(str(ex))
+            except Exception:
+                pass
             caption = mi.name + "\n p: {:3.4f}ms".format(mi.eval_prob.d)
             try:
                 graph.attr('node', color=color_map[type(mi)])
-            except Exception as ex:
-                graph.attr('node', color='black')
-                logger.warning("node type {} "
-                               "not specified in color_map.".format(type(mi)))
-                logger.warning(str(ex))
+            except Exception:
+                pass
             graph.node(mi.name, caption)
 
         # 3. add the edges

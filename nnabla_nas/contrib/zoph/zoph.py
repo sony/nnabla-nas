@@ -10,7 +10,6 @@ from nnabla_nas.module.parameter import Parameter
 from nnabla_nas.contrib import misc
 from nnabla_nas.contrib.model import Model
 from nnabla_nas.utils import load_parameters
-from nnabla.logger import logger
 
 
 class SepConv(misc.SepConv, smo.Module):
@@ -71,7 +70,7 @@ class DilSepConv5x5(SepConvBN):
 class MaxPool3x3(smo.MaxPool):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         smo.MaxPool.__init__(self, name, parent, kernel=(
-            3, 3), stride=(1, 1), pad=(1, 1))
+            3, 3), stride=(1, 1), pad=(1, 1), eval_prob=eval_prob)
         self.bn = mo.BatchNormalization(
             n_features=self.parent.shape[1], n_dims=4)
         self.relu = mo.ReLU()
@@ -301,8 +300,10 @@ class SearchNet(Model, smo.Graph):
                              parent=self[-1]))
 
         self.append(smo.GlobalAvgPool(
-            name='{}/global_average_pool'.format(self.name), parent=self[-1]))
-
+            name='{}/global_average_pool'.format(self.name),
+            parent=self[-1]))
+        self.append(smo.Collapse(name='{}/output_reshape'.format(self.name),
+                                 parent=self[-1]))
         for mi in self.get_arch_modules():
             mi.mode = self._mode
 
@@ -380,22 +381,19 @@ class SearchNet(Model, smo.Graph):
         str_summary = ''
         for mi in self.get_arch_modules():
             mi._sel_p.forward()
-            str_summary += "Most probable parent of {} is {} with probability "
-            "{}\n".format(mi.name,
-                          mi.parent[np.argmax(mi._join_parameters.d)].name,
-                          np.max(mi._sel_p.d))
+            str_summary += mi.name + "/"
+            str_summary += mi.parent[np.argmax(mi._join_parameters.d)].name
+            str_summary += "/" + str(np.max(mi._sel_p.d)) + "\n"
 
         str_summary += "Instantiated modules are:\n"
         for mi in self.get_net_modules(active_only=True):
             if isinstance(mi, smo.Module):
-                if mi._value is not None:
-                    try:
-                        mi._eval_prob.forward()
-                    except Exception as ex:
-                        logger.warning(str(ex))
-                    str_summary += "{} chosen with probability "
-                    "{}\n".format(mi.name,
-                                  mi._eval_prob.d)
+                try:
+                    mi._eval_prob.forward()
+                except Exception:
+                    pass
+                str_summary += mi.name + " chosen with probability "
+                str_summary += str(mi._eval_prob.d) + "\n"
         return str_summary
 
     def save(self, output_path):
@@ -450,9 +448,8 @@ if __name__ == '__main__':
                          input, input2], candidates=ZOPH_CANDIDATES,
                          channels=32)
     zoph_network = SearchNet(name='network1', input_shape=(3, 32, 32),
-                             mode='sample')
+                             mode='max')
     zoph_network.reset_value()
-    zoph_network.output.shape
 
     # ---------------------test graph setup--------------------------
     out_1 = sep_conv3x3()
@@ -464,8 +461,6 @@ if __name__ == '__main__':
     out_7 = zoph_block()
     out_8 = zoph_cell()
     out_9 = zoph_network(nn_input)
-    summary = zoph_network.summary()
-    print(summary)
     zoph_network.save('./')
     # ------------------profile module by module----------------
     estimator = LatencyEstimator()

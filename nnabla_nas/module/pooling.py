@@ -76,5 +76,4 @@ class GlobalAvgPool(Module):
     """
 
     def call(self, input):
-        return F.reshape(F.global_average_pooling(input),
-                         shape=(input.shape[0], input.shape[1]))
+        return F.global_average_pooling(input)
