@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 import nnabla.functions as F
-from nnabla import logger
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
 

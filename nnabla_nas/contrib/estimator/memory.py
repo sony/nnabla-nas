@@ -1,4 +1,5 @@
 from .estimator import Estimator
+import numpy as np
 
 
 class MemoryEstimator(Estimator):

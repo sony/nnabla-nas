@@ -12,6 +12,7 @@ from nnabla_nas.contrib.model import Model
 from nnabla_nas.utils import load_parameters
 from nnabla.logger import logger
 
+
 class SepConv(misc.SepConv, smo.Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         misc.SepConv.__init__(self, *args, **kwargs)
@@ -390,7 +391,7 @@ class SearchNet(Model, smo.Graph):
                 if mi._value is not None:
                     try:
                         mi._eval_prob.forward()
-                    except as ex:
+                    except Exception as ex:
                         logger.warning(str(ex))
                     str_summary += "{} chosen with probability "
                     "{}\n".format(mi.name,
