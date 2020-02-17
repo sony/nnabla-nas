@@ -47,6 +47,7 @@ class LatencyEstimator(Estimator):
                 runner.run()
                 latency = float(runner.result['forward_all'])
             except:  # noqa
+                #import pdb; pdb.set_trace()
                 latency = 0
                 logger.warning(f'Latency calculation fails: {idm}[{key}]')
 

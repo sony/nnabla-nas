@@ -12,6 +12,7 @@ import numpy as np
 import nnabla_nas.module as mo
 from nnabla_nas.module.parameter import Parameter
 
+from graphviz import Digraph
 
 def _get_abs_string_index(obj, idx):
     """Get the absolute index for the list of modules"""
@@ -122,70 +123,14 @@ class Module(mo.Module):
     def eval_prob(self, value):
         self._eval_prob = value
 
+    @property
+    def output(self):
+        return self
+
     def reset_value(self):
         self._value = None
         self.apply(need_grad=False)
         self.shape = -1
-# ------------------------------------A graph of StaticModules----------------
-
-
-class Graph(mo.ModuleList, Module):
-    # Graph is derived from Op, such that we can realize nested graphs!
-    def __init__(self, name, parents=None, eval_prob=None, *args, **kwargs):
-        mo.ModuleList.__init__(self, *args, **kwargs)
-        Module.__init__(self, name=name, parent=parents, eval_prob=eval_prob)
-        self._output = None
-
-    @property
-    def output(self):
-        return self[-1]
-
-    def _init_parent(self, parent):
-        if parent is not None:
-            parent_type_mismatch = [
-                not isinstance(pi, Module) for pi in parent]
-            self._parent = []
-            if sum(parent_type_mismatch) == 0:
-                for pi in parent:
-                    self._parent.append(pi)
-                    pi._children.append(self)
-            else:
-                raise Exception('At least one provided parent'
-                                ' is not instance of class StaticModule')
-        else:
-            pass
-
-    def _recursive_call(self):
-        return self.output()
-
-    @property
-    def shape(self):
-        """
-        The output determines the shape of the graph.
-        """
-        return self.output.shape
-
-    @shape.setter
-    def shape(self, value):
-        self.output.shape = value
-
-    def __getitem__(self, index):
-        if isinstance(index, slice):
-            return Graph(name=self._name + '/'+str(index),
-                         parents=self._parent,
-                         modules=list(self.modules.values())[index])
-        index = _get_abs_string_index(self, index)
-        return self.modules[index]
-
-    def __delitem__(self, index):
-        raise RuntimeError
-
-    def reset_value(self):
-        for mi in self.modules:
-            try:
-                self.modules[mi].reset_value()
-            except:
-                print("reset failed")  # dynamic modules have no reset_value
 
 
 # ------------------------------------Some basic StaticModules----------------
@@ -376,6 +321,7 @@ class Join(Module):
             raise Exception("Join only supports the modes: {}".format(
                 self._supported_modes))
 
+
     def call(self, input):
         """
         Aggregates all input tensors to one single
@@ -418,6 +364,116 @@ class Join(Module):
             inputs = nn.Variable(self.parent[0].shape)
         dummy_graph = self.call(inputs)
         return dummy_graph.shape
+# ------------------------------------A graph of StaticModules----------------
+
+
+class Graph(mo.ModuleList, Module):
+    # Graph is derived from Op, such that we can realize nested graphs!
+    def __init__(self, name, parents=None, eval_prob=None, *args, **kwargs):
+        mo.ModuleList.__init__(self, *args, **kwargs)
+        Module.__init__(self, name=name, parent=parents, eval_prob=eval_prob)
+        self._output = None
+
+    @property
+    def output(self):
+        return self[-1]
+
+    def _init_parent(self, parent):
+        if parent is not None:
+            parent_type_mismatch = [
+                not isinstance(pi, Module) for pi in parent]
+            self._parent = []
+            if sum(parent_type_mismatch) == 0:
+                for pi in parent:
+                    self._parent.append(pi)
+                    pi._children.append(self)
+            else:
+                raise Exception('At least one provided parent'
+                                ' is not instance of class StaticModule')
+        else:
+            pass
+
+    def _recursive_call(self):
+        return self.output()
+
+    @property
+    def shape(self):
+        """
+        The output determines the shape of the graph.
+        """
+        return self.output.shape
+
+    @shape.setter
+    def shape(self, value):
+        self.output.shape = value
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            return Graph(name=self._name + '/'+str(index),
+                         parents=self._parent,
+                         modules=list(self.modules.values())[index])
+        index = _get_abs_string_index(self, index)
+        return self.modules[index]
+
+    def __delitem__(self, index):
+        raise RuntimeError
+
+    def reset_value(self):
+        for mi in self.modules:
+            try:
+                self.modules[mi].reset_value()
+            except:
+                print("reset failed")  # dynamic modules have no reset_value
+    
+    def get_gv_graph(self, active_only=True,
+                     color_map={Join: 'blue',
+                                Merging: 'green',
+                                Zero: 'red'}):    
+        graph = Digraph(name=self.name)
+        # 1. get all the static modules in the graph 
+        if active_only:
+            modules = [mi for _,mi in self.get_modules() if isinstance(mi, Module) and type(mi) != Graph and mi._value is not None]
+        else:
+            modules = [mi for _,mi in self.get_modules() if isinstance(mi, Module) and type(mi) != Graph]
+        
+        # 2. add these static modules as vertices to the graph
+        for mi in modules:
+            try:
+                mi._eval_prob.forward()
+            except:
+                pass
+            caption = mi.name + "\n p: {:3.4f}ms".format(mi.eval_prob.d)
+            try:
+                graph.attr('node', color=color_map[type(mi)])
+            except:
+                graph.attr('node', color='black')
+            graph.node(mi.name, caption)
+
+        # 3. add the edges
+        for mi in modules: 
+            parents = mi.parent
+            if parents is not None:
+                if type(parents) == list:
+                    for pi in parents:
+                        if active_only:                    
+                            if pi.output._value is not None:
+                                graph.edge(pi.output.name, mi.name, 
+                                           label=str(pi.output.shape))
+                        else: 
+                            graph.edge(pi.output.name, mi.name, 
+                                       label=str(pi.output.shape))
+                           
+                else:
+                    if active_only:                    
+                        if parents.output._value is not None:
+                            graph.edge(parents.output.name, mi.name, 
+                                       label=str(parents.shape))
+                    else: 
+                        graph.edge(parents.output.name, mi.name, 
+                                   label=str(parents.output.shape))
+        return graph
+                    
+
 
 
 if __name__ == '__main__':
