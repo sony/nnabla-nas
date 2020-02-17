@@ -321,6 +321,14 @@ class Join(Module):
             raise Exception("Join only supports the modes: {}".format(
                 self._supported_modes))
 
+    #needed to be compatible with pnas code
+    @property
+    def _alpha(self):
+        return self._join_parameters
+
+    @_alpha.setter
+    def _alpha(self, value):
+        self._alpha = alpha
 
     def call(self, input):
         """
