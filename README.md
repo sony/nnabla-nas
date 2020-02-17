@@ -26,6 +26,7 @@ NnablaNAS aims to make the architecture search research more reusable and reprod
     - [Searcher algorithms](#searcher-algorithms)
     - [Logging](#logging)
     - [Visualization](#visualization)
+  - [Experiments](#experiments)
   - [Documentation](#documentation)
   - [Contribution](#contribution)
   - [License](#license)
@@ -172,17 +173,35 @@ There are two searcher algorithms implemented in NnablaNAS, including [`DartsSea
 
 When running the architecture search, the evaluations in the sarch space are logged. We mantain a folder to keep track of the parameters, predictions (e.g., loss, error, number of parameters, and latency). Users can easily monitor the training curves with [`TensorboardX`](https://tensorboardx.readthedocs.io/en/latest/tutorial.html).
 
-<p align="center">
-<img src="docs/sources/images/tensorboard.png" alt="drawing" width="700"/>
-</p>
+<img align="center" src="docs/sources/images/tensorboard.png" alt="drawing" width="700"/>
+
 
 ### Visualization
 
 Visualization is useful for debugging and illustrating the search space. One can easily check whether the search space was build correctly. So far, only DARTS search space is supported.
 
-<p align="center">
-<img src="docs/sources/images/darts_normal.png" alt="drawing" width="700"/>
-</p>
+<img align="center" src="docs/sources/images/darts_normal.png" alt="drawing" width="700"/>
+
+
+## Experiments
+
+You can start architecture search using `DartsSearcher` by the command below
+
+```bash
+# search DARTS
+python main.py -d 1 --search \
+               -f examples/darts_search.json  \
+               -a DartsSearcher \
+               -o log/darts/search
+```
+
+For re-training the model using the architecture found in the architecture search, just run
+```bash
+# train DARTS
+python main.py -d 1 \
+               -f examples/darts_train.json \
+               -a Trainer -o log/darts/train
+```
 
 ## Documentation
 
