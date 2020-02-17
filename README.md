@@ -115,9 +115,21 @@ The main features of NnablaNAS are
 
 Search spaces are constructed using Modules. Modules are composed of layers, which receives nnabla Variable as input and computes Variable as output. Modules can also contain other Modules, allowing to nest them in a tree structure. One can assign the submodules as regular attributes. All search space components should inherit from `nnabla_nas.module.Module` and override the `call()` method. Please refer to [`nnabla_nas/module/module.py`](nnabla_nas/module/module.py).
 
-A new model should inherit API from the class [`nnabla_nas.contrib.model.Model`](nnabla_nas/contrib/model.py). The base API for `Model` has two methods, `get_arch_parameters()`
-and `get_net_parameters()` that return the architecture parameters and model parameters, respectively.
 
+```python
+from nnabla_nas.model import Model
+
+class MyModule(Module):
+
+    def __init__(self):
+        # TODO: write your code here
+
+    def call(self, input):
+        # TODO: write your code here
+```
+
+A search space is defined as a `Model`, which should inherit API from the class [`nnabla_nas.contrib.model.Model`](nnabla_nas/contrib/model.py). The base API for `Model` has two methods, `get_arch_parameters()`
+and `get_net_parameters()` that return the architecture parameters and model parameters, respectively.
 
 ```python
 from nnabla_nas.contrib.model import Model
