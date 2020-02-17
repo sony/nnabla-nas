@@ -94,8 +94,6 @@ class SearchNet(Model):
             n_iter = n_max if k > 0 else 1
             for i in range(n_iter):
                 stride = s if i == 0 else 1
-                # if k == 0:
-                #     block(in_channels, output_channel, stride, expand_ratio=1)
                 features.append(
                     ChoiceBlock(in_channels, output_channel,
                                 stride=stride, mode=mode, is_skipped=i > 0)

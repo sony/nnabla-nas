@@ -8,6 +8,7 @@ class Searcher(Runner):
 
     def run(self):
         r"""Run the training process."""
+        self.callback_on_start()
         self._start_warmup()
 
         for cur_epoch in range(self.args.epoch):
