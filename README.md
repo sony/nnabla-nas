@@ -122,6 +122,21 @@ and `get_net_parameters()` that return the architecture parameters and model par
 
 An Searcher interacts with the search space through a simple API. A searcher samples a model from the search space by assigning values to the architecture parameters. The results from sampled architecture is then used to update the architecture parameters of the search space. A searcher also updates the model parameters. A new Searcher should inherit API from [`nnabla_nas.runner.searcher.search.Searcher`](nnabla_nas/runner/searcher/search.py). This class has two methods `train_on_batch()` and `valid_on_batch()` which should be redefined by users. 
 
+```python
+from nnabla_nas.runner.searcher.search import Searcher
+
+class MyAlgorithm(Searcher):
+
+    def callback_on_start(self):
+        # TODO: write your code here
+        
+    def train_on_batch(self, key='train'):
+        # TODO: write your code here
+    
+    def valid_on_batch(self):
+        # TODO: write your code here
+```
+
 There are two searcher algorithms implemented in NnablaNAS, including [`DartsSearcher`](nnabla_nas/runner/searcher/darts.py) and [`ProxylessNasSearcher`](nnabla_nas/runner/searcher/pnas.py).
 
 ### Logging
@@ -132,6 +147,9 @@ When running the architecture search, the evaluations in the sarch space are log
 
 ### Visualization
 
+Visualization is useful for debugging and illustrating the search space. One can easily check whether the search space was build correctly. So far, only DARTS search space is supported.
+
+<img src="docs/sources/images/darts_normal.png" alt="drawing" width="700"/>
 
 
 ## Documentation
