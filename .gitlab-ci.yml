@@ -1,10 +1,8 @@
-image: "python"
+image: "nnabla/nnabla-ext-cuda-multi-gpu:latest"
 
 before_script:
   - pip install --proxy http://43.196.177.37:8881 -r requirements.txt
-  - pip install --proxy http://43.196.177.37:8881 --no-deps nnabla
-  - pip install --proxy http://43.196.177.37:8881 --no-deps nnabla_ext_cuda101
-
+  
 stages:
   - Analyze
   - Test
