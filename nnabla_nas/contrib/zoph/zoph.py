@@ -11,6 +11,7 @@ from nnabla_nas.contrib import misc
 from nnabla_nas.contrib.model import Model
 from nnabla_nas.utils import load_parameters
 
+
 class SepConv(misc.SepConv, smo.Module):
     def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
         misc.SepConv.__init__(self, *args, **kwargs)
@@ -125,7 +126,8 @@ class ZophBlock(smo.Graph):
                               out_channels=self._channels, kernel=(1, 1),
                               eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
-        self.append(smo.BatchNormalization(name='{}/input_conv_bn'.format(self.name),
+        self.append(smo.BatchNormalization(name='{}/input_conv_bn'.format(
+                                           self.name),
                                            parent=self[-1],
                                            n_dims=4,
                                            n_features=self._channels))
@@ -167,11 +169,13 @@ class ZophCell(smo.Graph):
                                  parent=ii, in_channels=ii.shape[1],
                                  out_channels=self._channels,
                                  kernel=(1, 1), with_bias=False))
-            self.append(smo.BatchNormalization(name='{}/input_bn_{}'.format(self.name, i),
-                                           parent=self[-1],
-                                           n_dims=4,
-                                           n_features=self._channels))
-            self.append(smo.ReLU(name='{}/input_conv_{}/relu'.format(self.name, i),
+            self.append(smo.BatchNormalization(name='{}/input_bn_{}'.format(
+                                               self.name, i),
+                                               parent=self[-1],
+                                               n_dims=4,
+                                               n_features=self._channels))
+            self.append(smo.ReLU(name='{}/input_conv_{}/relu'.format(
+                                 self.name, i),
                         parent=self[-1]))
             projected_inputs.append(self[-1])
 
@@ -216,9 +220,6 @@ class SearchNet(Model, smo.Graph):
                  reducing=[False, True, True],
                  join_parameters=[[None]*7]*3,
                  candidates=ZOPH_CANDIDATES, mode='sample'):
-        
-        #import pdb;
-        #pdb.set_trace()
         smo.Graph.__init__(self, name, None)
         self._n_classes = n_classes
         self._stem_channels = stem_channels
@@ -233,7 +234,6 @@ class SearchNet(Model, smo.Graph):
             name='{}/input'.format(self.name),
             value=nn.Variable(self._input_shape))
         self._mode = mode
-         
         # 1. add the stem convolutions
         self.append(smo.Conv(name='{}/stem'
                              '_conv_1'.format(self.name), parent=self._input,
@@ -250,35 +250,33 @@ class SearchNet(Model, smo.Graph):
                              in_channels=self._stem_channels,
                              out_channels=self._stem_channels,
                              kernel=(3, 3), pad=(1, 1)))
-        self.append(smo.BatchNormalization(name='{}/stem2_bn'.format(self.name),
+        self.append(smo.BatchNormalization(name='{}/stem2_bn'.format(
+                                           self.name),
                                            parent=self[-1],
                                            n_dims=4,
                                            n_features=self._stem_channels))
         self.append(smo.ReLU(name='{}/stem2_relu'.format(self.name),
                              parent=self[-1]))
-
-
-        # add the first 2 cells 
+        # add the first 2 cells
         self.append(self._cells[0](name='{}/cell_{}'.format(self.name, 0),
-                                 parents=[self[3], self[6]],
-                                 candidates=self._candidates,
-                                 n_modules=self._cell_depth[0],
-                                 channels=self._cell_channels[0],
-                                 join_parameters=self._join_parameters[0],
-                                 reducing=self._reducing[0]))
+                                   parents=[self[3], self[6]],
+                                   candidates=self._candidates,
+                                   n_modules=self._cell_depth[0],
+                                   channels=self._cell_channels[0],
+                                   join_parameters=self._join_parameters[0],
+                                   reducing=self._reducing[0]))
         self.append(self._cells[1](name='{}/cell_{}'.format(self.name, 1),
-                                 parents=[self[6], self[7]],
-                                 candidates=self._candidates,
-                                 n_modules=self._cell_depth[1],
-                                 channels=self._cell_channels[1],
-                                 join_parameters=self._join_parameters[1],
-                                 reducing=self._reducing[1]))
-
-        
+                                   parents=[self[6], self[7]],
+                                   candidates=self._candidates,
+                                   n_modules=self._cell_depth[1],
+                                   channels=self._cell_channels[1],
+                                   join_parameters=self._join_parameters[1],
+                                   reducing=self._reducing[1]))
         # 2. add the cells using shared architecture parameters
         for i, celli in enumerate(zip(self._cells[2:], self._cell_depth[2:],
                                       self._cell_channels[2:],
-                                      self._join_parameters[2:], self._reducing[2:])):
+                                      self._join_parameters[2:],
+                                      self._reducing[2:])):
             self.append(celli[0](name='{}/cell_{}'.format(self.name, i+2),
                                  parents=self[-2:],
                                  candidates=self._candidates,
@@ -293,22 +291,21 @@ class SearchNet(Model, smo.Graph):
                              in_channels=self[-1].shape[1],
                              out_channels=self._n_classes,
                              kernel=(1, 1)))
-        
-        self.append(smo.BatchNormalization(name='{}/output_bn'.format(self.name),
+        self.append(smo.BatchNormalization(name='{}/output_bn'.format(
+                                           self.name),
                                            parent=self[-1],
                                            n_dims=4,
                                            n_features=self._n_classes))
         self.append(smo.ReLU(name='{}/output_relu'.format(self.name),
                              parent=self[-1]))
-        
 
         self.append(smo.GlobalAvgPool(
             name='{}/global_average_pool'.format(self.name), parent=self[-1]))
 
         for mi in self.get_arch_modules():
             mi.mode = self._mode
-    
-    @property 
+
+    @property
     def modules_to_profile(self):
         return [smo.Identity,
                 smo.Zero,
@@ -381,10 +378,11 @@ class SearchNet(Model, smo.Graph):
         r"""Summary of the model."""
         str_summary = ''
         for mi in self.get_arch_modules():
-           mi._sel_p.forward()
-           str_summary += "Maximum probable parent of {} is {} with probability {}\n".format(mi.name, 
-                                                       mi.parent[np.argmax(mi._join_parameters.d)].name,
-                                                       np.max(mi._sel_p.d))
+            mi._sel_p.forward()
+            str_summary += "Most probable parent of {} is {} with probability "
+            "{}\n".format(mi.name,
+                          mi.parent[np.argmax(mi._join_parameters.d)].name,
+                          np.max(mi._sel_p.d))
 
         str_summary += "Instantiated modules are:\n"
         for mi in self.get_net_modules(active_only=True):
@@ -393,9 +391,10 @@ class SearchNet(Model, smo.Graph):
                     try:
                         mi._eval_prob.forward()
                     except:
-                        pass
-                    str_summary += "{} chosen with probability {}\n".format(mi.name,
-                                                                            mi._eval_prob.d)
+                        continue
+                    str_summary += "{} chosen with probability "
+                    "{}\n".format(mi.name,
+                                  mi._eval_prob.d)
         return str_summary
 
     def save(self, output_path):
@@ -410,7 +409,7 @@ class TrainNet(SearchNet):
                  cell_channels=[128, 256, 512],
                  reducing=[False, True, True],
                  join_parameters=[[None]*7]*3,
-                 candidates=ZOPH_CANDIDATES, 
+                 candidates=ZOPH_CANDIDATES,
                  param_path=None):
         SearchNet.__init__(self, name=name,
                            input_shape=input_shape,
@@ -423,8 +422,8 @@ class TrainNet(SearchNet):
                            mode='max')
 
         if param_path is not None:
-           self.set_parameters(load_parameters(param_path)) 
-           import pdb; pdb.set_trace()
+            self.set_parameters(load_parameters(param_path))
+
 
 if __name__ == '__main__':
     from nnabla.ext_utils import get_extension_context
@@ -467,7 +466,6 @@ if __name__ == '__main__':
     summary = zoph_network.summary()
     print(summary)
     zoph_network.save('./')
-    import pdb; pdb.set_trace()
     # ------------------profile module by module----------------
     estimator = LatencyEstimator()
     latencies = zoph_network.get_latency(estimator, active_only=True)
@@ -479,9 +477,9 @@ if __name__ == '__main__':
     device_id = int(ctx.device_id)
     ext_name = ctx.backend[0].split(':')[0]
     profiler = GraphProfiler(out_9,
-                            device_id=device_id,
-                            ext_name=ext_name,
-                            n_run=10)
+                             device_id=device_id,
+                             ext_name=ext_name,
+                             n_run=10)
     profiler.run()
     tot_latency = float(profiler.result['forward_all'])
     print("The total latency is {}".format(tot_latency))

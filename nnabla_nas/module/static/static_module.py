@@ -14,6 +14,7 @@ from nnabla_nas.module.parameter import Parameter
 
 from graphviz import Digraph
 
+
 def _get_abs_string_index(obj, idx):
     """Get the absolute index for the list of modules"""
     idx = operator.index(idx)
@@ -321,14 +322,13 @@ class Join(Module):
             raise Exception("Join only supports the modes: {}".format(
                 self._supported_modes))
 
-    #needed to be compatible with pnas code
     @property
     def _alpha(self):
         return self._join_parameters
 
     @_alpha.setter
     def _alpha(self, value):
-        self._alpha = alpha
+        self._alpha = value
 
     def call(self, input):
         """
@@ -349,7 +349,6 @@ class Join(Module):
                 self._value = self.call([pi() for pi in self.parent])
             elif self.mode == 'sample':
                 self._sel_p.forward()
-                #print(self._sel_p.d)
                 self._idx = np.random.choice(
                     len(self.parent), 1, p=self._sel_p.d)[0]
                 self._value = self.call(self.parent[self._idx]())
@@ -432,18 +431,22 @@ class Graph(mo.ModuleList, Module):
                 self.modules[mi].reset_value()
             except:
                 print("reset failed")  # dynamic modules have no reset_value
-    
+
     def get_gv_graph(self, active_only=True,
                      color_map={Join: 'blue',
                                 Merging: 'green',
-                                Zero: 'red'}):    
+                                Zero: 'red'}):
         graph = Digraph(name=self.name)
-        # 1. get all the static modules in the graph 
+        # 1. get all the static modules in the graph
         if active_only:
-            modules = [mi for _,mi in self.get_modules() if isinstance(mi, Module) and type(mi) != Graph and mi._value is not None]
+            modules = [mi for _, mi in self.get_modules() if
+                       isinstance(mi, Module) and
+                       type(mi) != Graph and
+                       mi._value is not None]
         else:
-            modules = [mi for _,mi in self.get_modules() if isinstance(mi, Module) and type(mi) != Graph]
-        
+            modules = [mi for _, mi in self.get_modules()
+                       if isinstance(mi, Module) and type(mi) != Graph]
+
         # 2. add these static modules as vertices to the graph
         for mi in modules:
             try:
@@ -458,34 +461,30 @@ class Graph(mo.ModuleList, Module):
             graph.node(mi.name, caption)
 
         # 3. add the edges
-        for mi in modules: 
+        for mi in modules:
             parents = mi.parent
             if parents is not None:
                 if type(parents) == list:
                     for pi in parents:
-                        if active_only:                    
+                        if active_only:
                             if pi.output._value is not None:
-                                graph.edge(pi.output.name, mi.name, 
+                                graph.edge(pi.output.name, mi.name,
                                            label=str(pi.output.shape))
-                        else: 
-                            graph.edge(pi.output.name, mi.name, 
+                        else:
+                            graph.edge(pi.output.name, mi.name,
                                        label=str(pi.output.shape))
-                           
                 else:
-                    if active_only:                    
+                    if active_only:
                         if parents.output._value is not None:
-                            graph.edge(parents.output.name, mi.name, 
+                            graph.edge(parents.output.name, mi.name,
                                        label=str(parents.shape))
-                    else: 
-                        graph.edge(parents.output.name, mi.name, 
+                    else:
+                        graph.edge(parents.output.name, mi.name,
                                    label=str(parents.output.shape))
         return graph
-                    
-
 
 
 if __name__ == '__main__':
-    from nnabla_nas.module.static import NNablaProfiler
     from nnabla_nas.utils import LatencyEstimator
 
     class MyGraph(Graph):
