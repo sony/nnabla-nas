@@ -8,3 +8,5 @@ tensorboardX
 tqdm
 graphviz
 sklearn
+nnabla
+nnabla_ext_cuda101
