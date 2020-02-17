@@ -4,9 +4,10 @@ from ... import module as Mo
 from ...utils import load_parameters
 from ..darts import modules as darts
 from ..misc import AuxiliaryHeadCIFAR
+from ..model import Model
 
 
-class TrainNet(Mo.Module):
+class TrainNet(Model):
     r"""TrainNet for ProxylessNAS
 
     Args:
