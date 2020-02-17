@@ -1,8 +1,3 @@
-import nnabla as nn
-import numpy as np
-from nnabla.logger import logger
-
-
 class Estimator(object):
     """Estimator base class."""
 

@@ -1,4 +1,5 @@
 import json
+import os
 from collections import Counter
 from collections import OrderedDict
 
@@ -7,10 +8,10 @@ import numpy as np
 from nnabla.initializer import ConstantInitializer
 
 from ... import module as Mo
-from ... import utils as ut
 from ..misc import AuxiliaryHeadCIFAR
 from ..model import Model
 from . import modules as darts
+from .helper import save_dart_arch
 
 
 class SearchNet(Model):
@@ -147,34 +148,22 @@ class SearchNet(Model):
 
     def summary(self):
         r"""Summary of the model."""
-        str_summary = ''
-        if not self._shared:
-            count = Counter([m._active for m in self.arch_modules])
-            op_names = list(darts.CANDIDATES.keys())
-            total, stats = len(self.arch_modules), []
-            for k in range(len(op_names)):
-                name = op_names[k]
-                stats.append(name + f' = {count[k]/total*100:.2f}%\t')
-            str_summary += ''.join(stats) + '\n'
-        else:
-            # compute statics
-            op_names = list(darts.CANDIDATES.keys())
-            for alphas, t in zip(self._alpha, ['normal', 'reduction']):
-                count = {i: 0 for i in op_names}
-                for alpha in alphas:
-                    idx = np.argmax(alpha.d.flat)
-                    count[op_names[idx]] += 1
-                select = t + ' cell:\n'
-                for k, v in count.items():
-                    select += f'{k} = {v/len(alphas)*100:.2f}%\t'
-                str_summary += select + '\n'
+        stats = []
+        arch_params = self.get_arch_parameters()
+        count = Counter([np.argmax(m.d.flat) for m in arch_params.values()])
+        op_names = list(darts.CANDIDATES.keys())
+        total = len(arch_params)
+        for k in range(len(op_names)):
+            name = op_names[k]
+            stats.append(name + f' = {count[k]/total*100:.2f}%\t')
+        return ''.join(stats)
 
-        return str_summary
-
-    def save(self, output_path=None):
-        # save the architectures
+    def save_parameters(self, path=None, params=None, grad_only=False):
+        super().save_parameters(path, params=params, grad_only=grad_only)
         if self._shared:
-            ut.save_dart_arch(self, output_path)
+            # save the architectures
+            output_path = os.path.dirname(path)
+            save_dart_arch(self, output_path)
 
 
 class TrainNet(Model):

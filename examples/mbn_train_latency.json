@@ -1,0 +1,27 @@
+{
+    "dataset": "cifar10",
+    "epoch": 600,
+    "batch_size_train": 128,
+    "batch_size_valid": 200,
+    "mini_batch_train": 128,
+    "mini_batch_valid": 200,
+    "warmup": 0,
+    "cutout": 16,
+    "print_frequency": 50,
+    "network": {
+        "search_space": "mbn",
+        "num_classes": 10,
+        "mode": "sample",
+        "genotype": "log/mbn-lat/search/arch.h5"
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 4e-5,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.1
+            }
+        }
+    }
+}
