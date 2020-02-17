@@ -128,8 +128,11 @@ There are two searcher algorithms implemented in NnablaNAS, including [`DartsSea
 
 When running the architecture search, the evaluations in the sarch space are logged. We mantain a folder to keep track of the parameters, predictions (e.g., loss, error, number of parameters, and latency). Users can easily monitor the training curves with [`TensorboardX`](https://tensorboardx.readthedocs.io/en/latest/tutorial.html).
 
+<img src="docs/sources/images/tensorboard.png" alt="drawing" width="800"/>
 
 ### Visualization
+
+
 
 ## Documentation
 
