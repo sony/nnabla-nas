@@ -432,6 +432,7 @@ class Graph(mo.ModuleList, Module):
                 self.modules[mi].reset_value()
             except Exception as ex:
                 logger.warning("reset failed")  # dynamic modules have no reset_value
+                logger.warning(str(ex))
 
     def get_gv_graph(self, active_only=True,
                      color_map={Join: 'blue',
@@ -455,13 +456,15 @@ class Graph(mo.ModuleList, Module):
             except Exception as ex:
                 logger.warning("eval_prob of {} "
                 "cannot be forwarded".format(mi.name))
+                logger.warning(str(ex))
             caption = mi.name + "\n p: {:3.4f}ms".format(mi.eval_prob.d)
             try:
                 graph.attr('node', color=color_map[type(mi)])
             except Exception as ex:
                 graph.attr('node', color='black')
-                logger.warning("node type {} "
-                "not specified in color_map.".format(type(mi)))
+                           logger.warning("node type {} "
+                           "not specified in color_map.".format(type(mi)))
+                logger.warning(str(ex))
             graph.node(mi.name, caption)
 
         # 3. add the edges
@@ -526,8 +529,8 @@ if __name__ == '__main__':
     for evi in eval_p:
         try:
             eval_p[evi].forward()
-        except:
-            pass
+        except as ex:
+            logger.warning(str(ex))
         print("Module {} has evaluation probability {}".format(
             evi, eval_p[evi].d))
 
