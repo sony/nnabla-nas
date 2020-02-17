@@ -58,9 +58,6 @@ class Runner(ABC):
             path=args.output_path
         )
 
-        # initialize tasks
-        self.callback_on_start()
-
     @abstractmethod
     def run(self):
         r"""Run the training process."""
