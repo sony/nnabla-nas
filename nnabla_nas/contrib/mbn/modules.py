@@ -124,9 +124,6 @@ class ChoiceBlock(Mo.Module):
         self._mode = mode
         self._is_skipped = is_skipped
 
-        print(len([func(in_channels, out_channels, stride)
-              for k, func in CANDIDATES.items()
-              if k != "skip_connect" or is_skipped]), out_channels)
         self._mixed = MixedOp(
             operators=[func(in_channels, out_channels, stride)
                        for k, func in CANDIDATES.items()

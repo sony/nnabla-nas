@@ -55,6 +55,7 @@ class SearchNet(Model):
         self._num_classes = num_classes
         self._width_mult = width_mult
         self._round_nearest = round_nearest
+        self._n_max = n_max
 
         block = block or InvertedResidual
         in_channels = 32
@@ -231,12 +232,13 @@ class RefNet(SearchNet):
         for k, v in self.get_arch_parameters().items():
             v.d[arch_idx[i]] = 1.0
             i += 1
+        import nnabla as nn
         nn.save_parameters('mbn_ref_arch.h5', self.get_arch_parameters())
 
 
     def get_ops_idx(self, setting):
         ops = list()
         for t,c,n,s in setting:
-            for m in range(4):
+            for m in range(self._n_max):
                 ops += [list(CANDIDATES).index('InvertedResidual_t{}_k3'.format(t)) if m < n else list(CANDIDATES).index('skip_connect'.format(t))]
         return ops
