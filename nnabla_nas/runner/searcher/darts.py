@@ -23,8 +23,8 @@ class DartsSearcher(Searcher):
         for _ in range(self.accum_train):
             p['input'].d, p['target'].d = self.dataloader['train'].next()
             p['loss'].forward(clear_no_need_grad=True)
-            p['loss'].backward(clear_buffer=True)
             p['err'].forward(clear_buffer=True)
+            p['loss'].backward(clear_buffer=True)
             loss, err = p['loss'].d.copy(), p['err'].d.copy()
             self.monitor.update('train_loss', loss * self.accum_train, bz)
             self.monitor.update('train_err', err, bz)
@@ -37,8 +37,8 @@ class DartsSearcher(Searcher):
         for _ in range(self.accum_valid):
             p['input'].d, p['target'].d = self.dataloader['valid'].next()
             p['loss'].forward(clear_no_need_grad=True)
-            p['loss'].backward(clear_buffer=True)
             p['err'].forward(clear_buffer=True)
+            p['loss'].backward(clear_buffer=True)
             loss, err = p['loss'].d.copy(),  p['err'].d.copy()
             self.monitor.update('valid_loss', loss * self.accum_valid, bz)
             self.monitor.update('valid_err', err, bz)
