@@ -11,9 +11,9 @@ from nnabla_nas.dataset.transforms import Resize
 
 
 def test_normalize():
-    mean = np.random.randn(3)
-    std = np.random.randn(3)
-    scale = np.random.randn(1)
+    mean = (0.49139968, 0.48215827, 0.44653124)
+    std = (0.24703233, 0.24348505, 0.26158768)
+    scale = 1. / 255
     tran = Normalize(mean=mean, std=std, scale=scale)
 
     input = np.random.randn(16, 3, 32, 32)
