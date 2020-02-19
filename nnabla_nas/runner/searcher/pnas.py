@@ -1,4 +1,12 @@
 from .search import Searcher
+import numpy as np
+
+
+def _load_data(ph, data):
+    if isinstance(data[0], np.ndarray):
+        ph['input'].d, ph['target'].d = data[0], data[1]
+    else:
+        ph['input'].data, ph['target'].data = data[0], data[1]
 
 
 class ProxylessNasSearcher(Searcher):
@@ -19,7 +27,7 @@ class ProxylessNasSearcher(Searcher):
         bz, p = self.args.mbs_train, self.placeholder['train']
         self.optimizer[key].zero_grad()
         for _ in range(self.accum_train):
-            p['input'].d, p['target'].d = self.dataloader['train'].next()
+            _load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
             p['err'].forward(clear_buffer=True)
             p['loss'].backward(clear_buffer=True)
@@ -41,7 +49,7 @@ class ProxylessNasSearcher(Searcher):
             arch_params = self.model.get_arch_parameters(grad_only=True)
             self.optimizer['valid'].set_parameters(arch_params)
             for minibatch in valid_data:
-                p['input'].d, p['target'].d = minibatch
+                _load_data(p, minibatch)
                 p['loss'].forward(clear_buffer=True)
                 p['err'].forward(clear_buffer=True)
                 loss, err = p['loss'].d.copy(), p['err'].d.copy()

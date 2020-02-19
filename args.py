@@ -1,3 +1,6 @@
+from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
+from nnabla_nas.utils import CommunicatorWrapper
+from nnabla_ext.cuda import StreamEventHandler
 import os
 from collections import OrderedDict
 
@@ -210,6 +213,39 @@ class DataloaderParser(OptionParser):
 
     def parse(self, conf):
         opts = self.options
+        if opts.dataset == 'imagenet':
+            ctx = nn.context.get_current_context()
+            comm = CommunicatorWrapper(ctx)
+            stream_event_handler = StreamEventHandler(int(comm.ctx.device_id))
+            tdata = get_data_iterators(
+                batch_size=opts.mbs_train,
+                dali_num_threads=16,
+                train_dir='/speech/db/Images/ILSVRC-2012/img_train',
+                dali_nvjpeg_memory_padding=64*(1 << 20),
+                type_config=float,
+                channel_last=False,
+                comm=comm,
+                stream_event_handler=stream_event_handler,
+                training=True
+            )
+
+            vdata = get_data_iterators(
+                batch_size=opts.mbs_valid,
+                dali_num_threads=16,
+                train_dir='/speech/db/Images/ILSVRC-2012/img_val_folders',
+                dali_nvjpeg_memory_padding=64*(1 << 20),
+                type_config=float,
+                channel_last=False,
+                comm=comm,
+                stream_event_handler=stream_event_handler,
+                training=False
+            )
+
+            return {
+                'train': DataLoader(tdata),
+                'valid': DataLoader(vdata)
+            }
+
         # dataset configuration
         if conf['search']:
             data_train, data_valid = dataset.__dict__[conf.get('dataset')](
@@ -234,6 +270,12 @@ class TransformParser(OptionParser):
     def parse(self, conf):
         # TODO: setup data augmentation from config files
         opts = self.options
+        if opts.dataset == 'imagenet':
+            return {
+                'train': transforms.Compose([]),
+                'valid': transforms.Compose([])
+            }
+
         mean = (0.49139968, 0.48215827, 0.44653124),
         std = (0.24703233, 0.24348505, 0.26158768),
         scale = 1./255.0

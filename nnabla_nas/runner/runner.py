@@ -5,7 +5,10 @@ from ..utils import ProgressMeter
 
 
 class Runner(ABC):
-    r"""Searching the best architecture.
+    r"""Runner is a basic class for training a model.
+
+    You can adapt this class for your own runner by reimplementing the
+    abstract methods of this class.
 
     Args:
         model (`nnabla_nas.contrib.model.Model`): The search model used to
@@ -116,10 +119,10 @@ class Runner(ABC):
 
     @abstractmethod
     def callback_on_start(self):
-        r"""Calls this on starting the training."""
+        r"""Calls this on starting the run method."""
         pass
 
     @abstractmethod
     def callback_on_finish(self):
-        r"""Calls this on finishing the training."""
+        r"""Calls this on finishing the run method."""
         pass

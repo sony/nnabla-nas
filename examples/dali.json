@@ -1,0 +1,51 @@
+{
+    "dataset": "imagenet",
+    "input_shape": [
+        3,
+        224,
+        224
+    ],
+    "epoch": 120,
+    "batch_size_train": 256,
+    "batch_size_valid": 256,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 64,
+    "warmup": 50,
+    "print_frequency": 50,
+    "network": {
+        "search_space": "mbn",
+        "num_classes": 1000,
+        "first_strides": [
+            2,
+            2
+        ],
+        "mode": "sample"
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 4e-5,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.1
+            }
+        },
+        "valid": {
+            "grad_clip": 5.0,
+            "solver": {
+                "name": "Adam",
+                "alpha": 0.01,
+                "beta1": 0.5,
+                "beta2": 0.999
+            }
+        },
+        "warmup": {
+            "grad_clip": 5.0,
+            "weight_decay": 4e-5,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.025
+            }
+        }
+    }
+}
