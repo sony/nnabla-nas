@@ -13,6 +13,8 @@ from .static_module import Module
 from .static_module import ReLU
 from .static_module import Zero
 from .static_module import Collapse
+from .static_module import Linear
+from .static_module import Dropout
 
 __all__ = [
     'Module',
@@ -29,5 +31,7 @@ __all__ = [
     'BatchNormalization',
     'Merging',
     'Join',
-    'Collapse'
+    'Collapse',
+    'Linear',
+    'Dropout'
 ]

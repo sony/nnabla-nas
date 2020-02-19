@@ -40,9 +40,13 @@ class Module(mo.Module):
         :param eval_prob: nnabla variable, (optional) the probability to
         evaluate this static module
         """
-        self._parents = parents
+        parent_type_mismatch = [not isinstance(pi, Module) for pi in parents]
+        if sum(parent_type_mismatch) == 0:
+            self._parents = parents
+        else:
+            raise RuntimeError
+
         for pi in parents:
-            self._parents.append(parent)
             pi.add_child(self)
         self._children = []
         self._name = name
@@ -67,8 +71,8 @@ class Module(mo.Module):
         r"""
         calculates the output shape of this static_module
         """
-        inputs = [nn.Variable(pi.shape for pi in self.parents)]
-        dummy_graph = self.call(*input)
+        inputs = [nn.Variable(pi.shape) for pi in self.parents]
+        dummy_graph = self.call(*inputs)
         return dummy_graph.shape
 
     @property
@@ -108,7 +112,7 @@ class Module(mo.Module):
         """
         return self._children
 
-    def call(self, *input):
+    def call(self, *inputs):
         r"""
         defines the transfer function of the module. Builds
         the computational graph of this module.
@@ -122,8 +126,7 @@ class Module(mo.Module):
         the call methods of the parent modules.
         """
         if self._value is None:
-            inputs = [pi() for pi in self.parents]
-            self._value = self.call(*inputs)
+            self._value = self.call(*[pi() for pi in self.parents])
             self.need_grad = True
         return self._value
 
@@ -172,7 +175,16 @@ class Input(Module):
         Module.__init__(self, name=name, parent=None, eval_prob=eval_prob)
         self._value = value
 
-    def call(self, inputs):
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, v):
+        self.reset_value()
+        self._value = v
+
+    def call(self, *inputs):
         return self._value
 
     def _recursive_call(self):
@@ -186,24 +198,25 @@ class Input(Module):
         r"""
         the input module does not reset its value
         """
-        self.shape = -1
+        self._shape = -1
 
 
 class Identity(mo.Identity, Module):
-    def __init__(self, parents, name, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         Module.__init__(self, parents, name, eval_prob=eval_prob)
-
-
-class Zero(mo.Zero, Module):
-    def __init__(self, parents, name, eval_prob=None, *args, **kwargs):
-        mo.Zero.__init__(self, *args, **kwargs)
-        Module.__init__(self, parents, name, eval_prob=eval_prob)
-        self._value = nn.Variable.from_numpy_array(
-            np.zeros(self._parent.shape))
         if len(self._parents) > 1:
             raise RuntimeError
 
-    def call(self, *input):
+class Zero(mo.Zero, Module):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
+        mo.Zero.__init__(self, *args, **kwargs)
+        Module.__init__(self, parents, name, eval_prob=eval_prob)
+        self._value = nn.Variable.from_numpy_array(
+            np.zeros(self._parents[0].shape))
+        if len(self._parents) > 1:
+            raise RuntimeError
+
+    def call(self, *inputs):
         self._value = nn.Variable.from_numpy_array(
             np.zeros(self._parents[0].shape))
         return self._value
@@ -225,103 +238,102 @@ class Conv(mo.Conv, Module):
 
 
 class Linear(mo.Linear, Module):
-    def __init__(self, name, parent, *args, **kwargs):
+    def __init__(self, parents, name='', *args, **kwargs):
         mo.Linear.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent)
+        Module.__init__(self, parents, name=name)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class DwConv(mo.DwConv, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.DwConv.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+        Module.__init__(self, parents, name=name, eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class MaxPool(mo.MaxPool, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.MaxPool.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+        Module.__init__(self, parents, name=name, eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class AvgPool(mo.AvgPool, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.AvgPool.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+        Module.__init__(self, parents, name=name, eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class GlobalAvgPool(mo.GlobalAvgPool, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.GlobalAvgPool.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+        Module.__init__(self, parents, name=name, eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class ReLU(mo.ReLU, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.ReLU.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+        Module.__init__(self, parents, name=name, eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class Dropout(mo.Dropout, Module):
-    def __init__(self, name, parent, *args, **kwargs):
+    def __init__(self, parents, name='', *args, **kwargs):
         mo.Dropout.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent)
+        Module.__init__(self, parents, name=name)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class BatchNormalization(mo.BatchNormalization, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.BatchNormalization.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+        Module.__init__(self, parents, name=name, eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class Merging(mo.Merging, Module):
-    def __init__(self, name, parents, mode, eval_prob=None, axis=1):
+    def __init__(self, parents, mode, name='', eval_prob=None, axis=1):
         mo.Merging.__init__(self, mode, axis)
-        Module.__init__(self, name, parents, eval_prob=eval_prob)
-
-    def _init_parent(self, parent):
-        # we allow for multiple parents!
-        parent_type_mismatch = [not isinstance(pi, Module) for pi in parent]
-        self._parent = []
-        if sum(parent_type_mismatch) == 0:
-            for pi in parent:
-                self._parent.append(pi)
-                pi._children.append(self)
-        else:
-            raise Exception(
-                'At least one provided parent is not a static module!')
-
-    def _recursive_call(self):
-        if self._value is None:
-            self._value = self.call(*[pi() for pi in self.parent])
-            self.need_grad = True
-        return self._value
-
-    def _shape_function(self):
-        # we build a nummy nnabla graph to infer the shapes
-        inputs = [nn.Variable(pi.shape) for pi in self.parent]
-        dummy_graph = self.call(*inputs)
-        return dummy_graph.shape
+        Module.__init__(self, parents=parents, name=name, 
+                        eval_prob=eval_prob)
+        if len(self._parents) == 1:
+            raise RuntimeError
 
 
 class Collapse(Module):
-    def call(self, input):
-        return F.reshape(input,
-                         shape=(input.shape[0], input.shape[1]))
+    r"""
+    Collapses the last two singleton dimensions of an 4D input.
+    """
+    def __init__(self, parents, name=''):
+        Module.__init__(self, parents, name=name)
+        if len(self._parents) > 1:
+            raise RuntimeError
+
+    def call(self, *inputs):
+        return F.reshape(inputs[0],
+                         shape=(inputs[0].shape[0], 
+                         inputs[0].shape[1]))
 
 
 class Join(Module):
-    def __init__(self, name, parents, join_parameters,
+    def __init__(self, parents, join_parameters, name='',
                  mode='linear', *args, **kwargs):
-        """
-        :param join_parameters: nnabla variable of shape
-        (#parents,1), the logits for the join operations
-        :param mode: string, the mode we use to join (linear, sample, max)
-        """
         if len(parents) < 2:
             raise Exception("Join vertice {} must have at "
                             "least 2 inputs, but has {}.".format(
                                     self.name, len(parents)))
 
-        self._supported_modes = ['linear', 'sample', 'max']
+        self._supported_modes = ('linear', 'sample', 'max')
         self.mode = mode
 
         if join_parameters.size == len(parents):
@@ -331,20 +343,8 @@ class Join(Module):
                 "The number of provided join parameters does not"
                 " match the number of parents")
         self._sel_p = F.softmax(self._join_parameters)
-
-        Module.__init__(self, name=name, parent=parents, *args, **kwargs)
-
-    def _init_parent(self, parent):
-        # we allow for multiple parents!
-        parent_type_mismatch = [not isinstance(pi, Module) for pi in parent]
-        self._parent = []
-        if sum(parent_type_mismatch) == 0:
-            for pi in parent:
-                self._parent.append(pi)
-                pi._children.append(self)
-        else:
-            raise Exception(
-                'At least one provided parent is not a static module!')
+        Module.__init__(self, parents=parents, 
+                        name=name, *args, **kwargs)
 
     @property
     def mode(self):
@@ -366,29 +366,29 @@ class Join(Module):
     def _alpha(self, value):
         self._alpha = value
 
-    def call(self, input):
+    def call(self, *input):
         """
         Aggregates all input tensors to one single
         input tensor (summing them up)
         """
         res = 0.0
         if self.mode == 'linear':
-            for pi, inpi in zip(self._sel_p, input):
+            for pi, inpi in zip(self._sel_p, *input):
                 res += pi.reshape((1,)*len(inpi.shape)) * inpi
         elif self.mode == 'sample' or self.mode == 'max':
-            res = input
+            res = input[0]
         return res
 
     def _recursive_call(self):
         if self._value is None:
             self.need_grad = True
             if self.mode == 'linear':
-                self._value = self.call([pi() for pi in self.parent])
+                self._value = self.call([pi() for pi in self.parents])
             elif self.mode == 'sample':
                 self._sel_p.forward()
                 self._idx = np.random.choice(
-                    len(self.parent), 1, p=self._sel_p.d)[0]
-                self._value = self.call(self.parent[self._idx]())
+                    len(self.parents), 1, p=self._sel_p.d)[0]
+                self._value = self.call(self.parents[self._idx]())
 
                 # update the score function
                 score = self._sel_p.d
@@ -397,44 +397,30 @@ class Join(Module):
                 # print('{}/{}'.format(self.name,score[0]))
             elif self.mode == 'max':
                 self._idx = np.argmax(self._join_parameters.d)
-                self._value = self.call(self.parent[self._idx]())
-        # print(self._value)
+                self._value = self.call(self.parents[self._idx]())
         return self._value
 
     def _shape_function(self):
         if self.mode == 'linear':
-            inputs = [nn.Variable(pi.shape) for pi in self.parent]
+            inputs = [nn.Variable(pi.shape) for pi in self.parents]
         elif self.mode == 'sample' or self.mode == 'max':
-            inputs = nn.Variable(self.parent[0].shape)
+            inputs = nn.Variable(self.parents[0].shape)
         dummy_graph = self.call(inputs)
         return dummy_graph.shape
 
 
 class Graph(mo.ModuleList, Module):
-    # Graph is derived from Op, such that we can realize nested graphs!
-    def __init__(self, name, parents=None, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents=[], 
+                 name='', eval_prob=None, 
+                 *args, **kwargs):
         mo.ModuleList.__init__(self, *args, **kwargs)
-        Module.__init__(self, name=name, parent=parents, eval_prob=eval_prob)
+        Module.__init__(self, name=name, parents=parents, 
+                        eval_prob=eval_prob)
         self._output = None
 
     @property
     def output(self):
         return self[-1]
-
-    def _init_parent(self, parent):
-        if parent is not None:
-            parent_type_mismatch = [
-                not isinstance(pi, Module) for pi in parent]
-            self._parent = []
-            if sum(parent_type_mismatch) == 0:
-                for pi in parent:
-                    self._parent.append(pi)
-                    pi._children.append(self)
-            else:
-                raise Exception('At least one provided parent'
-                                ' is not instance of class StaticModule')
-        else:
-            pass
 
     def _recursive_call(self):
         return self.output()
@@ -453,7 +439,7 @@ class Graph(mo.ModuleList, Module):
     def __getitem__(self, index):
         if isinstance(index, slice):
             return Graph(name=self._name + '/'+str(index),
-                         parents=self._parent,
+                         parents=self._parents,
                          modules=list(self.modules.values())[index])
         index = _get_abs_string_index(self, index)
         return self.modules[index]
@@ -498,31 +484,23 @@ class Graph(mo.ModuleList, Module):
 
         # 3. add the edges
         for mi in modules:
-            parents = mi.parent
-            if parents is not None:
-                if type(parents) == list:
-                    for pi in parents:
-                        if active_only:
-                            if pi.output._value is not None:
-                                graph.edge(pi.output.name, mi.name,
-                                           label=str(pi.output.shape))
-                        else:
+            parents = mi.parents
+            if len(parents)>0:
+                for pi in parents:
+                    if active_only:
+                        if pi.output._value is not None:
                             graph.edge(pi.output.name, mi.name,
                                        label=str(pi.output.shape))
-                else:
-                    if active_only:
-                        if parents.output._value is not None:
-                            graph.edge(parents.output.name, mi.name,
-                                       label=str(parents.shape))
                     else:
-                        graph.edge(parents.output.name, mi.name,
-                                   label=str(parents.output.shape))
+                        graph.edge(pi.output.name, mi.name,
+                                   label=str(pi.output.shape))
         return graph
 
 
 if __name__ == '__main__':
 
     input = Input(value=nn.Variable((10, 20, 32, 32)))
+    
     import pdb; pdb.set_trace()
 
     class MyGraph(Graph):
