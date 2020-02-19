@@ -32,6 +32,8 @@ class Trainer(Runner):
 
     def run(self):
         """Run the training process."""
+        self.callback_on_start()
+
         for cur_epoch in range(self.args.epoch):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
@@ -58,8 +60,8 @@ class Trainer(Runner):
         for _ in range(self.accum_train):
             p['input'].d, p['target'].d = self.dataloader['train'].next()
             p['loss'].forward(clear_no_need_grad=True)
-            p['loss'].backward(clear_buffer=True)
             p['err'].forward(clear_buffer=True)
+            p['loss'].backward(clear_buffer=True)
             loss, err = p['loss'].d.copy(),  p['err'].d.copy()
             self.monitor.update('train_loss', loss * self.accum_train, bz)
             self.monitor.update('train_err', err, bz)
@@ -86,7 +88,4 @@ class Trainer(Runner):
             self.model.save_parameters(path)
 
     def callback_on_finish(self):
-        pass
-
-    def callback_on_sample_graph(self):
         pass

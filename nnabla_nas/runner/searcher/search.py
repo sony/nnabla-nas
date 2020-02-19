@@ -8,6 +8,7 @@ class Searcher(Runner):
 
     def run(self):
         r"""Run the training process."""
+        self.callback_on_start()
         self._start_warmup()
 
         for cur_epoch in range(self.args.epoch):
@@ -56,10 +57,6 @@ class Searcher(Runner):
             path=os.path.join(self.args.output_path, 'weights.h5'),
             params=self.model.get_net_parameters()
         )
-
-    def callback_on_sample_graph(self):
-        r"""Calls this before sample a graph."""
-        pass
 
     def callback_on_start(self):
         r"""Calls this on starting the training."""

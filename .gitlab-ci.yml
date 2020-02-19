@@ -1,26 +1,20 @@
-image: "python"
+image: "nnabla/nnabla-ext-cuda-multi-gpu:latest"
 
 before_script:
-  - pip install --proxy http://43.196.177.37:8881 -r requirements.txt
-  - pip install --proxy http://43.196.177.37:8881 --no-deps nnabla
-
+  - pip install --proxy http://43.196.177.37:8881 -U -r requirements.txt
+  
 stages:
   - Analyze
   - Test
 
 flake8:
   stage: Analyze
-  allow_failure: false
+  allow_failure: False
   script:
     - flake8 . --max-line-length=120
 
-pylint:
-  stage: Analyze
-  allow_failure: true
-  script:
-    - pylint ./nnabla_nas/
-
 unit_test:
   stage: Test
+  allow_failure: False
   script:
-    - pytest -v
+    - pytest --cov=./

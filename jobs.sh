@@ -68,3 +68,17 @@ python main.py -d 1 --search \
 python main.py -d 1 \
                -f examples/mnv2_train.json \
                -a Trainer -o log/mnv2/train
+
+# search zoph search space with pnas and without latency constraint
+python main.py -d 0 --search \
+               -f examples/pnas_zoph_search.json \
+               -a ProxylessNasSearcher \
+               -o log/zoph/search
+
+# train zoph network 
+python main.py -d 0 \
+               -f examples/zoph_train.json \
+               -a Trainer 
+               -o log/zoph/train
+
+

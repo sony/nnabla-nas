@@ -2,7 +2,7 @@ report.ipynb
 # main.py
 log/
 __nnabla_nas__/
-
+docs/build
 .vscode
 .mypy_cache
 .pytest_cache
