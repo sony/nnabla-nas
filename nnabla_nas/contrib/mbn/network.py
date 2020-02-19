@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 import numpy as np
 
 from ... import module as Mo
@@ -201,7 +199,6 @@ class TrainNet(SearchNet):
                     module._mixed = module._mixed._ops[idx]
 
 
-
 class RefNet(SearchNet):
     def __init__(self,
                  num_classes=1000,
@@ -233,10 +230,12 @@ class RefNet(SearchNet):
         import nnabla as nn
         nn.save_parameters('mbn_ref_arch.h5', self.get_arch_parameters())
 
-
     def get_ops_idx(self, setting):
         ops = list()
-        for t,c,n,s in setting:
+        for t, c, n, s in setting:
             for m in range(self._n_max):
-                ops += [list(CANDIDATES).index('InvertedResidual_t{}_k3'.format(t)) if m < n else list(CANDIDATES).index('skip_connect'.format(t))]
+                ops += [list(CANDIDATES).index(
+                        'InvertedResidual_t{}_k3'.format(t))
+                        if m < n
+                        else list(CANDIDATES).index('skip_connect'.format(t))]
         return ops
