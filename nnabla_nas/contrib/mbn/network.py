@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 import numpy as np
 
 from ... import module as Mo
@@ -8,6 +6,8 @@ from ..model import Model
 from .modules import ChoiceBlock
 from .modules import ConvBNReLU
 from .modules import InvertedResidual
+from .modules import CANDIDATES
+from collections import OrderedDict
 
 
 def _make_divisible(x, divisible_by=8):
@@ -53,6 +53,7 @@ class SearchNet(Model):
         self._num_classes = num_classes
         self._width_mult = width_mult
         self._round_nearest = round_nearest
+        self._n_max = n_max
 
         block = block or InvertedResidual
         in_channels = 32
@@ -91,7 +92,7 @@ class SearchNet(Model):
         # building inverted residual blocks
         for k, (c, s) in enumerate(settings):
             output_channel = _make_divisible(c * width_mult, round_nearest)
-            n_iter = n_max if k > 0 else 1
+            n_iter = n_max
             for i in range(n_iter):
                 stride = s if i == 0 else 1
                 features.append(
@@ -196,3 +197,45 @@ class TrainNet(SearchNet):
                 if isinstance(module, ChoiceBlock):
                     idx = np.argmax(module._mixed._alpha.d)
                     module._mixed = module._mixed._ops[idx]
+
+
+class RefNet(SearchNet):
+    def __init__(self,
+                 num_classes=1000,
+                 width_mult=1.0,
+                 settings=None,
+                 round_nearest=8,
+                 block=None,
+                 mode='full',
+                 genotype=None):
+
+        super().__init__(num_classes=num_classes, width_mult=width_mult,
+                         settings=settings, round_nearest=round_nearest,
+                         block=block, mode=mode)
+        ref_setting = [
+            # t, c, n, s
+            [1, 16, 1, 1],
+            [6, 24, 2, 1],
+            [6, 32, 3, 1],
+            [6, 64, 4, 2],
+            [6, 96, 3, 1],
+            [6, 160, 3, 2],
+            [6, 320, 1, 1]]
+
+        arch_idx = self.get_ops_idx(ref_setting)
+        i = 0
+        for k, v in self.get_arch_parameters().items():
+            v.d[arch_idx[i]] = 1.0
+            i += 1
+        import nnabla as nn
+        nn.save_parameters('mbn_ref_arch.h5', self.get_arch_parameters())
+
+    def get_ops_idx(self, setting):
+        ops = list()
+        for t, c, n, s in setting:
+            for m in range(self._n_max):
+                ops += [list(CANDIDATES).index(
+                        'InvertedResidual_t{}_k3'.format(t))
+                        if m < n
+                        else list(CANDIDATES).index('skip_connect'.format(t))]
+        return ops
