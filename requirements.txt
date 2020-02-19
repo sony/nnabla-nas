@@ -2,7 +2,11 @@ flake8
 pylint
 mypy
 pytest
+pytest-cov
+h5py
 tensorboardX
 tqdm
 graphviz
 sklearn
+nnabla
+nnabla_ext_cuda101
