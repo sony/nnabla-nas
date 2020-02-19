@@ -19,6 +19,7 @@
             2,
             2
         ],
+        "n_max": 4,
         "mode": "sample"
     },
     "optimizer": {
