@@ -228,7 +228,9 @@ class CommunicatorWrapper(object):
             comm = C.MultiProcessDataParallelCommunicator(ctx)
         except Exception as e:
             print(e)
-            print('No communicator found. Running with a single process. If you run this with MPI processes, all processes will perform totally same.')
+            print(('No communicator found. Running with a single process. '
+                   'If you run this with MPI processes, all processes will '
+                   'perform totally same.'))
             self.n_procs = 1
             self.rank = 0
             self.ctx = ctx

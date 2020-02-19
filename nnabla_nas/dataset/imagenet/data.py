@@ -44,7 +44,9 @@ class TrainPipeline(Pipeline):
 
 
 class ValPipeline(Pipeline):
-    def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list, nvjpeg_padding, seed=1, num_shards=1, channel_last=True, dtype='half'):
+    def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
+                 nvjpeg_padding, seed=1, num_shards=1, channel_last=True,
+                 dtype='half'):
         super(ValPipeline, self).__init__(
             batch_size, num_threads, shard_id, seed=seed)
         self.input = ops.FileReader(file_root=image_dir, file_list=file_list,
