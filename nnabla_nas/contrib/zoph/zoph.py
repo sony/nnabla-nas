@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
+from nnabla.utils.save import save
 import numpy as np
 
 import nnabla_nas.module as mo
@@ -327,8 +328,8 @@ class SearchNet(Model, smo.Graph):
                 smo.Collapse]
 
     @property
-    def input_shape(self):
-        return self._input.shape
+    def input_shapes(self):
+        return [self._input.shape]
 
     def get_arch_modules(self):
         ans = []
@@ -402,6 +403,28 @@ class SearchNet(Model, smo.Graph):
         gvg.render(output_path+'/graph')
 
 
+    def save_modules_nnp(self, path, active_only=False):
+        mods = self.get_net_modules(active_only=active_only)
+        import pdb; pdb.set_trace()
+        for mi in mods:
+            if type(mi) in self.modules_to_profile:
+                print(type(mi))
+                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                import pdb; pdb.set_trace()
+                out = mi.call(*inp)
+                filename = path + mi.name + '.nnp'
+                contents = {'networks': [{'name': mi.name,
+                                          'batch_size': 1,
+                                          'outputs': {'out': out},
+                                          'names': {str(i): inpi for i, inpi in enumerate(inp)}}],
+                            'executors': [{'name': 'runtime',
+                                           'network': mi.name,
+                                           'data': ['inp'],
+                                           'output': ['out']}]}
+                import pdb; pdb.set_trace()
+                save(filename, contents)
+
+
 class TrainNet(SearchNet):
     def __init__(self, name, input_shape=(3, 32, 32),
                  n_classes=10, stem_channels=128,
@@ -462,7 +485,9 @@ if __name__ == '__main__':
     out_7 = zoph_block()
     out_8 = zoph_cell()
     out_9 = zoph_network(nn_input)
-    zoph_network.save('./')
+    import pdb; pdb.set_trace()
+#    zoph_network.save('./')
+#    zoph_network.save_modules_nnp('/home/demauchl/spielwiese/nnps/')
     # ------------------profile module by module----------------
     estimator = LatencyEstimator()
     latencies = zoph_network.get_latency(estimator, active_only=True)

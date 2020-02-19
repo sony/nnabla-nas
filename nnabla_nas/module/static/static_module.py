@@ -27,98 +27,118 @@ def _get_abs_string_index(obj, idx):
 
 
 class Module(mo.Module):
-    def __init__(self, name, parent=None, eval_prob=None, *args, **kwargs):
+    r"""
+    A static module encodes the graph structure, i.e., it has parents
+    and children. Therefore, we can build graphs which can run simple
+    graph optimizations when building the computational nnabla graph.
+    """
+
+    def __init__(self, parents=[], name='', eval_prob=None, *args, **kwargs):
+        r"""
+        :param parents: list, a list of static modules which are parents
+        :param name: string, (optional) the name of the static module
+        :param eval_prob: nnabla variable, (optional) the probability to
+        evaluate this static module
         """
-        A static module has a name and parent modules.
-        """
-        self._parent = None
-        self._init_parent(parent)
+        self._parents = parents
+        for pi in parents:
+            self._parents.append(parent)
+            pi.add_child(self)
         self._children = []
         self._name = name
         self._value = None
         self._eval_probs = None
-        self._prof = None
         self._shape = -1
 
         if eval_prob is None:
             self._eval_prob = nn.Variable.from_numpy_array(np.array(1.0))
         else:
             self._eval_prob = eval_prob
-
         mo.Module.__init__(self)
 
     def add_child(self, child):
+        r"""
+        adds a static_module as a child to self
+        :param child: static_module, the module to add as a child
+        """
         self._children.append(child)
 
-    def _init_parent(self, parent):
-        if isinstance(parent, Module):
-            self._parent = parent
-            self._parent.add_child(self)
-        else:
-            pass
-
     def _shape_function(self):
-        # we build a nummy nnabla graph to infer the shapes
-        input = nn.Variable(self.parent.shape)
-        dummy_graph = self.call(input)
+        r"""
+        calculates the output shape of this static_module
+        """
+        inputs = [nn.Variable(pi.shape for pi in self.parents)]
+        dummy_graph = self.call(*input)
         return dummy_graph.shape
 
     @property
     def shape(self):
+        r"""
+        the output shape of the static_module
+        """
         if self._shape == -1:
             self._shape = self._shape_function()
         return self._shape
 
-    @shape.setter
-    def shape(self, value):
-        self._shape = value
-
     @property
     def input_shapes(self):
-        if hasattr(self._parent, '__iter__'):
-            return [pi.shape for pi in self._parent]
-        else:
-            return [self._parent.shape]
+        r"""
+        returns a list of input shapes of this module
+        """
+        return [pi.shape for pi in self._parent]
 
     @property
     def name(self):
-        """
-        A unique name within the graph this vertice lives in
+        r"""
+        returns the name of the module
         """
         return self._name
 
     @property
-    def parent(self):
+    def parents(self):
+        r"""
+        returns a list of parent modules
         """
-        The parent vertices of this vertice (all vertices which are connected
-        with incoming edges).
-        """
-        return self._parent
+        return self._parents
 
     @property
     def children(self):
-        """
-        The vhild vertices of this vertice (all vertices which are connected
-        with outgoing edges).
+        r"""
+        returns the child modules
         """
         return self._children
 
-    def call(self, input):
+    def call(self, *input):
+        r"""
+        defines the transfer function of the module. Builds
+        the computational graph of this module.
+        :param input: one or multiple input variables
+        """
         raise NotImplementedError
 
     def _recursive_call(self):
+        r"""
+        builds the computational graph by recursively calling
+        the call methods of the parent modules.
+        """
         if self._value is None:
-            self._value = self.call(self.parent())
+            inputs = [pi() for pi in self.parents]
+            self._value = self.call(*inputs)
             self.need_grad = True
-        # else:
-        #    print("reusing graph for {}".format(self.name))
         return self._value
 
     def __call__(self):
+        r"""
+        build the computational graph of to this module.
+        """
         return self._recursive_call()
 
     @property
     def eval_prob(self):
+        r"""
+        The evaluation probability of this module. It is
+        1.0 if not specified otherwise.
+        """
         return self._eval_prob
 
     @eval_prob.setter
@@ -127,65 +147,69 @@ class Module(mo.Module):
 
     @property
     def output(self):
+        r"""
+        The output module of this module. If the module is not
+        a graph, it will return self.
+        """
         return self
 
     def reset_value(self):
+        r"""
+        Resets all _values, need_grad flags and shapes
+        """
         self._value = None
         self.apply(need_grad=False)
-        self.shape = -1
+        self._shape = -1
 
 
-# ------------------------------------Some basic StaticModules----------------
 class Input(Module):
-    def __init__(self, name, value=None, eval_prob=None, *args, **kwargs):
-        """
-        An input op to the graph, which can store input values
-        to propagate through the graph. If the input node has
-        parent, it is the identity op, which
-        just feeds the aggregated inputs to the output.
-        """
-        Module.__init__(self, name=name, parent=None, eval_prob=eval_prob)
-        self._inp_value = value
+    r"""
+    A static module that can serve as an input, i.e., it has no parents
+    but is provided with a value which it can pass to its children
+    """
 
-    def _init_parent(self, parent):
-        """
-        An input vertice can have no parents
-        """
-        self._parent = None
+    def __init__(self, value=None, name='', eval_prob=None, *args, **kwargs):
+        Module.__init__(self, name=name, parent=None, eval_prob=eval_prob)
+        self._value = value
 
     def call(self, inputs):
-        return self._inp_value
+        return self._value
 
     def _recursive_call(self):
         self.need_grad = True
         return self.call(None)
 
     def _shape_function(self):
-        return self._inp_value.shape
+        return self._value.shape
 
     def reset_value(self):
+        r"""
+        the input module does not reset its value
+        """
         self.shape = -1
 
 
 class Identity(mo.Identity, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+    def __init__(self, parents, name, eval_prob=None, *args, **kwargs):
+        Module.__init__(self, parents, name, eval_prob=eval_prob)
 
 
 class Zero(mo.Zero, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name, eval_prob=None, *args, **kwargs):
         mo.Zero.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
-        self._inp_value = nn.Variable.from_numpy_array(
+        Module.__init__(self, parents, name, eval_prob=eval_prob)
+        self._value = nn.Variable.from_numpy_array(
             np.zeros(self._parent.shape))
+        if len(self._parents) > 1:
+            raise RuntimeError
 
-    def call(self, input):
-        self._inp_value = nn.Variable.from_numpy_array(
-            np.zeros(self._parent.shape))
-        return self._inp_value
+    def call(self, *input):
+        self._value = nn.Variable.from_numpy_array(
+            np.zeros(self._parents[0].shape))
+        return self._value
 
     def _shape_function(self):
-        return self._parent.shape
+        return self._parents[0].shape
 
     def _recursive_call(self):
         self.need_grad = True
@@ -193,9 +217,11 @@ class Zero(mo.Zero, Module):
 
 
 class Conv(mo.Conv, Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.Conv.__init__(self, *args, **kwargs)
-        Module.__init__(self, name, parent, eval_prob=eval_prob)
+        Module.__init__(self, parents, name=name,  eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
 class Linear(mo.Linear, Module):
@@ -382,7 +408,6 @@ class Join(Module):
             inputs = nn.Variable(self.parent[0].shape)
         dummy_graph = self.call(inputs)
         return dummy_graph.shape
-# ------------------------------------A graph of StaticModules----------------
 
 
 class Graph(mo.ModuleList, Module):
@@ -496,7 +521,9 @@ class Graph(mo.ModuleList, Module):
 
 
 if __name__ == '__main__':
-    from nnabla_nas.utils import LatencyEstimator
+
+    input = Input(value=nn.Variable((10, 20, 32, 32)))
+    import pdb; pdb.set_trace()
 
     class MyGraph(Graph):
         def __init__(self, name, parents):
