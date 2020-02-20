@@ -7,11 +7,9 @@ import operator
 
 import nnabla as nn
 import nnabla.functions as F
-from nnabla.logger import logger
 import numpy as np
 
 import nnabla_nas.module as mo
-from nnabla_nas.module.parameter import Parameter
 
 from graphviz import Digraph
 
@@ -207,6 +205,7 @@ class Identity(mo.Identity, Module):
         if len(self._parents) > 1:
             raise RuntimeError
 
+
 class Zero(mo.Zero, Module):
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.Zero.__init__(self, *args, **kwargs)
@@ -304,7 +303,7 @@ class BatchNormalization(mo.BatchNormalization, Module):
 class Merging(mo.Merging, Module):
     def __init__(self, parents, mode, name='', eval_prob=None, axis=1):
         mo.Merging.__init__(self, mode, axis)
-        Module.__init__(self, parents=parents, name=name, 
+        Module.__init__(self, parents=parents, name=name,
                         eval_prob=eval_prob)
         if len(self._parents) == 1:
             raise RuntimeError
@@ -321,7 +320,7 @@ class Collapse(Module):
 
     def call(self, *inputs):
         return F.reshape(inputs[0],
-                         shape=(inputs[0].shape[0], 
+                         shape=(inputs[0].shape[0],
                          inputs[0].shape[1]))
 
 
@@ -343,7 +342,7 @@ class Join(Module):
                 "The number of provided join parameters does not"
                 " match the number of parents")
         self._sel_p = F.softmax(self._join_parameters)
-        Module.__init__(self, parents=parents, 
+        Module.__init__(self, parents=parents,
                         name=name, *args, **kwargs)
 
     @property
@@ -410,11 +409,11 @@ class Join(Module):
 
 
 class Graph(mo.ModuleList, Module):
-    def __init__(self, parents=[], 
-                 name='', eval_prob=None, 
+    def __init__(self, parents=[],
+                 name='', eval_prob=None,
                  *args, **kwargs):
         mo.ModuleList.__init__(self, *args, **kwargs)
-        Module.__init__(self, name=name, parents=parents, 
+        Module.__init__(self, name=name, parents=parents,
                         eval_prob=eval_prob)
         self._output = None
 
@@ -485,7 +484,7 @@ class Graph(mo.ModuleList, Module):
         # 3. add the edges
         for mi in modules:
             parents = mi.parents
-            if len(parents)>0:
+            if len(parents) > 0:
                 for pi in parents:
                     if active_only:
                         if pi.output._value is not None:
