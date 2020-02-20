@@ -14,82 +14,135 @@ from nnabla_nas.utils import load_parameters
 
 
 class SepConv(misc.SepConv, smo.Module):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         misc.SepConv.__init__(self, *args, **kwargs)
-        smo.Module.__init__(self, name, parent, eval_prob=eval_prob)
+        smo.Module.__init__(self,
+                            parents=parents,
+                            name=name,
+                            eival_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
 
 
-class SepConvBN(SepConv):
-    def __init__(self, name, parent, out_channels,
-                 kernel, dilation, eval_prob=None):
+class SepConvBN(smo.Graph):
+    def __init__(self, parents, out_channels,
+                 kernel, dilation,
+                 name='', eval_prob=None):
+        smo.Graph.__init__(self, 
+                           parents=parents, 
+                           name=name, 
+                           eval_prob=eval_prob)
+        self._out_channels= out_channels
 
         if dilation is None:
             pad = tuple([ki//2 for ki in kernel])
         else:
             pad = tuple([(ki//2)*di for ki, di in zip(kernel, dilation)])
 
-        SepConv.__init__(self, name=name, parent=parent,
-                         in_channels=parent.shape[1],
-                         out_channels=parent.shape[1],
-                         kernel=kernel, pad=pad,
-                         dilation=dilation, with_bias=False,
-                         eval_prob=eval_prob)
+        self.append(SepConv(parents=parents,
+                            name='{}/SepConv_1'.format(self.name),
+                            in_channels=parents[0].shape[1],
+                            out_channels=out_channels,
+                            kernel=kernel, pad=pad,
+                            dilation=dilation, 
+                            with_bias=False,
+                            eval_prob=eval_prob))
+        
+        self.append(SepConv(parents=[self[-1]],
+                            name='{}/SepConv_2'.format(self.name),
+                            in_channels=out_channels,
+                            out_channels=out_channels,
+                            kernel=kernel, pad=pad,
+                            dilation=dilation, 
+                            with_bias=False,
+                            eval_prob=eval_prob))
 
-        self.bn = mo.BatchNormalization(
-            n_features=self._out_channels, n_dims=4)
-        self.relu = mo.ReLU()
-
-    def call(self, input):
-        return self.relu(self.bn(SepConv.call(self,
-                                              SepConv.call(self, input))))
+        self.append(smo.BatchNormalization(parents=[self[-1]],
+                                           n_features=self._out_channels, 
+                                           name='{}/bn'.format(self.name),
+                                           n_dims=4))
+        self.append(smo.ReLU(parents=[self[-1]],
+                             name='{}/relu'.format(self.name)))
 
 
 class SepConv3x3(SepConvBN):
-    def __init__(self, name, parent, channels, eval_prob=None):
-        SepConvBN.__init__(self, name, parent, channels,
-                           (3, 3), None, eval_prob=eval_prob)
+    def __init__(self, parents, channels, name='', eval_prob=None):
+        SepConvBN.__init__(self,
+                           parents=parents,
+                           out_channels=channels,
+                           kernel=(3, 3),
+                           dilation=None,
+                           name=name,
+                           eval_prob=eval_prob)
 
 
 class SepConv5x5(SepConvBN):
-    def __init__(self, name, parent, channels, eval_prob=None):
-        SepConvBN.__init__(self, name, parent, channels,
-                           (5, 5), None, eval_prob=eval_prob)
+    def __init__(self, parents, channels, name='', eval_prob=None):
+        SepConvBN.__init__(self,                  
+                           parents=parents,
+                           out_channels=channels,
+                           kernel=(5, 5),
+                           dilation=None,
+                           name=name,
+                           eval_prob=eval_prob)
 
 
 class DilSepConv3x3(SepConvBN):
-    def __init__(self, name, parent, channels, eval_prob=None):
-        SepConvBN.__init__(self, name, parent, channels,
-                           (3, 3), (2, 2), eval_prob=eval_prob)
+    def __init__(self, parents, channels, name='', eval_prob=None):
+        SepConvBN.__init__(self,
+                           parents=parents,
+                           out_channels=channels,
+                           kernel=(3, 3),
+                           dilation=(2, 2),
+                           name=name,
+                           eval_prob=eval_prob)
 
 
 class DilSepConv5x5(SepConvBN):
-    def __init__(self, name, parent, channels, eval_prob=None):
-        SepConvBN.__init__(self, name, parent, channels,
-                           (5, 5), (2, 2), eval_prob=eval_prob)
+    def __init__(self, parents, channels, name='', eval_prob=None):
+        SepConvBN.__init__(self,
+                           parents=parents,
+                           out_channels=channels,
+                           kernel=(5, 5),
+                           dilation=(2, 2),
+                           name=name,
+                           eval_prob=eval_prob)
 
 
 class MaxPool3x3(smo.MaxPool):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
-        smo.MaxPool.__init__(self, name, parent, kernel=(
-            3, 3), stride=(1, 1), pad=(1, 1), eval_prob=eval_prob)
-        self.bn = mo.BatchNormalization(
-            n_features=self.parent.shape[1], n_dims=4)
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
+        smo.MaxPool.__init__(self,
+                             parents=parents,
+                             kernel=(3, 3),
+                             stride=(1, 1),
+                             pad=(1, 1),
+                             name=name,
+                             eval_prob=eval_prob)
+        self.bn = mo.BatchNormalization(n_features=self.parents[0].shape[1], 
+                                        n_dims=4)
         self.relu = mo.ReLU()
 
-    def call(self, input):
-        return self.relu(self.bn(smo.MaxPool.call(self, input)))
+    def call(self, *inputs):
+        return self.relu(self.bn(smo.MaxPool.call(self, 
+                                                  *inputs)))
 
 
 class AveragePool3x3(smo.AvgPool):
-    def __init__(self, name, parent, eval_prob=None, *args, **kwargs):
-        smo.AvgPool.__init__(self, name, parent, kernel=(
-            3, 3), stride=(1, 1), pad=(1, 1), eval_prob=eval_prob)
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
+        smo.AvgPool.__init__(self,
+                             parents=parents,
+                             kernel=(3, 3),
+                             stride=(1, 1),
+                             pad=(1, 1),
+                             name=name,
+                             eval_prob=eval_prob)
         self.bn = mo.BatchNormalization(
-            n_features=self.parent.shape[1], n_dims=4)
+            n_features=self.parents[0].shape[1], n_dims=4)
         self.relu = mo.ReLU()
 
-    def call(self, input):
-        return self.relu(self.bn(smo.AvgPool.call(self, input)))
+    def call(self, *inputs):
+        return self.relu(self.bn(smo.AvgPool.call(self, 
+                                                  *inputs)))
 
 
 ZOPH_CANDIDATES = [SepConv3x3,
@@ -103,15 +156,17 @@ ZOPH_CANDIDATES = [SepConv3x3,
 
 
 class ZophBlock(smo.Graph):
-    def __init__(self, name, parents, candidates,
-                 channels, join_parameters=None):
+    def __init__(self, parents, candidates,
+                 channels, name='', join_parameters=None):
         self._candidates = candidates
         self._channels = channels
         if join_parameters is None:
             self._join_parameters = Parameter(shape=(len(candidates),))
         else:
             self._join_parameters = join_parameters
-        smo.Graph.__init__(self, name, parents)
+        smo.Graph.__init__(self,
+                           parents=parents,
+                           name=name)
 
         join_prob = F.softmax(self._join_parameters)
 
