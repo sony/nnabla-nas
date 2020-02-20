@@ -48,6 +48,7 @@ class SearchNet(Model):
                  round_nearest=8,
                  block=None,
                  n_max=4,
+                 first_strides=(1, 1),
                  mode='full'):
 
         self._num_classes = num_classes
@@ -63,8 +64,8 @@ class SearchNet(Model):
             settings = [
                 # c, s
                 [16, 1],
-                [24, 1],
-                [32, 1],
+                [24, first_strides[0]],
+                [32, first_strides[1]],
                 [64, 2],
                 [96, 1],
                 [160, 2],
