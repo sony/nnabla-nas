@@ -1,5 +1,6 @@
 from abc import ABC
 from abc import abstractmethod
+import numpy as np
 
 from ..utils import ProgressMeter
 
@@ -101,6 +102,15 @@ class Runner(ABC):
             p['target']
         )
         p['err'].apply(persistent=True)
+
+    @staticmethod
+    def _load_data(placeholder, data):
+        if isinstance(data[0], np.ndarray):
+            placeholder['input'].d = data[0]
+            placeholder['target'].d = data[1]
+        else:
+            placeholder['input'].data = data[0]
+            placeholder['target'].data = data[1]
 
     @abstractmethod
     def train_on_batch(self, key='train'):
