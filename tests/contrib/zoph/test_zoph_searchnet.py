@@ -8,7 +8,7 @@ def test_zoph_searchnet():
 
     zn = zoph.SearchNet()
     assert zn.shape == (1, 10)
-    out = zn(input._value)
+    out = zn(input)
     assert out.shape == (10, 10)
 
 
