@@ -8,8 +8,8 @@
     "epoch": 120,
     "batch_size_train": 256,
     "batch_size_valid": 256,
-    "mini_batch_train": 64,
-    "mini_batch_valid": 64,
+    "mini_batch_train": 8,
+    "mini_batch_valid": 8,
     "warmup": 50,
     "print_frequency": 50,
     "network": {
