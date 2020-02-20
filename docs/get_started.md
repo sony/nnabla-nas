@@ -1,0 +1,1 @@
+pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/10.0 nvidia-dali==0.14.0

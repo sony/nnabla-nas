@@ -21,7 +21,7 @@ class DartsSearcher(Searcher):
         bz, p = self.args.mbs_train, self.placeholder['train']
         self.optimizer[key].zero_grad()
         for _ in range(self.accum_train):
-            p['input'].d, p['target'].d = self.dataloader['train'].next()
+            self._load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
             p['err'].forward(clear_buffer=True)
             p['loss'].backward(clear_buffer=True)
@@ -35,7 +35,7 @@ class DartsSearcher(Searcher):
         bz, p = self.args.mbs_valid, self.placeholder['valid']
         self.optimizer['valid'].zero_grad()
         for _ in range(self.accum_valid):
-            p['input'].d, p['target'].d = self.dataloader['valid'].next()
+            self._load_data(p, self.dataloader['valid'].next())
             p['loss'].forward(clear_no_need_grad=True)
             p['err'].forward(clear_buffer=True)
             p['loss'].backward(clear_buffer=True)
