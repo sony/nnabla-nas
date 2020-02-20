@@ -3,17 +3,42 @@ import numpy as np
 from ... import module as Mo
 from ...utils import load_parameters
 from ..model import Model
-from .modules import ChoiceBlock
+# from .modules import ChoiceBlock
 from .modules import ConvBNReLU
-from .modules import InvertedResidual
 from .modules import CANDIDATES
 from collections import OrderedDict
+from ..darts.modules import MixedOp
 
 
 def _make_divisible(x, divisible_by=8):
     r"""It ensures that all layers have a channel number that is divisible by
     divisible_by."""
     return int(np.ceil(x * 1. / divisible_by) * divisible_by)
+
+
+class ChoiceBlock(Mo.Module):
+    def __init__(self, in_channels, out_channels, stride,
+                 ops, mode='sample'):
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+        self._stride = stride
+        self._mode = mode
+
+        self._mixed = MixedOp(
+            operators=[func(in_channels, out_channels, stride)
+                       for k, func in CANDIDATES.items() if k in ops],
+            mode=mode,
+        )
+
+    def call(self, input):
+        return self._mixed(input)
+
+    def extra_repr(self):
+        return (f'in_channels={self._in_channels}, '
+                f'out_channels={self._out_channels}, '
+                f'stride={self._stride}, '
+                f'mode={self._mode}, '
+                f'is_skipped={self._is_skipped}')
 
 
 class SearchNet(Model):
@@ -43,41 +68,19 @@ class SearchNet(Model):
 
     def __init__(self,
                  num_classes=1000,
-                 width_mult=1.0,
-                 settings=None,
-                 round_nearest=8,
-                 block=None,
-                 n_max=4,
-                 first_strides=(1, 1),
-                 mode='full'):
+                 width_mult=1,
+                 n_cell_stages=(4, 4, 4, 4, 4, 1),
+                 width_stages=(24, 40, 80, 96, 192, 320),
+                 stride_stages=(2, 2, 2, 1, 2, 1),
+                 drop_rate=0,
+                 mode='sample'):
 
         self._num_classes = num_classes
         self._width_mult = width_mult
-        self._round_nearest = round_nearest
-        self._n_max = n_max
+        round_nearest = 8
 
-        block = block or InvertedResidual
         in_channels = 32
         last_channel = 1280
-
-        if settings is None:
-            settings = [
-                # c, s
-                [16, 1],
-                [24, first_strides[0]],
-                [32, first_strides[1]],
-                [64, 2],
-                [96, 1],
-                [160, 2],
-                [320, 1]
-            ]
-
-        # only check the first element
-        if len(settings) == 0 or len(settings[0]) != 2:
-            raise ValueError(
-                "Inverted_residual_setting should be non-empty "
-                "or a 4-element list, got {}".format(settings)
-            )
 
         # building first layer
         in_channels = _make_divisible(in_channels * width_mult, round_nearest)
@@ -87,18 +90,29 @@ class SearchNet(Model):
         )
         features = [ConvBNReLU(3, in_channels, stride=(2, 2))]
 
-        # output_channel = _make_divisible(16 * width_mult, round_nearest)
-        # features.append(block(in_channels, 16, 1, expand_ratio=1))
+        first_cell_width = _make_divisible(16 * width_mult, 8)
+        features += [CANDIDATES['InvertedResidual_t1_k3'](
+            in_channels, first_cell_width, 1)]
+        in_channels = first_cell_width
 
         # building inverted residual blocks
-        for k, (c, s) in enumerate(settings):
+        default_candidates = [
+            'InvertedResidual_t3_k3', 'InvertedResidual_t6_k3',
+            'InvertedResidual_t3_k5', 'InvertedResidual_t6_k5',
+            'InvertedResidual_t3_k7', 'InvertedResidual_t6_k7'
+        ]
+
+        for c, n, s in zip(width_stages, n_cell_stages, stride_stages):
             output_channel = _make_divisible(c * width_mult, round_nearest)
-            n_iter = n_max
-            for i in range(n_iter):
+            for i in range(n):
                 stride = s if i == 0 else 1
+                curr_candidates = default_candidates.copy()
+                if stride == 1 and in_channels == output_channel:
+                    curr_candidates.append('skip_connect')
                 features.append(
                     ChoiceBlock(in_channels, output_channel,
-                                stride=stride, mode=mode, is_skipped=i > 0)
+                                stride=stride, mode=mode,
+                                ops=curr_candidates)
                 )
                 in_channels = output_channel
 
@@ -110,8 +124,8 @@ class SearchNet(Model):
 
         # building classifier
         self._classifier = Mo.Sequential(
-            Mo.AvgPool((4, 4)),
-            Mo.Dropout(0.2),
+            Mo.GlobalAvgPool(),
+            Mo.Dropout(drop_rate),
             Mo.Linear(self.last_channel, num_classes),
         )
 
