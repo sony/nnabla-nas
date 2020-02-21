@@ -75,10 +75,20 @@ python main.py -d 0 --search \
                -a ProxylessNasSearcher \
                -o log/zoph/search
 
-# train zoph network 
+# train zoph network
 python main.py -d 0 \
                -f examples/zoph_train.json \
-               -a Trainer 
+               -a Trainer \
                -o log/zoph/train
 
+# train random zoph network
+python main.py -d 0 \
+               -f examples/zoph_train_random.json \
+               -a Trainer \
+               -o log/zoph/train_random
 
+# train random zoph network, using additions for merging
+python main.py -d 0 \
+               -f examples/zoph_train_random_merge_add.json \
+               -a Trainer \
+               -o log/zoph/train_random_merge_add

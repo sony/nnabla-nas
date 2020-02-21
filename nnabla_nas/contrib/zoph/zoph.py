@@ -157,7 +157,8 @@ ZOPH_CANDIDATES = [SepConv3x3,
 
 class ZophBlock(smo.Graph):
     def __init__(self, parents, candidates,
-                 channels, name='', join_parameters=None):
+                 channels, name='', join_parameters=None,
+                 merging_mode='concat'):
         self._candidates = candidates
         self._channels = channels
         if join_parameters is None:
@@ -173,7 +174,7 @@ class ZophBlock(smo.Graph):
         # add an input concatenation
         input_con = smo.Merging(name='{}/input_con'.format(self.name),
                                 parents=self.parents,
-                                mode='concat',
+                                mode=merging_mode,
                                 axis=1,
                                 eval_prob=F.sum(join_prob[:-1]))
         self.append(input_con)
@@ -205,7 +206,8 @@ class ZophBlock(smo.Graph):
 
 class ZophCell(smo.Graph):
     def __init__(self, parents, candidates, channels, name='',
-                 n_modules=3, reducing=False, join_parameters=[None]*3):
+                 n_modules=3, reducing=False, join_parameters=[None]*3,
+                 merging_mode='concat'):
         self._candidates = candidates
         self._channels = channels
         self._n_modules = n_modules
@@ -263,11 +265,12 @@ class ZophCell(smo.Graph):
                                   parents=cell_modules[:i+2],
                                   candidates=self._candidates,
                                   channels=self._channels,
-                                  join_parameters=self._join_parameters[i]))
+                                  join_parameters=self._join_parameters[i],
+                                  merging_mode=merging_mode))
             cell_modules.append(self[-1])
         # perform output concatenation
         self.append(smo.Merging(name=self.name+'/output_concat',
-                                parents=cell_modules, mode='concat'))
+                                parents=cell_modules, mode=merging_mode))
 
 
 class SearchNet(Model, smo.Graph):
@@ -277,7 +280,9 @@ class SearchNet(Model, smo.Graph):
                  cell_channels=[128, 256, 512],
                  reducing=[False, True, True],
                  join_parameters=[[None]*7]*3,
-                 candidates=ZOPH_CANDIDATES, mode='sample'):
+                 candidates=ZOPH_CANDIDATES,
+                 mode='sample',
+                 merging_mode='concat'):
         smo.Graph.__init__(self, parents=[], name=name)
         self._n_classes = n_classes
         self._stem_channels = stem_channels
@@ -287,6 +292,7 @@ class SearchNet(Model, smo.Graph):
         self._join_parameters = join_parameters
         self._reducing = reducing
         self._candidates = candidates
+        self._merging_mode = merging_mode
         self._input_shape = (1,) + input_shape
         self._input = smo.Input(
             name='{}/input'.format(self.name),
@@ -325,14 +331,16 @@ class SearchNet(Model, smo.Graph):
                                    n_modules=self._cell_depth[0],
                                    channels=self._cell_channels[0],
                                    join_parameters=self._join_parameters[0],
-                                   reducing=self._reducing[0]))
+                                   reducing=self._reducing[0],
+                                   merging_mode=merging_mode))
         self.append(self._cells[1](name='{}/cell_{}'.format(self.name, 1),
                                    parents=[self[6], self[7]],
                                    candidates=self._candidates,
                                    n_modules=self._cell_depth[1],
                                    channels=self._cell_channels[1],
                                    join_parameters=self._join_parameters[1],
-                                   reducing=self._reducing[1]))
+                                   reducing=self._reducing[1],
+                                   merging_mode=merging_mode))
         # 2. add the cells using shared architecture parameters
         for i, celli in enumerate(zip(self._cells[2:], self._cell_depth[2:],
                                       self._cell_channels[2:],
@@ -344,6 +352,7 @@ class SearchNet(Model, smo.Graph):
                                  n_modules=celli[1],
                                  channels=celli[2],
                                  join_parameters=celli[3],
+                                 merging_mode=merging_mode,
                                  reducing=celli[4]))
 
         # 3. add output convolutions and global average pooling layers
@@ -494,7 +503,9 @@ class TrainNet(SearchNet):
                  reducing=[False, True, True],
                  join_parameters=[[None]*7]*3,
                  candidates=ZOPH_CANDIDATES,
-                 param_path=None):
+                 merging_mode='concat',
+                 param_path=None,
+                 random_init=False):
         SearchNet.__init__(self, name=name,
                            input_shape=input_shape,
                            n_classes=n_classes,
@@ -503,7 +514,13 @@ class TrainNet(SearchNet):
                            reducing=reducing,
                            join_parameters=join_parameters,
                            candidates=ZOPH_CANDIDATES,
-                           mode='max')
+                           mode='max',
+                           merging_mode=merging_mode)
 
         if param_path is not None:
             self.set_parameters(load_parameters(param_path))
+
+        if random_init:
+            arch_param = self.get_arch_parameters()
+            for api in arch_param:
+                arch_param[api].d = np.random.randn(*arch_param[api].shape)
