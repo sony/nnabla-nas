@@ -194,17 +194,18 @@ class TrainNet(SearchNet):
 
     def __init__(self,
                  num_classes=1000,
-                 width_mult=1.0,
-                 settings=None,
-                 round_nearest=8,
-                 n_max=4,
-                 block=None,
-                 mode='full',
+                 width_mult=1,
+                 n_cell_stages=(4, 4, 4, 4, 4, 1),
+                 width_stages=(24, 40, 80, 96, 192, 320),
+                 stride_stages=(2, 2, 2, 1, 2, 1),
+                 drop_rate=0,
+                 mode='sample',
                  genotype=None):
 
         super().__init__(num_classes=num_classes, width_mult=width_mult,
-                         settings=settings, round_nearest=round_nearest,
-                         n_max=n_max, block=block, mode=mode)
+                         n_cell_stages=n_cell_stages,
+                         width_stages=width_stages,
+                         stride_stages=stride_stages, drop_rate=0, mode=mode)
 
         if genotype is not None:
             self.set_parameters(load_parameters(genotype))
