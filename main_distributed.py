@@ -5,6 +5,8 @@ import nnabla as nn
 import nnabla.functions as F
 from nnabla.ext_utils import get_extension_context
 
+from nnabla_nas.utils import label_smoothing_loss
+
 import nnabla_nas.contrib as contrib
 from args import Configuration
 from nnabla_nas.runner import distributed as runner
@@ -67,7 +69,7 @@ if __name__ == "__main__":
         dataloader=loader['dataloader'],
         transform=loader['transform'],
         regularizer=loader['regularizer'],
-        criteria=lambda o, t: F.mean(F.softmax_cross_entropy(o, t)),
+        criteria=lambda o, t: F.mean(label_smoothing_loss(o, t)),
         evaluate=lambda o, t: F.mean(F.top_n_error(o, t)),
         args=conf
     ).run()

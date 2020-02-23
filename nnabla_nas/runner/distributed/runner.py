@@ -56,16 +56,11 @@ class Runner(ABC):
         self.one_epoch_train = len(self.dataloader['train']) // args.bs_train
         self.one_epoch_valid = len(self.dataloader['valid']) // args.bs_valid
 
-        # aplied distributed
-        comm = self.args.conf['communicator']
-        self.one_epoch_train //= comm.n_procs
-        self.one_epoch_valid //= comm.n_procs
-
         # monitor log info
         self.monitor = ProgressMeter(
             self.one_epoch_train,
             path=args.output_path,
-            quiet=comm.rank > 0
+            quiet=self.args.conf['communicator'].rank > 0
         )
 
     @abstractmethod

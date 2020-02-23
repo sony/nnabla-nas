@@ -10,7 +10,7 @@
     "batch_size_valid": 64,
     "mini_batch_train": 64,
     "mini_batch_valid": 64,
-    "warmup": 5,
+    "warmup": 50,
     "print_frequency": 50,
     "network": {
         "search_space": "mbn",

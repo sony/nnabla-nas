@@ -8,6 +8,7 @@ from .modules import ConvBNReLU
 from .modules import CANDIDATES
 from collections import OrderedDict
 from ..darts.modules import MixedOp
+from collections import Counter
 
 
 def _make_divisible(x, divisible_by=8):
@@ -163,6 +164,22 @@ class SearchNet(Model):
         return (f'num_classes={self._num_classes}, '
                 f'width_mult={self._width_mult}, '
                 f'round_nearest={self._round_nearest}')
+
+    def summary(self):
+        stats = []
+        arch_params = self.get_arch_parameters()
+        count = Counter([np.argmax(m.d.flat) for m in arch_params.values()])
+        op_names = [
+            'InvertedResidual_t3_k3', 'InvertedResidual_t6_k3',
+            'InvertedResidual_t3_k5', 'InvertedResidual_t6_k5',
+            'InvertedResidual_t3_k7', 'InvertedResidual_t6_k7',
+            'skip_connect'
+        ]
+        total = len(arch_params)
+        for k in range(len(op_names)):
+            name = op_names[k]
+            stats.append(name + f' = {count[k]/total*100:.2f}%\t')
+        return ''.join(stats)
 
 
 class TrainNet(SearchNet):

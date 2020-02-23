@@ -233,6 +233,14 @@ def ceil_to_multiple(x, mul):
     return (x + mul - 1) // mul
 
 
+def label_smoothing_loss(pred, label, label_smoothing=0.1):
+    loss = F.softmax_cross_entropy(pred, label)
+    if label_smoothing <= 0:
+        return loss
+    return (1 - label_smoothing) * loss - label_smoothing \
+        * F.mean(F.log_softmax(pred), axis=1, keepdims=True)
+
+
 class CommunicatorWrapper(object):
     def __init__(self, ctx):
         try:
