@@ -6,20 +6,15 @@
         224
     ],
     "epoch": 120,
-    "batch_size_train": 256,
-    "batch_size_valid": 256,
-    "mini_batch_train": 8,
-    "mini_batch_valid": 8,
-    "warmup": 50,
+    "batch_size_train": 64,
+    "batch_size_valid": 64,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 64,
+    "warmup": 5,
     "print_frequency": 50,
     "network": {
         "search_space": "mbn",
         "num_classes": 1000,
-        "first_strides": [
-            2,
-            2
-        ],
-        "n_max": 4,
         "mode": "sample"
     },
     "optimizer": {

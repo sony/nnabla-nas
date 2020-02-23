@@ -214,30 +214,26 @@ class DataloaderParser(OptionParser):
     def parse(self, conf):
         opts = self.options
         if opts.dataset == 'imagenet':
-            ctx = nn.context.get_current_context()
-            comm = CommunicatorWrapper(ctx)
-            stream_event_handler = StreamEventHandler(int(comm.ctx.device_id))
             tdata = get_data_iterators(
                 batch_size=opts.mbs_train,
-                dali_num_threads=16,
+                dali_num_threads=4,
                 train_dir='/speech/db/Images/ILSVRC-2012/img_train',
                 dali_nvjpeg_memory_padding=64*(1 << 20),
                 type_config=float,
                 channel_last=False,
-                comm=comm,
-                stream_event_handler=stream_event_handler,
+                comm=conf['communicator'],
+                stream_event_handler=conf['stream_event_handler'],
                 training=True
             )
-
             vdata = get_data_iterators(
                 batch_size=opts.mbs_valid,
-                dali_num_threads=16,
+                dali_num_threads=4,
                 train_dir='/speech/db/Images/ILSVRC-2012/img_val_folders',
                 dali_nvjpeg_memory_padding=64*(1 << 20),
                 type_config=float,
                 channel_last=False,
-                comm=comm,
-                stream_event_handler=stream_event_handler,
+                comm=conf['communicator'],
+                stream_event_handler=conf['stream_event_handler'],
                 training=False
             )
 

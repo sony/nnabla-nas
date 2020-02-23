@@ -8,6 +8,7 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 from tensorboardX import SummaryWriter
+from nnabla import random
 
 from .dataset.transforms import Cutout
 
@@ -21,12 +22,14 @@ class ProgressMeter(object):
                 Defaults to None.
     """
 
-    def __init__(self, num_batches, path=None):
+    def __init__(self, num_batches, path=None, quiet=False):
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
         self.meters = OrderedDict()
         self.terminal = sys.stdout
-        self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
-        self.file = open(os.path.join(path, 'log.txt'), 'w')
+        self.quiet = quiet
+        if not self.quiet:
+            self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
+            self.file = open(os.path.join(path, 'log.txt'), 'w')
 
     def info(self, message, view=True):
         r"""Shows a message.
@@ -35,11 +38,12 @@ class ProgressMeter(object):
             message (str): The message.
             view (bool, optional): If shows to terminal. Defaults to True.
         """
-        if view:
+        if view and not self.quiet:
             self.terminal.write(message)
             self.terminal.flush()
-        self.file.write(message)
-        self.file.flush()
+        if not self.quiet:
+            self.file.write(message)
+            self.file.flush()
 
     def display(self, batch, key=None):
         r"""Displays current values for meters.
@@ -64,6 +68,9 @@ class ProgressMeter(object):
         Args:
             n_iter (int): The n-th iteration.
         """
+        if self.quiet:
+            return
+
         for m in self.meters.values():
             self.tb.add_scalar(m.name, m.avg, n_iter)
 
@@ -81,8 +88,9 @@ class ProgressMeter(object):
 
     def close(self):
         r"""Closes all the file descriptors."""
-        self.tb.close()
-        self.file.close()
+        if not self.quiet:
+            self.tb.close()
+            self.file.close()
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
@@ -120,20 +128,23 @@ class AverageMeter(object):
         return fmtstr.format(**self.__dict__)
 
 
-def sample(pvals, mode='sample'):
+def sample(pvals, mode='sample', rng=None):
     r"""Returns random int according the sampling `mode` (e.g., `max`, `full`,
         or `sample`).
 
     Args:
         pvals (np.array): The probability values.
         mode (str, optional): The sampling `mode`. Defaults to 'sample'.
+        rng (numpy.random.RandomState): Random generator for random choice.
 
     Returns:
         [type]: [description]
     """
     if mode == 'max':
         return np.argmax(pvals)
-    return np.random.choice(len(pvals), p=pvals, replace=False)
+    if rng is None:
+        rng = random.prng
+    return rng.choice(len(pvals), p=pvals, replace=False)
 
 
 def dataset_transformer(conf):
