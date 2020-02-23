@@ -20,15 +20,16 @@ class Trainer(Runner):
         self._best_err = 1.0
 
         # calculate the model size
-        model_size = ut.count_parameters(
-            self.optimizer['train'].get_parameters()
-        )
+        params = self.optimizer['train'].get_parameters()
+        model_size = ut.count_parameters(params)
+
+        # list of grads to be synchronized
+        self._grads = [x.grad for x in params.values()]
+
         if hasattr(self.model, '_auxiliary_head'):
             model_size -= ut.count_parameters(
                 self.model._auxiliary_head.get_parameters(grad_only=True))
         self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
-
-        assert len(self.dataloader['valid']) % self.args.mbs_valid == 0
 
     def run(self):
         """Run the training process."""
@@ -57,6 +58,14 @@ class Trainer(Runner):
         r"""Updates the model parameters."""
         bz, p = self.args.mbs_train, self.placeholder['train']
         self.optimizer[key].zero_grad()
+
+        # distributed attributes
+        comm = self.args.conf['communicator']
+        event = self.args.conf['stream_event_handler']
+
+        # Synchronizing null-stream and host here makes update faster.
+        event.default_stream_synchronize()
+
         for _ in range(self.accum_train):
             self._load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
@@ -65,11 +74,26 @@ class Trainer(Runner):
             loss, err = p['loss'].d.copy(),  p['err'].d.copy()
             self.monitor.update('train_loss', loss * self.accum_train, bz)
             self.monitor.update('train_err', err, bz)
+
+        # syncronyzing all grads
+        comm.all_reduce(self._grads, division=True, inplace=False)
+
+        # Subscript event
+        event.add_default_stream_event()
+
         self.optimizer[key].update()
 
     def valid_on_batch(self):
         r"""Runs the validation."""
         bz, p = self.args.mbs_valid, self.placeholder['valid']
+
+        # distributed attributes
+        comm = self.args.conf['communicator']
+        event = self.args.conf['stream_event_handler']
+
+        # Synchronizing null-stream and host here makes update faster.
+        event.default_stream_synchronize()
+
         for _ in range(self.accum_valid):
             self._load_data(p, self.dataloader['valid'].next())
             p['loss'].forward(clear_buffer=True)
