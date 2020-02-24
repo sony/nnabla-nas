@@ -1,3 +1,4 @@
+#---------------------------- DARTS --------------------------------#
 # search DARTS
 python main.py -d 1 --search \
                -f examples/darts_search.json  \
@@ -27,39 +28,53 @@ python main.py -d 3 --search \
                -a ProxylessNasSearcher \
                -o log/pnas-lat/search
 
-
-# search mbn
-python main.py -d 1 --search \
-               -f examples/mbn_search.json \
-               -a ProxylessNasSearcher \
-               -o log/mbn/search
-
-# train mbn
-python main.py -d 1 \
-               -f examples/mbn_train.json \
-               -a Trainer \
-               -o log/mbn/train
-
-# search mbn with latency
-python main.py -d 0 --search \
-               -f examples/mbn_search_latency.json \
-               -a ProxylessNasSearcher \
-               -o log/mbn-lat/search
-
-# train mbn with latancy
-python main.py -d 0 \
-               -f examples/mbn_train_latency.json \
-               -a Trainer \
-               -o log/mbn-lat/train
-
-
 # train PNAS with latency constraints
 python main.py -d 3 \
                -f examples/pnas_train_latency.json \
                -a Trainer \
-               -o log/pnas-lat/train
+               -o log/pnas-lat/train               
+#------------------------------------------------------------------#
 
-# search mnv2
+
+
+#-------------------------MobileNet V2-----------------------------#
+# on cifar10 data set
+
+# search MobileNet
+python main.py -d 0 --search \
+               -f examples/mbn_search.json \
+               -a ProxylessNasSearcher \
+               -o log/mbn/cifar10/search
+
+# train MobileNet
+python main.py -d 0 \
+               -f examples/mbn_train.json \
+               -a Trainer \
+               -o log/mbn/cifar10/train
+
+# search MobileNet with latency
+python main.py -d 0 --search \
+               -f examples/mbn_search_latency.json \
+               -a ProxylessNasSearcher \
+               -o log/mbn-lat/cifar10/search
+
+# train MobileNet with latancy
+python main.py -d 0 \
+               -f examples/mbn_train_latency.json \
+               -a Trainer \
+               -o log/mbn-lat/cifar10/train
+
+# train reference MobileNet V2
+python main.py -d 1\
+               -f examples/mbn_ref_cifar10.json  \
+               -a Trainer \
+               -o log/mbn/cifar10/reference
+#------------------------------------------------------------------#
+
+
+
+#------------------MobileNet V2 (experimental)---------------------#
+# search MobileNet
 python main.py -d 1 --search \
                -f examples/mnv2_search.json  \
                -a DartsSearcher \
@@ -68,7 +83,11 @@ python main.py -d 1 --search \
 python main.py -d 1 \
                -f examples/mnv2_train.json \
                -a Trainer -o log/mnv2/train
+#------------------------------------------------------------------#
 
+
+
+#----------------------------Zoph---------------------------------#
 # search zoph search space with pnas and without latency constraint
 python main.py -d 0 --search \
                -f examples/pnas_zoph_search.json \
@@ -80,20 +99,29 @@ python main.py -d 0 \
                -f examples/zoph_train.json \
                -a Trainer 
                -o log/zoph/train
+#------------------------------------------------------------------#
 
 
-#---------------------------- ImageNet ----------------------------------#
+
+#---------------------------- ImageNet ----------------------------#
 # module load mpi/openmpi-x86_64
+# /home/decardif/local/bin/mpirun
 
 # search MobileNet network
-mpirun -n 4 python main.py -d 0 --search \
-               -f examples/dali_search.json \
+mpirun -n 4 python main.py --search \
+               -f examples/mbn_search_imagenet.json \
                -a ProxylessNasSearcher \
-               -o log/dali/search
+               -o log/mbn/imagenet/search
 
 # train MobileNet network
-mpirun -n 4 python main.py -d 0 --search \
+mpirun -n 4 python main.py\
                -f examples/dali_train.json \
                -a Trainer \
-               -o log/dali/train
-#------------------------------------------------------------------------#
+               -o log/mbn/imagenet/train
+
+# ref MobileNet network
+mpirun -n 4 python main.py\
+               -f examples/mbn_ref_imagenet.json \
+               -a Trainer \
+               -o log/mbn/imagenet/reference
+#------------------------------------------------------------------#

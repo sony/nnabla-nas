@@ -15,7 +15,7 @@
         "search_space": "mbn",
         "num_classes": 1000,
         "mode": "sample",
-        "genotype": "log/dali/search/arch.h5"
+        "genotype": "log/mbn/imagenet/search/arch.h5"
     },
     "optimizer": {
         "train": {
@@ -24,23 +24,6 @@
             "solver": {
                 "name": "Momentum",
                 "lr": 0.1
-            }
-        },
-        "valid": {
-            "grad_clip": 5.0,
-            "solver": {
-                "name": "Adam",
-                "alpha": 0.01,
-                "beta1": 0.5,
-                "beta2": 0.999
-            }
-        },
-        "warmup": {
-            "grad_clip": 5.0,
-            "weight_decay": 4e-5,
-            "solver": {
-                "name": "Momentum",
-                "lr": 0.025
             }
         }
     }
