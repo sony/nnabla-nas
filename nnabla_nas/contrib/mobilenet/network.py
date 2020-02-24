@@ -77,8 +77,8 @@ class SearchNet(Model):
         if settings is None:
             settings = [
                 # c, n, s
-                [24, 4, 1],
-                [32, 4, 1],
+                [24, 4, 2],
+                [32, 4, 2],
                 [64, 4, 2],
                 [96, 4, 1],
                 [160, 4, 2],
