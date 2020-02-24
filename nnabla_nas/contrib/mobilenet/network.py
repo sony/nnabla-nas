@@ -101,8 +101,8 @@ class SearchNet(Model):
             for i in range(n):
                 stride = s if i == 0 else 1
                 curr_candidates = candidates.copy()
-                if (stride == 1 and in_channels == output_channel
-                        and skip_connect):
+                if stride == 1 and in_channels == output_channel \
+                        and skip_connect:
                     curr_candidates.append('skip_connect')
                 features.append(
                     ChoiceBlock(in_channels, output_channel,
