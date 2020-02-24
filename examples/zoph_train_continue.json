@@ -1,0 +1,30 @@
+{
+    "dataset": "cifar10",
+    "epoch": 600,
+    "batch_size_train": 64,
+    "batch_size_valid": 20,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 20,
+    "warmup": 0,
+    "cutout": 16,
+    "print_frequency": 50,
+    "network": {
+        "search_space": "zoph",
+        "name": "zoph",
+        "n_classes": 10,
+        "stem_channels": 128,
+        "merging_mode": "concat",
+        "random_init": false,
+        "param_path": "log/zoph/train_random_3/weights.h5"
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.001
+            }
+        }
+    }
+}
