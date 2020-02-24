@@ -1,7 +1,7 @@
-from ... import module as Mo
-from ..darts.modules import MixedOp
 from collections import OrderedDict
 
+from ... import module as Mo
+from ..darts.modules import MixedOp
 
 CANDIDATES = OrderedDict([
     ('InvertedResidual_t1_k3',
@@ -135,17 +135,15 @@ class InvertedResidual(Mo.Module):
 
 class ChoiceBlock(Mo.Module):
     def __init__(self, in_channels, out_channels, stride,
-                 mode='full', is_skipped=False):
+                 ops, mode='sample'):
         self._in_channels = in_channels
         self._out_channels = out_channels
         self._stride = stride
         self._mode = mode
-        self._is_skipped = is_skipped
 
         self._mixed = MixedOp(
             operators=[func(in_channels, out_channels, stride)
-                       for k, func in CANDIDATES.items()
-                       if k != "skip_connect" or is_skipped],
+                       for k, func in CANDIDATES.items() if k in ops],
             mode=mode,
         )
 

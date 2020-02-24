@@ -1,0 +1,30 @@
+{
+    "dataset": "imagenet",
+    "input_shape": [
+        3,
+        224,
+        224
+    ],
+    "epoch": 120,
+    "batch_size_train": 64,
+    "batch_size_valid": 64,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 64,
+    "print_frequency": 100,
+    "network": {
+        "search_space": "mbn",
+        "num_classes": 1000,
+        "mode": "sample",
+        "genotype": "log/mbn/imagenet/search/arch.h5"
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 4e-5,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.1
+            }
+        }
+    }
+}

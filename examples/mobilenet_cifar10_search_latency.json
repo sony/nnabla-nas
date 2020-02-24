@@ -1,25 +1,26 @@
 {
-    "dataset": "imagenet",
-    "input_shape": [
-        3,
-        224,
-        224
-    ],
-    "epoch": 120,
+    "dataset": "cifar10",
+    "epoch": 200,
+    "input_shape": [3, 32, 32],
     "batch_size_train": 256,
     "batch_size_valid": 256,
-    "mini_batch_train": 8,
-    "mini_batch_valid": 8,
-    "warmup": 50,
-    "print_frequency": 50,
+    "mini_batch_train": 256,
+    "mini_batch_valid": 256,
+    "warmup": 100,
+    "cutout": 16,
+    "print_frequency": 25,
+    "train_portion": 0.9,
     "network": {
-        "search_space": "mbn",
-        "num_classes": 1000,
-        "first_strides": [
-            2,
-            2
+        "search_space": "mobilenet",
+        "num_classes": 10,
+        "settings": [
+            [24, 4, 1],
+            [32, 4, 1],
+            [64, 4, 2],
+            [96, 4, 1],
+            [160, 4, 2],
+            [320, 1, 1]
         ],
-        "n_max": 4,
         "mode": "sample"
     },
     "optimizer": {
@@ -45,8 +46,15 @@
             "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.025
+                "lr": 0.1
             }
+        }
+    },
+    "regularizer": {
+        "latency": {
+            "name": "LatencyEstimator",
+            "weight": 0.1,
+            "bound": 2.0
         }
     }
 }

@@ -1,5 +1,5 @@
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+
 import numpy as np
 
 from ..utils import ProgressMeter
@@ -29,16 +29,8 @@ class Runner(ABC):
             Defaults to None.
     """
 
-    def __init__(self,
-                 model,
-                 placeholder,
-                 optimizer,
-                 dataloader,
-                 transform,
-                 criteria,
-                 evaluate,
-                 args,
-                 regularizer=None):
+    def __init__(self, model, placeholder, optimizer, dataloader, transform,
+                 criteria, evaluate, args, regularizer=None):
 
         self.model = model
         self.criteria = criteria
@@ -55,11 +47,14 @@ class Runner(ABC):
         self.accum_valid = self.args.bs_valid // self.args.mbs_valid
         self.one_epoch_train = len(self.dataloader['train']) // args.bs_train
         self.one_epoch_valid = len(self.dataloader['valid']) // args.bs_valid
+        self.comm = args.conf['comm']
+        self.event = args.conf['event']
 
         # monitor log info
         self.monitor = ProgressMeter(
             self.one_epoch_train,
-            path=args.output_path
+            path=args.output_path,
+            quiet=self.comm.rank > 0
         )
 
     @abstractmethod
@@ -105,6 +100,7 @@ class Runner(ABC):
 
     @staticmethod
     def _load_data(placeholder, data):
+        # TODO: improving the dataloader
         if isinstance(data[0], np.ndarray):
             placeholder['input'].d = data[0]
             placeholder['target'].d = data[1]
