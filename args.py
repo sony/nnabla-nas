@@ -1,5 +1,6 @@
 import os
 from collections import OrderedDict
+from pathlib import Path
 
 import nnabla as nn
 import nnabla.utils.learning_rate_scheduler as LRS
@@ -102,11 +103,11 @@ class Configuration(object):
         parser = PlaceholderParser(self)
         options['placeholder'] = parser.parse(conf.get('placeholder', dict()))
 
-        if not os.path.isdir(conf['output_path']):
-            os.makedirs(conf['output_path'])
+        Path(conf['output_path']).mkdir(parents=True, exist_ok=True)
         file = os.path.join(conf['output_path'], 'config.json')
-        logger.info(f'Saving the configurations to {file}')
-        ut.write_to_json_file(conf, file)
+        if self.conf['comm'].rank == 0:
+            logger.info(f'Saving the configurations to {file}')
+            ut.write_to_json_file(conf, file)
 
         return options
 
