@@ -6,6 +6,7 @@ from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
+from nnabla.ext_utils import get_extension_context
 import numpy as np
 from tensorboardX import SummaryWriter
 from nnabla import random
@@ -192,21 +193,6 @@ def write_to_json_file(content, file_path):
                   default=lambda o: '<not serializable>')
 
 
-def data_augment(image):
-    r"""Performs standard data augmentations.
-
-    Args:
-        image (numpy.array): The input image.
-
-    Returns:
-        numpy.array: The output.
-    """
-    out = F.random_crop(F.pad(image, (4, 4, 4, 4)), shape=(image.shape))
-    out = F.image_augmentation(out, flip_lr=True)
-    out.need_grad = False
-    return out
-
-
 def count_parameters(params):
     r"""Counts the number of parameters.
 
@@ -220,17 +206,9 @@ def count_parameters(params):
 
 
 def create_float_context(ctx):
-    from nnabla.ext_utils import get_extension_context
     ctx_float = get_extension_context(ctx.backend[0].split(':')[
                                       0], device_id=ctx.device_id)
     return ctx_float
-
-
-def ceil_to_multiple(x, mul):
-    '''
-    Get a minimum integer >= x of a multiple of ``mul``.
-    '''
-    return (x + mul - 1) // mul
 
 
 def label_smoothing_loss(pred, label, label_smoothing=0.1):
@@ -261,7 +239,8 @@ class CommunicatorWrapper(object):
         self.n_procs = comm.size
         self.rank = comm.rank
         self.ctx = ctx
-        self.ctx.device_id = str(self.rank)
+        if comm.size > 1:  # re-assign id to rank
+            self.ctx.device_id = str(self.rank)
         self.ctx_float = create_float_context(self.ctx)
         self.comm = comm
 

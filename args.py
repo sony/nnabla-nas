@@ -221,8 +221,8 @@ class DataloaderParser(OptionParser):
                 dali_nvjpeg_memory_padding=64*(1 << 20),
                 type_config=float,
                 channel_last=False,
-                comm=conf['communicator'],
-                stream_event_handler=conf['stream_event_handler'],
+                comm=conf['comm'],
+                stream_event_handler=conf['event'],
                 training=True
             )
             vdata = get_data_iterators(
@@ -232,8 +232,8 @@ class DataloaderParser(OptionParser):
                 dali_nvjpeg_memory_padding=64*(1 << 20),
                 type_config=float,
                 channel_last=False,
-                comm=conf['communicator'],
-                stream_event_handler=conf['stream_event_handler'],
+                comm=conf['comm'],
+                stream_event_handler=conf['event'],
                 training=False
             )
 

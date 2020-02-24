@@ -10,7 +10,7 @@
     "batch_size_valid": 64,
     "mini_batch_train": 64,
     "mini_batch_valid": 64,
-    "warmup": 50,
+    "warmup": 0,
     "print_frequency": 50,
     "network": {
         "search_space": "mbn",
@@ -40,7 +40,7 @@
             "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.025
+                "lr": 0.1
             }
         }
     }

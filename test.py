@@ -15,18 +15,30 @@ if __name__ == "__main__":
     comm = CommunicatorWrapper(ctx)
     nn.set_default_context(comm.ctx)
 
-    stream_event_handler = StreamEventHandler(
-        int(comm.ctx.device_id))
-    v = 0
-    r = comm.rank
-    acc = nn.NdArray((1,))
-    acc.zero()
-    acc.data = r
+    from nnabla_nas.contrib.mbn import SearchNet
 
-    stream_event_handler.event_synchronize()
-    #comm.all_reduce(acc,  division=True, inplace=False)
-    stream_event_handler.add_default_stream_event()
-    print(f'c={comm.rank}, acc={acc.data}, ')
+    net = SearchNet(10)
+    rng = np.random.RandomState(1234)
+    params = net.get_net_parameters()
+    key = list(params.keys())[100]
+    s = str(params[key].d.flatten()[:10])
+    print(f'{comm.rank} = {s}, {comm.n_procs}')
+
+    # print(params['_features/22/_mixed/_ops/4/_conv/1/1/_var'].d)
+
+    stream_event_handler = StreamEventHandler(int(comm.ctx.device_id))
+
+    print(stream_event_handler)
+    # v = 0
+    # r = comm.rank
+    # acc = nn.NdArray((1,))
+    # acc.zero()
+    # acc.data = r
+
+    # stream_event_handler.event_synchronize()
+    # comm.all_reduce(acc,  division=True, inplace=False)
+    # stream_event_handler.add_default_stream_event()
+    # print(f'c={comm.rank}, acc={acc.data}, ')
 
     # rng = np.random.RandomState(42)
     # ran = rng.choice(5, p=np.ones((5, ))/5, replace=False)
