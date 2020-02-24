@@ -1,10 +1,6 @@
 {
     "dataset": "cifar10",
-    "input_shape": [
-        3,
-        32,
-        32
-    ],
+    "input_shape": [3, 32, 32],
     "epoch": 600,
     "batch_size_train": 256,
     "batch_size_valid": 200,
@@ -13,39 +9,15 @@
     "print_frequency": 25,
     "cutout": 16,
     "network": {
-        "search_space": "mbn",
+        "search_space": "mobilenet",
         "num_classes": 32,
         "settings": [
-            [
-                24,
-                2,
-                1
-            ],
-            [
-                32,
-                3,
-                1
-            ],
-            [
-                64,
-                4,
-                2
-            ],
-            [
-                96,
-                3,
-                1
-            ],
-            [
-                160,
-                3,
-                2
-            ],
-            [
-                320,
-                1,
-                1
-            ]
+            [24, 2, 1],
+            [32, 3, 1],
+            [64, 4, 2],
+            [96, 3, 1],
+            [160, 3, 2],
+            [320, 1, 1]
         ],
         "candidates": [
             "InvertedResidual_t6_k3"

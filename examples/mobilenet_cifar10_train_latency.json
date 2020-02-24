@@ -1,0 +1,35 @@
+{
+    "dataset": "cifar10",
+    "epoch": 600,
+    "input_shape": [3, 32, 32],
+    "batch_size_train": 128,
+    "batch_size_valid": 200,
+    "mini_batch_train": 128,
+    "mini_batch_valid": 200,
+    "cutout": 16,
+    "print_frequency": 25,
+    "network": {
+        "search_space": "mobilenet",
+        "num_classes": 10,
+        "settings": [
+            [24, 4, 1],
+            [32, 4, 1],
+            [64, 4, 2],
+            [96, 4, 1],
+            [160, 4, 2],
+            [320, 1, 1]
+        ],
+        "mode": "sample",
+        "genotype": "log/mobilenet/cifar10/latency/search/arch.h5"
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 4e-5,
+            "solver": {
+                "name": "Momentum",
+                "lr": 0.1
+            }
+        }
+    }
+}

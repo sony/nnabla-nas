@@ -42,33 +42,33 @@ python main.py -d 3 \
 
 # search MobileNet
 python main.py -d 0 --search \
-               -f examples/mbn_search.json \
+               -f examples/mobilenet_cifar10_search.json \
                -a ProxylessNasSearcher \
-               -o log/mbn/cifar10/search
+               -o log/mobilenet/cifar10/search
 
 # train MobileNet
 python main.py -d 0 \
-               -f examples/mbn_train.json \
+               -f examples/mobilenet_cifar10_train.json \
                -a Trainer \
-               -o log/mbn/cifar10/train
+               -o log/mobilenet/cifar10/train
 
 # search MobileNet with latency
 python main.py -d 0 --search \
-               -f examples/mbn_search_latency.json \
+               -f examples/mobilenet_cifar10_search_latency.json \
                -a ProxylessNasSearcher \
-               -o log/mbn-lat/cifar10/search
+               -o log/mobilenet/cifar10/latency/search
 
 # train MobileNet with latancy
 python main.py -d 0 \
-               -f examples/mbn_train_latency.json \
+               -f examples/mobilenet_cifar10_train_latency.json \
                -a Trainer \
-               -o log/mbn-lat/cifar10/train
+               -o log/mobilenet/cifar10/latency/train
 
 # train reference MobileNet V2
 python main.py -d 1\
-               -f examples/mbn_ref_cifar10.json  \
+               -f examples/mobilenet_cifar10_reference.json  \
                -a Trainer \
-               -o log/mbn/cifar10/reference
+               -o log/mobilenet/cifar10/reference
 #------------------------------------------------------------------#
 
 
@@ -109,19 +109,19 @@ python main.py -d 0 \
 
 # search MobileNet network
 mpirun -n 4 python main.py --search \
-               -f examples/mbn_search_imagenet.json \
+               -f examples/mobilenet_imagenet_search.json \
                -a ProxylessNasSearcher \
-               -o log/mbn/imagenet/search
+               -o log/mobilenet/imagenet/search
 
 # train MobileNet network
 mpirun -n 4 python main.py\
-               -f examples/dali_train.json \
+               -f examples/mobilenet_imagenet_train.json \
                -a Trainer \
-               -o log/mbn/imagenet/train
+               -o log/mobilenet/imagenet/train
 
 # ref MobileNet network
 mpirun -n 4 python main.py\
-               -f examples/mbn_ref_imagenet.json \
+               -f examples/mobilenet_imagenet_reference.json \
                -a Trainer \
-               -o log/mbn/imagenet/reference
+               -o log/mobilenet/imagenet/reference
 #------------------------------------------------------------------#

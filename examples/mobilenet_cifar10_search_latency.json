@@ -1,56 +1,25 @@
 {
     "dataset": "cifar10",
-    "epoch": 150,
+    "epoch": 200,
+    "input_shape": [3, 32, 32],
     "batch_size_train": 256,
     "batch_size_valid": 256,
     "mini_batch_train": 256,
     "mini_batch_valid": 256,
-    "warmup": 50,
+    "warmup": 100,
     "cutout": 16,
-    "print_frequency": 50,
+    "print_frequency": 25,
     "train_portion": 0.9,
     "network": {
-        "search_space": "mbn",
+        "search_space": "mobilenet",
         "num_classes": 10,
         "settings": [
-            [
-                24,
-                4,
-                1
-            ],
-            [
-                32,
-                4,
-                1
-            ],
-            [
-                64,
-                4,
-                2
-            ],
-            [
-                96,
-                4,
-                1
-            ],
-            [
-                160,
-                4,
-                2
-            ],
-            [
-                320,
-                1,
-                1
-            ]
-        ],
-        "candidates": [
-            "InvertedResidual_t3_k3",
-            "InvertedResidual_t6_k3",
-            "InvertedResidual_t3_k5",
-            "InvertedResidual_t6_k5",
-            "InvertedResidual_t3_k7",
-            "InvertedResidual_t6_k7"
+            [24, 4, 1],
+            [32, 4, 1],
+            [64, 4, 2],
+            [96, 4, 1],
+            [160, 4, 2],
+            [320, 1, 1]
         ],
         "mode": "sample"
     },
@@ -77,7 +46,7 @@
             "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.025
+                "lr": 0.1
             }
         }
     },
