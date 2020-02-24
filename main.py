@@ -4,15 +4,13 @@ import json
 import nnabla as nn
 import nnabla.functions as F
 from nnabla.ext_utils import get_extension_context
-
-from nnabla_nas.utils import label_smoothing_loss
+from nnabla.logger import logger
+from nnabla_ext.cuda import StreamEventHandler
 
 import nnabla_nas.contrib as contrib
 from args import Configuration
 from nnabla_nas import runner
-from nnabla_nas.utils import CommunicatorWrapper
-from nnabla_ext.cuda import StreamEventHandler
-from nnabla.logger import logger
+from nnabla_nas.utils import CommunicatorWrapper, label_smoothing_loss
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

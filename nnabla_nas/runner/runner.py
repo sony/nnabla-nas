@@ -1,5 +1,5 @@
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+
 import numpy as np
 
 from ..utils import ProgressMeter
@@ -100,6 +100,7 @@ class Runner(ABC):
 
     @staticmethod
     def _load_data(placeholder, data):
+        # TODO: improving the dataloader
         if isinstance(data[0], np.ndarray):
             placeholder['input'].d = data[0]
             placeholder['target'].d = data[1]

@@ -1,5 +1,6 @@
 import nnabla as nn
 import numpy as np
+
 from .search import Searcher
 
 
@@ -21,9 +22,7 @@ class ProxylessNasSearcher(Searcher):
         self.optimizer[key].zero_grad()
 
         if self.comm.n_procs > 1:
-            # list of grads to be synchronized
             grads = [x.grad for x in params.values()]
-            # synchronizing null-stream and host
             self.event.default_stream_synchronize()
 
         for _ in range(self.accum_train):

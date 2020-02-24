@@ -1,6 +1,3 @@
-from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
-from nnabla_nas.utils import CommunicatorWrapper
-from nnabla_ext.cuda import StreamEventHandler
 import os
 from collections import OrderedDict
 
@@ -11,8 +8,8 @@ from nnabla.logger import logger
 from nnabla_nas import dataset
 from nnabla_nas import utils as ut
 from nnabla_nas.contrib import estimator as EST
-from nnabla_nas.dataset import DataLoader
-from nnabla_nas.dataset import transforms
+from nnabla_nas.dataset import DataLoader, transforms
+from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
 from nnabla_nas.optimizer import Optimizer
 
 

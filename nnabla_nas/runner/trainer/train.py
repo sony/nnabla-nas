@@ -1,8 +1,8 @@
 import os
 
-from tqdm import trange
-import numpy as np
 import nnabla as nn
+import numpy as np
+from tqdm import trange
 
 from ... import utils as ut
 from ..runner import Runner
