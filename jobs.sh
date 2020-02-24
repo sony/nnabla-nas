@@ -82,3 +82,18 @@ python main.py -d 0 \
                -o log/zoph/train
 
 
+#---------------------------- ImageNet ----------------------------------#
+# module load mpi/openmpi-x86_64
+
+# search MobileNet network
+mpirun -n 4 python main.py -d 0 --search \
+               -f examples/dali_search.json \
+               -a ProxylessNasSearcher \
+               -o log/dali/search
+
+# train MobileNet network
+mpirun -n 4 python main.py -d 0 --search \
+               -f examples/dali_train.json \
+               -a Trainer \
+               -o log/dali/train
+#------------------------------------------------------------------------#

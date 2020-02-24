@@ -16,7 +16,7 @@ class Searcher(Runner):
             lr = self.optimizer['train'].get_learning_rate()
             self.monitor.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}\n')
 
-            for i in range(self.one_epoch_train):
+            for i in range(1):  # range(self.one_epoch_train):
                 self.train_on_batch()
                 self.valid_on_batch()
                 if i % (self.args.print_frequency) == 0:
@@ -38,7 +38,7 @@ class Searcher(Runner):
             lr = self.optimizer['warmup'].get_learning_rate()
             self.monitor.info(f'warm-up epoch={cur_epoch}\tlr={lr:.5f}\n')
 
-            for i in range(self.one_epoch_train):
+            for i in range(1):  # range(self.one_epoch_train):
                 self.train_on_batch(key='warmup')
                 if i % (self.args.print_frequency) == 0:
                     self.monitor.display(i)

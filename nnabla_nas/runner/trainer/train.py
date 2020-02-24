@@ -104,9 +104,9 @@ class Trainer(Runner):
         if self.comm.n_procs > 1:
             self.comm.all_reduce([self.loss, self.err],
                                  division=True, inplace=False)
-        else:
-            self.loss.data /= len(self.dataloader['valid'])
-            self.err.data /= len(self.dataloader['valid'])
+
+        self.loss.data /= len(self.dataloader['valid'])
+        self.err.data /= len(self.dataloader['valid'])
 
         if self.comm.rank == 0:
             self.monitor.update('valid_loss', self.loss.data[0], 1)

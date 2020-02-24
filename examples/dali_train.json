@@ -10,12 +10,12 @@
     "batch_size_valid": 64,
     "mini_batch_train": 64,
     "mini_batch_valid": 64,
-    "warmup": 0,
-    "print_frequency": 50,
+    "print_frequency": 100,
     "network": {
         "search_space": "mbn",
         "num_classes": 1000,
-        "mode": "sample"
+        "mode": "sample",
+        "genotype": "log/dali/search/arch.h5"
     },
     "optimizer": {
         "train": {
