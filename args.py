@@ -214,7 +214,7 @@ class DataloaderParser(OptionParser):
             from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
             tdata = get_data_iterators(
                 batch_size=opts.mbs_train,
-                dali_num_threads=4,
+                dali_num_threads=8,
                 train_dir='/speech/db/Images/ILSVRC-2012/img_train',
                 dali_nvjpeg_memory_padding=64*(1 << 20),
                 type_config=float,
@@ -225,7 +225,7 @@ class DataloaderParser(OptionParser):
             )
             vdata = get_data_iterators(
                 batch_size=opts.mbs_valid,
-                dali_num_threads=4,
+                dali_num_threads=8,
                 train_dir='/speech/db/Images/ILSVRC-2012/img_val_folders',
                 dali_nvjpeg_memory_padding=64*(1 << 20),
                 type_config=float,

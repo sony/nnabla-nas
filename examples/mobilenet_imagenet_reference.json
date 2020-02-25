@@ -4,8 +4,8 @@
     "epoch": 120,
     "batch_size_train": 64,
     "batch_size_valid": 64,
-    "mini_batch_train": 8,
-    "mini_batch_valid": 8,
+    "mini_batch_train": 64,
+    "mini_batch_valid": 64,
     "print_frequency": 100,
     "network": {
         "search_space": "mobilenet",
