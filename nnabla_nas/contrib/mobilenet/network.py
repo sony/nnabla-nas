@@ -56,6 +56,8 @@ class SearchNet(Model):
 
         self._num_classes = num_classes
         self._width_mult = width_mult
+        self._skip_connect = skip_connect
+        self._arch_idx = None  # keeps current max arch
         round_nearest = 8
 
         in_channels = 32
@@ -84,7 +86,7 @@ class SearchNet(Model):
                 [160, 4, 2],
                 [320, 1, 1]
             ]
-
+        self._settings = settings
         if candidates is None:
             candidates = [
                 "InvertedResidual_t3_k3",
@@ -94,7 +96,7 @@ class SearchNet(Model):
                 "InvertedResidual_t3_k7",
                 "InvertedResidual_t6_k7"
             ]
-
+        self._candidates = candidates
         # building inverted residual blocks
         for c, n, s in settings:
             output_channel = _make_divisible(c * width_mult, round_nearest)
@@ -159,21 +161,40 @@ class SearchNet(Model):
                 f'width_mult={self._width_mult}, '
                 f'round_nearest={self._round_nearest}')
 
+    def print_arch(self, arch_idx, op_names):
+        str = 'NET SUMMARY:\n'
+        for k, (c, n, s) in enumerate(self._settings):
+            str += 'c={:<4} : '.format(c)
+            for i in range(n):
+                idx = k*n+i
+                if (self._arch_idx is None or
+                        arch_idx[idx] == self._arch_idx[idx]):
+                    str += ' '
+                else:
+                    str += '*'
+                str += '{:<30}; '.format(op_names[arch_idx[idx]])
+            str += '\n'
+        return str
+
     def summary(self):
         stats = []
         arch_params = self.get_arch_parameters()
-        count = Counter([np.argmax(m.d.flat) for m in arch_params.values()])
-        op_names = [
-            'InvertedResidual_t3_k3', 'InvertedResidual_t6_k3',
-            'InvertedResidual_t3_k5', 'InvertedResidual_t6_k5',
-            'InvertedResidual_t3_k7', 'InvertedResidual_t6_k7',
-            'skip_connect'
-        ]
+        arch_idx = [np.argmax(m.d.flat) for m in arch_params.values()]
+        count = Counter(arch_idx)
+        op_names = self._candidates
+        if self._skip_connect:
+            op_names += ['skip_connect']
+        txt = self.print_arch(arch_idx, op_names)
         total = len(arch_params)
         for k in range(len(op_names)):
             name = op_names[k]
             stats.append(name + f' = {count[k]/total*100:.2f}%\t')
-        return ''.join(stats)
+        if self._arch_idx is not None:
+            n_changes = sum(i != j for i, j in zip(arch_idx, self._arch_idx))
+            txt += '\n Number of changes: {}({:.2f}%)\n'.format(
+                n_changes, n_changes*100/len(arch_idx))
+        self._arch_idx = arch_idx
+        return txt + ''.join(stats)
 
 
 class TrainNet(SearchNet):
@@ -225,4 +246,10 @@ class TrainNet(SearchNet):
             for _, module in self.get_modules():
                 if isinstance(module, ChoiceBlock):
                     idx = np.argmax(module._mixed._alpha.d)
+                    module._mixed = module._mixed._ops[idx]
+        else:
+            # pick random model
+            for _, module in self.get_modules():
+                if isinstance(module, ChoiceBlock):
+                    idx = np.random.randint(len(module._mixed._alpha.d))
                     module._mixed = module._mixed._ops[idx]
