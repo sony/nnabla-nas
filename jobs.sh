@@ -131,6 +131,17 @@ mpirun -n 4 python main.py \
                -a ProxylessNasSearcher \
                -o log/mobilenet/imagenet/latency/train
 
+# search MobileNet network Songhan
+mpirun -n 4 python main.py --search \
+               -f examples/mobilenet_imagenet_search_songhan.json \
+               -a ProxylessNasSearcher \
+               -o log/mobilenet/imagenet/songhan/search
+
+# search MobileNet network Songhan
+mpirun -n 4 python main.py --search \
+               -f examples/mobilenet_imagenet_train_songhan.json \
+               -a ProxylessNasSearcher \
+               -o log/mobilenet/imagenet/songhan/train
 
 # ref MobileNet network
 mpirun -n 4 python main.py\
