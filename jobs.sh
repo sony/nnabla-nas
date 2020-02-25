@@ -119,6 +119,19 @@ mpirun -n 4 python main.py\
                -a Trainer \
                -o log/mobilenet/imagenet/train
 
+# search MobileNet network with latency
+mpirun -n 4 python main.py --search \
+               -f examples/mobilenet_imagenet_search_latency.json \
+               -a ProxylessNasSearcher \
+               -o log/mobilenet/imagenet/latency/search
+
+# search MobileNet network with latency
+mpirun -n 4 python main.py \
+               -f examples/mobilenet_imagenet_train_latency.json \
+               -a ProxylessNasSearcher \
+               -o log/mobilenet/imagenet/latency/train
+
+
 # ref MobileNet network
 mpirun -n 4 python main.py\
                -f examples/mobilenet_imagenet_reference.json \
