@@ -3,7 +3,7 @@ from collections import OrderedDict
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
-
+from nnabla import random
 from ... import module as Mo
 from ... import utils as ut
 
@@ -232,9 +232,10 @@ class MixedOp(Mo.Module):
             `full`. Possible modes are `sample`, `full`, or `max`.
         alpha (Parameter, optional): The weights used to calculate the
             evaluation probabilities. Defaults to None.
+        rng (numpy.random.RandomState): Random generator for random choice.
     """
 
-    def __init__(self, operators, mode='full', alpha=None):
+    def __init__(self, operators, mode='full', alpha=None, rng=None):
         if mode not in ('max', 'sample', 'full'):
             raise ValueError(f'mode={mode} is not supported.')
 
@@ -242,6 +243,9 @@ class MixedOp(Mo.Module):
         self._mode = mode
         self._ops = Mo.ModuleList(operators)
         self._alpha = alpha
+        if rng is None:
+            rng = random.prng
+        self._rng = rng
 
         if alpha is None:
             n = len(operators)
@@ -265,7 +269,8 @@ class MixedOp(Mo.Module):
         probs = softmax(self._alpha.d, axis=0)
         self._active = ut.sample(
             pvals=probs.flatten(),
-            mode=self._mode
+            mode=self._mode,
+            rng=self._rng
         )
         # update gradients
         probs[self._active] -= 1

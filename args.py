@@ -1,5 +1,6 @@
 import os
 from collections import OrderedDict
+from pathlib import Path
 
 import nnabla as nn
 import nnabla.utils.learning_rate_scheduler as LRS
@@ -8,8 +9,8 @@ from nnabla.logger import logger
 from nnabla_nas import dataset
 from nnabla_nas import utils as ut
 from nnabla_nas.contrib import estimator as EST
-from nnabla_nas.dataset import DataLoader
-from nnabla_nas.dataset import transforms
+from nnabla_nas.dataset import DataLoader, transforms
+from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
 from nnabla_nas.optimizer import Optimizer
 
 
@@ -102,11 +103,11 @@ class Configuration(object):
         parser = PlaceholderParser(self)
         options['placeholder'] = parser.parse(conf.get('placeholder', dict()))
 
-        if not os.path.isdir(conf['output_path']):
-            os.makedirs(conf['output_path'])
+        Path(conf['output_path']).mkdir(parents=True, exist_ok=True)
         file = os.path.join(conf['output_path'], 'config.json')
-        logger.info(f'Saving the configurations to {file}')
-        ut.write_to_json_file(conf, file)
+        if self.conf['comm'].rank == 0:
+            logger.info(f'Saving the configurations to {file}')
+            ut.write_to_json_file(conf, file)
 
         return options
 
@@ -210,6 +211,35 @@ class DataloaderParser(OptionParser):
 
     def parse(self, conf):
         opts = self.options
+        if opts.dataset == 'imagenet':
+            tdata = get_data_iterators(
+                batch_size=opts.mbs_train,
+                dali_num_threads=8,
+                train_dir='/speech/db/Images/ILSVRC-2012/img_train',
+                dali_nvjpeg_memory_padding=64*(1 << 20),
+                type_config=float,
+                channel_last=False,
+                comm=conf['comm'],
+                stream_event_handler=conf['event'],
+                training=True
+            )
+            vdata = get_data_iterators(
+                batch_size=opts.mbs_valid,
+                dali_num_threads=8,
+                train_dir='/speech/db/Images/ILSVRC-2012/img_val_folders',
+                dali_nvjpeg_memory_padding=64*(1 << 20),
+                type_config=float,
+                channel_last=False,
+                comm=conf['comm'],
+                stream_event_handler=conf['event'],
+                training=False
+            )
+
+            return {
+                'train': DataLoader(tdata),
+                'valid': DataLoader(vdata)
+            }
+
         # dataset configuration
         if conf['search']:
             data_train, data_valid = dataset.__dict__[conf.get('dataset')](
@@ -234,6 +264,12 @@ class TransformParser(OptionParser):
     def parse(self, conf):
         # TODO: setup data augmentation from config files
         opts = self.options
+        if opts.dataset == 'imagenet':
+            return {
+                'train': transforms.Compose([]),
+                'valid': transforms.Compose([])
+            }
+
         mean = (0.49139968, 0.48215827, 0.44653124),
         std = (0.24703233, 0.24348505, 0.26158768),
         scale = 1./255.0

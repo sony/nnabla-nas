@@ -1,6 +1,8 @@
 import os
 
-from tqdm import tqdm
+import nnabla as nn
+import numpy as np
+from tqdm import trange
 
 from ... import utils as ut
 from ..runner import Runner
@@ -13,22 +15,25 @@ class Trainer(Runner):
     def callback_on_start(self):
         r"""Builds the graphs and assigns parameters to the optimizers."""
         self.update_graph('train')
-        self.optimizer['train'].set_parameters(
-            self.model.get_parameters(grad_only=True)
-        )
+        params = self.model.get_parameters(grad_only=True)
+        self.optimizer['train'].set_parameters(params)
         self.update_graph('valid')
         self._best_err = 1.0
 
+        # loss and error
+        self.loss = nn.NdArray.from_numpy_array(np.zeros((1,)))
+        self.err = nn.NdArray.from_numpy_array(np.zeros((1,)))
+
         # calculate the model size
-        model_size = ut.count_parameters(
-            self.optimizer['train'].get_parameters()
-        )
+        model_size = ut.count_parameters(params)
         if hasattr(self.model, '_auxiliary_head'):
             model_size -= ut.count_parameters(
                 self.model._auxiliary_head.get_parameters(grad_only=True))
         self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
 
-        assert len(self.dataloader['valid']) % self.args.mbs_valid == 0
+        # store a list of grads that will be synchronized
+        if self.comm.n_procs > 1:
+            self._grads = [x.grad for x in params.values()]
 
     def run(self):
         """Run the training process."""
@@ -44,7 +49,7 @@ class Trainer(Runner):
                 if i % (self.args.print_frequency) == 0:
                     self.monitor.display(i, ['train_loss', 'train_err'])
 
-            for i in tqdm(range(self.one_epoch_valid)):
+            for i in trange(self.one_epoch_valid, disable=self.comm.rank > 0):
                 self.valid_on_batch()
 
             self.callback_on_epoch_end()
@@ -57,35 +62,64 @@ class Trainer(Runner):
         r"""Updates the model parameters."""
         bz, p = self.args.mbs_train, self.placeholder['train']
         self.optimizer[key].zero_grad()
+
+        if self.comm.n_procs > 1:
+            self.event.default_stream_synchronize()
+
         for _ in range(self.accum_train):
-            p['input'].d, p['target'].d = self.dataloader['train'].next()
+            self._load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
-            p['loss'].backward(clear_buffer=True)
             p['err'].forward(clear_buffer=True)
+            p['loss'].backward(clear_buffer=True)
             loss, err = p['loss'].d.copy(),  p['err'].d.copy()
             self.monitor.update('train_loss', loss * self.accum_train, bz)
             self.monitor.update('train_err', err, bz)
+
+        if self.comm.n_procs > 1:
+            self.comm.all_reduce(self._grads, division=True, inplace=False)
+            self.event.add_default_stream_event()
+
         self.optimizer[key].update()
 
     def valid_on_batch(self):
         r"""Runs the validation."""
         bz, p = self.args.mbs_valid, self.placeholder['valid']
+
+        if self.comm.n_procs > 1:
+            self.event.default_stream_synchronize()
+
         for _ in range(self.accum_valid):
-            p['input'].d, p['target'].d = self.dataloader['valid'].next()
+            self._load_data(p, self.dataloader['valid'].next())
             p['loss'].forward(clear_buffer=True)
             p['err'].forward(clear_buffer=True)
             loss, err = p['loss'].d.copy(),  p['err'].d.copy()
-            self.monitor.update('valid_loss', loss * self.accum_valid, bz)
-            self.monitor.update('valid_err', err, bz)
+            self.loss.data += loss * self.accum_valid * bz
+            self.err.data += err * bz
+
+        if self.comm.n_procs > 1:
+            self.event.add_default_stream_event()
 
     def callback_on_epoch_end(self):
         r"""Calculates the error and saves the best parameters."""
-        err = self.monitor['valid_err'].avg
-        self.monitor.info(f'Current error is {err:.4f}\n')
-        if self._best_err > err:
-            self._best_err = err
-            path = os.path.join(self.args.output_path, 'weights.h5')
-            self.model.save_parameters(path)
+        if self.comm.n_procs > 1:
+            self.comm.all_reduce([self.loss, self.err],
+                                 division=True, inplace=False)
+
+        self.loss.data /= len(self.dataloader['valid'])
+        self.err.data /= len(self.dataloader['valid'])
+
+        if self.comm.rank == 0:
+            self.monitor.update('valid_loss', self.loss.data[0], 1)
+            self.monitor.update('valid_err', self.err.data[0], 1)
+            self.monitor.info(f'Error={self.err.data[0]:.4f}\n')
+            if self._best_err > self.err.data[0]:
+                self._best_err = self.err.data[0]
+                path = os.path.join(self.args.output_path, 'weights.h5')
+                self.model.save_parameters(path)
+
+        # reset loss and error
+        self.loss.zero()
+        self.err.zero()
 
     def callback_on_finish(self):
         pass

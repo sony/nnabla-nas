@@ -1,3 +1,4 @@
+import nnabla.communicators as C
 import json
 import os
 import sys
@@ -5,8 +6,10 @@ from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
+from nnabla.ext_utils import get_extension_context
 import numpy as np
 from tensorboardX import SummaryWriter
+from nnabla import random
 
 from .dataset.transforms import Cutout
 
@@ -20,12 +23,14 @@ class ProgressMeter(object):
                 Defaults to None.
     """
 
-    def __init__(self, num_batches, path=None):
+    def __init__(self, num_batches, path=None, quiet=False):
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
         self.meters = OrderedDict()
         self.terminal = sys.stdout
-        self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
-        self.file = open(os.path.join(path, 'log.txt'), 'w')
+        self.quiet = quiet
+        if not self.quiet:
+            self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
+            self.file = open(os.path.join(path, 'log.txt'), 'w')
 
     def info(self, message, view=True):
         r"""Shows a message.
@@ -34,11 +39,12 @@ class ProgressMeter(object):
             message (str): The message.
             view (bool, optional): If shows to terminal. Defaults to True.
         """
-        if view:
+        if view and not self.quiet:
             self.terminal.write(message)
             self.terminal.flush()
-        self.file.write(message)
-        self.file.flush()
+        if not self.quiet:
+            self.file.write(message)
+            self.file.flush()
 
     def display(self, batch, key=None):
         r"""Displays current values for meters.
@@ -63,6 +69,9 @@ class ProgressMeter(object):
         Args:
             n_iter (int): The n-th iteration.
         """
+        if self.quiet:
+            return
+
         for m in self.meters.values():
             self.tb.add_scalar(m.name, m.avg, n_iter)
 
@@ -80,8 +89,9 @@ class ProgressMeter(object):
 
     def close(self):
         r"""Closes all the file descriptors."""
-        self.tb.close()
-        self.file.close()
+        if not self.quiet:
+            self.tb.close()
+            self.file.close()
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
@@ -119,20 +129,23 @@ class AverageMeter(object):
         return fmtstr.format(**self.__dict__)
 
 
-def sample(pvals, mode='sample'):
+def sample(pvals, mode='sample', rng=None):
     r"""Returns random int according the sampling `mode` (e.g., `max`, `full`,
         or `sample`).
 
     Args:
         pvals (np.array): The probability values.
         mode (str, optional): The sampling `mode`. Defaults to 'sample'.
+        rng (numpy.random.RandomState): Random generator for random choice.
 
     Returns:
         [type]: [description]
     """
     if mode == 'max':
         return np.argmax(pvals)
-    return np.random.choice(len(pvals), p=pvals, replace=False)
+    if rng is None:
+        rng = random.prng
+    return rng.choice(len(pvals), p=pvals, replace=False)
 
 
 def dataset_transformer(conf):
@@ -180,21 +193,6 @@ def write_to_json_file(content, file_path):
                   default=lambda o: '<not serializable>')
 
 
-def data_augment(image):
-    r"""Performs standard data augmentations.
-
-    Args:
-        image (numpy.array): The input image.
-
-    Returns:
-        numpy.array: The output.
-    """
-    out = F.random_crop(F.pad(image, (4, 4, 4, 4)), shape=(image.shape))
-    out = F.image_augmentation(out, flip_lr=True)
-    out.need_grad = False
-    return out
-
-
 def count_parameters(params):
     r"""Counts the number of parameters.
 
@@ -205,3 +203,49 @@ def count_parameters(params):
         int: The total number of parameters.
     """
     return np.sum(np.prod(p.shape) for p in params.values())
+
+
+def create_float_context(ctx):
+    ctx_float = get_extension_context(ctx.backend[0].split(':')[
+                                      0], device_id=ctx.device_id)
+    return ctx_float
+
+
+def label_smoothing_loss(pred, label, label_smoothing=0.1):
+    loss = F.softmax_cross_entropy(pred, label)
+    if label_smoothing <= 0:
+        return loss
+    return (1 - label_smoothing) * loss - label_smoothing \
+        * F.mean(F.log_softmax(pred), axis=1, keepdims=True)
+
+
+class CommunicatorWrapper(object):
+    def __init__(self, ctx):
+        try:
+            comm = C.MultiProcessDataParallelCommunicator(ctx)
+        except Exception as e:
+            print(e)
+            print(('No communicator found. Running with a single process. '
+                   'If you run this with MPI processes, all processes will '
+                   'perform totally same.'))
+            self.n_procs = 1
+            self.rank = 0
+            self.ctx = ctx
+            self.ctx_float = create_float_context(ctx)
+            self.comm = None
+            return
+
+        comm.init()
+        self.n_procs = comm.size
+        self.rank = comm.rank
+        self.ctx = ctx
+        if comm.size > 1:  # re-assign id to rank
+            self.ctx.device_id = str(self.rank)
+        self.ctx_float = create_float_context(self.ctx)
+        self.comm = comm
+
+    def all_reduce(self, params, division, inplace):
+        if self.n_procs == 1:
+            # skip all reduce since no processes have to be all-reduced
+            return
+        self.comm.all_reduce(params, division=division, inplace=inplace)
