@@ -1,0 +1,18 @@
+{
+  "Name":"Sample",
+  "HostRootPath": "./",
+  "HostResultsDir":"./results",
+  "DevicePath":"/data/local/tmp/snpebenchmark",
+  "Devices":["QV714AE41T"],
+  "HostName": "localhost",
+  "Runs": 5,
+  "Model": {
+    "Name": "SampleNet",
+    "Dlc": "./snpe-cnn_result.nnp.dlc",
+    "RandomInput": 10
+  },
+  "Runtimes":["CPU","GPU","GPU_FP16","DSP"],
+  "Measurements": ["timing"],
+  "PerfProfile": "default", 
+  "ProfilingLevel": "detailed", 
+}
