@@ -19,7 +19,7 @@
             [320, 1, 1]
         ],
         "candidates": [
-            "InvertedResidual_t6_k3"
+            "MB6 3x3"
         ],
         "mode": "sample",
         "skip_connect": false
