@@ -1,11 +1,13 @@
 from collections import Counter, OrderedDict
 
 import numpy as np
+import os
 
 from ... import module as Mo
 from ...utils import load_parameters
 from ..model import Model
 from .modules import CANDIDATES, ChoiceBlock, ConvBNReLU
+from .helper import plot_mobilenet
 
 
 def _make_divisible(x, divisible_by=8):
@@ -72,7 +74,7 @@ class SearchNet(Model):
         features = [ConvBNReLU(3, in_channels, stride=(2, 2))]
 
         first_cell_width = _make_divisible(16 * width_mult, 8)
-        features += [CANDIDATES['InvertedResidual_t1_k3'](
+        features += [CANDIDATES['MB1 3x3'](
             in_channels, first_cell_width, 1)]
         in_channels = first_cell_width
 
@@ -89,12 +91,12 @@ class SearchNet(Model):
         self._settings = settings
         if candidates is None:
             candidates = [
-                "InvertedResidual_t3_k3",
-                "InvertedResidual_t6_k3",
-                "InvertedResidual_t3_k5",
-                "InvertedResidual_t6_k5",
-                "InvertedResidual_t3_k7",
-                "InvertedResidual_t6_k7"
+                "MB3 3x3",
+                "MB6 3x3",
+                "MB3 5x5",
+                "MB6 5x5",
+                "MB3 7x7",
+                "MB6 7x7"
             ]
         self._candidates = candidates
         # building inverted residual blocks
@@ -164,23 +166,8 @@ class SearchNet(Model):
                 f'skip_connect={self._skip_connect}, '
                 f'round_nearest={self._round_nearest}')
 
-    def print_arch(self, arch_idx, op_names):
-        str = 'NET SUMMARY:\n'
-        for k, (c, n, s) in enumerate(self._settings):
-            str += 'c={:<4} : '.format(c)
-            for i in range(n):
-                idx = k*n+i
-                if (self._arch_idx is None or
-                        arch_idx[idx] == self._arch_idx[idx]):
-                    str += ' '
-                else:
-                    str += '*'
-                str += '{:<30}; '.format(op_names[arch_idx[idx]])
-            str += '\n'
-        return str
-
     def summary(self):
-        def print_arch(self, arch_idx, op_names):
+        def print_arch(arch_idx, op_names):
             str = 'NET SUMMARY:\n'
             for k, (c, n, s) in enumerate(self._settings):
                 str += 'c={:<4} : '.format(c)
@@ -201,7 +188,7 @@ class SearchNet(Model):
         op_names = self._candidates
         if self._skip_connect:
             op_names += ['skip_connect']
-        txt = self.print_arch(arch_idx, op_names)
+        txt = print_arch(arch_idx, op_names)
         total = len(arch_params)
         for k in range(len(op_names)):
             name = op_names[k]
@@ -212,6 +199,12 @@ class SearchNet(Model):
                 n_changes, n_changes*100/len(arch_idx))
         self._arch_idx = arch_idx
         return txt + ''.join(stats)
+
+    def save_parameters(self, path=None, params=None, grad_only=False):
+        super().save_parameters(path, params=params, grad_only=grad_only)
+        # save the architectures
+        output_path = os.path.dirname(path)
+        plot_mobilenet(self, os.path.join(output_path, 'arch'))
 
 
 class TrainNet(SearchNet):
