@@ -159,6 +159,9 @@ class SearchNet(Model):
     def extra_repr(self):
         return (f'num_classes={self._num_classes}, '
                 f'width_mult={self._width_mult}, '
+                f'settings={self._settings}, '
+                f'candidates={self._candidates}, '
+                f'skip_connect={self._skip_connect}, '
                 f'round_nearest={self._round_nearest}')
 
     def print_arch(self, arch_idx, op_names):
@@ -177,6 +180,20 @@ class SearchNet(Model):
         return str
 
     def summary(self):
+        def print_arch(self, arch_idx, op_names):
+            str = 'NET SUMMARY:\n'
+            for k, (c, n, s) in enumerate(self._settings):
+                str += 'c={:<4} : '.format(c)
+                for i in range(n):
+                    idx = k*n+i
+                    if (self._arch_idx is None or
+                            arch_idx[idx] == self._arch_idx[idx]):
+                        str += ' '
+                    else:
+                        str += '*'
+                    str += '{:<30}; '.format(op_names[arch_idx[idx]])
+                str += '\n'
+            return str
         stats = []
         arch_params = self.get_arch_parameters()
         arch_idx = [np.argmax(m.d.flat) for m in arch_params.values()]
