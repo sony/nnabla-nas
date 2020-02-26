@@ -65,5 +65,5 @@ class Model(Mo.Module):
         """
         with nn.parameter_scope('', OrderedDict()):
             nn.load_parameters(path)
-            params = nn.get_parameters()
+            params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
