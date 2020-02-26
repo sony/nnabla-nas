@@ -92,3 +92,15 @@ python main.py -d 0 \
                -f examples/zoph_train_random_merge_add.json \
                -a Trainer \
                -o log/zoph/train_random_merge_add
+
+# continue training from checkpoint
+python main.py -d 0 \
+               -f examples/zoph_train_continue.json \
+               -a Trainer \
+               -o log/zoph/train_continue
+
+# train randomly wired network
+python main.py -d 0 \
+               -f examples/random_wired_train.json \
+               -a Trainer \
+               -o log/random_wired/train

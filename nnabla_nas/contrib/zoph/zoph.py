@@ -356,11 +356,6 @@ class SearchNet(Model, smo.Graph):
                                  reducing=celli[4]))
 
         # 3. add output convolutions and global average pooling layers
-        self.append(smo.Conv(name='{}/output_conv_1'.format(self.name),
-                             parents=[self[-1]],
-                             in_channels=self[-1].shape[1],
-                             out_channels=self._n_classes,
-                             kernel=(1, 1)))
         self.append(smo.BatchNormalization(name='{}/output_bn'.format(
                                            self.name),
                                            parents=[self[-1]],
@@ -368,6 +363,11 @@ class SearchNet(Model, smo.Graph):
                                            n_features=self._n_classes))
         self.append(smo.ReLU(name='{}/output_relu'.format(self.name),
                              parents=[self[-1]]))
+        self.append(smo.Conv(name='{}/output_conv_1'.format(self.name),
+                             parents=[self[-1]],
+                             in_channels=self[-1].shape[1],
+                             out_channels=self._n_classes,
+                             kernel=(1, 1)))
 
         self.append(smo.GlobalAvgPool(
             name='{}/global_average_pool'.format(self.name),
@@ -454,7 +454,7 @@ class SearchNet(Model, smo.Graph):
         for mi in self.get_arch_modules():
             mi._sel_p.forward()
             str_summary += mi.name + "/"
-            str_summary += mi.parent[np.argmax(mi._join_parameters.d)].name
+            str_summary += mi.parents[np.argmax(mi._join_parameters.d)].name
             str_summary += "/" + str(np.max(mi._sel_p.d)) + "\n"
 
         str_summary += "Instantiated modules are:\n"
