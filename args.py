@@ -10,7 +10,6 @@ from nnabla_nas import dataset
 from nnabla_nas import utils as ut
 from nnabla_nas.contrib import estimator as EST
 from nnabla_nas.dataset import DataLoader, transforms
-from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
 from nnabla_nas.optimizer import Optimizer
 
 
@@ -212,6 +211,7 @@ class DataloaderParser(OptionParser):
     def parse(self, conf):
         opts = self.options
         if opts.dataset == 'imagenet':
+            from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
             tdata = get_data_iterators(
                 batch_size=opts.mbs_train,
                 dali_num_threads=8,
