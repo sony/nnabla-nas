@@ -1,26 +1,13 @@
 import argparse
-import os
-import sys
-import re
-import struct
-import glob
-import tempfile
-import shutil
-from tqdm import tqdm
-import collections
 from collections import defaultdict
 import numpy as np
 import json
-import csv
-import time
 import logging
 
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context
-from nnabla.logger import logger
 from nnabla.utils.profiler import GraphProfiler
 
-import nnabla_nas
 from nnabla_nas.contrib.profiler.helpers import uid, get_search_net, get_sampled_modules
 
 from mako.template import Template
@@ -37,9 +24,7 @@ def main(args):
         latency_table = json.load(fp)
 
     # Compute sample latency for each runtime and sampled network
-    #runtimes = ["cpu:float", "cudnn:float", "cudnn:half"]
     runtimes = ["cpu:float", "cudnn:float"]
-    #runtimes = ["cudnn:float"]
     inp = nn.Variable([1, args.in_channels, args.in_height, args.in_width])
 
     datasets = defaultdict(list)

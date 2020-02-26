@@ -1,17 +1,8 @@
 import argparse
 import os
-import sys
-import re
-import struct
 import glob
-import tempfile
-import shutil
-from tqdm import tqdm
-import collections
-import numpy as np
 import json
 import csv
-import time
 
 
 def create_simple_stats(data):

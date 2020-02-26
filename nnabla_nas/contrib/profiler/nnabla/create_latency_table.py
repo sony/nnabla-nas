@@ -1,26 +1,13 @@
 import argparse
-import os
-import sys
-import re
-import struct
-import glob
-import tempfile
-import shutil
-from tqdm import tqdm
-import collections
 from collections import defaultdict
-import numpy as np
 import json
 import csv
-import time
 import logging
 
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context
-from nnabla.logger import logger
 from nnabla.utils.profiler import GraphProfiler
 
-import nnabla_nas
 from nnabla_nas.contrib.profiler.helpers import get_unique_modules, get_search_net
 
 
@@ -35,7 +22,6 @@ def main(args):
 
     # Compute latency for each runtime and module
     latency_table = defaultdict(lambda: defaultdict(float))
-    #runtimes = ["cpu:float", "cudnn:float", "cudnn:half"]
     runtimes = ["cpu:float", "cudnn:float"]
     for runtime in runtimes:
         print("Measuring latency of runtime = {}".format(runtime))

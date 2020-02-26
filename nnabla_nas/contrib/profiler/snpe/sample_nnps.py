@@ -1,29 +1,14 @@
 import argparse
 import os
-import sys
-import re
-import struct
-import glob
-import tempfile
 import shutil
-from tqdm import tqdm
-import collections
-import numpy as np
 import json
-import csv
-import time
 import logging
 from collections import defaultdict
 
 import nnabla as nn
 
-import nnabla_nas
-
 from nnabla_nas.contrib.profiler.helpers import create_parameters, nnp_save, get_search_net
 from nnabla_nas.contrib.profiler.helpers import uid, get_sampled_modules
-from nas_snpe_bench import NnpSnpeBench
-
-from subprocess import Popen, PIPE, STDOUT, check_output
 
 
 def main(args):
@@ -83,7 +68,7 @@ def main(args):
             print(e)
             raise RuntimeError("Sampled nnp contains {} "
                                "which did not appear in the generation process of the latency table."
-                               .format(mod_name))
+                               .format(m))
         print(accum_latency)
         accum_latencies.append(accum_latency)
 

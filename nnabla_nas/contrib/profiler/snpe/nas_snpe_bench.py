@@ -1,23 +1,14 @@
 import argparse
 import os
-import sys
-import re
-import struct
 import glob
 import tempfile
 import shutil
-from tqdm import tqdm
-import collections
 import numpy as np
-from subprocess import Popen, PIPE, STDOUT, check_output
-from collections import OrderedDict
-import onnx
+from subprocess import check_output
 import json
-import time
 import logging
 
 import nnabla as nn
-from nnabla.utils.nnp_graph import NnpLoader
 
 from nas_helpers import run_command
 
@@ -67,8 +58,8 @@ class NnpSnpeBench(object):
         run_command(cmdline)
 
     def onnx_to_dlc(self):
-        ## cmdline = 'bash -i -c "conda activate snpe-env && ' \
-        ##   'snpe-onnx-to-dlc --input_network {} --output_path {} --disable_batchnorm_folding && ' \
+        # cmdline = 'bash -i -c "conda activate snpe-env && ' \
+        #   'snpe-onnx-to-dlc --input_network {} --output_path {} --disable_batchnorm_folding && ' \
         # 'exit"'\
         # .format(os.path.join(self.tempdir, self.onnx_file), os.path.join(self.tempdir, self.dlc_file))
         cmdline = 'bash -i -c "conda activate snpe-env && ' \

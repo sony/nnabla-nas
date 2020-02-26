@@ -5,7 +5,6 @@ import logging
 
 import nnabla as nn
 
-import nnabla_nas
 
 from nnabla_nas.contrib.profiler.helpers import (create_parameters, nnp_save,
                                                  get_unique_modules, get_search_net)
