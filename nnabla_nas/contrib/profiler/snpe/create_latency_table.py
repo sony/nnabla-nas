@@ -16,7 +16,6 @@ def create_simple_stats(data):
         simple_stats[runtime] = {
             "Forward Propagate": {},
             "Total Inference Time": {},
-            "Overhead": {},
             "Layers Time": {},
         }
         for elm0, elm1 in zip(fps.items(), tis.items()):

@@ -16,8 +16,11 @@ from mako.template import Template
 def main(args):
     nn.logger.setLevel(logging.ERROR)
 
-    # Search Net
-    net = get_search_net(args.search_net, num_classes=args.num_classes, mode="sample")
+    # SearchNet
+    with open(args.search_net_config) as fp:
+        config = json.load(fp)
+    net_config = config['network'].copy()
+    net = get_search_net(net_config, "sample")
 
     # Latency Table
     with open(args.latency_table_json) as fp:
@@ -25,7 +28,6 @@ def main(args):
 
     # Compute sample latency for each runtime and sampled network
     runtimes = ["cpu:float", "cudnn:float"]
-    inp = nn.Variable([1, args.in_channels, args.in_height, args.in_width])
 
     datasets = defaultdict(list)
     runtime_scales = {}
@@ -39,6 +41,7 @@ def main(args):
             nn.set_default_context(ctx)
 
             # Sample
+            inp = nn.Variable([1] + config["input_shape"])
             out = net(inp)
             modules = get_sampled_modules(net)
 
@@ -77,7 +80,7 @@ def main(args):
         ye = scale * x + bias
         diff = np.abs(y - ye)
         print("Runtime = {} [{} sec]".format(runtime, args.time_scale))
-        print("Ave", "Std", "Min", "Max", "of the abslute error")
+        print("Ave", "Std", "Min", "Max", "of the abslute error b/w target and linear regression")
         print(np.mean(diff), np.std(diff), np.min(diff), np.max(diff))
 
     # Read template and create python script
@@ -90,14 +93,9 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Latency Table Generation for NAS")
-    parser.add_argument('--in-channels', type=int, default=3, help='')
-    parser.add_argument('--in-height', type=int, default=32, help='')
-    parser.add_argument('--in-width', type=int, default=32, help='')
-    parser.add_argument('--init-channels', type=int, default=36, help='')
-    parser.add_argument('--num-cells', type=int, default=15, help='')
-    parser.add_argument('--num-classes', type=int, default=10, help='')
+    parser.add_argument('--search-net-config', type=str, required=True,
+                        help='Path to SearchNet jsonconfig file.')
 
-    parser.add_argument('--search-net', type=str, help='', required=True)
     parser.add_argument('--device-id', type=str, help='', default="0")
     parser.add_argument('--n-run', type=int, help='Number of inputs for measurement', default=100)
     parser.add_argument('--time-scale', type=str, help='m:micro sec, u: milli sec, n: nano sec',

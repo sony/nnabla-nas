@@ -30,7 +30,10 @@ def main(args):
         latency_table = json.load(fp)
 
     # SearchNet
-    net = get_search_net(args.search_net, num_classes=args.num_classes, mode=args.mode)
+    with open(args.search_net_config) as fp:
+        config = json.load(fp)
+    net_config = config['network'].copy()
+    net = get_search_net(net_config, "sample")
 
     # Generate sampled nnp and save its accumulated latency
     accum_latencies = []
@@ -38,7 +41,7 @@ def main(args):
         print("Accumulated Latency at {}".format(i))
 
         # Sample network
-        inp = nn.Variable([1, args.in_channels, args.in_height, args.in_width])
+        inp = nn.Variable([1] + config["input_shape"])
         out = net(inp)
 
         # DEBUG
@@ -80,17 +83,11 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Sample NNPs and create accumulated latency.")
-    parser.add_argument('--in-channels', type=int, default=3, help='')
-    parser.add_argument('--init-channels', type=int, default=36, help='')
-    parser.add_argument('--in-height', type=int, default=32, help='')
-    parser.add_argument('--in-width', type=int, default=32, help='')
-    parser.add_argument('--num-cells', type=int, default=15, help='')
-    parser.add_argument('--num-classes', type=int, default=10, help='')
+    parser.add_argument('--search-net-config', type=str, required=True,
+                        help='Path to SearchNet jsonconfig file.')
     parser.add_argument('--latency-table-json', type=str, help='', required=True)
     parser.add_argument('--num-trials', type=int, default=100, help='')
     parser.add_argument('--nnp-dir', type=str, required=True, help='Directory for NNP input files.')
-    parser.add_argument('--search-net', type=str, help='Name of SearchNet.', required=True)
-    parser.add_argument('--mode', type=str, default="full", help='Mode of SearchNet')
     args = parser.parse_args()
 
     main(args)

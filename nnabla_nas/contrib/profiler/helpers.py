@@ -2,6 +2,7 @@ import nnabla as nn
 import nnabla.utils.save as save
 
 import nnabla_nas
+import nnabla_nas.contrib as contrib
 
 from subprocess import Popen, PIPE, STDOUT
 
@@ -47,14 +48,11 @@ def get_sampled_modules(net, skip_modules=(nnabla_nas.module.identity.Identity,
     return modules
 
 
-def get_search_net(name, num_classes, mode):
-    if name == "mbn":
-        from nnabla_nas.contrib.mbn import SearchNet
-        net = SearchNet(num_classes=num_classes, mode=mode)
-    if name == "darts":
-        from nnabla_nas.contrib.darts import SearchNet
-        net = SearchNet(num_classes=num_classes, mode=mode)
-    return net.apply(training=False)
+def get_search_net(net_config, mode):
+    algorithm = contrib.__dict__[net_config.pop('search_space')]
+    net_config["mode"] = mode
+    net = algorithm.SearchNet(**net_config).apply(training=False)
+    return net
 
 
 class CreateParameters(object):

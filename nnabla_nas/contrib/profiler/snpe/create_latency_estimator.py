@@ -50,7 +50,7 @@ def main(args):
         ye = scale * x + bias
         diff = np.abs(y - ye)
         print("Runtime = {} [micro sec]".format(runtime))
-        print("Ave", "Std", "Min", "Max", "of the abslute error")
+        print("Ave", "Std", "Min", "Max", "of the abslute error b/w target and linear regression")
         print(np.mean(diff), np.std(diff), np.min(diff), np.max(diff))
 
     # Read template and create python script

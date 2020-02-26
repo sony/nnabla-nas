@@ -33,7 +33,7 @@ Meaure latency, then create the latency table,
 
 ```bash
 python create_latency_table.py \
-    --search-net mbn \
+    --search-net-config ../../../../examples/mobilenet_cifar10_search.json \
     --table-name MNV2-CIFAR10-space-latency \
     --n-run 100 \
     --time-scale m \
@@ -54,7 +54,7 @@ In general, the format is the following.
 
 ```bash
 python create_latency_estimator.py \
-    --search-net mbn \
+    --search-net-config ../../../../examples/mobilenet_cifar10_search.json \
     --latency-table-json MNV2-CIFAR10-space-latency.json \
     --n-run 100 \
     --time-scale m \

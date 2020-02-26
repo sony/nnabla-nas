@@ -19,20 +19,7 @@ git clone https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas
 export PYTHONPATH=${PWD}/nnabla_nas:$PYTHONPATH
 ```
 
-**NOTE** 
-The following example is based on MobileNetV-2 Search Space and CIFAR-10 dataset. 
-Change the settings if you want to change a search space and dataset.
-
-## Measure latency
-
-### Generate NNPs
-
-Outside the docker container, 
-```bash
-python generate_nnps.py --search-net mbn --nnp-dir MNV2-CIFAR10-space-nnps
-```
-
-### Run SNPE Bench
+## Prepare phone
 
 Run `docker.ubiq.sony.co.jp:5000/snpe/ubuntu-18.04_snpe-1.33.1.608` container, 
 
@@ -43,6 +30,35 @@ docker run -it --privileged -v /dev/bus/usb:/dev/bus/usb -v ${HOME}:${HOME} \
     --rm \
     docker.ubiq.sony.co.jp:5000/snpe/ubuntu-18.04_snpe-1.33.1.608
 ```
+
+Inside the container
+
+```bash
+conda activate snpe-env
+adb devices
+```
+
+Confirm the follows inside the docker and/or on the phone screen
+- Allow access on the phone screen of notification
+- Allow USB debugging on the phone screen of notification
+
+
+**NOTE** 
+The following example is based on MobileNetV-2 Search Space and CIFAR-10 dataset. 
+Change the settings if you want to change a search space and dataset.
+
+## Measure latency
+
+### Generate NNPs
+
+Outside the docker container, 
+```bash
+python generate_nnps.py \
+    --search-net-config ../../../../examples/mobilenet_cifar10_search.json \
+    --nnp-dir MNV2-CIFAR10-space-nnps
+```
+
+### Run SNPE Bench
 
 Inside the container, run 
 
@@ -104,7 +120,7 @@ NOTE: snpe_bench parts are separated since the nnabla\_nas heavily depends on py
 Outside the docker container, 
 ```bash
 python sample_nnps.py \
-    --search-net mbn \
+    --search-net-config ../../../../examples/mobilenet_cifar10_search.json \
     --latency-table-json MNV2-CIFAR10-space-latency.json \
     --nnp-dir MNV2-CIFAR10-sampled-nnps \
     --num-trials 50
