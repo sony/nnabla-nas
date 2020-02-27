@@ -163,8 +163,7 @@ class SearchNet(Model):
                 f'width_mult={self._width_mult}, '
                 f'settings={self._settings}, '
                 f'candidates={self._candidates}, '
-                f'skip_connect={self._skip_connect}, '
-                f'round_nearest={self._round_nearest}')
+                f'skip_connect={self._skip_connect}, ')
 
     def summary(self):
         def print_arch(arch_idx, op_names):
