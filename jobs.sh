@@ -73,20 +73,6 @@ python main.py -d 1\
 
 
 
-#------------------MobileNet V2 (experimental)---------------------#
-# search MobileNet
-python main.py -d 1 --search \
-               -f examples/mnv2_search.json  \
-               -a DartsSearcher \
-               -o log/mnv2/search
-
-python main.py -d 1 \
-               -f examples/mnv2_train.json \
-               -a Trainer -o log/mnv2/train
-#------------------------------------------------------------------#
-
-
-
 #----------------------------Zoph---------------------------------#
 # search zoph search space with pnas and without latency constraint
 python main.py -d 0 --search \
@@ -94,14 +80,38 @@ python main.py -d 0 --search \
                -a ProxylessNasSearcher \
                -o log/zoph/search
 
-# train zoph network 
+# train zoph network
 python main.py -d 0 \
                -f examples/zoph_train.json \
-               -a Trainer 
+               -a Trainer \
                -o log/zoph/train
 #------------------------------------------------------------------#
 
 
+# train random zoph network
+python main.py -d 0 \
+               -f examples/zoph_train_random.json \
+               -a Trainer \
+               -o log/zoph/train_random
+
+# train random zoph network, using additions for merging
+python main.py -d 0 \
+               -f examples/zoph_train_random_merge_add.json \
+               -a Trainer \
+               -o log/zoph/train_random_merge_add
+
+# continue training from checkpoint
+python main.py -d 0 \
+               -f examples/zoph_train_continue.json \
+               -a Trainer \
+               -o log/zoph/train_continue
+
+#---------------------------- RandomlyWired------------------------#
+# train randomly wired network
+python main.py -d 0 \
+               -f examples/random_wired_train.json \
+               -a Trainer \
+               -o log/random_wired/train
 
 #---------------------------- ImageNet ----------------------------#
 # module load mpi/openmpi-x86_64

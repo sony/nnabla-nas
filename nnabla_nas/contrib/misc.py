@@ -36,10 +36,10 @@ class AuxiliaryHeadCIFAR(Mo.Module):
 
 
 class SepConv(Mo.DwConv):
-    def __init__(self, out_channels, *args, **kwargs):
-        Mo.DwConv.__init__(self, *args, **kwargs)
+    def __init__(self, in_channels, out_channels, *args, **kwargs):
+        Mo.DwConv.__init__(self, in_channels=in_channels, *args, **kwargs)
         self._out_channels = out_channels
-        self._conv_module_pw = Mo.Conv(self._in_channels, out_channels,
+        self._conv_module_pw = Mo.Conv(self._in_channels, self._out_channels,
                                        kernel=(1, 1), pad=None, group=1,
                                        rng=self._rng, with_bias=False)
 

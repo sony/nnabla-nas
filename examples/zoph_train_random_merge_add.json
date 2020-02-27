@@ -13,9 +13,8 @@
         "name": "zoph",
         "n_classes": 10,
         "stem_channels": 128,
-        "merging_mode": "concat",
-        "random_init": false,
-        "param_path": "log/zoph/search_3/arch.h5"
+        "random_init": true,
+        "merging_mode": "add"
     },
     "optimizer": {
         "train": {

@@ -3,19 +3,20 @@
     "epoch": 600,
     "batch_size_train": 64,
     "batch_size_valid": 20,
-    "mini_batch_train": 64,
+    "mini_batch_train": 32,
     "mini_batch_valid": 20,
     "warmup": 0,
     "cutout": 16,
     "print_frequency": 50,
     "network": {
-        "search_space": "zoph",
-        "name": "zoph",
+        "search_space": "random_wired",
+        "name": "random_wired",
         "n_classes": 10,
-        "stem_channels": 128,
-        "merging_mode": "concat",
-        "random_init": false,
-        "param_path": "log/zoph/search_3/arch.h5"
+        "n_vertices": 20,
+        "min_channels": 128,
+        "max_channels": 512,
+        "k": 4,
+        "p": 0.75
     },
     "optimizer": {
         "train": {
