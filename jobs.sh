@@ -137,10 +137,10 @@ mpirun -n 4 python main.py --search \
                -a ProxylessNasSearcher \
                -o log/mobilenet/imagenet/songhan/search
 
-# search MobileNet network Songhan
+# train MobileNet network Songhan
 mpirun -n 4 python main.py \
                -f examples/mobilenet_imagenet_train_songhan.json \
-               -a ProxylessNasSearcher \
+               -a Trainer \
                -o log/mobilenet/imagenet/songhan/train
 
 # ref MobileNet network
