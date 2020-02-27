@@ -1,0 +1,53 @@
+import json
+
+import nnabla_nas
+from nnabla_nas.contrib.estimator import estimator
+from nnabla_nas.contrib.profiler.helpers import uid
+from nnabla_nas.contrib.estimator.estimator import Estimator
+
+class SNPELatencyEstimator(Estimator):
+
+    def __init__(self, latency_table_json, runtime, cap_value=0.0):
+        """
+        Args: 
+          latency_table_json (str): Path to the latency table.
+          runtime (str): Key to the runtime in ["CPU", "GPU", "GPU_FP16", "DSP", "AIP"]
+          cap_value (float): Cap value if the estimation is negative.
+        """
+        # Latency Table
+        with open(latency_table_json) as fp:
+            self._all_latency_table = json.load(fp)
+        self._runtime = runtime
+        self._cap_value = cap_value
+        
+        self._skip_modules = (nnabla_nas.module.identity.Identity,
+                              nnabla_nas.module.dropout.Dropout)
+
+        # Pickup one runtime
+        self._latency_table = {}
+        for k in self._all_latency_table.keys():
+            self._latency_table[k] = self._all_latency_table[k][runtime]
+
+        self._scales = {}
+        self._biases = {}
+
+        
+        % for r, s in runtime_scales.items():
+        self._scales["${r}"] = ${s}
+        % endfor
+        % for r, b in runtime_biases.items():
+        self._biases["${r}"] = ${b}
+        % endfor
+
+        self._scale = self._scales[runtime]
+        self._bias = self._biases[runtime]
+
+    def get_estimation(self, net):
+        """Returns the estimation of the whole module."""
+        modules = [m for _, m in net.get_modules() if len(m.modules) == 0 and m.need_grad and not isinstance(m, self._skip_modules)]
+
+        accum_latency = 0.0
+        for m in modules:
+            accum_latency += self._latency_table[uid(m)][self._runtime]
+        estimated_latency = max(self._scale * accum_latency + self._bias, self._cap_value)
+        return estimated_latency

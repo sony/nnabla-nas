@@ -1,13 +1,13 @@
+from collections import Counter, OrderedDict
+
 import numpy as np
+import os
 
 from ... import module as Mo
 from ...utils import load_parameters
 from ..model import Model
-from .modules import ChoiceBlock
-from .modules import ConvBNReLU
-from .modules import InvertedResidual
-from .modules import CANDIDATES
-from collections import OrderedDict
+from .modules import CANDIDATES, ChoiceBlock, ConvBNReLU
+from .helper import plot_mobilenet
 
 
 def _make_divisible(x, divisible_by=8):
@@ -27,12 +27,11 @@ class SearchNet(Model):
             channels in each layer by this amount
         settings (list, optional): Network structure.
             Defaults to None.
-        round_nearest (int, optional): Round the number of channels in
-            each layer to be a multiple of this number. Set to 1 to turn
-            off rounding.
-        n_max (int, optional): The number of blocks. Defaults to 4.
-        block: Module specifying inverted residual building block for
-            mobilenet
+        drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.
+        candidates (list of str, optional): A list of candicates. Defaults to
+            None.
+        skip_connect (bool, optional): Whether the skip connect is used.
+            Defaults to `True`.
 
     References:
     [1] Sandler, M., Howard, A., Zhu, M., Zhmoginov, A. and Chen, L.C., 2018.
@@ -40,44 +39,31 @@ class SearchNet(Model):
         of the IEEE conference on computer vision and pattern recognition
         (pp. 4510-4520).
     """
+    """[summary]
+    #  n_cell_stages=(4, 4, 4, 4, 4, 1),
+                #  width_stages=(24, 40, 80, 96, 192, 320),
+                #  stride_stages=(2, 2, 2, 1, 2, 1),
+    Returns:
+        [type]: [description]
+    """
 
     def __init__(self,
                  num_classes=1000,
-                 width_mult=1.0,
+                 width_mult=1,
                  settings=None,
-                 round_nearest=8,
-                 block=None,
-                 n_max=4,
-                 first_strides=(1, 1),
-                 mode='full'):
+                 drop_rate=0,
+                 candidates=None,
+                 mode='sample',
+                 skip_connect=True):
 
         self._num_classes = num_classes
         self._width_mult = width_mult
-        self._round_nearest = round_nearest
-        self._n_max = n_max
+        self._skip_connect = skip_connect
+        self._arch_idx = None  # keeps current max arch
+        round_nearest = 8
 
-        block = block or InvertedResidual
         in_channels = 32
         last_channel = 1280
-
-        if settings is None:
-            settings = [
-                # c, s
-                [16, 1],
-                [24, first_strides[0]],
-                [32, first_strides[1]],
-                [64, 2],
-                [96, 1],
-                [160, 2],
-                [320, 1]
-            ]
-
-        # only check the first element
-        if len(settings) == 0 or len(settings[0]) != 2:
-            raise ValueError(
-                "Inverted_residual_setting should be non-empty "
-                "or a 4-element list, got {}".format(settings)
-            )
 
         # building first layer
         in_channels = _make_divisible(in_channels * width_mult, round_nearest)
@@ -87,18 +73,45 @@ class SearchNet(Model):
         )
         features = [ConvBNReLU(3, in_channels, stride=(2, 2))]
 
-        # output_channel = _make_divisible(16 * width_mult, round_nearest)
-        # features.append(block(in_channels, 16, 1, expand_ratio=1))
+        first_cell_width = _make_divisible(16 * width_mult, 8)
+        features += [CANDIDATES['MB1 3x3'](
+            in_channels, first_cell_width, 1)]
+        in_channels = first_cell_width
 
+        if settings is None:
+            settings = [
+                # c, n, s
+                [24, 4, 2],
+                [32, 4, 2],
+                [64, 4, 2],
+                [96, 4, 1],
+                [160, 4, 2],
+                [320, 1, 1]
+            ]
+        self._settings = settings
+        if candidates is None:
+            candidates = [
+                "MB3 3x3",
+                "MB6 3x3",
+                "MB3 5x5",
+                "MB6 5x5",
+                "MB3 7x7",
+                "MB6 7x7"
+            ]
+        self._candidates = candidates
         # building inverted residual blocks
-        for k, (c, s) in enumerate(settings):
+        for c, n, s in settings:
             output_channel = _make_divisible(c * width_mult, round_nearest)
-            n_iter = n_max
-            for i in range(n_iter):
+            for i in range(n):
                 stride = s if i == 0 else 1
+                curr_candidates = candidates.copy()
+                if stride == 1 and in_channels == output_channel \
+                        and skip_connect:
+                    curr_candidates.append('skip_connect')
                 features.append(
                     ChoiceBlock(in_channels, output_channel,
-                                stride=stride, mode=mode, is_skipped=i > 0)
+                                stride=stride, mode=mode,
+                                ops=curr_candidates)
                 )
                 in_channels = output_channel
 
@@ -110,8 +123,8 @@ class SearchNet(Model):
 
         # building classifier
         self._classifier = Mo.Sequential(
-            Mo.AvgPool((4, 4)),
-            Mo.Dropout(0.2),
+            Mo.GlobalAvgPool(),
+            Mo.Dropout(drop_rate),
             Mo.Linear(self.last_channel, num_classes),
         )
 
@@ -148,7 +161,49 @@ class SearchNet(Model):
     def extra_repr(self):
         return (f'num_classes={self._num_classes}, '
                 f'width_mult={self._width_mult}, '
-                f'round_nearest={self._round_nearest}')
+                f'settings={self._settings}, '
+                f'candidates={self._candidates}, '
+                f'skip_connect={self._skip_connect}')
+
+    def summary(self):
+        def print_arch(arch_idx, op_names):
+            str = 'NET SUMMARY:\n'
+            for k, (c, n, s) in enumerate(self._settings):
+                str += 'c={:<4} : '.format(c)
+                for i in range(n):
+                    idx = k*n+i
+                    if (self._arch_idx is None or
+                            arch_idx[idx] == self._arch_idx[idx]):
+                        str += ' '
+                    else:
+                        str += '*'
+                    str += '{:<30}; '.format(op_names[arch_idx[idx]])
+                str += '\n'
+            return str
+        stats = []
+        arch_params = self.get_arch_parameters()
+        arch_idx = [np.argmax(m.d.flat) for m in arch_params.values()]
+        count = Counter(arch_idx)
+        op_names = self._candidates
+        if self._skip_connect:
+            op_names += ['skip_connect']
+        txt = print_arch(arch_idx, op_names)
+        total = len(arch_params)
+        for k in range(len(op_names)):
+            name = op_names[k]
+            stats.append(name + f' = {count[k]/total*100:.2f}%\t')
+        if self._arch_idx is not None:
+            n_changes = sum(i != j for i, j in zip(arch_idx, self._arch_idx))
+            txt += '\n Number of changes: {}({:.2f}%)\n'.format(
+                n_changes, n_changes*100/len(arch_idx))
+        self._arch_idx = arch_idx
+        return txt + ''.join(stats)
+
+    def save_parameters(self, path=None, params=None, grad_only=False):
+        super().save_parameters(path, params=params, grad_only=grad_only)
+        # save the architectures
+        output_path = os.path.dirname(path)
+        plot_mobilenet(self, os.path.join(output_path, 'arch'))
 
 
 class TrainNet(SearchNet):
@@ -168,6 +223,8 @@ class TrainNet(SearchNet):
             mobilenet. Defaults to None.
         mode (str, optional): The sampling strategy ('full', 'max', 'sample').
             Defaults to 'full'.
+        skip_connect (bool, optional): Whether the skip connect is used.
+            Defaults to `True`.
         genotype(str, optional): The path to architecture file. Defaults to
             None.
 
@@ -180,17 +237,18 @@ class TrainNet(SearchNet):
 
     def __init__(self,
                  num_classes=1000,
-                 width_mult=1.0,
+                 width_mult=1,
                  settings=None,
-                 round_nearest=8,
-                 n_max=4,
-                 block=None,
-                 mode='full',
+                 drop_rate=0,
+                 candidates=None,
+                 mode='sample',
+                 skip_connect=True,
                  genotype=None):
 
         super().__init__(num_classes=num_classes, width_mult=width_mult,
-                         settings=settings, round_nearest=round_nearest,
-                         n_max=n_max, block=block, mode=mode)
+                         settings=settings, drop_rate=drop_rate,
+                         candidates=candidates, mode=mode,
+                         skip_connect=skip_connect)
 
         if genotype is not None:
             self.set_parameters(load_parameters(genotype))
@@ -198,45 +256,9 @@ class TrainNet(SearchNet):
                 if isinstance(module, ChoiceBlock):
                     idx = np.argmax(module._mixed._alpha.d)
                     module._mixed = module._mixed._ops[idx]
-
-
-class RefNet(SearchNet):
-    def __init__(self,
-                 num_classes=1000,
-                 width_mult=1.0,
-                 settings=None,
-                 round_nearest=8,
-                 block=None,
-                 mode='full',
-                 genotype=None):
-
-        super().__init__(num_classes=num_classes, width_mult=width_mult,
-                         settings=settings, round_nearest=round_nearest,
-                         block=block, mode=mode)
-        ref_setting = [
-            # t, c, n, s
-            [1, 16, 1, 1],
-            [6, 24, 2, 1],
-            [6, 32, 3, 1],
-            [6, 64, 4, 2],
-            [6, 96, 3, 1],
-            [6, 160, 3, 2],
-            [6, 320, 1, 1]]
-
-        arch_idx = self.get_ops_idx(ref_setting)
-        i = 0
-        for k, v in self.get_arch_parameters().items():
-            v.d[arch_idx[i]] = 1.0
-            i += 1
-        import nnabla as nn
-        nn.save_parameters('mbn_ref_arch.h5', self.get_arch_parameters())
-
-    def get_ops_idx(self, setting):
-        ops = list()
-        for t, c, n, s in setting:
-            for m in range(self._n_max):
-                ops += [list(CANDIDATES).index(
-                        'InvertedResidual_t{}_k3'.format(t))
-                        if m < n
-                        else list(CANDIDATES).index('skip_connect'.format(t))]
-        return ops
+        else:
+            # pick random model
+            for _, module in self.get_modules():
+                if isinstance(module, ChoiceBlock):
+                    idx = np.random.randint(len(module._mixed._alpha.d))
+                    module._mixed = module._mixed._ops[idx]

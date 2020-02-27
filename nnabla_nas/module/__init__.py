@@ -17,6 +17,7 @@ from .relu import LeakyReLU
 from .relu import ReLU
 from .relu import ReLU6
 from .zero import Zero
+from .operation import Lambda
 
 __all__ = [
     'Parameter',
@@ -38,5 +39,6 @@ __all__ = [
     'ReLU',
     'ReLU6',
     'LeakyReLU',
-    'Dropout'
+    'Dropout',
+    'Lambda'
 ]

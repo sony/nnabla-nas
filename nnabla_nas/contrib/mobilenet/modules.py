@@ -1,34 +1,34 @@
-from ... import module as Mo
-from ..darts.modules import MixedOp
 from collections import OrderedDict
 
+from ... import module as Mo
+from ..darts.modules import MixedOp
 
 CANDIDATES = OrderedDict([
-    ('InvertedResidual_t1_k3',
+    ('MB1 3x3',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=1, kernel=(3, 3))),
-    ('InvertedResidual_t3_k3',
+    ('MB3 3x3',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=3, kernel=(3, 3))),
-    ('InvertedResidual_t6_k3',
+    ('MB6 3x3',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=6, kernel=(3, 3))),
-    ('InvertedResidual_t1_k5',
+    ('MB1 5x5',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=1, kernel=(5, 5))),
-    ('InvertedResidual_t3_k5',
+    ('MB3 5x5',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=3, kernel=(5, 5))),
-    ('InvertedResidual_t6_k5',
+    ('MB6 5x5',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=6, kernel=(5, 5))),
-    ('InvertedResidual_t1_k7',
+    ('MB1 7x7',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=1, kernel=(7, 7))),
-    ('InvertedResidual_t3_k7',
+    ('MB3 7x7',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=3, kernel=(7, 7))),
-    ('InvertedResidual_t6_k7',
+    ('MB6 7x7',
         lambda inc, outc, s: InvertedResidual(inc, outc, s,
                                               expand_ratio=6, kernel=(7, 7))),
     ('skip_connect', lambda inc, outc, s: Mo.Identity())
@@ -135,17 +135,15 @@ class InvertedResidual(Mo.Module):
 
 class ChoiceBlock(Mo.Module):
     def __init__(self, in_channels, out_channels, stride,
-                 mode='full', is_skipped=False):
+                 ops, mode='sample'):
         self._in_channels = in_channels
         self._out_channels = out_channels
         self._stride = stride
         self._mode = mode
-        self._is_skipped = is_skipped
 
         self._mixed = MixedOp(
             operators=[func(in_channels, out_channels, stride)
-                       for k, func in CANDIDATES.items()
-                       if k != "skip_connect" or is_skipped],
+                       for k, func in CANDIDATES.items() if k in ops],
             mode=mode,
         )
 
@@ -156,5 +154,4 @@ class ChoiceBlock(Mo.Module):
         return (f'in_channels={self._in_channels}, '
                 f'out_channels={self._out_channels}, '
                 f'stride={self._stride}, '
-                f'mode={self._mode}, '
-                f'is_skipped={self._is_skipped}')
+                f'mode={self._mode}')

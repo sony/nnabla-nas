@@ -6,8 +6,10 @@ from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
+from nnabla.ext_utils import get_extension_context
 import numpy as np
 from tensorboardX import SummaryWriter
+from nnabla import random
 
 from .dataset.transforms import Cutout
 
@@ -21,12 +23,14 @@ class ProgressMeter(object):
                 Defaults to None.
     """
 
-    def __init__(self, num_batches, path=None):
+    def __init__(self, num_batches, path=None, quiet=False):
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
         self.meters = OrderedDict()
         self.terminal = sys.stdout
-        self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
-        self.file = open(os.path.join(path, 'log.txt'), 'w')
+        self.quiet = quiet
+        if not self.quiet:
+            self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
+            self.file = open(os.path.join(path, 'log.txt'), 'w')
 
     def info(self, message, view=True):
         r"""Shows a message.
@@ -35,11 +39,12 @@ class ProgressMeter(object):
             message (str): The message.
             view (bool, optional): If shows to terminal. Defaults to True.
         """
-        if view:
+        if view and not self.quiet:
             self.terminal.write(message)
             self.terminal.flush()
-        self.file.write(message)
-        self.file.flush()
+        if not self.quiet:
+            self.file.write(message)
+            self.file.flush()
 
     def display(self, batch, key=None):
         r"""Displays current values for meters.
@@ -64,6 +69,9 @@ class ProgressMeter(object):
         Args:
             n_iter (int): The n-th iteration.
         """
+        if self.quiet:
+            return
+
         for m in self.meters.values():
             self.tb.add_scalar(m.name, m.avg, n_iter)
 
@@ -81,8 +89,9 @@ class ProgressMeter(object):
 
     def close(self):
         r"""Closes all the file descriptors."""
-        self.tb.close()
-        self.file.close()
+        if not self.quiet:
+            self.tb.close()
+            self.file.close()
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
@@ -120,20 +129,23 @@ class AverageMeter(object):
         return fmtstr.format(**self.__dict__)
 
 
-def sample(pvals, mode='sample'):
+def sample(pvals, mode='sample', rng=None):
     r"""Returns random int according the sampling `mode` (e.g., `max`, `full`,
         or `sample`).
 
     Args:
         pvals (np.array): The probability values.
         mode (str, optional): The sampling `mode`. Defaults to 'sample'.
+        rng (numpy.random.RandomState): Random generator for random choice.
 
     Returns:
         [type]: [description]
     """
     if mode == 'max':
         return np.argmax(pvals)
-    return np.random.choice(len(pvals), p=pvals, replace=False)
+    if rng is None:
+        rng = random.prng
+    return rng.choice(len(pvals), p=pvals, replace=False)
 
 
 def dataset_transformer(conf):
@@ -164,7 +176,7 @@ def load_parameters(path):
     """
     with nn.parameter_scope('', OrderedDict()):
         nn.load_parameters(path)
-        params = nn.get_parameters()
+        params = nn.get_parameters(grad_only=False)
     return params
 
 
@@ -181,21 +193,6 @@ def write_to_json_file(content, file_path):
                   default=lambda o: '<not serializable>')
 
 
-def data_augment(image):
-    r"""Performs standard data augmentations.
-
-    Args:
-        image (numpy.array): The input image.
-
-    Returns:
-        numpy.array: The output.
-    """
-    out = F.random_crop(F.pad(image, (4, 4, 4, 4)), shape=(image.shape))
-    out = F.image_augmentation(out, flip_lr=True)
-    out.need_grad = False
-    return out
-
-
 def count_parameters(params):
     r"""Counts the number of parameters.
 
@@ -209,17 +206,17 @@ def count_parameters(params):
 
 
 def create_float_context(ctx):
-    from nnabla.ext_utils import get_extension_context
     ctx_float = get_extension_context(ctx.backend[0].split(':')[
                                       0], device_id=ctx.device_id)
     return ctx_float
 
 
-def ceil_to_multiple(x, mul):
-    '''
-    Get a minimum integer >= x of a multiple of ``mul``.
-    '''
-    return (x + mul - 1) // mul
+def label_smoothing_loss(pred, label, label_smoothing=0.1):
+    loss = F.softmax_cross_entropy(pred, label)
+    if label_smoothing <= 0:
+        return loss
+    return (1 - label_smoothing) * loss - label_smoothing \
+        * F.mean(F.log_softmax(pred), axis=1, keepdims=True)
 
 
 class CommunicatorWrapper(object):
@@ -242,7 +239,8 @@ class CommunicatorWrapper(object):
         self.n_procs = comm.size
         self.rank = comm.rank
         self.ctx = ctx
-        self.ctx.device_id = str(self.rank)
+        if comm.size > 1:  # re-assign id to rank
+            self.ctx.device_id = str(self.rank)
         self.ctx_float = create_float_context(self.ctx)
         self.comm = comm
 
