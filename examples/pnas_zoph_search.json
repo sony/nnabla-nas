@@ -1,11 +1,11 @@
 {
     "dataset": "cifar10",
-    "epoch": 1,
+    "epoch": 150,
     "batch_size_train": 256,
     "batch_size_valid": 256,
     "mini_batch_train": 64,
     "mini_batch_valid": 64,
-    "warmup": 1000,
+    "warmup": 50,
     "cutout": 16,
     "print_frequency": 20,
     "train_portion": 0.9,
