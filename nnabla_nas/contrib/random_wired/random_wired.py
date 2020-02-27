@@ -1,11 +1,11 @@
 import numpy as np
 from copy import deepcopy
 import networkx as nx
-import matplotlib.pyplot as plt
 from nnabla_nas.module import static as smo
-import nnabla_nas.module as mo
 from nnabla_nas.contrib.model import Model
 import nnabla as nn
+from collections import OrderedDict
+
 
 class RandomModule(smo.Graph):
     def __init__(self, parents, channels, name=''):
@@ -27,13 +27,15 @@ class RandomModule(smo.Graph):
                                  in_channels=pi.shape[1],
                                  out_channels=self._channels,
                                  kernel=(1, 1)))
-            self.append(smo.BatchNormalization(name='{}/input_conv_bn_{}'.format(
-                                               self.name, i),
-                                               parents=[self[-1]],
-                                               n_dims=4,
-                                               n_features=self._channels))
-            self.append(smo.ReLU(name='{}/input_conv/relu_{}'.format(self.name, i),
-                                 parents=[self[-1]]))
+            self.append(
+                    smo.BatchNormalization(name='{}/input_conv_bn_{}'.format(
+                                           self.name, i),
+                                           parents=[self[-1]],
+                                           n_dims=4,
+                                           n_features=self._channels))
+            self.append(
+                    smo.ReLU(name='{}/input_conv/relu_{}'.format(self.name, i),
+                             parents=[self[-1]]))
 
             projected_inputs.append(self[-1])
 
@@ -41,9 +43,9 @@ class RandomModule(smo.Graph):
             if i in self._shape_adaptation:
                 self.append(smo.MaxPool(name='{}/shape_adapt'
                                         '_pool_{}'.format(self.name, i),
-                                         parents=[pii],
-                                         kernel=self._shape_adaptation[i],
-                                         stride=self._shape_adaptation[i]))
+                                        parents=[pii],
+                                        kernel=self._shape_adaptation[i],
+                                        stride=self._shape_adaptation[i]))
                 projected_inputs[i] = self[-1]
         if len(projected_inputs) > 1:
             self.append(smo.Merging(parents=projected_inputs,
@@ -53,11 +55,11 @@ class RandomModule(smo.Graph):
 
 class Conv(RandomModule):
     def __init__(self,
-                parents,
-                channels,
-                kernel,
-                pad,
-                name=''):
+                 parents,
+                 channels,
+                 kernel,
+                 pad,
+                 name=''):
         RandomModule.__init__(self,
                               parents=parents,
                               channels=channels,
@@ -72,21 +74,21 @@ class Conv(RandomModule):
                              kernel=self._kernel,
                              pad=self._pad))
         self.append(smo.BatchNormalization(name='{}/conv_bn'.format(
-                                               self.name),
-                                               parents=[self[-1]],
-                                               n_dims=4,
-                                               n_features=self._channels))
+                                           self.name),
+                                           parents=[self[-1]],
+                                           n_dims=4,
+                                           n_features=self._channels))
         self.append(smo.ReLU(name='{}/conv/relu'.format(self.name),
-                                parents=[self[-1]]))
+                             parents=[self[-1]]))
 
 
 class SepConv(RandomModule):
     def __init__(self,
-                parents,
-                channels,
-                kernel,
-                pad,
-                name=''):
+                 parents,
+                 channels,
+                 kernel,
+                 pad,
+                 name=''):
         RandomModule.__init__(self,
                               parents=parents,
                               channels=channels,
@@ -107,12 +109,12 @@ class SepConv(RandomModule):
                              out_channels=self._channels,
                              kernel=(1, 1)))
         self.append(smo.BatchNormalization(name='{}/conv_bn'.format(
-                                               self.name),
-                                               parents=[self[-1]],
-                                               n_dims=4,
-                                               n_features=self._channels))
+                                           self.name),
+                                           parents=[self[-1]],
+                                           n_dims=4,
+                                           n_features=self._channels))
         self.append(smo.ReLU(name='{}/conv/relu'.format(self.name),
-                                parents=[self[-1]]))
+                             parents=[self[-1]]))
 
 
 class Conv3x3(Conv):
@@ -167,7 +169,7 @@ class SepConv5x5(SepConv):
                          pad=(2, 2))
 
 
-class MaxPool3x3(RandomModule):
+class MaxPool2x2(RandomModule):
     def __init__(self,
                  parents,
                  channels,
@@ -179,11 +181,10 @@ class MaxPool3x3(RandomModule):
         self.append(smo.MaxPool(parents=[self[-1]],
                                 kernel=(2, 2),
                                 stride=(2, 2),
-                                #pad=(1, 1),
-                                name='{}/max_pool_3x3'.format(self.name)))
+                                name='{}/max_pool_2x2'.format(self.name)))
 
 
-class AvgPool3x3(RandomModule):
+class AvgPool2x2(RandomModule):
     def __init__(self,
                  parents,
                  channels,
@@ -195,21 +196,20 @@ class AvgPool3x3(RandomModule):
         self.append(smo.AvgPool(parents=[self[-1]],
                                 kernel=(2, 2),
                                 stride=(2, 2),
-                                #pad=(1, 1),
-                                name='{}/avg_pool_3x3'.format(self.name)))
+                                name='{}/avg_pool_2x2'.format(self.name)))
 
 
-RANDOM_CANDIDATES=[RandomModule,
-                   SepConv3x3,
-                   SepConv5x5,
-                   RandomModule,
-                   SepConv3x3,
-                   SepConv5x5,
-                   RandomModule,
-                   SepConv3x3,
-                   SepConv5x5,
-                   MaxPool3x3,
-                   AvgPool3x3]
+RANDOM_CANDIDATES = [RandomModule,
+                     SepConv3x3,
+                     SepConv5x5,
+                     RandomModule,
+                     SepConv3x3,
+                     SepConv5x5,
+                     RandomModule,
+                     SepConv3x3,
+                     SepConv5x5,
+                     MaxPool2x2,
+                     AvgPool2x2]
 
 
 class TrainNet(Model, smo.Graph):
@@ -244,12 +244,13 @@ class TrainNet(Model, smo.Graph):
         adj_matrix = nx.adjacency_matrix(graph).todense()
         sorted_nodes = np.argsort(graph.nodes)
         for i, ii in enumerate(sorted_nodes):
-            p_idxs = np.where(np.ravel(adj_matrix[sorted_nodes,ii]) > 0)[0]
+            p_idxs = np.where(np.ravel(adj_matrix[sorted_nodes, ii]) > 0)[0]
             if len(p_idxs) == 0:
                 self.append(smo.Input(name='{}/input'.format(self.name),
                                       value=nn.Variable(self._input_shape)))
             else:
-                rnd_class = self._candidates[np.random.randint(0, len(self._candidates), 1)[0]]
+                rnd_class = self._candidates[
+                        np.random.randint(0, len(self._candidates), 1)[0]]
                 rnd_channels = np.random.randint(self._min_channels,
                                                  self._max_channels,
                                                  1)[0]
@@ -282,17 +283,17 @@ class TrainNet(Model, smo.Graph):
         G.name = graph.name
         G.add_nodes_from(graph)
         G.add_edges_from(((u, v, deepcopy(data))
-                for u, nbrs in graph.adjacency()
-                for v, data in nbrs.items()
-                if v > u))
+                          for u, nbrs in graph.adjacency()
+                          for v, data in nbrs.items()
+                          if v > u))
         G.graph = deepcopy(graph.graph)
 
         # 2. add a single input and output to the network
         adj_matrix = nx.adjacency_matrix(G).todense()
         inputs = np.where(np.ravel(np.sum(adj_matrix, axis=0) == 0))
         outputs = np.where(np.ravel(np.sum(adj_matrix, axis=1) == 0))
-        G.add_node(-1) # input
-        G.add_node(n_vertices) # output
+        G.add_node(-1)  # input
+        G.add_node(n_vertices)  # output
         for i in inputs[0]:
             G.add_edge(-1, i)
         for o in outputs[0]:
@@ -376,7 +377,6 @@ class TrainNet(Model, smo.Graph):
 
 
 if __name__ == '__main__':
-    import nnabla as nn
     input_1 = smo.Input(name='input_1', value=nn.Variable((10, 16, 32, 32)))
     input_2 = smo.Input(name='input_2', value=nn.Variable((10, 32, 16, 16)))
 
@@ -391,39 +391,15 @@ if __name__ == '__main__':
     c5x5 = Conv5x5(name='test_c5x5',
                    parents=[input_1, input_2],
                    channels=64)
-    mp3x3 = MaxPool3x3(name='test_mp3x3',
+    mp3x3 = MaxPool2x2(name='test_mp3x3',
                        parents=[input_1, input_2],
                        channels=64)
-    ap3x3 = AvgPool3x3(name='test_ap3x3',
+    ap3x3 = AvgPool2x2(name='test_ap3x3',
                        parents=[input_1, input_2],
                        channels=64)
     net = TrainNet(name='test_net')
 
     net.reset_value()
-    out = net(nn.Variable((10,3,32,32)))
+    out = net(nn.Variable((10, 3, 32, 32)))
     gvg = net.get_gv_graph(active_only=True)
     gvg.render('test_random')
-
-#n_vertices = 5
-#modules = {0: 'Conv3x3',
-           #1: 'Conv5x5',
-           #2: 'MaxPool',
-           #3: 'AvgPool',
-           #4: 'GavgPool'}
-
-#g = random_dnn(n_vertices=n_vertices,
-               #input_channels=3,
-               #output_channels=512,
-               #candidates=modules,
-               #min_channels=32,
-               #max_channels=512)
-#import pdb; pdb.set_trace()
-#random_classes  = {}
-#random_channels = {}
-
-
-#plt.figure(1)
-#pos = nx.spring_layout(g)
-#nx.draw(g, pos=pos)
-#nx.draw_networkx_labels(g, pos=pos)
-#plt.show()
