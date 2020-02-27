@@ -154,4 +154,4 @@ class ChoiceBlock(Mo.Module):
         return (f'in_channels={self._in_channels}, '
                 f'out_channels={self._out_channels}, '
                 f'stride={self._stride}, '
-                f'mode={self._mode}, ')
+                f'mode={self._mode}')
