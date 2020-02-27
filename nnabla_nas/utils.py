@@ -176,7 +176,7 @@ def load_parameters(path):
     """
     with nn.parameter_scope('', OrderedDict()):
         nn.load_parameters(path)
-        params = nn.get_parameters()
+        params = nn.get_parameters(grad_only=False)
     return params
 
 
