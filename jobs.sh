@@ -73,20 +73,6 @@ python main.py -d 1\
 
 
 
-#------------------MobileNet V2 (experimental)---------------------#
-# search MobileNet
-python main.py -d 1 --search \
-               -f examples/mnv2_search.json  \
-               -a DartsSearcher \
-               -o log/mnv2/search
-
-python main.py -d 1 \
-               -f examples/mnv2_train.json \
-               -a Trainer -o log/mnv2/train
-#------------------------------------------------------------------#
-
-
-
 #----------------------------Zoph---------------------------------#
 # search zoph search space with pnas and without latency constraint
 python main.py -d 0 --search \
