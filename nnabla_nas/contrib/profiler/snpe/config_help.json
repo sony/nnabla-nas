@@ -1,0 +1,27 @@
+{
+    "Name":"<Model Name>",
+    "HostRootPath": "<Path to copy result on host>",
+    "HostResultsDir":"<Result Directory name>",
+    "DevicePath":"<Path to store results on device e.g: /data/local/tmp/snpebenchmark>",
+    "Devices":["<device id as output by 'adb devices'>"],
+    "Runs":<No. of runs>,
+
+    "Model": {
+        "Name": "<Output folder name on device>",
+        "Dlc": "<Path to dlc file, to push on device>",
+        "Data": [
+            "<Host path to input images folder to push images on device ; example: data/imagenet/227x227_raw>"
+        ],
+        "InputList": "<Path to imagelist text file to push image list on device; example: 227x227_raw/0a4699b9cbd14cb76e707374ed7be802.raw>"
+        "RandomInput": <Pass number no. of random images eg: 10
+                        NOTE: If using this option, then "DATA" and "InputList" should not be passed in config file>
+    },
+
+    "Runtimes":[<list of runtimes supported runtimes: "CPU","GPU","DSP","GPU_FP16">],
+    "Measurements": [<Measurement type: "timing","mem">],
+    "CpuFallback": <Set to true to enable CPU fallback>,
+    "PerfProfile": <Choose performance profile from the following options: balanced, default, sustained_high_performance, high_performance, power_saver, system_settings>,
+    "ProfilingLevel": <Choose profiling level from the following options: basic, detailed, off>,
+    "BufferTypes": <Choose Buffer Types from the following options: float, ub_float, ub_tf8. All buffer types are considered by default, if BufferTypes is not specified.
+                    NOTE: ub_tf8 is only supported on DSP runtime and for other runtimes it gets ignored>
+}
