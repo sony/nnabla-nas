@@ -6,9 +6,8 @@
     "batch_size_valid": 200,
     "mini_batch_train": 128,
     "mini_batch_valid": 200,
-    "warmup": 0,
     "cutout": 16,
-    "print_frequency": 50,
+    "print_frequency": 25,
     "network": {
         "search_space": "mobilenet",
         "num_classes": 10,

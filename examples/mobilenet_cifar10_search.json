@@ -2,9 +2,9 @@
     "dataset": "cifar10",
     "epoch": 200,
     "input_shape": [3, 32, 32],
-    "batch_size_train": 256,
+    "batch_size_train": 128,
     "batch_size_valid": 256,
-    "mini_batch_train": 256,
+    "mini_batch_train": 128,
     "mini_batch_valid": 256,
     "warmup": 100,
     "cutout": 16,
@@ -36,7 +36,7 @@
             "grad_clip": 5.0,
             "solver": {
                 "name": "Adam",
-                "alpha": 0.01,
+                "alpha": 0.001,
                 "beta1": 0.5,
                 "beta2": 0.999
             }

@@ -1,11 +1,13 @@
 from collections import Counter, OrderedDict
 
 import numpy as np
+import os
 
 from ... import module as Mo
 from ...utils import load_parameters
 from ..model import Model
 from .modules import CANDIDATES, ChoiceBlock, ConvBNReLU
+from .helper import plot_mobilenet
 
 
 def _make_divisible(x, divisible_by=8):
@@ -56,6 +58,8 @@ class SearchNet(Model):
 
         self._num_classes = num_classes
         self._width_mult = width_mult
+        self._skip_connect = skip_connect
+        self._arch_idx = None  # keeps current max arch
         round_nearest = 8
 
         in_channels = 32
@@ -70,7 +74,7 @@ class SearchNet(Model):
         features = [ConvBNReLU(3, in_channels, stride=(2, 2))]
 
         first_cell_width = _make_divisible(16 * width_mult, 8)
-        features += [CANDIDATES['InvertedResidual_t1_k3'](
+        features += [CANDIDATES['MB1 3x3'](
             in_channels, first_cell_width, 1)]
         in_channels = first_cell_width
 
@@ -84,17 +88,17 @@ class SearchNet(Model):
                 [160, 4, 2],
                 [320, 1, 1]
             ]
-
+        self._settings = settings
         if candidates is None:
             candidates = [
-                "InvertedResidual_t3_k3",
-                "InvertedResidual_t6_k3",
-                "InvertedResidual_t3_k5",
-                "InvertedResidual_t6_k5",
-                "InvertedResidual_t3_k7",
-                "InvertedResidual_t6_k7"
+                "MB3 3x3",
+                "MB6 3x3",
+                "MB3 5x5",
+                "MB6 5x5",
+                "MB3 7x7",
+                "MB6 7x7"
             ]
-
+        self._candidates = candidates
         # building inverted residual blocks
         for c, n, s in settings:
             output_channel = _make_divisible(c * width_mult, round_nearest)
@@ -157,23 +161,50 @@ class SearchNet(Model):
     def extra_repr(self):
         return (f'num_classes={self._num_classes}, '
                 f'width_mult={self._width_mult}, '
+                f'settings={self._settings}, '
+                f'candidates={self._candidates}, '
+                f'skip_connect={self._skip_connect}, '
                 f'round_nearest={self._round_nearest}')
 
     def summary(self):
+        def print_arch(arch_idx, op_names):
+            str = 'NET SUMMARY:\n'
+            for k, (c, n, s) in enumerate(self._settings):
+                str += 'c={:<4} : '.format(c)
+                for i in range(n):
+                    idx = k*n+i
+                    if (self._arch_idx is None or
+                            arch_idx[idx] == self._arch_idx[idx]):
+                        str += ' '
+                    else:
+                        str += '*'
+                    str += '{:<30}; '.format(op_names[arch_idx[idx]])
+                str += '\n'
+            return str
         stats = []
         arch_params = self.get_arch_parameters()
-        count = Counter([np.argmax(m.d.flat) for m in arch_params.values()])
-        op_names = [
-            'InvertedResidual_t3_k3', 'InvertedResidual_t6_k3',
-            'InvertedResidual_t3_k5', 'InvertedResidual_t6_k5',
-            'InvertedResidual_t3_k7', 'InvertedResidual_t6_k7',
-            'skip_connect'
-        ]
+        arch_idx = [np.argmax(m.d.flat) for m in arch_params.values()]
+        count = Counter(arch_idx)
+        op_names = self._candidates
+        if self._skip_connect:
+            op_names += ['skip_connect']
+        txt = print_arch(arch_idx, op_names)
         total = len(arch_params)
         for k in range(len(op_names)):
             name = op_names[k]
             stats.append(name + f' = {count[k]/total*100:.2f}%\t')
-        return ''.join(stats)
+        if self._arch_idx is not None:
+            n_changes = sum(i != j for i, j in zip(arch_idx, self._arch_idx))
+            txt += '\n Number of changes: {}({:.2f}%)\n'.format(
+                n_changes, n_changes*100/len(arch_idx))
+        self._arch_idx = arch_idx
+        return txt + ''.join(stats)
+
+    def save_parameters(self, path=None, params=None, grad_only=False):
+        super().save_parameters(path, params=params, grad_only=grad_only)
+        # save the architectures
+        output_path = os.path.dirname(path)
+        plot_mobilenet(self, os.path.join(output_path, 'arch'))
 
 
 class TrainNet(SearchNet):
@@ -225,4 +256,10 @@ class TrainNet(SearchNet):
             for _, module in self.get_modules():
                 if isinstance(module, ChoiceBlock):
                     idx = np.argmax(module._mixed._alpha.d)
+                    module._mixed = module._mixed._ops[idx]
+        else:
+            # pick random model
+            for _, module in self.get_modules():
+                if isinstance(module, ChoiceBlock):
+                    idx = np.random.randint(len(module._mixed._alpha.d))
                     module._mixed = module._mixed._ops[idx]
