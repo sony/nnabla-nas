@@ -20,6 +20,8 @@ def get_color(label):
 
 
 def get_width(label):
+    if 'MB1' in label:
+        return '1'
     if 'MB3' in label:
         return '1.5'
     return '2'
