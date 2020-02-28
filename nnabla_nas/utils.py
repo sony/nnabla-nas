@@ -239,8 +239,7 @@ class CommunicatorWrapper(object):
         self.n_procs = comm.size
         self.rank = comm.rank
         self.ctx = ctx
-        if comm.size > 1:  # re-assign id to rank
-            self.ctx.device_id = str(self.rank)
+        self.ctx.device_id = str(self.rank)
         self.ctx_float = create_float_context(self.ctx)
         self.comm = comm
 
