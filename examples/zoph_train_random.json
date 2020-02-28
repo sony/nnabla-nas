@@ -1,28 +1,28 @@
 {
     "dataset": "cifar10",
-    "epoch": 350,
+    "epoch": 600,
     "batch_size_train": 64,
-    "batch_size_valid": 40,
+    "batch_size_valid": 20,
     "mini_batch_train": 64,
-    "mini_batch_valid": 40,
+    "mini_batch_valid": 20,
     "warmup": 0,
     "cutout": 16,
     "print_frequency": 50,
     "network": {
-        "search_space": "mobilenetv2",
-        "name": "mnv2",
-        "first_maps": 32,
-        "last_maps": 1280,
+        "search_space": "zoph",
+        "name": "zoph",
         "n_classes": 10,
-        "genotype": "log/mnv2/search/arch.h5"
+        "stem_channels": 128,
+        "random_init": true,
+        "merging_mode": "concat"
     },
     "optimizer": {
         "train": {
             "grad_clip": 5.0,
-            "weight_decay":4e-5,
+            "weight_decay": 3e-4,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.1
+                "lr": 0.025
             }
         }
     }
