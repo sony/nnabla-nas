@@ -142,9 +142,9 @@ class ChoiceBlock(Mo.Module):
         self._mode = mode
 
         self._mixed = MixedOp(
-            operators=[func(in_channels, out_channels, stride)
-                       for k, func in CANDIDATES.items() if k in ops],
-            mode=mode,
+            operators=[CANDIDATES[k](in_channels, out_channels, stride)
+                       for k in ops],
+            mode=mode
         )
 
     def call(self, input):

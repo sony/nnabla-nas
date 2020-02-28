@@ -17,4 +17,4 @@ unit_test:
   stage: Test
   allow_failure: False
   script:
-    - pytest --cov=./
+    - pytest --cov=nnabla_nas tests/

@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 
 import nnabla as nn
 import nnabla.functions as F
@@ -16,7 +17,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--context', '-c', type=str, default='cudnn',
                         help="Extension path. ex) cpu, cudnn.")
-    parser.add_argument("--device-id", "-d", type=str, default='0',
+    parser.add_argument("--device-id", "-d", type=str, default='-1',
                         help='Device ID the training run on. \
                         This is only valid if you specify `-c cudnn`.')
     parser.add_argument("--type-config", "-t", type=str, default='float',
@@ -36,10 +37,14 @@ if __name__ == "__main__":
         else dict()
     config.update({k: v for k, v in vars(options).items() if v is not None})
 
+    # setup cuda visible
+    if config['device_id'] != '-1':
+        os.environ["CUDA_VISIBLE_DEVICES"] = config['device_id']
+
     # setup context for nnabla
     ctx = get_extension_context(
         config['context'],
-        device_id=config['device_id'],
+        device_id='0',
         type_config=config['type_config']
     )
 
