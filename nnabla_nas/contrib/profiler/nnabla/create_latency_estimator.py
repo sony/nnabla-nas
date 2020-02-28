@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--device-id', type=str, help='', default="0")
     parser.add_argument('--n-run', type=int, help='Number of inputs for measurement', default=100)
-    parser.add_argument('--time-scale', type=str, help='m:micro sec, u: milli sec, n: nano sec',
+    parser.add_argument('--time-scale', type=str, help='m:milli sec, u: micro sec, n: nano sec',
                         default="m", choices=["m", "u", "n"])
 
     parser.add_argument('--latency-table-json', type=str, help='', required=True)
