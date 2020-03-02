@@ -28,7 +28,7 @@ if __name__ == "__main__":
                         choices=runner.__all__, help='Algorithm used to run')
     parser.add_argument('--config-file', '-f', type=str, help='config file',
                         default=None)
-    parser.add_argument('--output-path', '-o', type=str, help='config file',
+    parser.add_argument('--output-path', '-o', type=str, help='output path',
                         default=None)
 
     options = parser.parse_args()
