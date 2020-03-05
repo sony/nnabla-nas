@@ -11,7 +11,7 @@ from nnabla_ext.cuda import StreamEventHandler
 import nnabla_nas.contrib as contrib
 from args import Configuration
 from nnabla_nas import runner
-from nnabla_nas.utils import CommunicatorWrapper, label_smoothing_loss
+from nnabla_nas.utils.helper import CommunicatorWrapper, label_smoothing_loss
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

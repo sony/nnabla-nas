@@ -10,7 +10,7 @@ from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
 from nnabla_nas.contrib import misc
 from nnabla_nas.contrib.model import Model
-from nnabla_nas.utils import load_parameters
+from nnabla_nas.utils.helper import load_parameters
 
 
 class SepConv(misc.SepConv, smo.Module):

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from ..utils import ProgressMeter
+from ..utils.helper import ProgressMeter
 
 
 class Runner(ABC):

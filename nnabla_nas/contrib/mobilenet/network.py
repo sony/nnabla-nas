@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 from ... import module as Mo
-from ...utils import load_parameters
+from ...utils.helper import load_parameters
 from ..model import Model
 from .modules import CANDIDATES, ChoiceBlock, ConvBNReLU
 from .helper import plot_mobilenet

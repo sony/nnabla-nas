@@ -8,7 +8,7 @@ import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 from nnabla.utils.profiler import GraphProfiler
 
-from nnabla_nas.contrib.profiler.helpers import uid, get_search_net, get_sampled_modules
+from nnabla_nas.utils.profiler.helpers import uid, get_search_net, get_sampled_modules
 
 from mako.template import Template
 
