@@ -75,6 +75,14 @@ nnabla\_nas.module.module module
    :undoc-members:
    :show-inheritance:
 
+nnabla\_nas.module.operation module
+-----------------------------------
+
+.. automodule:: nnabla_nas.module.operation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 nnabla\_nas.module.parameter module
 -----------------------------------
 

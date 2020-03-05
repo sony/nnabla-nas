@@ -11,19 +11,7 @@ Subpackages
    nnabla_nas.module
    nnabla_nas.optimizer
    nnabla_nas.runner
-   nnabla_nas.visualization
-
-Submodules
-----------
-
-nnabla\_nas.utils module
-------------------------
-
-.. automodule:: nnabla_nas.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
+   nnabla_nas.utils
 
 Module contents
 ---------------

@@ -7,10 +7,9 @@ Subpackages
 .. toctree::
 
    nnabla_nas.contrib.darts
-   nnabla_nas.contrib.estimator
-   nnabla_nas.contrib.mbn
-   nnabla_nas.contrib.mobilenetv2
+   nnabla_nas.contrib.mobilenet
    nnabla_nas.contrib.pnas
+   nnabla_nas.contrib.random_wired
    nnabla_nas.contrib.zoph
 
 Submodules
