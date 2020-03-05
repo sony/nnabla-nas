@@ -98,7 +98,7 @@ class Module(object):
                 module.apply(memo, **kargs)
         return self
 
-    def get_modules(self, prefix=None, memo=None):
+    def get_modules(self, prefix='', memo=None):
         r"""Returns an iterator over all modules in the network, yielding
         both the name of the module as well as the module itself.
 
@@ -111,8 +111,6 @@ class Module(object):
         Yields:
             (str, Module): a submodule.
         """
-        if prefix is None:
-            prefix = self.__class__.__name__
         if memo is None:
             memo = set()
         if self not in memo:
