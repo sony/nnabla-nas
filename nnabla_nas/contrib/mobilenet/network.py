@@ -8,6 +8,7 @@ from ...utils import load_parameters
 from ..model import Model
 from .modules import CANDIDATES, ChoiceBlock, ConvBNReLU
 from .helper import plot_mobilenet
+from ..darts.modules import MixedOp
 
 
 def _make_divisible(x, divisible_by=8):
@@ -25,8 +26,7 @@ class SearchNet(Model):
         num_classes (int): Number of classes
         width_mult (float, optional): Width multiplier - adjusts number of
             channels in each layer by this amount
-        settings (list, optional): Network structure.
-            Defaults to None.
+        settings (list, optional): Network structure. Defaults to None.
         drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.
         candidates (list of str, optional): A list of candicates. Defaults to
             None.
@@ -38,13 +38,6 @@ class SearchNet(Model):
         Mobilenetv2: Inverted residuals and linear bottlenecks. In Proceedings
         of the IEEE conference on computer vision and pattern recognition
         (pp. 4510-4520).
-    """
-    """[summary]
-    #  n_cell_stages=(4, 4, 4, 4, 4, 1),
-                #  width_stages=(24, 40, 80, 96, 192, 320),
-                #  stride_stages=(2, 2, 2, 1, 2, 1),
-    Returns:
-        [type]: [description]
     """
 
     def __init__(self,
@@ -202,8 +195,9 @@ class SearchNet(Model):
     def save_parameters(self, path=None, params=None, grad_only=False):
         super().save_parameters(path, params=params, grad_only=grad_only)
         # save the architectures
-        output_path = os.path.dirname(path)
-        plot_mobilenet(self, os.path.join(output_path, 'arch'))
+        if isinstance(self._features[2]._mixed, MixedOp):
+            output_path = os.path.dirname(path)
+            plot_mobilenet(self, os.path.join(output_path, 'arch'))
 
 
 class TrainNet(SearchNet):

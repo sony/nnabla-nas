@@ -10,23 +10,12 @@
     "network": {
         "search_space": "mobilenet",
         "num_classes": 1000,
-        "settings": [
-            [24, 2, 2],
-            [32, 3, 2],
-            [64, 4, 2],
-            [96, 3, 1],
-            [160, 3, 2],
-            [320, 1, 1]
-        ],
-        "candidates": [
-            "MB6 3x3"
-        ],
-        "mode": "max",
-        "skip_connect": false
+        "mode": "sample",
+        "genotype": "log/mobilenet/imagenet/songhan/search/arch.h5"
     },
     "optimizer": {
         "train": {
-            "grad_clip": 5,
+            "grad_clip": 5.0,
             "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
