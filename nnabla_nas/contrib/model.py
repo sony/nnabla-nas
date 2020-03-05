@@ -41,29 +41,3 @@ class Model(Mo.Module):
         r"""Returns a string summarizing the model."""
         return ''
 
-    def save_parameters(self, path, params=None, grad_only=False):
-        r"""Saves the parameters to a file.
-
-        Args:
-            path (str): Path to file.
-            params (OrderedDict, optional): An `OrderedDict` containing
-                parameters. If params is `None`, then the current parameters
-                will be saved.
-            grad_only (bool, optional): If need_grad=True is required for
-                parameters which will be saved. Defaults to False.
-        """
-        params = params or self.get_parameters(grad_only)
-        nn.save_parameters(path, params)
-
-    def load_parameters(self, path, raise_if_missing=False):
-        r"""Loads parameters from a file with the specified format.
-
-        Args:
-            path (str): The path to file.
-            raise_if_missing (bool, optional): Raise exception if some
-                parameters are missing. Defaults to `False`.
-        """
-        with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
-            params = nn.get_parameters(grad_only=False)
-        self.set_parameters(params, raise_if_missing=raise_if_missing)

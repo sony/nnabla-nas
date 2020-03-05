@@ -98,7 +98,7 @@ class Module(object):
                 module.apply(memo, **kargs)
         return self
 
-    def get_modules(self, prefix='', memo=None):
+    def get_modules(self, prefix=None, memo=None):
         r"""Returns an iterator over all modules in the network, yielding
         both the name of the module as well as the module itself.
 
@@ -111,6 +111,8 @@ class Module(object):
         Yields:
             (str, Module): a submodule.
         """
+        if prefix is None:
+            prefix = self.__class__.__name__
         if memo is None:
             memo = set()
         if self not in memo:
@@ -165,6 +167,33 @@ class Module(object):
                         '{this}. This error is raised because '
                         '`raise_if_missing` is specified '
                         'as True. Please turn off if you allow it.')
+    
+    def save_parameters(self, path, params=None, grad_only=False):
+        r"""Saves the parameters to a file.
+
+        Args:
+            path (str): Path to file.
+            params (OrderedDict, optional): An `OrderedDict` containing
+                parameters. If params is `None`, then the current parameters
+                will be saved.
+            grad_only (bool, optional): If need_grad=True is required for
+                parameters which will be saved. Defaults to False.
+        """
+        params = params or self.get_parameters(grad_only)
+        nn.save_parameters(path, params)
+
+    def load_parameters(self, path, raise_if_missing=False):
+        r"""Loads parameters from a file with the specified format.
+
+        Args:
+            path (str): The path to file.
+            raise_if_missing (bool, optional): Raise exception if some
+                parameters are missing. Defaults to `False`.
+        """
+        with nn.parameter_scope('', OrderedDict()):
+            nn.load_parameters(path)
+            params = nn.get_parameters(grad_only=False)
+        self.set_parameters(params, raise_if_missing=raise_if_missing)
 
     def extra_format(self):
         r"""Set the submodule representation format.
