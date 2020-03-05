@@ -1,7 +1,3 @@
-from collections import OrderedDict
-
-import nnabla as nn
-
 from .. import module as Mo
 
 
@@ -40,4 +36,3 @@ class Model(Mo.Module):
     def summary(self):
         r"""Returns a string summarizing the model."""
         return ''
-
