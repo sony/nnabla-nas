@@ -14,6 +14,9 @@ from .writer import FileWriter
 from .proto_graph import node_proto, tensor_shape_proto
 from collections import OrderedDict
 import numpy as np
+import nnabla as nn
+
+EXCLUDED_NODES = ['CONSTANT']
 
 
 def _get_unique_params(params):
@@ -38,9 +41,17 @@ class GraphVisitor(object):
     """
 
     def __init__(self, model, *args, **kargs):
+        # this will store the tensorboard name for each parameter.
+        self._tb_name = dict()
+        # wether the node was already constructed
+        self._visited = set()
+        # the current graph
+        self._graph = []
+        # counter for the node having same name
+        self._counter = defaultdict(int)
 
         # build the nnabla graph
-        model(*args, **kargs)
+        outputs = model(*args, **kargs)
 
         # get parameters
         params = model.get_parameters(grad_only=False)
@@ -48,16 +59,19 @@ class GraphVisitor(object):
 
         # define the scope for all known parameters
         prefix = type(model).__name__ + '/'
-        self._scope = {hash(p): (prefix + k) for k, p in params.items()}
+        self._scope = defaultdict(str, {hash(p): (prefix + k) for k, p in params.items()})
 
-        # this will store the tensorboard name for each parameter.
-        self._tb_name = dict()
+        for ni in args:
+            self._scope[hash(ni)] = 'Input'
 
-        # auxiliar
-        self._visited = set()
-        self._graph = []
+        if not isinstance(outputs, (tuple, list)):
+            outputs = [outputs]
 
-        self.counter = defaultdict(int)
+        # add connections to outputs
+        for no in outputs:
+            if isinstance(no, nn.Variable):
+                self._scope[hash(no)] = 'Output'
+                no.visit(self)
 
     def add_node(self, node):
         r"""Adds a new node to the graph."""
@@ -66,17 +80,15 @@ class GraphVisitor(object):
     def create_node(self, p):
         r"""Create a node given its parameter."""
         name = self.get_node_name(p)
-        if name in self._visited:
-            return
-        # add a new node to the graph
-        self.add_node(
-            node_proto(
-                name=name,
-                op='Variable',
-                output_shapes=[p.shape],
-                attributes=f'shape={p.shape}'
+        if (name not in self._visited) and (name not in EXCLUDED_NODES):
+            # add a new node to the graph
+            self.add_node(
+                node_proto(
+                    name=name, op='Variable',
+                    output_shapes=[p.shape],
+                    attributes=f'shape={p.shape}'
+                )
             )
-        )
 
     def get_scope_from(self, scopes):
         r"""Return the scope from list of scopes."""
@@ -87,21 +99,25 @@ class GraphVisitor(object):
     def get_node_name(self, p):
         r"""Return the node name according to tensorboard."""
         h = hash(p)
+
         if h not in self._scope:
-            self._scope[h] = 'Input'
+            return 'CONSTANT'
+
         scope = self._scope[h]
         if h not in self._tb_name:
             self._tb_name[h] = scope
-            if self.counter[scope]:
-                self._tb_name[h] += f'_{self.counter[scope]}'
-            self.counter[scope] += 1
+            if self._counter[scope]:
+                self._tb_name[h] += f'_{self._counter[scope]}'
+            self._counter[scope] += 1
         return self._tb_name[h]
 
     def __call__(self, f):
         inputs = []
         for ni in f.inputs:
             self.create_node(ni)
-            inputs.append(self.get_node_name(ni))
+            node_name = self.get_node_name(ni)
+            if node_name not in EXCLUDED_NODES:
+                inputs.append(node_name)
 
         # get function node
         self._scope[hash(f)] = self.get_scope_from(inputs)
@@ -112,6 +128,14 @@ class GraphVisitor(object):
         outputsize = []
         for no in f.outputs:
             ho = hash(no)
+            if self._scope[ho] == 'Output':
+                self.add_node(
+                    node_proto(
+                        name=self.get_node_name(no), op='Output',
+                        inputs=[name],
+                        attributes=f'shape={no.shape}'
+                    )
+                )
             self._scope[ho] = self._scope[hash(f)]
             self._tb_name[ho] = name
             outputsize.append(no.shape)

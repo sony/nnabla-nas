@@ -1,3 +1,4 @@
+from nnabla_nas.contrib.darts import SearchNet
 import shutil
 from collections import defaultdict
 import nnabla as nn
@@ -36,14 +37,11 @@ class BasicUnit(Module):
 class Block(Module):
     def __init__(self, shape=(3, 3)):
         self.unit0 = BasicUnit(shape=shape)
-        self.unit1 = BasicUnit(shape=shape)
-        self.unit2 = BasicUnit(shape=shape)
+        self.c = nn.Variable(shape)
 
     def call(self, input):
         out = self.unit0(input)
-        out = self.unit1(out)
-        out = self.unit2(out)
-        return out
+        return out + self.c
 
 
 class MyModule(Module):
@@ -51,7 +49,6 @@ class MyModule(Module):
         self.b = Block(shape)
         self.A = Parameter(shape)
         self.B = Parameter(shape)
-        self.C = Parameter(shape)
         self.shape = shape
 
     def call(self, input):
@@ -60,23 +57,34 @@ class MyModule(Module):
         return out
 
 
-#from nnabla_nas.contrib.darts import SearchNet
-#net = SearchNet(in_channels=3, init_channels=16, num_cells=3, num_classes=10)
+net = SearchNet(in_channels=3, init_channels=16, num_cells=3, num_classes=10)
 
 path = 'log/tensorboard'
 
 w = FileWriter(path)
 
-net = MyModule([5, 5])
-#x = nn.Variable([1, 3, 32, 32])
-x = nn.Variable([5, 5])
+#net = MyModule([5, 5])
+x = nn.Variable([1, 3, 32, 32])
+#x = nn.Variable([5, 5])
 
 
 # print(net)
 visitor = GraphVisitor(net, x)
 
-out = net(x)
-out.visit(visitor)
+
+# out_shapes = [(1, 2, 3), (4, 5, 6)]
+# shape = (4, 3, 4)
+
+# nodes = [
+#     node_proto(name='A',
+#                op='Constant',
+#                output_shapes=out_shapes,
+#                attributes=f'shape={shape}'),
+#     node_proto(name='B',
+#                op='Variable',
+#                inputs=['A'])
+# ]
+# g = GraphDef(node=nodes, versions=VersionDef(producer=22))
 
 
 g = GraphDef(node=visitor._graph, versions=VersionDef(producer=22))
@@ -87,16 +95,16 @@ w.add_event(event)
 w.close()
 
 
-#import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()
 
 
-#v1 = nn.Variable((1,))
-#v2 = nn.Variable((1,))
-#v3 = nn.Variable((1,))
+# v1 = nn.Variable((1,))
+# v2 = nn.Variable((1,))
+# v3 = nn.Variable((1,))
 
-#print(hash(v1), hash(v2), hash(v3))
+# print(hash(v1), hash(v2), hash(v3))
 
-#out = v1 + v2 + v3
+# out = v1 + v2 + v3
 
 
 # shape = (1, 3, 32, 32)
