@@ -1,4 +1,3 @@
-
 [![pipeline status](https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/badges/master/pipeline.svg)](https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/commits/master)
 [![coverage report](https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/badges/master/coverage.svg)](https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/commits/master)
 
@@ -171,7 +170,7 @@ There are two searcher algorithms implemented in NnablaNAS, including [`DartsSea
 
 ### Logging
 
-When running the architecture search, the evaluations in the sarch space are logged. We mantain a folder to keep track of the parameters, predictions (e.g., loss, error, number of parameters, and latency). Users can easily monitor the training curves with [`TensorboardX`](https://tensorboardx.readthedocs.io/en/latest/tutorial.html).
+When running the architecture search, the evaluations in the search space are logged. We maintain a folder to keep track of the parameters, predictions (e.g., loss, error, number of parameters, and latency). Users can easily monitor the training curves with [`TensorboardX`](https://tensorboardx.readthedocs.io/en/latest/tutorial.html).
 
 <img align="center" src="docs/sources/images/tensorboard.png" alt="drawing" width="700"/>
 
