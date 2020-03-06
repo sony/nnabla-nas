@@ -20,9 +20,9 @@ from tensorboard.compat.proto import event_pb2
 from nnabla_nas.utils.tensorboard.writer import FileWriter
 from nnabla_nas.utils.tensorboard.proto_graph import node_proto, tensor_shape_proto
 from nnabla_nas.utils.tensorboard.nnabla_graph import GraphVisitor
+from nnabla_nas.utils.tensorboard.writer import SummaryWriter
 
-# stepstats = RunMetadata(step_stats=StepStats(
-#     dev_stats=[DeviceStepStats(device="/device:CPU:0")]))
+from nnabla_nas.contrib.mobilenet import TrainNet
 
 
 class BasicUnit(Module):
@@ -49,27 +49,30 @@ class MyModule(Module):
         self.b = Block(shape)
         self.A = Parameter(shape)
         self.B = Parameter(shape)
+        self.C = Parameter(shape)
         self.shape = shape
 
-    def call(self, input):
+    def call(self, input, input1):
         out = self.b(input)
         out = out + self.A + self.B
-        return out
+        out1 = input + self.C + input1
+        return out, out1
 
 
-net = SearchNet(in_channels=3, init_channels=16, num_cells=3, num_classes=10)
+# net = SearchNet(in_channels=3, init_channels=16, num_cells=3, num_classes=10)
 
+net = TrainNet()
 path = 'log/tensorboard'
 
-w = FileWriter(path)
+# w = FileWriter(path)
+w = SummaryWriter(path)
 
 #net = MyModule([5, 5])
-x = nn.Variable([1, 3, 32, 32])
+x = nn.Variable([1, 3, 224, 224])
 #x = nn.Variable([5, 5])
-
+# y = nn.Variable([5, 5])
 
 # print(net)
-visitor = GraphVisitor(net, x)
 
 
 # out_shapes = [(1, 2, 3), (4, 5, 6)]
@@ -86,11 +89,17 @@ visitor = GraphVisitor(net, x)
 # ]
 # g = GraphDef(node=nodes, versions=VersionDef(producer=22))
 
+w.add_graph(net, x)
 
-g = GraphDef(node=visitor._graph, versions=VersionDef(producer=22))
+w.add_scalar('train_error', 127, 1)
+w.add_scalar('train_error', 172, 2)
+w.add_scalar('train_error', 142, 3)
+w.add_scalar('train_error', 112, 5)
 
-event = event_pb2.Event(graph_def=g.SerializeToString())
-w.add_event(event)
+# g = GraphDef(node=visitor._graph, versions=VersionDef(producer=22))
+
+# event = event_pb2.Event(graph_def=g.SerializeToString())
+# w.add_event(event)
 
 w.close()
 

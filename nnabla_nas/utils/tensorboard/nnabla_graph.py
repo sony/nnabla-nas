@@ -1,20 +1,9 @@
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 
-from tensorboard.compat.proto.config_pb2 import RunMetadata
-from tensorboard.compat.proto.graph_pb2 import GraphDef
-from tensorboard.compat.proto.step_stats_pb2 import StepStats, DeviceStepStats
-from tensorboard.compat.proto.versions_pb2 import VersionDef
-from tensorboard.compat.proto.node_def_pb2 import NodeDef
-from tensorboard.compat.proto.types_pb2 import DT_FLOAT
-from tensorboard.compat.proto.tensor_shape_pb2 import TensorShapeProto
-from tensorboard.compat.proto.attr_value_pb2 import AttrValue
-from tensorboard.compat.proto import event_pb2
-
-from .writer import FileWriter
-from .proto_graph import node_proto, tensor_shape_proto
-from collections import OrderedDict
-import numpy as np
 import nnabla as nn
+import numpy as np
+
+from .proto_graph import node_proto
 
 EXCLUDED_NODES = ['CONSTANT']
 
@@ -86,7 +75,7 @@ class GraphVisitor(object):
                 node_proto(
                     name=name, op='Variable',
                     output_shapes=[p.shape],
-                    attributes=f'shape={p.shape}'
+                    attributes=f'need_grad={p.need_grad}'
                 )
             )
 
@@ -133,7 +122,7 @@ class GraphVisitor(object):
                     node_proto(
                         name=self.get_node_name(no), op='Output',
                         inputs=[name],
-                        attributes=f'shape={no.shape}'
+                        attributes=f'need_grad={no.need_grad}'
                     )
                 )
             self._scope[ho] = self._scope[hash(f)]
