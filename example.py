@@ -1,25 +1,30 @@
-import torch
-from torch import nn
-import numpy as np
+import nnabla as nn
 
-from torch.utils.tensorboard import SummaryWriter
+import nnabla_nas.module as Mo
+from nnabla_nas.utils.tensorboard.writer import SummaryWriter
 
 
-class MyModel(nn.Module):
+class MyModel(Mo.Module):
     def __init__(self):
-        super().__init__()
-        self.conv = nn.Conv2d(3, 3, 3, 1)
-        self.feat = nn.Linear(900, 1)
+        self.conv = Mo.Conv(3, 5, (3, 3), (1, 1))
+        self.bn = Mo.BatchNormalization(5, 4)
+        self.classifier = Mo.Sequential(
+            Mo.ReLU(),
+            Mo.GlobalAvgPool(),
+            Mo.Linear(5, 10)
+        )
 
-    def forward(self, x):
-        x = self.conv(x)
-        return self.feat(x.view(3, -1))
+    def call(self, input):
+        out = self.conv(input)
+        out = self.bn(out)
+        out = self.classifier(out)
+        return out
 
 
-net = MyModel()
-x = torch.tensor(np.random.randn(1, 3, 32, 32)).float()
+model = MyModel()
+inputs = nn.Variable([1, 3, 32, 32])
 
-s = SummaryWriter('torch')
-s.add_graph(net, x)
+writer = SummaryWriter('log/tensorboard')
 
-s.close()
+writer.add_graph(model, inputs)
+writer.close()

@@ -8,7 +8,7 @@ import nnabla as nn
 import nnabla.functions as F
 from nnabla.ext_utils import get_extension_context
 import numpy as np
-from tensorboardX import SummaryWriter
+from .tensorboard import SummaryWriter
 from nnabla import random
 
 from ..dataset.transforms import Cutout
