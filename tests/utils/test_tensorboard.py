@@ -1,6 +1,3 @@
-from nnabla_nas.contrib.darts import SearchNet
-#from nnabla_nas.contrib.mobilenet import SearchNet
-
 import nnabla as nn
 
 import nnabla_nas.module as Mo
@@ -24,13 +21,11 @@ class MyModel(Mo.Module):
         return out
 
 
-model = MyModel()
-model = SearchNet(3, 16, 18, 10)
-#model = SearchNet()
+def test_graph():
+    model = MyModel()
+    inputs = nn.Variable([1, 3, 32, 32])
+    writer = SummaryWriter('__nnabla_nas__/tensorboard')
+    writer.add_graph(model, inputs)
+    writer.add_scalar('accuracy', 1.0)
 
-inputs = nn.Variable([1, 3, 32, 32])
-
-writer = SummaryWriter('log/tensorboard')
-
-writer.add_graph(model, inputs)
-writer.close()
+    writer.close()

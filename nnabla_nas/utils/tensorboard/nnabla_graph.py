@@ -77,7 +77,7 @@ class GraphVisitor(object):
                 node_proto(
                     name=name, op='Variable',
                     output_shapes=[p.shape],
-                    attributes=f'need_grad={p.need_grad}'
+                    need_grad=p.need_grad
                 )
             )
 
@@ -132,7 +132,7 @@ class GraphVisitor(object):
                     node_proto(
                         name=self._get_node_name(no), op='Output',
                         inputs=[name],
-                        attributes=f'need_grad={no.need_grad}'
+                        need_grad=no.need_grad
                     )
                 )
             self._scope[ho] = self._scope[hash(f)]
@@ -146,6 +146,8 @@ class GraphVisitor(object):
                 name=name,
                 op=str(f),
                 inputs=inputs if len(inputs) > 0 else None,
-                output_shapes=outputsize
+                output_shapes=outputsize,
+                need_grad=f.need_grad,
+                info=f.info.args
             )
         )

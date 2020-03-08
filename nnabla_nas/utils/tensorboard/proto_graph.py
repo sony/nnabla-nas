@@ -15,7 +15,8 @@ def tensor_shape_proto(shape):
     return TensorShapeProto(dim=[TensorShapeProto.Dim(size=d) for d in shape])
 
 
-def node_proto(name, op='UnSpecified', inputs=None, output_shapes=None, attributes=None):
+def node_proto(name, op='UnSpecified', inputs=None, output_shapes=None,
+               attributes=None, need_grad=None, info=None):
     """Converts a node to `proto`.
 
     Args:
@@ -39,6 +40,18 @@ def node_proto(name, op='UnSpecified', inputs=None, output_shapes=None, attribut
 
     if attributes:
         attr['attr'] = AttrValue(s=attributes.encode(encoding='utf_8'))
+
+    if need_grad:
+        attr['need_grad'] = AttrValue(b=need_grad)
+
+    info = info or {}
+    for k, v in info.items():
+        if type(v) == str:
+            attr[k] = AttrValue(s=v)
+        if type(v) == int:
+            attr[k] = AttrValue(i=v)
+        if type(v) == float:
+            attr[k] = AttrValue(f=v)
 
     proto = NodeDef(
         name=name.encode(encoding='utf_8'),
