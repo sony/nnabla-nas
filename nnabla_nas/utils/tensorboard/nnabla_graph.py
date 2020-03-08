@@ -38,6 +38,7 @@ class GraphVisitor(object):
         self._graph = []
         # counter for the node having same name
         self._counter = defaultdict(int)
+        self._on_flow = defaultdict(bool)
 
         # build the nnabla graph
         outputs = model(*args, **kargs)
@@ -52,6 +53,7 @@ class GraphVisitor(object):
 
         for ni in args:
             self._scope[hash(ni)] = 'Input'
+            self._on_flow['Input'] = True
 
         if not isinstance(outputs, (tuple, list)):
             outputs = [outputs]
@@ -80,10 +82,17 @@ class GraphVisitor(object):
             )
 
     def get_scope_from(self, scopes):
-        r"""Return the scope from list of scopes."""
-        idx = np.argmax([len(s.split('/')) for s in scopes])
-        scope = '/'.join(scopes[idx].split('/')[:-1])
-        return scope
+        r"""Return the scope from a list of scopes."""
+        if np.all([self._on_flow[s] for s in scopes]):
+            return '/'.join(scopes[0].split('/')[:-1])
+        # get scopes for each name
+        scopes = [s.split('/')[:-1] for s in scopes if not self._on_flow[s]]
+        n, m = np.min([len(s) for s in scopes]), len(scopes)
+        inequal = [np.any([scopes[0][l] != scopes[i][l] for i in range(m)])
+                   for l in range(n)]
+        idx = np.argwhere(inequal)
+        idx = idx.flatten()[0] if len(idx) else m
+        return '/'.join(scopes[0][:idx])
 
     def get_node_name(self, p):
         r"""Return the node name according to tensorboard."""
@@ -109,9 +118,11 @@ class GraphVisitor(object):
                 inputs.append(node_name)
 
         # get function node
+        print('Calculate for function', f, hash(f))
         self._scope[hash(f)] = self.get_scope_from(inputs)
         self._scope[hash(f)] += ('/' if self._scope[hash(f)] else '') + str(f)
         name = self.get_node_name(f)
+        print('final', name)
 
         # make sure all outputs refer to the same function node
         outputsize = []
@@ -127,6 +138,7 @@ class GraphVisitor(object):
                 )
             self._scope[ho] = self._scope[hash(f)]
             self._tb_name[ho] = name
+            self._on_flow[name] = True
             outputsize.append(no.shape)
 
         # add the function node

@@ -40,9 +40,10 @@ class FileWriter(object):
 
         Args:
             event: An `Event` protocol buffer.
-            step (int, optional): Optional global step value for training process to record with the event.
-            walltime: float. Optional walltime to override the default (current) walltime (from time.time()) seconds
-                after epoch.
+            step (int, optional): Optional global step value for training process to record with the
+                event.
+            walltime: float. Optional walltime to override the default (current) walltime
+                (from time.time()) seconds after epoch.
         """
         event.wall_time = time.time() if walltime is None else walltime
         if step is not None:
@@ -54,9 +55,10 @@ class FileWriter(object):
 
         Args:
             summary: A `Summary` protocol buffer.
-            global_step (int, optional): Optional global step value for training process to record with the summary.
-            walltime (float, optional): Optional walltime to override the default (current) walltime (from time.time())
-                seconds after epoch.
+            global_step (int, optional): Optional global step value for training process to record
+                with the summary.
+            walltime (float, optional): Optional walltime to override the default (current) walltime
+                (from time.time()) seconds after epoch.
         """
         event = event_pb2.Event(summary=summary)
         self.add_event(event, global_step, walltime)
@@ -66,14 +68,12 @@ class FileWriter(object):
 
         Args:
             graph_profile: A `Graph` and step stats protocol buffer.
-            walltime (float, optional): Optional walltime to override the default (current) walltime (from time.time())
-                seconds after epoch.
+            walltime (float, optional): Optional walltime to override the default (current) walltime
+                (from time.time()) seconds after epoch.
         """
         graph = graph_profile[0]
         stepstats = graph_profile[1]
         event = event_pb2.Event(graph_def=graph.SerializeToString())
-        # import pdb
-        # pdb.set_trace()
         self.add_event(event, None, walltime)
 
         trm = event_pb2.TaggedRunMetadata(

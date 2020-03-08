@@ -1,3 +1,4 @@
+from nnabla_nas.contrib.darts import SearchNet
 import nnabla as nn
 
 import nnabla_nas.module as Mo
@@ -22,6 +23,8 @@ class MyModel(Mo.Module):
 
 
 model = MyModel()
+#model = SearchNet(3, 16, 3, 10)
+
 inputs = nn.Variable([1, 3, 32, 32])
 
 writer = SummaryWriter('log/tensorboard')
