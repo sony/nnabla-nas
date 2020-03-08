@@ -16,7 +16,7 @@ def tensor_shape_proto(shape):
 
 
 def node_proto(name, op='UnSpecified', inputs=None, output_shapes=None,
-               attributes=None, need_grad=None, info=None):
+               need_grad=None, info=None):
     """Converts a node to `proto`.
 
     Args:
@@ -24,40 +24,44 @@ def node_proto(name, op='UnSpecified', inputs=None, output_shapes=None,
         op (str, optional): Name of the operator. Defaults to 'UnSpecified'.
         inputs (list of str, optional): A list of inputs. Defaults to None.
         output_shapes (list, optional): A list of tuple of integers containing the output shapes. Defaults to None.
-        attributes (str, optional): A description of attributes. Defaults to None.
 
     Returns:
         proto: A node with `proto` format.
     """
     inputs = inputs or []
-    attr = {}
-    if output_shapes:
-        attr['_output_shapes'] = AttrValue(
+    attributes = dict()
+    if output_shapes is not None:
+        attributes['_output_shapes'] = AttrValue(
             list=AttrValue.ListValue(
                 shape=[tensor_shape_proto(o) for o in output_shapes]
             )
         )
 
-    if attributes:
-        attr['attr'] = AttrValue(s=attributes.encode(encoding='utf_8'))
+    if need_grad is not None:
+        attributes['need_grad'] = AttrValue(b=need_grad)
 
-    if need_grad:
-        attr['need_grad'] = AttrValue(b=need_grad)
-
-    info = info or {}
-    for k, v in info.items():
-        if type(v) == str:
-            attr[k] = AttrValue(s=v)
-        if type(v) == int:
-            attr[k] = AttrValue(i=v)
-        if type(v) == float:
-            attr[k] = AttrValue(f=v)
+    if info is not None:
+        for k, v in info.items():
+            if type(v) == bool:
+                value = AttrValue(b=v)
+            elif type(v) == int:
+                value = AttrValue(i=v)
+            elif type(v) == float:
+                value = AttrValue(f=v)
+            elif type(v) == str:
+                value = AttrValue(s=v)
+            elif type(v) == list:
+                if len(v) == 0 or type(v[0]) == int:
+                    value = AttrValue(list=AttrValue.ListValue(i=v))
+                else:
+                    value = AttrValue(list=AttrValue.ListValue(f=v))
+            else:
+                continue
+            attributes[k] = value
 
     proto = NodeDef(
-        name=name.encode(encoding='utf_8'),
-        op=op,
-        input=inputs,
-        attr=attr
+        name=name.encode(encoding='utf_8'), op=op,
+        input=inputs, attr=attributes
     )
 
     return proto

@@ -72,6 +72,7 @@ class GraphVisitor(object):
         r"""Create a node given its parameter."""
         name = self._get_node_name(p)
         if (name not in self._visited) and (name not in EXCLUDED_NODES):
+            self._visited.add(name)
             # add a new node to the graph
             self._add_node(
                 node_proto(
@@ -128,6 +129,7 @@ class GraphVisitor(object):
         for no in f.outputs:
             ho = hash(no)
             if self._scope[ho] == 'Output':
+                self._visited.add(self._get_node_name(no))
                 self._add_node(
                     node_proto(
                         name=self._get_node_name(no), op='Output',
@@ -135,16 +137,17 @@ class GraphVisitor(object):
                         need_grad=no.need_grad
                     )
                 )
+
             self._scope[ho] = self._scope[hash(f)]
             self._tb_name[ho] = name
             self._on_flow[name] = True
             outputsize.append(no.shape)
 
         # add the function node
+        self._visited.add(name)
         self._add_node(
             node_proto(
-                name=name,
-                op=str(f),
+                name=name, op=str(f),
                 inputs=inputs if len(inputs) > 0 else None,
                 output_shapes=outputsize,
                 need_grad=f.need_grad,

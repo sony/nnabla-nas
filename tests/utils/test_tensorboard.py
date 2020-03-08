@@ -1,7 +1,7 @@
 import nnabla as nn
 
 import nnabla_nas.module as Mo
-from nnabla_nas.utils.tensorboard.writer import SummaryWriter
+from nnabla_nas.utils.tensorboard import SummaryWriter
 
 
 class MyModel(Mo.Module):
