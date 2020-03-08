@@ -64,16 +64,16 @@ class GraphVisitor(object):
                 self._scope[hash(no)] = 'Output'
                 no.visit(self)
 
-    def add_node(self, node):
+    def _add_node(self, node):
         r"""Adds a new node to the graph."""
         self._graph.append(node)
 
-    def create_node(self, p):
+    def _create_node(self, p):
         r"""Create a node given its parameter."""
-        name = self.get_node_name(p)
+        name = self._get_node_name(p)
         if (name not in self._visited) and (name not in EXCLUDED_NODES):
             # add a new node to the graph
-            self.add_node(
+            self._add_node(
                 node_proto(
                     name=name, op='Variable',
                     output_shapes=[p.shape],
@@ -81,20 +81,21 @@ class GraphVisitor(object):
                 )
             )
 
-    def get_scope_from(self, scopes):
+    def _get_scope_from(self, scopes):
         r"""Return the scope from a list of scopes."""
         if np.all([self._on_flow[s] for s in scopes]):
             return '/'.join(scopes[0].split('/')[:-1])
-        # get scopes for each name
         scopes = [s.split('/')[:-1] for s in scopes if not self._on_flow[s]]
-        n, m = np.min([len(s) for s in scopes]), len(scopes)
-        inequal = [np.any([scopes[0][l] != scopes[i][l] for i in range(m)])
-                   for l in range(n)]
-        idx = np.argwhere(inequal)
-        idx = idx.flatten()[0] if len(idx) else m
-        return '/'.join(scopes[0][:idx])
+        # find lowest common ancestors
+        n = np.min([len(s) for s in scopes])
+        scope = []
+        for l in range(n):
+            if np.any([scopes[0][l] != scopes[i][l] for i in range(len(scopes))]):
+                break
+            scope.append(scopes[0][l])
+        return '/'.join(scope)
 
-    def get_node_name(self, p):
+    def _get_node_name(self, p):
         r"""Return the node name according to tensorboard."""
         h = hash(p)
 
@@ -112,26 +113,24 @@ class GraphVisitor(object):
     def __call__(self, f):
         inputs = []
         for ni in f.inputs:
-            self.create_node(ni)
-            node_name = self.get_node_name(ni)
+            self._create_node(ni)
+            node_name = self._get_node_name(ni)
             if node_name not in EXCLUDED_NODES:
                 inputs.append(node_name)
 
         # get function node
-        print('Calculate for function', f, hash(f))
-        self._scope[hash(f)] = self.get_scope_from(inputs)
+        self._scope[hash(f)] = self._get_scope_from(inputs)
         self._scope[hash(f)] += ('/' if self._scope[hash(f)] else '') + str(f)
-        name = self.get_node_name(f)
-        print('final', name)
+        name = self._get_node_name(f)
 
         # make sure all outputs refer to the same function node
         outputsize = []
         for no in f.outputs:
             ho = hash(no)
             if self._scope[ho] == 'Output':
-                self.add_node(
+                self._add_node(
                     node_proto(
-                        name=self.get_node_name(no), op='Output',
+                        name=self._get_node_name(no), op='Output',
                         inputs=[name],
                         attributes=f'need_grad={no.need_grad}'
                     )
@@ -142,7 +141,7 @@ class GraphVisitor(object):
             outputsize.append(no.shape)
 
         # add the function node
-        self.add_node(
+        self._add_node(
             node_proto(
                 name=name,
                 op=str(f),
