@@ -8,6 +8,7 @@ Subpackages
 
    nnabla_nas.utils.estimator
    nnabla_nas.utils.profiler
+   nnabla_nas.utils.tensorboard
 
 Submodules
 ----------
