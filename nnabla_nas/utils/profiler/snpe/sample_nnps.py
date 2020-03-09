@@ -7,8 +7,8 @@ from collections import defaultdict
 
 import nnabla as nn
 
-from nnabla_nas.contrib.profiler.helpers import create_parameters, nnp_save, get_search_net
-from nnabla_nas.contrib.profiler.helpers import uid, get_sampled_modules
+from nnabla_nas.utils.profiler.helpers import create_parameters, nnp_save, get_search_net
+from nnabla_nas.utils.profiler.helpers import uid, get_sampled_modules
 
 
 def main(args):

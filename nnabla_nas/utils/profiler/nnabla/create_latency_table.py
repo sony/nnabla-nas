@@ -8,7 +8,7 @@ import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 from nnabla.utils.profiler import GraphProfiler
 
-from nnabla_nas.contrib.profiler.helpers import get_unique_modules, get_search_net
+from nnabla_nas.utils.profiler.helpers import get_unique_modules, get_search_net
 
 
 def main(args):
