@@ -5,7 +5,7 @@ from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
 from nnabla import random
 from ... import module as Mo
-from ... import utils as ut
+from ...utils import helper
 
 CANDIDATES = OrderedDict([
     ('dil_conv_3x3', lambda c, s: DDSConv(c, c, (3, 3), (2, 2), (s, s))),
@@ -267,7 +267,7 @@ class MixedOp(Mo.Module):
     def _update_active_index(self):
         """Update index of the active operation."""
         probs = softmax(self._alpha.d, axis=0)
-        self._active = ut.sample(
+        self._active = helper.sample(
             pvals=probs.flatten(),
             mode=self._mode,
             rng=self._rng

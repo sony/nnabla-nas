@@ -7,8 +7,8 @@ import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
 
 from nnabla_nas import dataset
-from nnabla_nas import utils as ut
-from nnabla_nas.contrib import estimator as EST
+from nnabla_nas.utils import helper
+from nnabla_nas.utils import estimator as EST
 from nnabla_nas.dataset import DataLoader, transforms
 from nnabla_nas.optimizer import Optimizer
 
@@ -106,7 +106,7 @@ class Configuration(object):
         file = os.path.join(conf['output_path'], 'config.json')
         if self.conf['comm'].rank == 0:
             logger.info(f'Saving the configurations to {file}')
-            ut.write_to_json_file(conf, file)
+            helper.write_to_json_file(conf, file)
 
         return options
 
@@ -251,7 +251,7 @@ class DataloaderParser(OptionParser):
             data_train = dataset.__dict__[opts.dataset](opts.mbs_train, True)
             data_valid = dataset.__dict__[opts.dataset](opts.mbs_valid, False)
 
-        train_transform, valid_transform = ut.dataset_transformer(conf)
+        train_transform, valid_transform = helper.dataset_transformer(conf)
 
         return {
             'train': DataLoader(data_train, train_transform),

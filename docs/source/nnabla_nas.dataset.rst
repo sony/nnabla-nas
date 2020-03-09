@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
 
    nnabla_nas.dataset.cifar10
+   nnabla_nas.dataset.imagenet
 
 Submodules
 ----------

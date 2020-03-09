@@ -4,7 +4,7 @@ import nnabla as nn
 import numpy as np
 from tqdm import trange
 
-from ... import utils as ut
+from ...utils import helper
 from ..runner import Runner
 
 
@@ -25,9 +25,9 @@ class Trainer(Runner):
         self.err = nn.NdArray.from_numpy_array(np.zeros((1,)))
 
         # calculate the model size
-        model_size = ut.count_parameters(params)
+        model_size = helper.count_parameters(params)
         if hasattr(self.model, '_auxiliary_head'):
-            model_size -= ut.count_parameters(
+            model_size -= helper.count_parameters(
                 self.model._auxiliary_head.get_parameters(grad_only=True))
         self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
 

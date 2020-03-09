@@ -9,7 +9,7 @@ import nnabla as nn
 def test_get_search_net_on_config_file(search_net_config, mode):
     """Execution test
     """
-    from nnabla_nas.contrib.profiler.helpers import get_search_net
+    from nnabla_nas.utils.profiler.helpers import get_search_net
 
     # SearchNet
     with open(search_net_config) as fp:

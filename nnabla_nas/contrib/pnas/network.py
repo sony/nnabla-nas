@@ -1,7 +1,7 @@
 import numpy as np
 
 from ... import module as Mo
-from ...utils import load_parameters
+from ...utils.helper import load_parameters
 from ..darts import modules as darts
 from ..misc import AuxiliaryHeadCIFAR
 from ..model import Model

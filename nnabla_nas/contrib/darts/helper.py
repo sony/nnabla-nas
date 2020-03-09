@@ -7,7 +7,7 @@ from graphviz import Digraph
 from nnabla.logger import logger
 from scipy.special import softmax
 
-from ...utils import write_to_json_file
+from ...utils.helper import write_to_json_file
 from .modules import CANDIDATES
 
 
