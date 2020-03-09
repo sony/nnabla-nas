@@ -4,7 +4,7 @@ mypy
 pytest
 pytest-cov
 h5py
-tensorboardX
+tensorboard
 tqdm
 graphviz
 sklearn
