@@ -7,7 +7,7 @@ import json
 import nnabla as nn
 
 
-from nnabla_nas.contrib.profiler.helpers import (create_parameters, nnp_save,
+from nnabla_nas.utils.profiler.helpers import (create_parameters, nnp_save,
                                                  get_unique_modules, get_search_net)
 
 
