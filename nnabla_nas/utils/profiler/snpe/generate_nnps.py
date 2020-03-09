@@ -8,7 +8,7 @@ import nnabla as nn
 
 
 from nnabla_nas.utils.profiler.helpers import (create_parameters, nnp_save,
-                                                 get_unique_modules, get_search_net)
+                                               get_unique_modules, get_search_net)
 
 
 def main(args):
