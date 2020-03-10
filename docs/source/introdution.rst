@@ -2,7 +2,7 @@
 Introduction
 ============
 
-The success of deep learning is due to its automation of the feature engineering process. This sucess has been shown in many tasks, including s image recognition, speech recognition, and machine translation. By increasing more complex neural architectures, we can further increase the performance of deep learning models [`Elsken2018`_]. However, most of the neural architectures are desinged manually, making it unscalable in new domains. A promissing direction in automating machine learning is automating architecture engineering, the so-called *neural network architecture search*. Neural network architecture search is closely related to `hyperparameter optimization <https://en.wikipedia.org/wiki/Hyperparameter_optimization>` and is a subfield of `automated machine learning <https://en.wikipedia.org/wiki/Automated_machine_learning>` (AutoML). **NNablaNAS** is a framework for architecture search in computer vision domain. The main aim is to provide a modular, easy, and extendible toolbox for deep learning practioners. In this section, an overview of neural architecture search is introduced.
+The success of deep learning is due to its automation of the feature engineering process. This sucess has been shown in many tasks, including s image recognition, speech recognition, and machine translation. By increasing more complex neural architectures, we can further increase the performance of deep learning models [Elsken2018]_. However, most of the neural architectures are desinged manually, making it unscalable in new domains. A promissing direction in automating machine learning is automating architecture engineering, the so-called *neural network architecture search*. Neural network architecture search is closely related to `hyperparameter optimization <https://en.wikipedia.org/wiki/Hyperparameter_optimization>`_ and is a subfield of `automated machine learning <https://en.wikipedia.org/wiki/Automated_machine_learning>`_ (AutoML). **NNablaNAS** is a framework for architecture search in computer vision domain. The main aim is to provide a modular, easy, and extendible toolbox for deep learning practioners. In this section, an overview of neural architecture search is introduced.
 
 
 .. toctree::
@@ -21,7 +21,7 @@ What is neural architecture search?
 where :math:`\mathcal{L}_{\text{train}}` and :math:`\mathcal{L}_{\text{val}}` denote the training and validation loss function, respectively.
 
 
-The design of modern neural network architectures is driven by multiple different objectives [`liu2018`_]:
+The design of modern neural network architectures is driven by multiple different objectives [liu2018]_:
 
 * The neural network should have a reasonably high capacity, i.e., the the family of transfer functions contains arbitrary complex functions which can capture lots of information from training data. 
 
@@ -35,7 +35,7 @@ The design of a good nueral architecture corresponds to find a good balance  bet
     :align: center
 
 
-Fig 1. An overview of neural architecture search. (Image source: [`Elsken2018`_])
+Fig 1. An overview of neural architecture search. (Image source: [Elsken2018]_)
 
 The main components of NAS include:
 
@@ -49,14 +49,14 @@ The main components of NAS include:
 Agorithms in NAS
 ----------------
 
-ProxylessNAS [`Cai2018`_]
+ProxylessNAS [Cai2018]_
 
 .. math::
 
     \max_{\alpha} &\quad \mathbb{E}_{z \sim p_{\alpha}(z)} \big[\text{score}(z, \Phi^{*})\big] \\
     \text{s.t.} & \quad \Phi^{*} = \underset{\Phi}{\arg \min} \quad \text{loss}(z, \Phi)
 
-DARTS [`liu2018`_]
+DARTS [liu2018]_
 
 
 Code structure

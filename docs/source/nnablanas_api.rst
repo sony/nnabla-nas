@@ -1,5 +1,8 @@
+
 API Documentation
 =================
+
+.. _modules:
 
 nnabla_nas.module
 -----------------
@@ -108,6 +111,13 @@ Zero
    :undoc-members:
    :show-inheritance:
 
+MixedOp
+.........
+
+.. automodule:: nnabla_nas.module.mixedop
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 
 

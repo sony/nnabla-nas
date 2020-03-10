@@ -7,6 +7,7 @@ Run the following code snippet for a local installation:
     
     git clone git@gitlab.stc.eu.sony.com:bacnguyencong/nnabla_nas.git
     cd nnabla_nas
+    pip install -r requirements.txt
 
 
 To build documentation in various formats, you will need `Sphinx <http://www.sphinx-doc.org>`_ and the readthedocs theme.
