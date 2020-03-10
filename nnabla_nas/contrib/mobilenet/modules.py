@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 from ... import module as Mo
-from ..darts.modules import MixedOp
 
 CANDIDATES = OrderedDict([
     ('MB1 3x3',
@@ -141,7 +140,7 @@ class ChoiceBlock(Mo.Module):
         self._stride = stride
         self._mode = mode
 
-        self._mixed = MixedOp(
+        self._mixed = Mo.MixedOp(
             operators=[CANDIDATES[k](in_channels, out_channels, stride)
                        for k in ops],
             mode=mode

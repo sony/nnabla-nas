@@ -18,6 +18,7 @@ from .relu import ReLU
 from .relu import ReLU6
 from .zero import Zero
 from .operation import Lambda
+from .mixedop import MixedOp
 
 __all__ = [
     'Parameter',
@@ -40,5 +41,6 @@ __all__ = [
     'ReLU6',
     'LeakyReLU',
     'Dropout',
-    'Lambda'
+    'Lambda',
+    'MixedOp'
 ]
