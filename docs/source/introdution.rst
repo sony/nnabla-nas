@@ -49,15 +49,18 @@ The main components of NAS include:
 Agorithms in NAS
 ----------------
 
+ProxylessNAS [`Cai2018`_]
 
 .. math::
 
     \max_{\alpha} &\quad \mathbb{E}_{z \sim p_{\alpha}(z)} \big[\text{score}(z, \Phi^{*})\big] \\
     \text{s.t.} & \quad \Phi^{*} = \underset{\Phi}{\arg \min} \quad \text{loss}(z, \Phi)
 
+DARTS [`liu2018`_]
 
-[`liu2018`_]
 
+Code structure
+--------------
 
 
 .. rubric:: References
@@ -65,4 +68,6 @@ Agorithms in NAS
 .. [liu2018] Liu, Hanxiao, Karen Simonyan, and Yiming Yang. "Darts: Differentiable architecture search." arXiv preprint arXiv:1806.09055 (2018).
 
 .. [Elsken2018] Elsken, Thomas, Jan Hendrik Metzen, and Frank Hutter. "Neural architecture search: A survey." arXiv preprint arXiv:1808.05377 (2018).
+
+.. [Cai2018] Cai, Han, Ligeng Zhu, and Song Han. "Proxylessnas: Direct neural architecture search on target task and hardware." arXiv preprint arXiv:1812.00332 (2018).
 
