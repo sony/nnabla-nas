@@ -1,9 +1,0 @@
-Framework Features
-==================
-
-Module
-------
-
-Visualization
--------------
-

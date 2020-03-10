@@ -23,7 +23,7 @@ Overview
 
    introdution
    installation
-   structure
+   features
    
    contributing
 

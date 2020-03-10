@@ -1,28 +1,41 @@
-import nnabla as nn
+from collections import OrderedDict
+
 from nnabla_nas import module as Mo
+from nnabla_nas.contrib.model import Model
 
 
-class Net(Mo.Module):
-
+class MyModel(Model):
     def __init__(self):
-        self.fc = Mo.Linear(10, 5)
-
-    self.parameters = Mo.ParameterList([
-        Mo.Parameter((1, 2)),
-        Mo.Parameter((1, 2))
-    ])
-
-    self.modules = Mo.ModuleList([
-        Mo.Conv(3, 3, (3, 3)),
-        Mo.Conv(3, 5, (3, 3)),
-    ])
+        self._block = Mo.MixedOp(
+            operators=[
+                Mo.Conv(in_channels=3, out_channels=3, kernel=(3, 3), pad=(1, 1)),
+                Mo.MaxPool(kernel=(3, 3), stride=(1, 1), pad=(1, 1)),
+                Mo.Identity()
+            ],
+            mode='full'
+        )
+        self._classifier = Mo.Sequential(
+            Mo.ReLU(),
+            Mo.GlobalAvgPool(),
+            Mo.Linear(3, 10)
+        )
 
     def call(self, input):
-        return self.fc(input) * self.coef
+        out = self._block(input)
+        out = self._classifier(out)
+        return out
+
+    def get_arch_parameters(self, grad_only=False):
+        r"""Returns an `OrderedDict` containing architecture parameters."""
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
+
+    def get_net_parameters(self, grad_only=False):
+        r"""Returns an `OrderedDict` containing model parameters."""
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' not in k])
 
 
-x = nn.Variable((1, 10))
-net = Net()
-
-print(net)
-print(net(x))
+if __name__ == '__main__':
+    net = MyModel()
+    print(net)
