@@ -65,13 +65,12 @@ We construct a search space by relaxing the layer that the network can have. Our
 from collections import OrderedDict
 
 from nnabla_nas import module as Mo
-from nnabla_nas.contrib.darts.modules import MixedOp
 from nnabla_nas.contrib.model import Model
 
 
 class MyModel(Model):
     def __init__(self):
-        self._block = MixedOp(
+        self._block = Mo.MixedOp(
             operators=[
                 Mo.Conv(in_channels=3, out_channels=3, kernel=(3, 3), pad=(1, 1)),
                 Mo.MaxPool(kernel=(3, 3), stride=(1, 1), pad=(1, 1)),

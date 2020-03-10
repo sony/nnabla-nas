@@ -8,7 +8,6 @@ from ...utils.helper import load_parameters
 from ..model import Model
 from .modules import CANDIDATES, ChoiceBlock, ConvBNReLU
 from .helper import plot_mobilenet
-from ..darts.modules import MixedOp
 
 
 def _make_divisible(x, divisible_by=8):
@@ -195,7 +194,7 @@ class SearchNet(Model):
     def save_parameters(self, path=None, params=None, grad_only=False):
         super().save_parameters(path, params=params, grad_only=grad_only)
         # save the architectures
-        if isinstance(self._features[2]._mixed, MixedOp):
+        if isinstance(self._features[2]._mixed, Mo.MixedOp):
             output_path = os.path.dirname(path)
             plot_mobilenet(self, os.path.join(output_path, 'arch'))
 
