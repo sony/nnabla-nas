@@ -1,5 +1,6 @@
 report.ipynb
 # main.py
+docs/source/_build/
 log/
 __nnabla_nas__/
 docs/build
