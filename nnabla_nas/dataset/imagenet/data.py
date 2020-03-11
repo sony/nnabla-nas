@@ -10,7 +10,7 @@ _pixel_std = [255 * x for x in (0.229, 0.224, 0.225)]
 class TrainPipeline(Pipeline):
     def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
                  nvjpeg_padding, prefetch_queue=3, seed=1, num_shards=1,
-                 channel_last=True, dtype="half"):
+                 channel_last=True, dtype="half", pad_output=False):
         super(TrainPipeline, self).__init__(
             batch_size, num_threads, shard_id, seed=seed,
             prefetch_queue_depth=prefetch_queue)
@@ -32,7 +32,7 @@ class TrainPipeline(Pipeline):
                                             image_type=types.RGB,
                                             mean=_pixel_mean,
                                             std=_pixel_std,
-                                            pad_output=False)
+                                            pad_output=pad_output)
         self.coin = ops.CoinFlip(probability=0.5)
 
     def define_graph(self):
@@ -46,7 +46,7 @@ class TrainPipeline(Pipeline):
 class ValPipeline(Pipeline):
     def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
                  nvjpeg_padding, seed=1, num_shards=1, channel_last=True,
-                 dtype='half'):
+                 dtype='half', pad_output=False):
         super(ValPipeline, self).__init__(
             batch_size, num_threads, shard_id, seed=seed)
         self.input = ops.FileReader(file_root=image_dir, file_list=file_list,
@@ -65,7 +65,7 @@ class ValPipeline(Pipeline):
                                             image_type=types.RGB,
                                             mean=_pixel_mean,
                                             std=_pixel_std,
-                                            pad_output=False)
+                                            pad_output=pad_output)
 
     def define_graph(self):
         jpegs, labels = self.input(name="Reader")
