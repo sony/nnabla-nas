@@ -176,7 +176,7 @@ class SearchNet(Model):
         arch_params = self.get_arch_parameters()
         arch_idx = [np.argmax(m.d.flat) for m in arch_params.values()]
         count = Counter(arch_idx)
-        op_names = self._candidates
+        op_names = self._candidates.copy()
         if self._skip_connect:
             op_names += ['skip_connect']
         txt = print_arch(arch_idx, op_names)
