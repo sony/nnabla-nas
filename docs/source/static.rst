@@ -47,7 +47,7 @@ dynamic modules and inherit all of their functionality. In comparison, static mo
 store the graph structure and therefore can be used to define static network graphs. 
 The example network from the example above can for example be defined like:
 
-..code-block:: python
+.. code-block:: python
    from nnabla_nas.module import static_module as Smo
    import nnabla as nn
 
@@ -86,7 +86,7 @@ selecting Zero, effectively cuts the computational graph, meaning that all layer
 no shortcut connection to any following layer can be deleted from the computational graph.
 Static modules implement such a graph optimization, meaning that they can speed up computations.
 
-..image:: ../sources/images/static:example_graph.png
+.. image:: ../sources/images/static:example_graph.png
 
 A second reason why a static graph definition is the natural choice for hardware aware NAS is related to latency modeling. 
 To perform hardware aware NAS, we need to estimate the latency of the subnetworks that have been
