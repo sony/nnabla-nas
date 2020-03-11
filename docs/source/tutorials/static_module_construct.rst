@@ -1,5 +1,5 @@
 Overview Static Modules
-=======================
+-----------------------
 
 Besides (dynamic) modules NNablaNAS offers static_modules, i.e.,
 modules that can be used to define static computational graphs.
@@ -68,7 +68,8 @@ once a module is instantiated, the input and output shape of the module are fixe
 anymore.
 
 Why Static Modules for hardware aware NAS
-=========================================
+-----------------------------------------
+
 There are multiple reasons, why static modules are interesting for hardware aware NAS. Here, we discuss two
 particulary important ones.
 
@@ -88,7 +89,7 @@ selecting Zero, effectively cuts the computational graph, meaning that all layer
 no shortcut connection to any following layer can be deleted from the computational graph.
 Static modules implement such a graph optimization, meaning that they can speed up computations.
 
-.. image:: images/static_example_graph.png
+.. image:: ../images/static_example_graph.png
 
 A second reason why a static graph definition is the natural choice for hardware aware NAS is related to latency modeling.
 To perform hardware aware NAS, we need to estimate the latency of the subnetworks that have been
@@ -106,12 +107,8 @@ Other problems which need knowledge of the graph structure are for example:
 3) Modelling the memory footprint of DNNs (activation memory)
 
 Which modules are currently implemented
-=======================================
+---------------------------------------
+
 There is a static version of all dynamic modules implemented in nnabla_nas.modules. There are currently two static search spaces,
 namely contrib.zoph and the contrib.random_wired.
-
-.. automodule:: nnabla_nas.module.static
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
