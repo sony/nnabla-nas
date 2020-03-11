@@ -1,8 +1,8 @@
 {
     "dataset": "cifar10",
     "epoch": 50,
-    "batch_size_train": 64,
-    "batch_size_valid": 64,
+    "batch_size_train": 16,
+    "batch_size_valid": 16,
     "mini_batch_train": 16,
     "mini_batch_valid": 16,
     "warmup": 0,

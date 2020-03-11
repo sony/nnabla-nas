@@ -6,7 +6,6 @@ import nnabla as nn
 import nnabla.utils.learning_rate_scheduler as LRS
 from nnabla.logger import logger
 
-from nnabla_nas import dataset
 from nnabla_nas.utils import helper
 from nnabla_nas.utils import estimator as EST
 from nnabla_nas.dataset import DataLoader, transforms
@@ -239,24 +238,22 @@ class DataloaderParser(OptionParser):
                 'train': DataLoader(tdata),
                 'valid': DataLoader(vdata)
             }
-
-        # dataset configuration
-        if conf['search']:
-            data_train, data_valid = dataset.__dict__[conf.get('dataset')](
+        elif opts.dataset == 'cifar10':
+            from nnabla_nas.dataset.cifar10.cifar10 import get_data_iterators
+            # dataset configuration
+            data_train, data_valid = get_data_iterators(
                 batch_size=(opts.mbs_train, opts.mbs_valid),
-                portion=opts.train_portion,
-                shuffle=True
+                train=conf['search'],
+                comm=conf['comm'],
+                portion=opts.train_portion
             )
-        else:
-            data_train = dataset.__dict__[opts.dataset](opts.mbs_train, True)
-            data_valid = dataset.__dict__[opts.dataset](opts.mbs_valid, False)
+            train_transform, valid_transform = helper.dataset_transformer(conf)
+            return {
+                'train': DataLoader(data_train, train_transform),
+                'valid': DataLoader(data_valid, valid_transform)
+            }
 
-        train_transform, valid_transform = helper.dataset_transformer(conf)
-
-        return {
-            'train': DataLoader(data_train, train_transform),
-            'valid': DataLoader(data_valid, valid_transform)
-        }
+        raise f'{opts.dataset} is not supported'
 
 
 class TransformParser(OptionParser):
