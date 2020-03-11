@@ -15,6 +15,7 @@ What is neural architecture search?
 **Neural Architecture Search** (NAS) is a technique in machine learning used to automatically learn neural network architectures for a given machine learning task. Let :math:`\theta` and :math:`\alpha` denote the model and network architecture parameters, NAS can be formulated as a bilevel optimization problem:
 
 .. math::
+
     \underset{\alpha}{\arg\min} &\quad \mathcal{L}_{\text{val}} (\theta^{*}; \alpha) \\
     \text{s.t.} & \quad \theta^{*} = \underset{\theta}{\arg\min} \; \mathcal{L}_{\text{train}} (\theta; \alpha)
 

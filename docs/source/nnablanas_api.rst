@@ -121,6 +121,15 @@ MixedOp
 
 
 
+nnabla_nas.module.static
+------------------------
+
+.. automodule:: nnabla_nas.module.static
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 nnabla_nas.runner
 -----------------
 
