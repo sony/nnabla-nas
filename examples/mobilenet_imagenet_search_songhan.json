@@ -8,6 +8,7 @@
     "mini_batch_valid": 32,
     "warmup": 50,
     "print_frequency": 100,
+    "train_portion": 0.96,
     "network": {
         "search_space": "mobilenet",
         "num_classes": 1000,
@@ -27,14 +28,14 @@
             "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.1
+                "lr": 0.025
             }
         },
         "valid": {
             "grad_clip": 5.0,
             "solver": {
                 "name": "Adam",
-                "alpha": 0.01,
+                "alpha": 0.001,
                 "beta1": 0.0,
                 "beta2": 0.999
             }
@@ -44,7 +45,7 @@
             "weight_decay": 4e-5,
             "solver": {
                 "name": "Momentum",
-                "lr": 0.1
+                "lr": 0.05
             }
         }
     }
