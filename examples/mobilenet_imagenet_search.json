@@ -8,6 +8,7 @@
     "mini_batch_valid": 32,
     "warmup": 50,
     "print_frequency": 100,
+    "train_portion": 0.96,
     "network": {
         "search_space": "mobilenet",
         "num_classes": 1000,
