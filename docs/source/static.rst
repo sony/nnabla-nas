@@ -88,7 +88,7 @@ selecting Zero, effectively cuts the computational graph, meaning that all layer
 no shortcut connection to any following layer can be deleted from the computational graph.
 Static modules implement such a graph optimization, meaning that they can speed up computations.
 
-.. image:: /images/static_example_graph.png
+.. image:: images/static_example_graph.png
 
 A second reason why a static graph definition is the natural choice for hardware aware NAS is related to latency modeling. 
 To perform hardware aware NAS, we need to estimate the latency of the subnetworks that have been
