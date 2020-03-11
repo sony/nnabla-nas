@@ -110,7 +110,8 @@ def get_data_iterators(batch_size,
         X_train, X_test, y_train, y_test = train_test_split(
             images, labels,
             stratify=labels,
-            train_size=train_size
+            train_size=train_size,
+            random_state=random.prng
         )
         train = data_iterator(
             CifarDataSource(X_train, y_train, shuffle=True, rng=rng),

@@ -4,12 +4,14 @@ from pathlib import Path
 
 import nnabla as nn
 import nnabla.utils.learning_rate_scheduler as LRS
+from nnabla import random
 from nnabla.logger import logger
+from sklearn.model_selection import train_test_split
 
-from nnabla_nas.utils import helper
-from nnabla_nas.utils import estimator as EST
 from nnabla_nas.dataset import DataLoader, transforms
 from nnabla_nas.optimizer import Optimizer
+from nnabla_nas.utils import estimator as EST
+from nnabla_nas.utils import helper
 
 
 class Configuration(object):
@@ -211,10 +213,47 @@ class DataloaderParser(OptionParser):
         opts = self.options
         if opts.dataset == 'imagenet':
             from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
+
+            train_path = '/speech/db/Images/ILSVRC-2012/img_train/'
+            valid_path = '/speech/db/Images/ILSVRC-2012/img_val_folders'
+
+            train_file = '/speech/db/Images/ILSVRC-2012/train.txt'
+            valid_file = '/speech/db/Images/ILSVRC-2012/val.txt'
+
+            if conf['search']:
+                # split training data into train and valid
+                list_files, labels = [], []
+                with open(train_file, 'r') as f:
+                    lines = f.readlines()
+                    for line in lines:
+                        line = line.strip()
+                        if line != '':
+                            list_files.append(line)
+                            labels.append(line.split(' ')[1])
+
+                train_size = int(len(labels) * opts.train_portion)
+                train, valid = train_test_split(list_files, stratify=labels,
+                                                train_size=train_size,
+                                                random_state=random.prng)
+
+                Path(opts.output_path).mkdir(parents=True, exist_ok=True)
+                train_file = os.path.join(opts.output_path, 'train.txt')
+                valid_file = os.path.join(opts.output_path, 'val.txt')
+                valid_path = train_path
+
+                with open(train_file, 'w') as f:
+                    for item in train:
+                        f.write("%s\n" % item)
+
+                with open(valid_file, 'w') as f:
+                    for item in valid:
+                        f.write("%s\n" % item)
+
             tdata = get_data_iterators(
                 batch_size=opts.mbs_train,
                 dali_num_threads=8,
-                train_dir='/speech/db/Images/ILSVRC-2012/img_train',
+                train_dir=train_path,
+                file_list=train_file,
                 dali_nvjpeg_memory_padding=64*(1 << 20),
                 type_config=float,
                 channel_last=False,
@@ -225,7 +264,8 @@ class DataloaderParser(OptionParser):
             vdata = get_data_iterators(
                 batch_size=opts.mbs_valid,
                 dali_num_threads=8,
-                train_dir='/speech/db/Images/ILSVRC-2012/img_val_folders',
+                train_dir=valid_path,
+                file_list=valid_file,
                 dali_nvjpeg_memory_padding=64*(1 << 20),
                 type_config=float,
                 channel_last=False,
