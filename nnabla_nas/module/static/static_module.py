@@ -1,8 +1,8 @@
 """
-Defintion of static modules. Static modules are handy for Neural Architecture
-Search (NAS), because they encode the graph structure.
+This module defines static modules, i.e., modules that are aware
+of the graph structure. This module defines static versions of
+all dynamic modules defined in nnabla_nas.modules
 """
-
 import operator
 
 import nnabla as nn
@@ -26,18 +26,33 @@ def _get_abs_string_index(obj, idx):
 
 class Module(mo.Module):
     r"""
-    A static module encodes the graph structure, i.e., it has parents
-    and children. Therefore, we can build graphs which can run simple
-    graph optimizations when building the computational nnabla graph.
+    A static module is a module that encodes the graph structure, i.e.,
+    it has parents and children. Static modules can be used to define
+    graphs that can run run simple graph optimizations when
+    constructing the nnabla graph.
+
+    Args:
+        parents (list): a list of static modules that
+            are parents to this module
+        name (string, optional): the name of the module
+        eval_prob (nnabla variable, optional): the evaluation probability
+            of this module
+
+    Examples:
+        >>> from nnabla_nas.module import static as smo
+        >>> class MyModule(smo.Module):
+        >>>     def __init__(self, parents):
+        >>>         smo.Module.__init__(self, parents=parents)
+        >>>         self.linear = mo.Linear(in_features=5, out_features=3)
+        >>>
+        >>>     def call(self, *input):
+        >>>         return self.linear(*input)
+        >>>
+        >>> module_1 = smo.Module(name='module_1')
+        >>> module_2 = smo.MyModule(parents=[module_1], name='module_2')
     """
 
     def __init__(self, parents=[], name='', eval_prob=None, *args, **kwargs):
-        r"""
-        :param parents: list, a list of static modules which are parents
-        :param name: string, (optional) the name of the static module
-        :param eval_prob: nnabla variable, (optional) the probability to
-        evaluate this static module
-        """
         parent_type_mismatch = [not isinstance(pi, Module) for pi in parents]
         if sum(parent_type_mismatch) == 0:
             self._parents = parents
@@ -60,14 +75,19 @@ class Module(mo.Module):
 
     def add_child(self, child):
         r"""
-        adds a static_module as a child to self
-        :param child: static_module, the module to add as a child
+        Adds a static_module as a child to self
+
+        Args:
+            child (static_module): the module to add as a child
         """
         self._children.append(child)
 
     def _shape_function(self):
         r"""
-        calculates the output shape of this static_module
+        Calculates the output shape of this static_module.
+
+        Returns:
+            tuple: the shape of the output tensor
         """
         inputs = [nn.Variable(pi.shape) for pi in self.parents]
         dummy_graph = self.call(*inputs)
@@ -76,7 +96,10 @@ class Module(mo.Module):
     @property
     def shape(self):
         r"""
-        the output shape of the static_module
+        The output shape of the static_module.
+
+        Returns:
+            tuple: the shape of the output tensor
         """
         if self._shape == -1:
             self._shape = self._shape_function()
@@ -85,43 +108,66 @@ class Module(mo.Module):
     @property
     def input_shapes(self):
         r"""
-        returns a list of input shapes of this module
+        A list of input shapes of this module, i.e.,
+        the output shapes of all parent modules.
+
+        Returns:
+            list: a list of tuples storing the
+                output shape of all parent modules
         """
         return [pi.shape for pi in self._parent]
 
     @property
     def name(self):
         r"""
-        returns the name of the module
+        The name of the module.
+
+        Returns:
+            string: the name of the module
         """
         return self._name
 
     @property
     def parents(self):
         r"""
-        returns a list of parent modules
+        The parents of the module
+
+        Returns:
+            list: the parents of the module
         """
         return self._parents
 
     @property
     def children(self):
         r"""
-        returns the child modules
+        The child modules
+
+        Returns:
+            list: the children of the module
         """
         return self._children
 
     def call(self, *inputs):
         r"""
-        defines the transfer function of the module. Builds
-        the computational graph of this module.
-        :param input: one or multiple input variables
+        The input to output mapping of the module.
+        Given some inputs, it constructs
+        the computational graph of this module. This method
+        must be implemented for custom modules.
+
+        Args:
+            *input: the output of the parents
+
+        Returns:
+            nnabla variable: the output of the module
         """
         raise NotImplementedError
 
     def _recursive_call(self):
         r"""
-        builds the computational graph by recursively calling
-        the call methods of the parent modules.
+        Execute self.call on the output of all parent modules.
+
+        Returns:
+            nnabla variable: the output of the module
         """
         if self._value is None:
             self._value = self.call(*[pi() for pi in self.parents])
@@ -130,7 +176,10 @@ class Module(mo.Module):
 
     def __call__(self):
         r"""
-        build the computational graph of to this module.
+        Execute self.call on the output of all parent modules.
+
+        Returns:
+            nnabla variable: the output of the module
         """
         return self._recursive_call()
 
@@ -139,6 +188,9 @@ class Module(mo.Module):
         r"""
         The evaluation probability of this module. It is
         1.0 if not specified otherwise.
+
+        Returns:
+            nnabla variable: the evaluation probability
         """
         return self._eval_prob
 
@@ -151,12 +203,15 @@ class Module(mo.Module):
         r"""
         The output module of this module. If the module is not
         a graph, it will return self.
+
+        Returns:
+            Module: the output module
         """
         return self
 
     def reset_value(self):
         r"""
-        Resets all _values, need_grad flags and shapes
+        Resets all self._value, self.need_grad flags and self.shapes
         """
         self._value = None
         self.apply(need_grad=False)
@@ -166,7 +221,17 @@ class Module(mo.Module):
 class Input(Module):
     r"""
     A static module that can serve as an input, i.e., it has no parents
-    but is provided with a value which it can pass to its children
+    but is provided with a value which it can pass to its children.
+
+    Args:
+        value (nnabla variable): the nnabla variable which serves as
+            the input value
+
+    Examples:
+       >>> import nnabla as nn
+       >>> from nnabla_nas.module import static as smo
+       >>> input = nn.Variable((10, 3, 32, 32))
+       >>> inp_module = smo.Input(value=input)
     """
 
     def __init__(self, value=None, name='', eval_prob=None, *args, **kwargs):
@@ -183,9 +248,15 @@ class Input(Module):
         self._value = v
 
     def call(self, *inputs):
+        r"""
+        The input module returns the plain input variable.
+        """
         return self._value
 
     def _recursive_call(self):
+        r"""
+        Input module do not call anny parents.
+        """
         self.need_grad = True
         return self.call(None)
 
@@ -200,6 +271,19 @@ class Input(Module):
 
 
 class Identity(mo.Identity, Module):
+    r"""
+    The Identity module does not alter the input.
+    It accepts only a single parent.
+
+    Examples:
+       >>> import nnabla as nn
+       >>> from nnabla_nas.module import static as smo
+       >>>
+       >>> nn.Variable((10, 3, 32, 32))
+       >>>
+       >>> inp_module = smo.Input(value=input)
+       >>> identity = smo.Identity(parents=[inp_module])
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         Module.__init__(self, parents, name, eval_prob=eval_prob)
         if len(self._parents) > 1:
@@ -207,6 +291,11 @@ class Identity(mo.Identity, Module):
 
 
 class Zero(mo.Zero, Module):
+    r"""
+    The Zero module returns a tensor with zeros, which has the
+    same shape as the ouput of its parent. It accepts only
+    a single parent.
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.Zero.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name, eval_prob=eval_prob)
@@ -229,6 +318,10 @@ class Zero(mo.Zero, Module):
 
 
 class Conv(mo.Conv, Module):
+    r"""
+    The Conv module performs a convolution on the
+    output of its parent. It accepts only a single parent.
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.Conv.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name,  eval_prob=eval_prob)
@@ -237,6 +330,10 @@ class Conv(mo.Conv, Module):
 
 
 class Linear(mo.Linear, Module):
+    r"""
+    The Linear module performs an affine transformation on the
+    output of its parent. It accepts only a single parent.
+    """
     def __init__(self, parents, name='', *args, **kwargs):
         mo.Linear.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name)
@@ -245,6 +342,10 @@ class Linear(mo.Linear, Module):
 
 
 class DwConv(mo.DwConv, Module):
+    r"""
+    The DwConv module performs a depthwise convolution on the
+    output of its parent. It accepts only a single parent.
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.DwConv.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -253,6 +354,10 @@ class DwConv(mo.DwConv, Module):
 
 
 class MaxPool(mo.MaxPool, Module):
+    r"""
+    The MaxPool module performs max pooling on the
+    output of its parent. It accepts only a single parent.
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.MaxPool.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -261,6 +366,10 @@ class MaxPool(mo.MaxPool, Module):
 
 
 class AvgPool(mo.AvgPool, Module):
+    r"""
+    The AvgPool module performs avg pooling on the
+    output of its parent. It accepts only a single parent.
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.AvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -269,6 +378,10 @@ class AvgPool(mo.AvgPool, Module):
 
 
 class GlobalAvgPool(mo.GlobalAvgPool, Module):
+    r"""
+    The GlobalAvgPool module performs global avg pooling on the
+    output of its parent. It accepts only a single parent.
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.GlobalAvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -277,6 +390,10 @@ class GlobalAvgPool(mo.GlobalAvgPool, Module):
 
 
 class ReLU(mo.ReLU, Module):
+    r"""
+    The ReLu module is the static version of nnabla_nas.modules.ReLU.
+    It accepts only a single parent.
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.ReLU.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -285,6 +402,10 @@ class ReLU(mo.ReLU, Module):
 
 
 class Dropout(mo.Dropout, Module):
+    r"""
+    The Dropout module is the static version of nnabla_nas.modules.Dropout.
+    It accepts only a single parent.
+    """
     def __init__(self, parents, name='', *args, **kwargs):
         mo.Dropout.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name)
@@ -293,6 +414,11 @@ class Dropout(mo.Dropout, Module):
 
 
 class BatchNormalization(mo.BatchNormalization, Module):
+    r"""
+    The BatchNormalization module is the static version of
+    nnabla_nas.modules.BatchNormalization.
+    It accepts only a single parent.
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.BatchNormalization.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -301,6 +427,11 @@ class BatchNormalization(mo.BatchNormalization, Module):
 
 
 class Merging(mo.Merging, Module):
+    r"""
+    The Merging module is the static version of
+    nnabla_nas.modules.Merging.
+    It accepts only a single parent.
+    """
     def __init__(self, parents, mode, name='', eval_prob=None, axis=1):
         mo.Merging.__init__(self, mode, axis)
         Module.__init__(self, parents=parents, name=name,
@@ -311,7 +442,9 @@ class Merging(mo.Merging, Module):
 
 class Collapse(Module):
     r"""
-    Collapses the last two singleton dimensions of an 4D input.
+    The Collapse module removes the last two
+    singleton dimensions of an 4D input.
+    It accepts only a single parent.
     """
     def __init__(self, parents, name=''):
         Module.__init__(self, parents, name=name)
@@ -325,6 +458,22 @@ class Collapse(Module):
 
 
 class Join(Module):
+    r"""
+    The Join module is used to fuse the output of multiple
+    parents. It can either superpose them linearly, sample
+    one of the input or select the maximum probable input.
+    It accepts multiple parents. However,
+    the output of all parents must have the same shape.
+
+    Args:
+        join_parameters (nnabla variable): a vector containing
+            unnormalized categorical probabilities. It must have
+            the same number of elements as the module has parents.
+            The selection probability of each parent is calculated,
+            using the softmax function.
+        mode (string): can be 'linear'/'sample'/'max'. Determines
+            how Join combines the output of the parents.
+    """
     def __init__(self, parents, join_parameters, name='',
                  mode='linear', *args, **kwargs):
         if len(parents) < 2:
@@ -409,6 +558,13 @@ class Join(Module):
 
 
 class Graph(mo.ModuleList, Module):
+    r"""
+    The static version of nnabla_nas.module.ModuleList.
+    A Graph which can contain many modules. A graph can
+    also be used as a module within another graph. Any graph
+    must define self._output, i.e. the StaticModule which acts
+    as the output node of this graph.
+    """
     def __init__(self, parents=[],
                  name='', eval_prob=None,
                  *args, **kwargs):
@@ -457,6 +613,17 @@ class Graph(mo.ModuleList, Module):
                      color_map={Join: 'blue',
                                 Merging: 'green',
                                 Zero: 'red'}):
+        r"""
+        Construct a graphviz graph object that can be used
+        to visualize the graph.
+
+        Args:
+            active_only (bool): whether or not to add inactive
+                modules, i.e., modules which are not part of
+                the computational graph
+            color_map (dict): the mapping of class instance to
+                vertice color used to visualize the graph.
+        """
         graph = Digraph(name=self.name)
         # 1. get all the static modules in the graph
         if active_only:
