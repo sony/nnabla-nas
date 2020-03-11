@@ -63,6 +63,10 @@ DARTS [liu2018]_
 Code structure
 --------------
 
+.. image:: images/high_level_API.png
+    :width: 800
+    :align: center
+
 
 .. rubric:: References
 
