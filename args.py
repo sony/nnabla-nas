@@ -4,14 +4,14 @@ from pathlib import Path
 
 import nnabla as nn
 import nnabla.utils.learning_rate_scheduler as LRS
+from nnabla import random
 from nnabla.logger import logger
+from sklearn.model_selection import train_test_split
 
-from nnabla_nas.utils import helper
-from nnabla_nas.utils import estimator as EST
 from nnabla_nas.dataset import DataLoader, transforms
 from nnabla_nas.optimizer import Optimizer
-from sklearn.model_selection import train_test_split
-from nnabla import random
+from nnabla_nas.utils import estimator as EST
+from nnabla_nas.utils import helper
 
 
 class Configuration(object):
