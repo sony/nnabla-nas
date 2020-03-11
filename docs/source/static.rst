@@ -103,6 +103,7 @@ Other problems which need knowledge of the graph structure are for example:
 2) NAS, using Bayesian optimization algorithms
 3) Modelling the memory footprint of DNNs (activation memory) 
   
-
-
-
+Which modules are currently implemented
+=======================================
+There is a static version of all dynamic modules implemented in nnabla_nas.modules. There are currently two static search spaces,
+namely contrib.zoph and the contrib.random_wired.
