@@ -1,5 +1,5 @@
 Overview Static Modules
------------------------
+.......................
 
 Besides (dynamic) modules NNablaNAS offers static_modules, i.e.,
 modules that can be used to define static computational graphs.
@@ -68,7 +68,7 @@ once a module is instantiated, the input and output shape of the module are fixe
 anymore.
 
 Why Static Modules for hardware aware NAS
------------------------------------------
+.........................................
 
 There are multiple reasons, why static modules are interesting for hardware aware NAS. Here, we discuss two
 particulary important ones.
@@ -107,8 +107,117 @@ Other problems which need knowledge of the graph structure are for example:
 3) Modelling the memory footprint of DNNs (activation memory)
 
 Which modules are currently implemented
----------------------------------------
+.......................................
 
 There is a static version of all dynamic modules implemented in nnabla_nas.modules. There are currently two static search spaces,
 namely contrib.zoph and the contrib.random_wired.
 
+Implementing new static modules
+...............................
+
+There are different ways how to define static modules. 
+
+- You can derive a static version from a dynamic module. Consider the following
+example, where we want to derive a static Conv module from the dynamic Conv module.
+First, we derive our StaticConv module from A) The dynamic Conv class, B) The StaticModule base class. 
+We call the __init__() of both parent classes. Please note, that the order of inheritance is important.
+
+.. code-block:: python
+
+    import nnabla_nas.module.static_module as smo
+    import nnabla_nas.module as mo
+
+    class StaticConv(mo.Conv, smo.Module):
+        def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
+            mo.Conv.__init__(self, *args, **kwargs)
+            Module.__init__(self, parents, name=name,  eval_prob=eval_prob)
+            if len(self._parents) > 1:
+                raise RuntimeError
+
+- We can also implement a new static module from scratch, implementing the call method. Please follow the same 
+steps that are documented in the dynamic module tutorial. In the following example we define a StaticConv, implementing
+the call method. You can either use the nnabla API or dynamic modules to define the transfer function. In our case, we 
+use dynamic modules.
+
+.. code-block:: python
+
+   import nnabla_nas.module.static_module as smo
+   import nnabla_nas.module as mo
+
+   class StaticConv(smo.Module):
+       def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
+           Module.__init__(self, parents, name=name,  eval_prob=eval_prob)
+           conv =  mo.Conv(*args, **kwargs
+
+           if len(self._parents) > 1:
+               raise RuntimeError
+
+       def call(self, *inputs):
+           return conv(inputs[0])
+
+
+Implementing static graphs
+..........................
+
+We can build complex graphs from static modules. A static graph is the static version of a module list, i.e.,
+it can store multiple static modules. Please have a look at the previous tutorial for details.
+
+In the following example, we construct a graph that performs a separable convolution, 
+followed by a batch-normalization and a ReLu activation.
+To create this graph you only need to instantiate a depthwise convolution, a pointwise convolution,
+a batch normalization and a ReLU static module and append it to the graph.
+
+.. code-block:: python
+
+    from nnabla_nas.module import static as smo
+
+    class SepConvBN(smo.Graph):
+    def __init__(self, parents, out_channels,
+                 kernel, 
+                 name='', eval_prob=None):
+        smo.Graph.__init__(self,
+                           parents=parents,
+                           name=name,
+                           eval_prob=eval_prob)
+        self._out_channels = out_channels
+
+        self.append(SepConv(parents=parents,
+                            name='{}/SepConv_1'.format(self.name),
+                            in_channels=parents[0].shape[1],
+                            out_channels=out_channels,
+                            kernel=kernel, 
+                            with_bias=False,
+                            eval_prob=eval_prob))
+
+        self.append(SepConv(parents=[self[-1]],
+                            name='{}/SepConv_2'.format(self.name),
+                            in_channels=out_channels,
+                            out_channels=out_channels,
+                            kernel=kernel, 
+                            with_bias=False,
+                            eval_prob=eval_prob))
+
+        self.append(smo.BatchNormalization(parents=[self[-1]],
+                                           n_features=self._out_channels,
+                                           name='{}/bn'.format(self.name),
+                                           n_dims=4))
+        self.append(smo.ReLU(parents=[self[-1]],
+                             name='{}/relu'.format(self.name)))
+
+Of course, we can use this separable convolution as building block in another static network graph.
+
+.. code-block:: python
+
+    from nnabla_nas.module import static as smo
+    import nnabla as nn
+
+    inp = smo.Input(value=nn.Variable((10, 3, 32, 32)))
+    c1 = SepConvBN(parents=[inp], out_channels=64, kernel=(3,3))
+    c2 = SepConvBN(parents=[c1], out_channels=64, kernel=(3,3))
+    nn_out = c2()
+
+
+Defining a search space with random connections
+...............................................
+
+TODO
