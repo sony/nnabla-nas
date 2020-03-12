@@ -115,7 +115,7 @@ class Module(mo.Module):
             list: a list of tuples storing the
                 output shape of all parent modules
         """
-        return [pi.shape for pi in self._parent]
+        return [pi.shape for pi in self._parents]
 
     @property
     def name(self):
