@@ -4,5 +4,5 @@ Framework Features
 .. toctree::
 
     features/profiler
-    features/visualization
+    features/logging_and_vis
 
