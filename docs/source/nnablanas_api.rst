@@ -199,3 +199,41 @@ SummaryWriter
    :undoc-members:
    :show-inheritance:
 
+
+nnabla_nas.contrib
+------------------
+
+DARTS
+.....
+
+.. automodule:: nnabla_nas.contrib.darts.network
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+MobileNet V2
+............
+
+.. automodule:: nnabla_nas.contrib.mobilenet.network
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Random Wired
+............
+
+.. automodule:: nnabla_nas.contrib.random_wired.random_wired
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Zoph
+....
+
+.. automodule:: nnabla_nas.contrib.zoph.zoph
+   :members:
+   :undoc-members:
+   :show-inheritance:
+ 

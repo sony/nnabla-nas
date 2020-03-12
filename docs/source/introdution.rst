@@ -36,7 +36,7 @@ The design of a good nueral architecture corresponds to find a good balance  bet
     :align: center
 
 
-Fig 1. An overview of neural architecture search. (Image source: [Elsken2018]_)
+**Fig. 1.** An overview of neural architecture search. (Image source: [Elsken2018]_)
 
 The main components of NAS include:
 
@@ -63,10 +63,26 @@ DARTS [liu2018]_
 Code structure
 --------------
 
+The most fundamental source codes are in the `nnabla_nas folder <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/tree/master/nnabla_nas>`_. See below for a high-level overview of the repository.
+
+- `contrib <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Fcontrib>`_: Search spaces and neural architectures are defined in this folder.
+
+- `dataset <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Fdataset>`_: Datasets related are implemented in this folder. NNablaNAS uses a dataloader to feed data into the model.
+
+- `module <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Fmodule>`_: Most basic modues to define search spaces and to construct a neural network. 
+
+- `optimier <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Foptimizer>`_: Simple optimizers to update the parameters of the neural networks as well as architecture parameters.
+
+- `runner <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Frunner>`_: Search and retraining algorithms are defined in this folder. Any new architecture search algorithm should follow the same APIs.
+
+- `utils <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Futils>`_: Utilities functions related to logging, visualization, and profiling.
+
+
 .. image:: images/high_level_API.png
     :width: 800
     :align: center
 
+**Fig. 2.** A high-level APIs of the NNablaNAS framework.
 
 .. rubric:: References
 
