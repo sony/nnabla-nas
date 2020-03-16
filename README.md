@@ -171,14 +171,14 @@ There are two searcher algorithms implemented in NnablaNAS, including [`DartsSea
 
 When running the architecture search, the evaluations in the search space are logged. We maintain a folder to keep track of the parameters, predictions (e.g., loss, error, number of parameters, and latency). Users can easily monitor the training curves with [`TensorboardX`](https://tensorboardx.readthedocs.io/en/latest/tutorial.html).
 
-<img align="center" src="docs/sources/images/tensorboard.png" alt="drawing" width="700"/>
+<img align="center" src="docs/source/images/logging.png" alt="drawing" width="700"/>
 
 
 ### Visualization
 
 Visualization is useful for debugging and illustrating the search space. One can easily check whether the search space was build correctly. So far, only DARTS search space is supported.
 
-<img align="center" src="docs/sources/images/darts_normal.png" alt="drawing" width="700"/>
+<img align="center" src="docs/source/images/darts_normal.png" alt="drawing" width="700"/>
 
 
 ## Experiments
