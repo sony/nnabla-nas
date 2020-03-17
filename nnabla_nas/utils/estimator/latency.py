@@ -53,5 +53,4 @@ class LatencyEstimator(Estimator):
 
             mem[key] = latency
             module.apply(training=state)  # recover training state
-
         return mem[key]

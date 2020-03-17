@@ -1,5 +1,5 @@
 Overview Static Modules
-.......................
+-----------------------
 
 Besides (dynamic) modules NNablaNAS offers static_modules, i.e.,
 modules that can be used to define static computational graphs.
