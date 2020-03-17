@@ -44,7 +44,7 @@ def main(args):
         inp = nn.Variable([1] + config["input_shape"])
         out = net(inp)
         modules = get_sampled_modules(net)
-    
+
         # DEBUG
         # print(unique_mods)
 

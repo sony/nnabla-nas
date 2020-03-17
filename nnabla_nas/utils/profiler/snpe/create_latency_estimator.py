@@ -48,10 +48,10 @@ def main(args):
 
         # Check difference between estimator and sampled latency
         ye = scale * x + bias
-        diff = np.abs(y - ye)
-        print("Runtime = {} [micro sec]".format(runtime))
-        print("Ave", "Std", "Min", "Max", "of the abslute error b/w target and linear regression")
-        print(np.mean(diff), np.std(diff), np.min(diff), np.max(diff))
+        gap = np.abs(y - ye) / y * 100
+        print("Runtime = {} [usec]".format(runtime))
+        print("Ave", "Std", "Min", "Max", "of (the abslute error b/w target and linear regression) / target")
+        print(np.mean(gap), np.std(gap), np.min(gap), np.max(gap))
 
     # Read template and create python script
     with open("estimator.py.tmpl") as fp:
