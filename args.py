@@ -215,7 +215,7 @@ class DataloaderParser(OptionParser):
             from nnabla_nas.dataset.imagenet.imagenet import get_data_iterators
 
             train_path = '/speech/db/Images/ILSVRC-2012/img_train/'
-            valid_path = '/speech/db/Images/ILSVRC-2012/img_val_folders'
+            valid_path = '/speech/db/Images/ILSVRC-2012/img_val'
 
             train_file = '/speech/db/Images/ILSVRC-2012/train.txt'
             valid_file = '/speech/db/Images/ILSVRC-2012/val.txt'
