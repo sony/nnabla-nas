@@ -32,7 +32,7 @@ class LatencyEstimator(Estimator):
             self.memo[idm] = dict()
         mem = self.memo[idm]
         key = '-'.join([str(k[1:]) for k in module.input_shapes])
-        
+
         if key not in mem:
             state = module.training
             module.apply(training=False)  # turn off training
