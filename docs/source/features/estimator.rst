@@ -1,5 +1,5 @@
 Estimating the Latency of DNN Architectures
-===========================================
+-------------------------------------------
 
 Hardware aware NAS addresses the problem, how to fit the architecture
 of DNNs to specific target devices, such that they fulfill given
