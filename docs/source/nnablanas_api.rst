@@ -146,6 +146,8 @@ Searcher
    :undoc-members:
    :show-inheritance:
 
+.. _darts-label:
+
 DartsSearcher
 .............
 
@@ -153,6 +155,8 @@ DartsSearcher
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. _pnas-label:
 
 ProxylessNasSearcher
 ....................
@@ -190,6 +194,8 @@ Estimator
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. _summary-label:
 
 SummaryWriter
 .............
