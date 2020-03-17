@@ -25,8 +25,6 @@ Overview
    installation
    features
    experiment
-   
-   contributing
 
 
 Tutorials
