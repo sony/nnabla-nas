@@ -37,8 +37,8 @@ def main(args):
 
         # Linear Regression
         xy = np.asarray(datasets[runtime])
-        x = np.sort(xy[:, 0])
-        y = np.sort(xy[:, 1])
+        x = xy[:, 0]
+        y = xy[:, 1]
         mx = np.mean(x)
         my = np.mean(y)
         scale = np.sum((x - mx) * (y - mx)) / np.sum((x - mx) ** 2.0)
