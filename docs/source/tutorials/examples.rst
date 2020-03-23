@@ -191,6 +191,4 @@ The only new configuration parameter is::
 
 ``genotype`` is used to provide the path to the previously learn architecture (.h5 file).
 
-
-
 .. bibliography:: references.bib
