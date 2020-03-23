@@ -43,6 +43,7 @@ class Module(mo.Module):
         >>> class MyModule(smo.Module):
         >>>     def __init__(self, parents):
         >>>         smo.Module.__init__(self, parents=parents)
+        >>>         smo.Module.__init__(self, parents=parents)
         >>>         self.linear = mo.Linear(in_features=5, out_features=3)
         >>>
         >>>     def call(self, *input):
@@ -159,6 +160,9 @@ class Module(mo.Module):
 
         Returns:
             nnabla variable: the output of the module
+
+        Examples:
+            >>> out = my_module(inp_a, inp_b)
         """
         raise NotImplementedError
 
@@ -224,6 +228,8 @@ class Input(Module):
     but is provided with a value which it can pass to its children.
 
     Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
         value (nnabla variable): the nnabla variable which serves as
             the input value
 
@@ -275,6 +281,10 @@ class Identity(mo.Identity, Module):
     The Identity module does not alter the input.
     It accepts only a single parent.
 
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+
     Examples:
        >>> import nnabla as nn
        >>> from nnabla_nas.module import static as smo
@@ -295,6 +305,13 @@ class Zero(mo.Zero, Module):
     The Zero module returns a tensor with zeros, which has the
     same shape as the ouput of its parent. It accepts only
     a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+
+    Examples:
+        >>> my_module = Zero(parents=[...], name='my_module')
     """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.Zero.__init__(self, *args, **kwargs)
@@ -321,6 +338,47 @@ class Conv(mo.Conv, Module):
     r"""
     The Conv module performs a convolution on the
     output of its parent. It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        in_channels (:obj:`int`): Number of convolution kernels (which is
+            equal to the number of input channels).
+        out_channels (:obj:`int`): Number of convolution kernels (which is
+            equal to the number of output channels). For example, to apply
+            convolution on an input with 16 types of filters, specify 16.
+        kernel (:obj:`tuple` of :obj:`int`): Convolution kernel size. For
+            example, to apply convolution on an image with a 3 (height) by 5
+            (width) two-dimensional kernel, specify (3,5).
+        pad (:obj:`tuple` of :obj:`int`, optional): Padding sizes for
+            dimensions. Defaults to None.
+        stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
+            dimensions. Defaults to None.
+        dilation (:obj:`tuple` of :obj:`int`, optional): Dilation sizes for
+            dimensions. Defaults to None.
+        group (int, optional): Number of groups of channels. This makes
+            connections across channels more sparse by grouping connections
+            along map direction. Defaults to 1.
+        w_init (:obj:`nnabla.initializer.BaseInitializer`
+            or :obj:`numpy.ndarray`, optional):
+            Initializer for weight. By default, it is initialized with
+            :obj:`nnabla.initializer.UniformInitializer` within the range
+            determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
+        b_init (:obj:`nnabla.initializer.BaseInitializer`
+            or :obj:`numpy.ndarray`, optional):
+            Initializer for bias. By default, it is initialized with zeros if
+            `with_bias` is `True`.
+        base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
+            treated as the sample dimensions. Defaults to 1.
+        fix_parameters (bool, optional): When set to `True`, the weights and
+            biases will not be updated. Defaults to `False`.
+        rng (numpy.random.RandomState, optional): Random generator for
+            Initializer.  Defaults to None.
+        with_bias (bool, optional): Specify whether to include the bias term.
+            Defaults to `True`.
+        channel_last(bool, optional): If True, the last dimension is
+            considered as channel dimension, a.k.a NHWC order. Defaults to
+            `False`.
     """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.Conv.__init__(self, *args, **kwargs)
@@ -333,6 +391,24 @@ class Linear(mo.Linear, Module):
     r"""
     The Linear module performs an affine transformation on the
     output of its parent. It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        in_features (int): The size of each input sample.
+        in_features (int): The size of each output sample.
+        base_axis (int, optional): Dimensions up to `base_axis` are treated as
+            the sample dimensions. Defaults to 1.
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or
+            :obj:`numpy.ndarray`): Initializer for weight. By default, it is
+            initialized with :obj:`nnabla.initializer.UniformInitializer`
+            within the range determined by
+            :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or
+            :obj:`numpy.ndarray`): Initializer for bias. By default, it is
+            initialized with zeros if `with_bias` is `True`.
+        rng (numpy.random.RandomState): Random generator for Initializer.
+        with_bias (bool): Specify whether to include the bias term.
     """
     def __init__(self, parents, name='', *args, **kwargs):
         mo.Linear.__init__(self, *args, **kwargs)
@@ -345,6 +421,44 @@ class DwConv(mo.DwConv, Module):
     r"""
     The DwConv module performs a depthwise convolution on the
     output of its parent. It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        in_channels (:obj:`int`): Number of convolution kernels (which is
+            equal to the number of input channels).
+        kernel (:obj:`tuple` of :obj:`int`): Convolution kernel size. For
+            example, to apply convolution on an image with a 3 (height) by 5
+            (width) two-dimensional kernel, specify (3,5).
+        pad (:obj:`tuple` of :obj:`int`, optional): Padding sizes for
+            dimensions. Defaults to None.
+        stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
+            dimensions. Defaults to None.
+        dilation (:obj:`tuple` of :obj:`int`, optional): Dilation sizes for
+            dimensions. Defaults to None.
+        multiplier (:obj:`int`, optional): Number of output feature maps per
+            input feature map. Defaults to 1.
+        w_init (:obj:`nnabla.initializer.BaseInitializer`
+            or :obj:`numpy.ndarray`, optional):
+            Initializer for weight. By default, it is initialized with
+            :obj:`nnabla.initializer.UniformInitializer` within the range
+            determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
+        b_init (:obj:`nnabla.initializer.BaseInitializer`
+            or :obj:`numpy.ndarray`, optional):
+            Initializer for bias. By default, it is initialized with zeros if
+            `with_bias` is `True`.
+        base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
+            treated as the sample dimensions. Defaults to 1.
+        fix_parameters (bool, optional): When set to `True`, the weights and
+            biases will not be updated. Defaults to `False`.
+        rng (numpy.random.RandomState, optional): Random generator for
+            Initializer.  Defaults to None.
+        with_bias (bool, optional): Specify whether to include the bias term.
+            Defaults to `True`.
+
+    References:
+        - F. Chollet: Chollet, Francois. "Xception: Deep Learning with
+        Depthwise Separable Convolutions. https://arxiv.org/abs/1610.02357
     """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.DwConv.__init__(self, *args, **kwargs)
@@ -357,6 +471,18 @@ class MaxPool(mo.MaxPool, Module):
     r"""
     The MaxPool module performs max pooling on the
     output of its parent. It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        kernel(:obj:`tuple` of :obj:`int`): Kernel sizes for each spatial axis.
+        stride(:obj:`tuple` of :obj:`int`, optional): Subsampling factors for
+            each spatial axis. Defaults to `None`.
+        pad(:obj:`tuple` of :obj:`int`, optional): Border padding values for
+            each spatial axis. Padding will be added both sides of the
+            dimension. Defaults to ``(0,) * len(kernel)``.
+        channel_last(bool): If True, the last dimension is considered as
+            channel dimension, a.k.a NHWC order. Defaults to ``False``.
     """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.MaxPool.__init__(self, *args, **kwargs)
@@ -369,6 +495,18 @@ class AvgPool(mo.AvgPool, Module):
     r"""
     The AvgPool module performs avg pooling on the
     output of its parent. It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        kernel(:obj:`tuple` of :obj:`int`): Kernel sizes for each spatial axis.
+        stride(:obj:`tuple` of :obj:`int`, optional): Subsampling factors for
+            each spatial axis. Defaults to `None`.
+        pad(:obj:`tuple` of :obj:`int`, optional): Border padding values for
+            each spatial axis. Padding will be added both sides of the
+            dimension. Defaults to ``(0,) * len(kernel)``.
+        channel_last(bool): If True, the last dimension is considered as
+            channel dimension, a.k.a NHWC order. Defaults to ``False``.
     """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.AvgPool.__init__(self, *args, **kwargs)
@@ -381,6 +519,10 @@ class GlobalAvgPool(mo.GlobalAvgPool, Module):
     r"""
     The GlobalAvgPool module performs global avg pooling on the
     output of its parent. It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
     """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.GlobalAvgPool.__init__(self, *args, **kwargs)
@@ -393,6 +535,12 @@ class ReLU(mo.ReLU, Module):
     r"""
     The ReLu module is the static version of nnabla_nas.modules.ReLU.
     It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        inplace (bool, optional): can optionally do the operation in-place.
+            Default: ``False``.
     """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.ReLU.__init__(self, *args, **kwargs)
@@ -405,6 +553,12 @@ class Dropout(mo.Dropout, Module):
     r"""
     The Dropout module is the static version of nnabla_nas.modules.Dropout.
     It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        drop_prob (:obj:`int`, optional): The probability of an element to be
+            zeroed. Defaults to 0.5.
     """
     def __init__(self, parents, name='', *args, **kwargs):
         mo.Dropout.__init__(self, *args, **kwargs)
@@ -418,6 +572,43 @@ class BatchNormalization(mo.BatchNormalization, Module):
     The BatchNormalization module is the static version of
     nnabla_nas.modules.BatchNormalization.
     It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        n_features (int): Number of dimentional features.
+        n_dims (int): Number of dimensions.
+        axes (:obj:`tuple` of :obj:`int`):
+            Mean and variance for each element in ``axes`` are calculated
+            using elements on the rest axes. For example, if an input is 4
+            dimensions, and ``axes`` is ``[1]``,  batch mean is calculated
+            as ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
+            (using numpy expression as an example).
+        decay_rate (float, optional): Decay rate of running mean and
+            variance. Defaults to 0.9
+        eps (float, optional): Tiny value to avoid zero division by std.
+            Defaults to 1e-5.
+        output_stat (bool, optional): Output batch mean and variance.
+            Defaults to `False`.
+        fix_parameters (bool): When set to `True`, the beta and gamma will
+            not be updated.
+        param_init (dict):
+            Parameter initializers can be set with a dict. A key of the
+            dict must be ``'beta'``, ``'gamma'``, ``'mean'`` or ``'var'``.
+            A value of the dict must be an :obj:`~nnabla.initializer.
+            Initializer` or a :obj:`numpy.ndarray`.
+            E.g. ``{
+                    'beta': ConstantIntializer(0),
+                    'gamma': np.ones(gamma_shape) * 2
+                    }``.
+
+    Returns:
+        :class:`~nnabla.Variable`: N-D array.
+
+    References:
+        - Ioffe and Szegedy, Batch Normalization: Accelerating Deep
+        Network Training by Reducing Internal Covariate Shift.
+        https://arxiv.org/abs/1502.03167
     """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.BatchNormalization.__init__(self, *args, **kwargs)
@@ -431,6 +622,13 @@ class Merging(mo.Merging, Module):
     The Merging module is the static version of
     nnabla_nas.modules.Merging.
     It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        mode (str): The merging mode ('concat', 'add').
+        axis (int, optional): The axis for merging when 'concat' is used.
+            Defaults to 1.
     """
     def __init__(self, parents, mode, name='', eval_prob=None, axis=1):
         mo.Merging.__init__(self, mode, axis)
@@ -445,6 +643,10 @@ class Collapse(Module):
     The Collapse module removes the last two
     singleton dimensions of an 4D input.
     It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
     """
     def __init__(self, parents, name=''):
         Module.__init__(self, parents, name=name)
