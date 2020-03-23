@@ -350,7 +350,7 @@ class ZophCell(smo.Graph):
         name (string, optional): the name of the module
         candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
         channels (int): the number of output channels of this block
-        join_parameters (list of nnabla variable, optional): lift of the architecture 
+        join_parameters (list of nnabla variable, optional): lift of the architecture
             parameters used to join the outputs
             of the candidate modules. each element in join_parameters must have
             the same number of elements as we have candidates.
