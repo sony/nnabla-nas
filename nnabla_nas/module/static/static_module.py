@@ -160,7 +160,7 @@ class Module(mo.Module):
 
         Returns:
             nnabla variable: the output of the module
-            
+
         Examples:
             >>> out = my_module(inp_a, inp_b)
         """
@@ -305,11 +305,11 @@ class Zero(mo.Zero, Module):
     The Zero module returns a tensor with zeros, which has the
     same shape as the ouput of its parent. It accepts only
     a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
-    
+
     Examples:
         >>> my_module = Zero(parents=[...], name='my_module')
     """
@@ -338,7 +338,7 @@ class Conv(mo.Conv, Module):
     r"""
     The Conv module performs a convolution on the
     output of its parent. It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -391,7 +391,7 @@ class Linear(mo.Linear, Module):
     r"""
     The Linear module performs an affine transformation on the
     output of its parent. It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -421,7 +421,7 @@ class DwConv(mo.DwConv, Module):
     r"""
     The DwConv module performs a depthwise convolution on the
     output of its parent. It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -471,7 +471,7 @@ class MaxPool(mo.MaxPool, Module):
     r"""
     The MaxPool module performs max pooling on the
     output of its parent. It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -495,7 +495,7 @@ class AvgPool(mo.AvgPool, Module):
     r"""
     The AvgPool module performs avg pooling on the
     output of its parent. It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -519,7 +519,7 @@ class GlobalAvgPool(mo.GlobalAvgPool, Module):
     r"""
     The GlobalAvgPool module performs global avg pooling on the
     output of its parent. It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -535,7 +535,7 @@ class ReLU(mo.ReLU, Module):
     r"""
     The ReLu module is the static version of nnabla_nas.modules.ReLU.
     It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -553,7 +553,7 @@ class Dropout(mo.Dropout, Module):
     r"""
     The Dropout module is the static version of nnabla_nas.modules.Dropout.
     It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -572,7 +572,7 @@ class BatchNormalization(mo.BatchNormalization, Module):
     The BatchNormalization module is the static version of
     nnabla_nas.modules.BatchNormalization.
     It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -622,7 +622,7 @@ class Merging(mo.Merging, Module):
     The Merging module is the static version of
     nnabla_nas.modules.Merging.
     It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
@@ -643,7 +643,7 @@ class Collapse(Module):
     The Collapse module removes the last two
     singleton dimensions of an 4D input.
     It accepts only a single parent.
-    
+
     Args:
         parents (list): the parents of this module
         name (string): the name of this module
