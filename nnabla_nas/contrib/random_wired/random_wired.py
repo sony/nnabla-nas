@@ -14,12 +14,12 @@ class RandomModule(smo.Graph):
 	input through 1x1 convolution and pooling. The result is summed up. Please refer to [Xie et. al]
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): the number of output channels of this module
 			
 	References:
-	    - Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
+		- Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
 		Proceedings of the IEEE International Conference on Computer Vision. 2019.
     """
     def __init__(self, parents, channels, name=''):
@@ -74,7 +74,7 @@ class Conv(RandomModule):
 	convolution.
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): the number of output channels of this module
 		kernel (tuple): the kernel shape
@@ -116,7 +116,7 @@ class SepConv(RandomModule):
 	convolution.
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): the number of output channels of this module
 		kernel (tuple): the kernel shape
@@ -163,7 +163,7 @@ class Conv3x3(Conv):
 	convolution.
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): the number of output channels of this module
     """
@@ -186,7 +186,7 @@ class SepConv3x3(SepConv):
 	convolution.
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): the number of output channels of this module
     """
@@ -209,7 +209,7 @@ class Conv5x5(Conv):
 	convolution.
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): the number of output channels of this module
     """
@@ -232,7 +232,7 @@ class SepConv5x5(SepConv):
 	convolution.
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): the number of output channels of this module
     """
@@ -255,7 +255,7 @@ class MaxPool2x2(RandomModule):
 	convolution.
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): ignored
     """
@@ -280,7 +280,7 @@ class AvgPool2x2(RandomModule):
 	convolution.
 
     Args:
-	    parents (list): the parent modules to this module
+		parents (list): the parent modules to this module
         name (string, optional): the name of the module
 		channels (int): ignored
     """
@@ -317,7 +317,7 @@ class TrainNet(Model, smo.Graph):
     DNN architectures. Please refer to [Xie et. al]
 
     Args:
-	    n_vertice (int): the number of random modules within this network
+		n_vertice (int): the number of random modules within this network
 		input_shape (tuple): the shape of the input of this network
 		n_classes (int): the number of output classes of this network
 		candidates (list): a list of random_modules which are randomly instantiated as vertices
@@ -327,7 +327,7 @@ class TrainNet(Model, smo.Graph):
 		p (float): the re-wiring probability parameter of the Watts-Strogatz process	
 		name (string): the name of the network
 	References:
-	    - Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
+		- Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
 		Proceedings of the IEEE International Conference on Computer Vision. 2019.
     """
 

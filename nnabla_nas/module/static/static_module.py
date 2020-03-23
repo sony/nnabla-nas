@@ -555,7 +555,7 @@ class Dropout(mo.Dropout, Module):
     It accepts only a single parent.
 	
 	Args:
-	    parents (list): the parents of this module
+		parents (list): the parents of this module
 		name (string): the name of this module
         drop_prob (:obj:`int`, optional): The probability of an element to be
             zeroed. Defaults to 0.5.
@@ -624,7 +624,7 @@ class Merging(mo.Merging, Module):
     It accepts only a single parent.
 	
 	Args:
-	    parents (list): the parents of this module
+		parents (list): the parents of this module
 		name (string): the name of this module
         mode (str): The merging mode ('concat', 'add').
         axis (int, optional): The axis for merging when 'concat' is used.
@@ -645,7 +645,7 @@ class Collapse(Module):
     It accepts only a single parent.
 	
 	Args:
-	    parents (list): the parents of this module
+		parents (list): the parents of this module
 		name (string): the name of this module
     """
     def __init__(self, parents, name=''):

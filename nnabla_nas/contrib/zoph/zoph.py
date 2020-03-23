@@ -288,10 +288,10 @@ class ZophBlock(smo.Graph):
 		candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
 		channels (int): the number of output channels of this block
 		join_parameters (nnabla variable, optional): the architecture parameters used to join the outputs
-		    of the candidate modules. join_parameters must have the same number of elements as we have candidates.
+			of the candidate modules. join_parameters must have the same number of elements as we have candidates.
 			
 	References:
-	    - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+		- Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
     def __init__(self, parents, candidates,
                  channels, name='', join_parameters=None):
@@ -351,11 +351,11 @@ class ZophCell(smo.Graph):
 		candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
 		channels (int): the number of output channels of this block
 		join_parameters (list of nnabla variable, optional): lift of the architecture parameters used to join the outputs
-		    of the candidate modules. each element in join_parameters must have the same number of elements as we have candidates.
+			of the candidate modules. each element in join_parameters must have the same number of elements as we have candidates.
 			The length of this list must be n_modules.
 			
 	References:
-	    - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+		- Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
 	
     def __init__(self, parents, candidates, channels, name='',
@@ -441,7 +441,7 @@ class SearchNet(Model, smo.Graph):
 		mode (string): the mode which the join modules within this network use
 			
 	References:
-	    - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+		- Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
 
     def __init__(self, name='', input_shape=(3, 32, 32),
@@ -676,7 +676,7 @@ class TrainNet(SearchNet):
 		mode (string): the mode which the join modules within this network use
 			
 	References:
-	    - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+		- Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
     def __init__(self, name, input_shape=(3, 32, 32),
                  n_classes=10, stem_channels=128,
