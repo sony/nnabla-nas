@@ -15,7 +15,7 @@ from nnabla_nas.utils import load_parameters
 
 class SepConv(misc.SepConv, smo.Module):
     """
-	A static separable convolution
+    A static separable convolution
 
     Args:
         parents (list): a list of static modules that
@@ -58,7 +58,7 @@ class SepConv(misc.SepConv, smo.Module):
         channel_last(bool, optional): If True, the last dimension is
             considered as channel dimension, a.k.a NHWC order. Defaults to
             `False`.
-	"""
+    """
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         misc.SepConv.__init__(self, *args, **kwargs)
         smo.Module.__init__(self,
@@ -71,7 +71,7 @@ class SepConv(misc.SepConv, smo.Module):
 
 class SepConvBN(smo.Graph):
     """
-	A static separable convolution that applies batchnorm and relu at the end.
+    A static separable convolution that applies batchnorm and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -129,7 +129,7 @@ class SepConvBN(smo.Graph):
 
 class SepConv3x3(SepConvBN):
     """
-	A static separable convolution of shape 3x3 that applies batchnorm and relu at the end.
+    A static separable convolution of shape 3x3 that applies batchnorm and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -151,7 +151,7 @@ class SepConv3x3(SepConvBN):
 
 class SepConv5x5(SepConvBN):
     """
-	A static separable convolution of shape 5x5 that applies batchnorm and relu at the end.
+    A static separable convolution of shape 5x5 that applies batchnorm and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -173,7 +173,7 @@ class SepConv5x5(SepConvBN):
 
 class DilSepConv3x3(SepConvBN):
     """
-	A static dilated separable convolution of shape 3x3 that applies batchnorm and relu at the end.
+    A static dilated separable convolution of shape 3x3 that applies batchnorm and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -195,7 +195,7 @@ class DilSepConv3x3(SepConvBN):
 
 class DilSepConv5x5(SepConvBN):
     """
-	A static dilated separable convolution of shape 5x5 that applies batchnorm and relu at the end.
+    A static dilated separable convolution of shape 5x5 that applies batchnorm and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -217,7 +217,7 @@ class DilSepConv5x5(SepConvBN):
 
 class MaxPool3x3(smo.MaxPool):
     """
-	A static max pooling of size 3x3
+    A static max pooling of size 3x3
 
     Args:
         parents (list): a list of static modules that
@@ -243,7 +243,7 @@ class MaxPool3x3(smo.MaxPool):
 
 class AveragePool3x3(smo.AvgPool):
     """
-	A static avg pooling of size 3x3
+    A static avg pooling of size 3x3
 
     Args:
         parents (list): a list of static modules that
@@ -279,19 +279,19 @@ ZOPH_CANDIDATES = [SepConv3x3,
 
 class ZophBlock(smo.Graph):
     """
-	A zoph block as defined in [Bender et. al]
+    A zoph block as defined in [Bender et. al]
 
     Args:
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
-		candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
-		channels (int): the number of output channels of this block
-		join_parameters (nnabla variable, optional): the architecture parameters used to join the outputs
-			of the candidate modules. join_parameters must have the same number of elements as we have candidates.
-			
-	References:
-		- Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        channels (int): the number of output channels of this block
+        join_parameters (nnabla variable, optional): the architecture parameters used to join the outputs
+            of the candidate modules. join_parameters must have the same number of elements as we have candidates.
+
+    References:
+        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
     def __init__(self, parents, candidates,
                  channels, name='', join_parameters=None):
@@ -342,22 +342,22 @@ class ZophBlock(smo.Graph):
 
 class ZophCell(smo.Graph):
     """
-	A zoph cell that consists of multiple zoph blocks, as defined in [Bender et. al]
+    A zoph cell that consists of multiple zoph blocks, as defined in [Bender et. al]
 
     Args:
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
-		candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
-		channels (int): the number of output channels of this block
-		join_parameters (list of nnabla variable, optional): lift of the architecture parameters used to join the outputs
-			of the candidate modules. each element in join_parameters must have the same number of elements as we have candidates.
-			The length of this list must be n_modules.
-			
-	References:
-		- Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        channels (int): the number of output channels of this block
+        join_parameters (list of nnabla variable, optional): lift of the architecture parameters used to join the outputs
+            of the candidate modules. each element in join_parameters must have the same number of elements as we have candidates.
+            The length of this list must be n_modules.
+
+    References:
+        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
-	
+
     def __init__(self, parents, candidates, channels, name='',
                  n_modules=3, reducing=False, join_parameters=[None]*3):
         self._candidates = candidates
@@ -426,22 +426,22 @@ class ZophCell(smo.Graph):
 
 class SearchNet(Model, smo.Graph):
     """
-	A search space as defined in [Bender et. al]
+    A search space as defined in [Bender et. al]
 
     Args:
         name (string, optional): the name of the module
-		input_shape (tuple): the shape of the network input
-		n_classes (int): the number of output classes
-		stem_channels (int): the number of channels for the stem convolutions
-		cells (list): the type of the cells used within this search space
-		cell_depth (list): the number of modules within each cell
-		reducing (list): specifies for each cell if it reduces the feature map dimensions through pooling
-		join_parameters (list): the join_parameters used in each cell and block.
-		candidates (list, optional): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
-		mode (string): the mode which the join modules within this network use
-			
-	References:
-		- Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        input_shape (tuple): the shape of the network input
+        n_classes (int): the number of output classes
+        stem_channels (int): the number of channels for the stem convolutions
+        cells (list): the type of the cells used within this search space
+        cell_depth (list): the number of modules within each cell
+        reducing (list): specifies for each cell if it reduces the feature map dimensions through pooling
+        join_parameters (list): the join_parameters used in each cell and block.
+        candidates (list, optional): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        mode (string): the mode which the join modules within this network use
+
+    References:
+        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
 
     def __init__(self, name='', input_shape=(3, 32, 32),
@@ -661,22 +661,22 @@ class SearchNet(Model, smo.Graph):
 
 class TrainNet(SearchNet):
     """
-	A search space as defined in [Bender et. al]. Its the same as SearchNet, just that mode is fixed to 'max'.
+    A search space as defined in [Bender et. al]. Its the same as SearchNet, just that mode is fixed to 'max'.
 
     Args:
         name (string, optional): the name of the module
-		input_shape (tuple): the shape of the network input
-		n_classes (int): the number of output classes
-		stem_channels (int): the number of channels for the stem convolutions
-		cells (list): the type of the cells used within this search space
-		cell_depth (list): the number of modules within each cell
-		reducing (list): specifies for each cell if it reduces the feature map dimensions through pooling
-		join_parameters (list): the join_parameters used in each cell and block.
-		candidates (list, optional): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
-		mode (string): the mode which the join modules within this network use
-			
-	References:
-		- Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        input_shape (tuple): the shape of the network input
+        n_classes (int): the number of output classes
+        stem_channels (int): the number of channels for the stem convolutions
+        cells (list): the type of the cells used within this search space
+        cell_depth (list): the number of modules within each cell
+        reducing (list): specifies for each cell if it reduces the feature map dimensions through pooling
+        join_parameters (list): the join_parameters used in each cell and block.
+        candidates (list, optional): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        mode (string): the mode which the join modules within this network use
+
+    References:
+        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
     def __init__(self, name, input_shape=(3, 32, 32),
                  n_classes=10, stem_channels=128,
