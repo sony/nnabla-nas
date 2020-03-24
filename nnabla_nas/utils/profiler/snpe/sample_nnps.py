@@ -43,6 +43,7 @@ def main(args):
         # Sample network
         inp = nn.Variable([1] + config["input_shape"])
         out = net(inp)
+        modules = get_sampled_modules(net)
 
         # DEBUG
         # print(unique_mods)
@@ -58,9 +59,6 @@ def main(args):
         accum_latency = defaultdict(float)
         try:
             for runtime in runtimes:
-                # Sample
-                out = net(inp)
-                modules = get_sampled_modules(net)
                 # Accum latency
                 accum_latency_ = 0.0
                 for m in modules:
