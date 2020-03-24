@@ -2,3 +2,4 @@ matplotlib
 Sphinx
 javasphinx
 sphinx_rtd_theme
+sphinxcontrib-bibtex

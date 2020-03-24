@@ -3,6 +3,7 @@ Tutorial
 
 .. toctree::
 
+    tutorials/examples
     tutorials/module_construct
     tutorials/static_module_construct
     tutorials/search_space_construct
