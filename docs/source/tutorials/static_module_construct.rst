@@ -4,7 +4,7 @@ Overview Static Modules
 Besides (dynamic) modules NNablaNAS offers static_modules, i.e.,
 modules that can be used to define static computational graphs.
 Although the dynamic network graph implementation has proven to
-be a powerfull tool for many deep learning applications,
+be a powerful tool for many deep learning applications,
 it lacks some features that are needed for
 hardware aware neural architecture search.
 
@@ -36,14 +36,14 @@ The network consists of 3 convolutional layers, with a 3x3 kernel. Each layer
 computes 64 feature maps. Following the dynamic graph paradigm,
 the structure of the network is only defined in the code, i.e., it is only defined
 by the sequence in which we apply the layers c_l. The modules themselves are agnostic to
-the graph structure, i.e., they do not know which module is their parents or which
+the graph structure, i.e., they do not know which module is their parent is, or which
 input and output shapes they should expect.
 
 A dynamic graph definition is not the natural choice if we need to define functions that
 need knowledge about the graph structure. In case of hardware aware NAS, such functions are
 for example, latency estimation given the graph structure, the calculation of
 graph similarities (Bayesian Optimization) or simple graph optimization algorithms (as discussed later).
-NNablaNAS therefore also offeres static_modules. Static modules are a simple extension of
+NNablaNAS therefore also offers static_modules. Static modules are a simple extension of
 dynamic modules and inherit all of their functionality. In comparison, static modules
 store the graph structure and therefore can be used to define static network graphs.
 The example network from the example above can for example be defined like:
@@ -71,13 +71,13 @@ Why Static Modules for hardware aware NAS
 .........................................
 
 There are multiple reasons, why static modules are interesting for hardware aware NAS. Here, we discuss two
-particulary important ones.
+particularily important ones.
 
 Typically, hardware aware NAS involves the definition of large candidate spaces, i.e.,
 large DNN architectures that are contain all kind of candidate layers that are
 heavily interconnected. During architecture search we consecutively draw subnetworks
 from the candidate space, meaning that some of the candidate layers are selected,
-while others are dropped. For an efficient search, it is desireable to have simple
+while others are dropped. For an efficient search, it is desirable to have simple
 graph optimization algorithms in place, i.e., algorithms which optimize the computational
 graph of the selected subnetworks before executing them.
 
@@ -98,7 +98,7 @@ Typically, the latency of all layers (modules) within the search space are measu
 subnetwork of the search space, then, is a function of those individual latencies and of the structure of the subnework. Note,
 simply summing up all the latencies of the modules that are contained in the subnetwork is wrong. This is obvious if we reconsider the
 example from above. All the modules Conv 1 to Conv 3 have a latency > 0, while Zero and Join have a latency of 0. If Join selects Zero,
-Conv 1, Zero, Join and Conv 3 are part of the subnetwork. However, summing upt the latency of Conv 1,
+Conv 1, Zero, Join and Conv 3 are part of the subnetwork. However, summing up the latency of Conv 1,
 Zero, Join and Conv 3 is wrong. The correct latency would be if we only consider Conv 3.
 
 Other problems which need knowledge of the graph structure are for example:
@@ -106,8 +106,8 @@ Other problems which need knowledge of the graph structure are for example:
 2) NAS, using Bayesian optimization algorithms
 3) Modelling the memory footprint of DNNs (activation memory)
 
-Which modules are currently implemented
-.......................................
+Which modules are currently implemented?
+........................................
 
 There is a static version of all dynamic modules implemented in nnabla_nas.modules. There are currently two static search spaces,
 namely contrib.zoph and the contrib.random_wired.
@@ -136,7 +136,7 @@ We call the __init__() of both parent classes. Please note, that the order of in
 
 - We can also implement a new static module from scratch, implementing the call method. Please follow the same 
 steps that are documented in the dynamic module tutorial. In the following example we define a StaticConv, implementing
-the call method. You can either use the nnabla API or dynamic modules to define the transfer function. In our case, we 
+the call method. You can either use the NNabla API or dynamic modules to define the transfer function. In our case, we 
 use dynamic modules.
 
 .. code-block:: python
@@ -163,8 +163,8 @@ We can build complex graphs from static modules. A static graph is the static ve
 it can store multiple static modules. Please have a look at the previous tutorial for details.
 
 In the following example, we construct a graph that performs a separable convolution, 
-followed by a batch-normalization and a ReLu activation.
-To create this graph you only need to instantiate a depthwise convolution, a pointwise convolution,
+followed by a batch-normalization and a ReLU activation.
+To create this graph, you only need to instantiate a depthwise convolution, a pointwise convolution,
 a batch normalization and a ReLU static module and append it to the graph.
 
 .. code-block:: python
