@@ -2,7 +2,25 @@
 Introduction
 ============
 
-The success of deep learning is due to its automation of the feature engineering process. This sucess has been shown in many tasks, including s image recognition, speech recognition, and machine translation. By increasing more complex neural architectures, we can further increase the performance of deep learning models [Elsken2018]_. However, most of the neural architectures are desinged manually, making it unscalable in new domains. A promissing direction in automating machine learning is automating architecture engineering, the so-called *neural network architecture search*. Neural network architecture search is closely related to `hyperparameter optimization <https://en.wikipedia.org/wiki/Hyperparameter_optimization>`_ and is a subfield of `automated machine learning <https://en.wikipedia.org/wiki/Automated_machine_learning>`_ (AutoML). **NNablaNAS** is a framework for architecture search in computer vision domain. The main aim is to provide a modular, easy, and extendible toolbox for deep learning practioners. In this section, an overview of neural architecture search is introduced.
+The success of Deep Neural Networks (DNNs) is due to their ability to automate the feature engineering process. 
+This sucess has been shown in many tasks, including s image recognition, speech recognition, and machine translation. 
+The choice of the network architecture, is a particulary important step when we design DNN based machine learning algorithms.
+A network architecture is the description which layers are used in a DNN, 
+how each layer is parametrized and how the layers are connected to each other. 
+Commonly known classes of network architectures are for example feed-forward DNNs, recursive DNNs, ResNets, Inception networks or 
+MobileNets.
+
+By improving the DNN architecture such that it is tailored specifically to one given task, 
+we can further increase the performance of deep learning models [Elsken2018]_. 
+However, most of the neural architectures are desinged manually. This is time consuming, expensive and does not scale with 
+an increasing number of new domains and learning tasks. 
+A promissing direction in automating machine learning is automating architecture engineering, 
+the so-called *neural network architecture search* (NAS). 
+Neural network architecture search is closely related to 
+`hyperparameter optimization <https://en.wikipedia.org/wiki/Hyperparameter_optimization>`_ and is 
+a subfield of `automated machine learning <https://en.wikipedia.org/wiki/Automated_machine_learning>`_ (AutoML). 
+**NNablaNAS** is a framework for architecture search in computer vision domain. The main aim is to provide a modular, 
+easy, and extendible toolbox for deep learning practioners. In this section, an overview of neural architecture search is introduced.
 
 
 .. toctree::
@@ -12,7 +30,9 @@ The success of deep learning is due to its automation of the feature engineering
 What is neural architecture search?
 -----------------------------------
 
-**Neural Architecture Search** (NAS) is a technique in machine learning used to automatically learn neural network architectures for a given machine learning task. Let :math:`\theta` and :math:`\alpha` denote the model and network architecture parameters, NAS can be formulated as a bilevel optimization problem:
+**Neural Architecture Search** is a technique in machine learning used to automatically learn 
+neural network architectures for a given machine learning task. Let :math:`\theta` and :math:`\alpha` 
+denote the model and network architecture parameters, NAS can be formulated as a bilevel optimization problem:
 
 .. math::
 
@@ -24,11 +44,28 @@ where :math:`\mathcal{L}_{\text{train}}` and :math:`\mathcal{L}_{\text{val}}` de
 
 The design of modern neural network architectures is driven by multiple different objectives [liu2018]_:
 
-* The neural network should have a reasonably high capacity, i.e., the the family of transfer functions contains arbitrary complex functions which can capture lots of information from training data. 
+* The neural network should have a reasonably high capacity, i.e., the the family 
+of transfer functions contains arbitrary complex functions which can capture lots of information from training data. 
 
-* Inference should be computationally efficient, i.e., inference only needs a small number of multiplication-accumulation (MAC) operations, or low inference latency.
+* Inference should be computationally efficient, i.e., inference only needs a 
+small number of multiplication-accumulation (MAC) operations, or low inference latency.
 
-The design of a good nueral architecture corresponds to find a good balance  between those (often competing) requirements, by selecting and arranging layers in a meaningful way. Compared to the early days of Deep Learning, today, DNNs consist of a broad variety of different different network layers like: *Linear*, *Convolutional*, *Dilated Convolutional*, *Group Convolutional*, *Separable Convolutional* (depth wise, channel wise, spatial), *Pooling*, *Skip Connect*, *Batch Normalization*, etc. Therefore, neural architecture design is a very large combinatorial problem which  is especially hard to solve, because we have only a poor (or almost no) understanding how a specific choice or arrangement of layers effects our requirements. The aim of neural architecture search is to automate architecture design and to directly learn the optimal architecture from the data. This has multiple benefits. We need no expert with lots of experience. We do not need to understand which effect a combination of certain layers yields to our requirements. NAS has the potential to come up with architectures which generalize much better to unseen data than humans, because it can try out many more architectures in the same time. We can optimize the architectures to be resource efficient.
+The design of a good nueral architecture corresponds to find a good balance  
+between those (often competing) requirements, by selecting and arranging layers in a 
+meaningful way. 
+
+Compared to the early days of Deep Learning, today, DNNs consist of a 
+broad variety of different different network layers like: *Linear*, *Convolutional*, 
+*Dilated Convolutional*, *Group Convolutional*, *Separable Convolutional* (depth wise, channel wise, spatial), 
+*Pooling*, *Skip Connect*, *Batch Normalization*, etc. Therefore, neural architecture design is a very large 
+combinatorial problem which  is especially hard to solve, because we have only a poor (or almost no) 
+understanding how a specific choice or arrangement of layers effects our requirements. The aim of neural 
+architecture search is to automate architecture design and to directly learn the optimal architecture from 
+the data. This has multiple benefits. We need no expert with lots of experience. 
+We do not need to understand which effect a combination of certain layers yields to 
+our requirements. NAS has the potential to come up with architectures which generalize 
+much better to unseen data than humans, because it can try out many more architectures 
+in the same time. We can optimize the architectures to be resource efficient.
 
 
 .. image:: images/nas_overview.png
@@ -47,17 +84,45 @@ The main components of NAS include:
 - **Performance estimation strategy**: This evaluates the performance of an architecture.
 
 
-Agorithms in NAS
-----------------
+NAS Agorithms 
+-------------
 
-ProxylessNAS [Cai2018]_
+NAS is a combinatorial and therefore a computationally comlex optimization problem. 
+A variety of different NAS algorithms has been proposed in the past. To name a few, there are:
 
-.. math::
+- **Reinforcement learning based** NAS algorithms. Infact, the seminal paper about NAS proposed such a reinforcement learning approach.
+  Reinforcement learning based algorithms use an actor that generates neural architectures. To this end, the actor follows a policy, which 
+  is optimized, such that the validation accuracy of the generated neural architectures is maximized.
+  
+- **Stochastic** NAS algorithms, which randomly generate neural architectures and keep the last best architecture.
+
+- **Evolutionary Algorithm** (EA) based NAS algorithms. An EA uses 
+  mechanisms inspired by biological evolution, such as reproduction, 
+  mutation, recombination, and selection. Candidate solutions to 
+  the optimization problem play the role of individuals in a population, 
+  and the fitness function determines the quality of the solutions. 
+  Evolution of the population then takes place after the repeated application 
+  of reproduction, mutation, recombination and selection. 
+ 
+- **Bayesian Optimization** (BO) based algorithms. BO is a powerful optimization method
+  to optimize non-differentiable black-box functions which are complex to evaluate. 
+  In case of NAS, this function is the validation accuracy of a network architecture. It is
+  very complex to evaluate, because to calculate it we need to train a DNN until convergence.  
+  
+- **Differentiable NAS** algorithms like DARTS, which relax the optimization problem such that
+  it becomes differentiable and can be solved with gradient based optimization algorithms.
+
+- **Proxyless NAS** (PNAS), which uses a ping-pong optimization scheme that switches between gradient descent based
+  model parameter updates that minimize the training error and reinforce based architecture parameter updates that minimize
+  the test error, i.e.,
+  
+  .. math::
 
     \max_{\alpha} &\quad \mathbb{E}_{z \sim p_{\alpha}(z)} \big[\text{score}(z, \Phi^{*})\big] \\
     \text{s.t.} & \quad \Phi^{*} = \underset{\Phi}{\arg \min} \quad \text{loss}(z, \Phi)
 
-DARTS [liu2018]_
+NNablaNAS implements the DARTS and PNAS algorithms. Both report a good performance on multiple datasets.
+For a detailed description of the algorithms we refer to [liu2018]_ and [Cai2018]_.
 
 
 Code structure
