@@ -3,8 +3,8 @@ Introduction
 ============
 
 The success of Deep Neural Networks (DNNs) is due to their ability to automate the feature engineering process. 
-This sucess has been shown in many tasks, including s image recognition, speech recognition, and machine translation. 
-The choice of the network architecture, is a particulary important step when we design DNN based machine learning algorithms.
+This success has been shown in many tasks, including s image recognition, speech recognition, and machine translation. 
+The choice of the network architecture is a particularly important step when we design DNN based machine learning algorithms.
 A network architecture is the description which layers are used in a DNN, 
 how each layer is parametrized and how the layers are connected to each other. 
 Commonly known classes of network architectures are for example feed-forward DNNs, recursive DNNs, ResNets, Inception networks or 
@@ -12,15 +12,15 @@ MobileNets.
 
 By improving the DNN architecture such that it is tailored specifically to one given task, 
 we can further increase the performance of deep learning models [Elsken2018]_. 
-However, most of the neural architectures are desinged manually. This is time consuming, expensive and does not scale with 
+However, most of the neural architectures are designed manually. This is time consuming, expensive and does not scale with 
 an increasing number of new domains and learning tasks. 
-A promissing direction in automating machine learning is automating architecture engineering, 
+A promising direction in automating machine learning is automating architecture engineering, 
 the so-called *neural network architecture search* (NAS). 
 Neural network architecture search is closely related to 
 `hyperparameter optimization <https://en.wikipedia.org/wiki/Hyperparameter_optimization>`_ and is 
 a subfield of `automated machine learning <https://en.wikipedia.org/wiki/Automated_machine_learning>`_ (AutoML). 
 **NNablaNAS** is a framework for architecture search in computer vision domain. The main aim is to provide a modular, 
-easy, and extendible toolbox for deep learning practioners. In this section, an overview of neural architecture search is introduced.
+easy, and extendible toolbox for deep learning practitioners. In this section, an overview of neural architecture search is introduced.
 
 
 .. toctree::
@@ -40,22 +40,18 @@ denote the model and network architecture parameters, NAS can be formulated as a
     \text{s.t.} & \quad \theta^{*} = \underset{\theta}{\arg\min} \; \mathcal{L}_{\text{train}} (\theta; \alpha)
 
 where :math:`\mathcal{L}_{\text{train}}` and :math:`\mathcal{L}_{\text{val}}` denote the training and validation loss function, respectively.
+The design of modern neural network architectures is driven by two different objectives [liu2018]_:
 
+* The neural network should have a reasonably high capacity, i.e., the family of transfer functions contains arbitrary complex functions which can capture lots of information from training data. 
 
-The design of modern neural network architectures is driven by multiple different objectives [liu2018]_:
+* Inference should be computationally efficient, i.e., inference only needs a small number of multiplication-accumulation (MAC) operations, or low inference latency.
 
-* The neural network should have a reasonably high capacity, i.e., the the family 
-of transfer functions contains arbitrary complex functions which can capture lots of information from training data. 
-
-* Inference should be computationally efficient, i.e., inference only needs a 
-small number of multiplication-accumulation (MAC) operations, or low inference latency.
-
-The design of a good nueral architecture corresponds to find a good balance  
+The design of a good neural architecture corresponds to find a good balance  
 between those (often competing) requirements, by selecting and arranging layers in a 
 meaningful way. 
 
 Compared to the early days of Deep Learning, today, DNNs consist of a 
-broad variety of different different network layers like: *Linear*, *Convolutional*, 
+broad variety of different network layers like: *Linear*, *Convolutional*, 
 *Dilated Convolutional*, *Group Convolutional*, *Separable Convolutional* (depth wise, channel wise, spatial), 
 *Pooling*, *Skip Connect*, *Batch Normalization*, etc. Therefore, neural architecture design is a very large 
 combinatorial problem which  is especially hard to solve, because we have only a poor (or almost no) 
@@ -87,10 +83,10 @@ The main components of NAS include:
 NAS Agorithms 
 -------------
 
-NAS is a combinatorial and therefore a computationally comlex optimization problem. 
+NAS is a combinatorial and therefore a computationally complex optimization problem. 
 A variety of different NAS algorithms has been proposed in the past. To name a few, there are:
 
-- **Reinforcement learning based** NAS algorithms. Infact, the seminal paper about NAS proposed such a reinforcement learning approach.
+- **Reinforcement learning based** NAS algorithms. In fact, the seminal paper about NAS proposed such a reinforcement learning approach.
   Reinforcement learning based algorithms use an actor that generates neural architectures. To this end, the actor follows a policy, which 
   is optimized, such that the validation accuracy of the generated neural architectures is maximized.
   
@@ -122,7 +118,7 @@ A variety of different NAS algorithms has been proposed in the past. To name a f
     \text{s.t.} & \quad \Phi^{*} = \underset{\Phi}{\arg \min} \quad \text{loss}(z, \Phi)
 
 NNablaNAS implements the DARTS and PNAS algorithms. Both report a good performance on multiple datasets.
-For a detailed description of the algorithms we refer to [liu2018]_ and [Cai2018]_.
+For a detailed description of the algorithms we refer to section :ref:`nas_algorithms` or to the original papers [liu2018]_ and [Cai2018]_.
 
 
 Code structure
@@ -134,11 +130,11 @@ The most fundamental source codes are in the `nnabla_nas folder <https://gitlab.
 
 - `dataset <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Fdataset>`_: Datasets related are implemented in this folder. NNablaNAS uses a dataloader to feed data into the model.
 
-- `module <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Fmodule>`_: Most basic modues to define search spaces and to construct a neural network. 
+- `module <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Fmodule>`_: Most basic modules to define search spaces and to construct a neural network. 
 
-- `optimier <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Foptimizer>`_: Simple optimizers to update the parameters of the neural networks as well as architecture parameters.
+- `optimizer <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Foptimizer>`_: Simple optimizers to update the parameters of the neural networks as well as architecture parameters.
 
-- `runner <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Frunner>`_: Search and retraining algorithms are defined in this folder. Any new architecture search algorithm should follow the same APIs.
+- `runner <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Frunner>`_: Search and retraining algorithms are defined in this folder. Any new architecture search algorithm should follow the same API.
 
 - `utils <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas/-/tree/master/nnabla_nas%2Futils>`_: Utilities functions related to logging, visualization, and profiling.
 
@@ -147,7 +143,7 @@ The most fundamental source codes are in the `nnabla_nas folder <https://gitlab.
     :width: 800
     :align: center
 
-**Fig. 2.** A high-level APIs of the NNablaNAS framework.
+**Fig. 2.** A high-level API of the NNablaNAS framework.
 
 .. rubric:: References
 
