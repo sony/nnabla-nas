@@ -42,7 +42,7 @@ class ProxylessNasSearcher(Searcher):
 
     def valid_on_batch(self):
         r"""Update the arch parameters."""
-        beta, n_iter = 0.9, 5
+        beta, n_iter = 0.9, 10
         bz, p = self.args.mbs_valid, self.placeholder['valid']
         valid_data = [self.dataloader['valid'].next()
                       for i in range(self.accum_valid)]
