@@ -4,6 +4,7 @@ docs/source/_build/
 log/
 __nnabla_nas__/
 docs/build
+*.svg
 .vscode
 .mypy_cache
 .pytest_cache
