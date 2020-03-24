@@ -40,15 +40,11 @@ denote the model and network architecture parameters, NAS can be formulated as a
     \text{s.t.} & \quad \theta^{*} = \underset{\theta}{\arg\min} \; \mathcal{L}_{\text{train}} (\theta; \alpha)
 
 where :math:`\mathcal{L}_{\text{train}}` and :math:`\mathcal{L}_{\text{val}}` denote the training and validation loss function, respectively.
+The design of modern neural network architectures is driven by two different objectives [liu2018]_:
 
+* The neural network should have a reasonably high capacity, i.e., the family of transfer functions contains arbitrary complex functions which can capture lots of information from training data. 
 
-The design of modern neural network architectures is driven by multiple different objectives [liu2018]_:
-
-* The neural network should have a reasonably high capacity, i.e., the family 
-of transfer functions contains arbitrary complex functions which can capture lots of information from training data. 
-
-* Inference should be computationally efficient, i.e., inference only needs a 
-small number of multiplication-accumulation (MAC) operations, or low inference latency.
+* Inference should be computationally efficient, i.e., inference only needs a small number of multiplication-accumulation (MAC) operations, or low inference latency.
 
 The design of a good neural architecture corresponds to find a good balance  
 between those (often competing) requirements, by selecting and arranging layers in a 
@@ -122,7 +118,7 @@ A variety of different NAS algorithms has been proposed in the past. To name a f
     \text{s.t.} & \quad \Phi^{*} = \underset{\Phi}{\arg \min} \quad \text{loss}(z, \Phi)
 
 NNablaNAS implements the DARTS and PNAS algorithms. Both report a good performance on multiple datasets.
-For a detailed description of the algorithms we refer to [liu2018]_ and [Cai2018]_.
+For a detailed description of the algorithms we refer to section :ref:`nas_algorithms` or to the original papers [liu2018]_ and [Cai2018]_.
 
 
 Code structure

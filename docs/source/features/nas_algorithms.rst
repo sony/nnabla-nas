@@ -1,21 +1,23 @@
+.. _nas_algorithms:
+
 NAS Algorithms
 --------------
 
 While a multiple different NAS algorithms have been proposed in the past,
 NNablaNAS implements only two of them, namely DARTS and ProxylessNAS.
 In the past, DARTS has shown impressive results on CIFAR10. Furthermore, 
-the algorithm is very simple. However, as described later in detail, DARTS 
-requires a lot o memory. DARTS basically instantiates a superposition of all possible
-networks in the search space. Of course this requires lots of memory an computational power and 
-makes DARTS only feasible for small search spaces. 
-Furthermore, because of the huge memory requirements, DARTS cannot be used to search for
-architectures on large datasets like Imagenet. 
-
-ProxylessNAS addresses this problem and instantiates only one or few candidate networks from the
+the algorithm is very simple. However, DARTS also has some drawbacks.
+It requires a lot of memory and has a very high computational complexity. 
+As described later in detail, DARTS basically instantiates a superposition of all possible
+networks in the search space. Because the computational complexity to evaluate a superposition
+of all networks within the search space can be very high,
+DARTS cannot be used to search for architectures 
+in large search spaces or on large datasets like Imagenet. 
+ProxylessNAS addresses this problem and instantiates only few candidate networks from the
 search space at once. This greatly improves the memory efficiency. However, it comes at the cost of
 slower convergence of the algorithm. 
 
-Consider the simple example search space in the following figure. The input of the search space is :math:`x`.
+Consider the simple example search space in the following Fig. 1. The input of the search space is :math:`x`.
 The input is passed to :math:`K` candidate functions :math:`f_k(x, \theta_k)` with model parameters :math:`\theta_k`.
 The output of each candidate function is weighted with a binar architecture weight :math:`z_k \in \{0,1\}`. Here,
 :math:`\sum_{k=1}^K z_k =1`, i.e., only one candidate function can be selected at a time. The result, then is
@@ -27,7 +29,11 @@ accumulated to calculate the output
 
 
 .. image:: images/pnas_example.png
-    :width: 200
+	:width: 200
+	:align: center
+	
+	
+**Fig. 1.** A simple example search space.
 
 NAS tries to optimize the architecture weights :math:`z_1, z_2, ..., z_K`, 
 such that the test accuracy of the network is maximized.
@@ -45,7 +51,8 @@ Depending on the network and dataset size, this might take hours to days. Furthe
 a combinatorial optimization problem that is very complex to solve if the number of candidate functions increases (regardless of how 
 much time it takes to find :math:`\theta^{*}|z`).
 A good overview paper about nas is [Elsken2018]_.
-Please have also a look at the API documentation of nnabla_nas.runner for further details how to use DARTS and PNAS.
+Please have a look API documentation :ref:`darts-label` and :ref:`pnas-label` 
+for further details how to use the DARTS and PNAS algorithms of NNablaNAS, respectively.
 
 Both DARTS and PNAS simplify the optimization problem in order to solve it. In the following sections we give a short summary of both 
 algorithms and about the assumptions they make. For details, we refer to the original publications
@@ -80,7 +87,7 @@ where :math:`\alpha \in \mathbb{R}^{K}` are real architecture parameters. Hence,
 
     y = \sum_{k=1}^K [\mathrm{softmax}(\alpha)]_k f_k(x; \theta_k)
 	
-is differentiable with respect to $\alpha$ and we can use gradient based optimization. Note, if we would use a softmax
+is differentiable with respect to :math:`\alpha` and we can use gradient based optimization. Note, if we would use a softmax
 function with a temperature term :math:`z = \mathrm{softmax}(\alpha, T)` and would take the limit of :math:`T \rightarrow 0`,
 we would recover the original combinatorial optimization problem. However, a drawback of DARTS is, that all candidates
 :math:`f_k(\cdot)` must be evaluated, what requires lots of calculations and memory.
