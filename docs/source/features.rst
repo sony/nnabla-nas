@@ -1,5 +1,5 @@
-Framework Features
-==================
+Features
+========
 
 .. toctree::
 
