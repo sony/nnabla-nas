@@ -213,9 +213,6 @@ pip install -r requirements.txt
 You can then build the documentation by running ``make <format>`` from the
 ``docs/`` folder. Run ``make`` to get a list of all available output formats.
 
-## Contribution
-
-Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## License
 
