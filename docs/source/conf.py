@@ -25,6 +25,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.autosummary',
+    'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex'
 ]
 
