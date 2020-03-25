@@ -52,7 +52,7 @@ The retraining script can be used as
                -f examples/darts_train.json \
                -a Trainer -o log/darts/train
 
-NNablaNAS also supports multi GPUs. More information can be found `<here https://nnabla.readthedocs.io/en/latest/python/tutorial/multi_device_training.html>`_. Below is an example of searching an architecture with 4 GPUs.
+NNablaNAS also supports multi GPUs. More information can be found `here <https://nnabla.readthedocs.io/en/latest/python/tutorial/multi_device_training.html>`_. Below is an example of searching an architecture with 4 GPUs.
 
 :: 
 
