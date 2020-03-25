@@ -6,9 +6,9 @@ sys.path.insert(0, os.path.abspath('../../'))
 
 
 # -- Project information -----------------------------------------------------
-project = 'NnablaNAS'
-copyright = '2020, NnablaNAS contributors'
-author = 'NnablaNAS contributors'
+project = 'NNablaNAS'
+copyright = '2017, Sony Corporation'
+author = 'Sony Corporation'
 release = '0.0.1'
 
 
