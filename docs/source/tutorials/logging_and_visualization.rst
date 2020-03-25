@@ -1,7 +1,7 @@
 Logging and Visualization
 -------------------------
 
-``SummaryWriter`` is the main class to log data for visualization by TensorBoard. Training curves can be logged for each experiments. See the following example:
+``SummaryWriter`` is the main class to log data for visualization by TensorBoard. Training curves can be logged for each experiment. See the following example:
 
 .. code-block:: python
 

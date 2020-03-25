@@ -218,6 +218,8 @@ DARTS
    :show-inheritance:
 
 
+.. _mobilenet:
+
 MobileNet V2
 ............
 

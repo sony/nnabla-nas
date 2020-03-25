@@ -1,9 +1,9 @@
 Neural Architecture Search for NNabla
-=====================================
+============================
 
-NnablaNAS is a Python package that provides methods in neural architecture search for NNabla
+NNablaNAS is a Python package that provides methods in neural architecture search for NNabla
 
-- A top level graph to define candidate architectures for convolutional neural networks (CNNs)
+- A top-level graph to define candidate architectures for convolutional neural networks (CNNs)
 
 - Profilers to measure the hardware demands of neural architectures (latency, number of parameters, etc...)
 
@@ -21,7 +21,7 @@ Overview
 .. toctree::
    :maxdepth: 2
 
-   introdution
+   introduction
    installation
    features
    experiment

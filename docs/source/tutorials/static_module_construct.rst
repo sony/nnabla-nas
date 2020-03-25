@@ -1,4 +1,4 @@
-Overview Static Modules
+Overview of Static Modules
 -----------------------
 
 Besides (dynamic) modules NNablaNAS offers static_modules, i.e.,
@@ -40,13 +40,12 @@ the graph structure, i.e., they do not know which module is their parent is, or 
 input and output shapes they should expect.
 
 A dynamic graph definition is not the natural choice if we need to define functions that
-need knowledge about the graph structure. In case of hardware aware NAS, such functions are
-for example, latency estimation given the graph structure, the calculation of
+need knowledge about the graph structure. In the case of hardware aware NAS, such functions are, for example, latency estimation is given the graph structure, the calculation of
 graph similarities (Bayesian Optimization) or simple graph optimization algorithms (as discussed later).
 NNablaNAS therefore also offers static_modules. Static modules are a simple extension of
 dynamic modules and inherit all of their functionality. In comparison, static modules
 store the graph structure and therefore can be used to define static network graphs.
-The example network from the example above can for example be defined like:
+The example network from the example above can, for example, be defined as:
 
 .. code-block:: python
 
@@ -61,50 +60,45 @@ The example network from the example above can for example be defined like:
 
    out = net()
 
-In comparison to dynamic modules, each static module keeps a list of its parents. Therefore, the graph
-structure is stored within and can later be retrieved from the modules.
-Furthermore, static_modules introduce a sort of shape security, i.e.,
-once a module is instantiated, the input and output shape of the module are fixed and cannot be changed
-anymore.
+In comparison to dynamic modules, each static module keeps a list of its parents. Therefore, the graph structure is stored within and can later be retrieved from the modules. Furthermore, static_modules introduce a sort of shape security, i.e., once a module is instantiated, the input and output shape of the module are fixed and cannot be changed anymore.
 
 Why Static Modules for hardware aware NAS
 .........................................
 
 There are multiple reasons, why static modules are interesting for hardware aware NAS. Here, we discuss two
-particularily important ones.
+particularly important ones.
 
 Typically, hardware aware NAS involves the definition of large candidate spaces, i.e.,
-large DNN architectures that are contain all kind of candidate layers that are
+large DNN architectures that contain all kinds of candidate layers that are
 heavily interconnected. During architecture search we consecutively draw subnetworks
 from the candidate space, meaning that some of the candidate layers are selected,
 while others are dropped. For an efficient search, it is desirable to have simple
-graph optimization algorithms in place, i.e., algorithms which optimize the computational
+graph optimization algorithms in place, i.e., algorithms that optimize the computational
 graph of the selected subnetworks before executing them.
 
 Consider for example the following search space: 1) The network applies an input convolution (conv 1). 2) Two candidate
 layers are applied to the output of conv 1, that are a zero operation and another convolution (conv 2). 3) The Join layer
 randomly selects the output of one of the candidate layers and feeds it to conv 3. If Join selects Conv 2, we need to calculate
 the output of Conv 1, Conv 2 and Conv 3. However, if Join selects Zero, only the output of Conv 3 must be calculated, because
-selecting Zero, effectively cuts the computational graph, meaning that all layers that are parent of Zero and that have
-no shortcut connection to any following layer can be deleted from the computational graph.
-Static modules implement such a graph optimization, meaning that they can speed up computations.
+selecting Zero, effectively cuts the computational graph, meaning that all layers that are the parent of Zero and that have
+no shortcut connection to any following layer can be deleted from the computational graph. Static modules implement such graph optimization, meaning that they can speed up computations.
 
 .. image:: ../images/static_example_graph.png
 
-A second reason why a static graph definition is the natural choice for hardware aware NAS is related to latency modeling.
+A second reason why a static graph definition is a natural choice for hardware aware NAS is related to latency modeling.
 To perform hardware aware NAS, we need to estimate the latency of the subnetworks that have been
 drawn from the candidate space in order to decide whether the network meets our latency requirements or not.
 Typically, the latency of all layers (modules) within the search space are measured once individually. The latency of a
-subnetwork of the search space, then, is a function of those individual latencies and of the structure of the subnework. Note,
+subnetwork of the search space, then, is a function of those individual latencies and of the structure of the subnetwork. Note,
 simply summing up all the latencies of the modules that are contained in the subnetwork is wrong. This is obvious if we reconsider the
 example from above. All the modules Conv 1 to Conv 3 have a latency > 0, while Zero and Join have a latency of 0. If Join selects Zero,
 Conv 1, Zero, Join and Conv 3 are part of the subnetwork. However, summing up the latency of Conv 1,
-Zero, Join and Conv 3 is wrong. The correct latency would be if we only consider Conv 3.
+Zero, Join and Conv 3 are wrong. The correct latency would be if we only consider Conv 3.
 
 Other problems which need knowledge of the graph structure are for example:
 1) Graph similarity calculation
 2) NAS, using Bayesian optimization algorithms
-3) Modelling the memory footprint of DNNs (activation memory)
+3) Modeling the memory footprint of DNNs (activation memory)
 
 Which modules are currently implemented?
 ........................................
@@ -115,7 +109,7 @@ namely contrib.zoph and the contrib.random_wired.
 Implementing new static modules
 ...............................
 
-There are different ways how to define static modules. 
+There are different ways of how to define static modules. 
 
 - You can derive a static version from a dynamic module. Consider the following
 example, where we want to derive a static Conv module from the dynamic Conv module.
@@ -134,10 +128,8 @@ We call the __init__() of both parent classes. Please note, that the order of in
             if len(self._parents) > 1:
                 raise RuntimeError
 
-- We can also implement a new static module from scratch, implementing the call method. Please follow the same 
-steps that are documented in the dynamic module tutorial. In the following example we define a StaticConv, implementing
-the call method. You can either use the NNabla API or dynamic modules to define the transfer function. In our case, we 
-use dynamic modules.
+- We can also implement a new static module from scratch, implementing the call method. Please follow the same steps that are documented in the dynamic module tutorial. In the following example, we define a StaticConv, implementing
+the call method. You can either use the NNabla API or dynamic modules to define the transfer function. In our case, we use dynamic modules.
 
 .. code-block:: python
 
@@ -204,7 +196,7 @@ a batch normalization and a ReLU static module and append it to the graph.
         self.append(smo.ReLU(parents=[self[-1]],
                              name='{}/relu'.format(self.name)))
 
-Of course, we can use this separable convolution as building block in another static network graph.
+Of course, we can use this separable convolution as a building block in another static network graph.
 
 .. code-block:: python
 

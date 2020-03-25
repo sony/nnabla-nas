@@ -6,7 +6,7 @@
 
 # Neural Architecture Search for Neural Network Libraries
 
-NnablaNAS is a Python package that provides methods for neural hardware aware neural architecture search for NNabla
+NNablaNAS is a Python package that provides methods for neural hardware aware neural architecture search for NNabla
 
 - A top level graph to define candidate architectures for convolutional neural networks (CNNs)
 - Profilers to measure the hardware demands of neural architectures (latency, number of parameters, etc...)
@@ -14,7 +14,7 @@ NnablaNAS is a Python package that provides methods for neural hardware aware ne
 - Regularizers (e.g., [`LatencyEstimator`](nnabla_nas/contrib/estimator/latency.py) and [`MemoryEstimator`](nnabla_nas/contrib/estimator/memory.py)) which can be used to enforce hardware constraints
 
 
-NnablaNAS aims to make the architecture search research more reusable and reproducible by providing them with a modular framework that they can use to implement new search algorithms and new search spaces while reusing code.
+NNablaNAS aims to make the architecture search research more reusable and reproducible by providing them with a modular framework that they can use to implement new search algorithms and new search spaces while reusing code.
 
 - [Neural Architecture Search for Neural Network Libraries](#neural-architecture-search-for-neural-network-libraries)
   - [Getting started](#getting-started)
@@ -27,12 +27,11 @@ NnablaNAS aims to make the architecture search research more reusable and reprod
     - [Visualization](#visualization)
   - [Experiments](#experiments)
   - [Documentation](#documentation)
-  - [Contribution](#contribution)
   - [License](#license)
 
 ## Getting started
 
-Here we show how to install NnablaNAS and build a simple search space.
+Here we show how to install NNablaNAS and build a simple search space.
 
 ### Installation
 
@@ -43,7 +42,7 @@ git clone git@gitlab.stc.eu.sony.com:bacnguyencong/nnabla_nas.git
 cd nnabla_nas
 ```
 
-Install dependecies for NnablaNAS by the following command
+Install dependecies for NNablaNAS by the following command
 
 ```bash
 pip install -r requirements.txt
@@ -57,7 +56,7 @@ pytest .
 
 ### Examples
 
-The example below shows how to use NnablaNAS. 
+The example below shows how to use NNablaNAS. 
 
 We construct a search space by relaxing the layer that the network can have. Our search space encodes that the network chooses between Convolution, MaxPooling, and Identity for the first layer.
 
@@ -104,11 +103,11 @@ if __name__ == '__main__':
     print(net)
 ```
 
-The [tutorials](docs/tutorial.md) and [examples](docs/examples.md) cover additional aspects of NnablaNAS.
+The [tutorials](docs/source/tutorials/) and [examples](docs/source/tutorials/examples.rst) cover additional aspects of NNablaNAS.
 
 ## Features
 
-The main features of NnablaNAS are 
+The main features of NNablaNAS are 
 
 ### Search spaces
 
@@ -165,7 +164,7 @@ class MyAlgorithm(Searcher):
         # TODO: write your code here
 ```
 
-There are two searcher algorithms implemented in NnablaNAS, including [`DartsSearcher`](nnabla_nas/runner/searcher/darts.py) and [`ProxylessNasSearcher`](nnabla_nas/runner/searcher/pnas.py).
+There are two searcher algorithms implemented in NNablaNAS, including [`DartsSearcher`](nnabla_nas/runner/searcher/darts.py) and [`ProxylessNasSearcher`](nnabla_nas/runner/searcher/pnas.py).
 
 ### Logging
 
@@ -182,6 +181,32 @@ Visualization is useful for debugging and illustrating the search space. One can
 
 
 ## Experiments
+
+NNablaNAS has command line interface utility:
+
+```bash
+usage: main.py [-h] [--context CONTEXT] [--device-id DEVICE_ID]
+               [--type-config TYPE_CONFIG] [--search]
+               [--algorithm {DartsSearcher,ProxylessNasSearcher,Trainer}]
+               [--config-file CONFIG_FILE] [--output-path OUTPUT_PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --context CONTEXT, -c CONTEXT
+                        Extension module. 'cudnn' is highly.recommended.
+  --device-id DEVICE_ID, -d DEVICE_ID
+                        A list of device ids to use, e.g., 0,1,2. This is only valid if you
+                        specify `-c cudnn`.
+  --type-config TYPE_CONFIG, -t TYPE_CONFIG
+                        Type configuration.
+  --search, -s          Whether search algorithm is performed.
+  --algorithm {DartsSearcher,ProxylessNasSearcher,Trainer}, -a {DartsSearcher,ProxylessNasSearcher,Trainer}
+                        Algorithm used to run
+  --config-file CONFIG_FILE, -f CONFIG_FILE
+                        The configuration file used to run the experiment.
+  --output-path OUTPUT_PATH, -o OUTPUT_PATH
+                        Path monitoring logs saved.
+```
 
 You can start architecture search using `DartsSearcher` by the command below
 
@@ -216,4 +241,4 @@ You can then build the documentation by running ``make <format>`` from the
 
 ## License
 
-NnablaNAS is Apache-style licensed, as found in the [LICENSE](LICENSE) file.
+NNablaNAS is Apache-style licensed, as found in the [LICENSE](LICENSE) file.

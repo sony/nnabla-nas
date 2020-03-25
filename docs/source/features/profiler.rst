@@ -1,7 +1,7 @@
 Profiler
 --------
 
-NNabla NAS has the offline profiler. Profiler measures the latency for any modules; a single module and/or the network made of modules. The offline profiling is necessary since if one wants to measure latency of a module on-the-fly during a search phase, which could be a bottleneck in a training system, and addtionally one has to attach and incoorporate a target device to a training system.
+NNabla NAS has an offline profiler. Profiler measures the latency for any modules; a single module and/or the network made of modules. Offline profiling is necessary since if one wants to measure the latency of a module on-the-fly during a search phase, which could be a bottleneck in a training system, and additionally one has to attach and incorporate a target device to a training system.
 
 Currently, this profiler assumes the Proxyless NAS algorithm, and the following devices and runtimes are tested.
 
@@ -22,7 +22,4 @@ Currently, this profiler assumes the Proxyless NAS algorithm, and the following 
 :ref:`TensorRT <profiler-tensorrt>`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-COMMING SOON.
-
-
-
+COMING SOON.
