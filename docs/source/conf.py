@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 project = 'NNablaNAS'
 copyright = '2017, Sony Corporation'
 author = 'Sony Corporation'
-release = '0.0.1'
+release = '0.9'
 
 
 # -- General configuration ---------------------------------------------------
