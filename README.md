@@ -8,7 +8,7 @@
 
 NNablaNAS is a Python package that provides methods for neural hardware aware neural architecture search for NNabla
 
-- A top level graph to define candidate architectures for convolutional neural networks (CNNs)
+- A top-level graph to define candidate architectures for convolutional neural networks (CNNs)
 - Profilers to measure the hardware demands of neural architectures (latency, number of parameters, etc...)
 - Searcher algorithms to learn the architecture and model parameters (e.g., [`DartsSearcher`](nnabla_nas/runner/searcher/darts.py) and [`ProxylessNasSearcher`](nnabla_nas/runner/searcher/pnas.py))
 - Regularizers (e.g., [`LatencyEstimator`](nnabla_nas/contrib/estimator/latency.py) and [`MemoryEstimator`](nnabla_nas/contrib/estimator/memory.py)) which can be used to enforce hardware constraints
@@ -27,6 +27,7 @@ NNablaNAS aims to make the architecture search research more reusable and reprod
     - [Visualization](#visualization)
   - [Experiments](#experiments)
   - [Documentation](#documentation)
+  - [Contact](#contact)
   - [License](#license)
 
 ## Getting started
@@ -42,7 +43,7 @@ git clone git@gitlab.stc.eu.sony.com:bacnguyencong/nnabla_nas.git
 cd nnabla_nas
 ```
 
-Install dependecies for NNablaNAS by the following command
+Install dependencies for NNablaNAS by the following command
 
 ```bash
 pip install -r requirements.txt
@@ -111,7 +112,7 @@ The main features of NNablaNAS are
 
 ### Search spaces
 
-Search spaces are constructed using Modules. Modules are composed of layers, which receives nnabla Variable as input and computes Variable as output. Modules can also contain other Modules, allowing to nest them in a tree structure. One can assign the submodules as regular attributes. All search space components should inherit from `nnabla_nas.module.Module` and override the `call()` method. Please refer to [`nnabla_nas/module/module.py`](nnabla_nas/module/module.py).
+Search spaces are constructed using Modules. Modules are composed of layers, which receive NNabla Variable as input and computes Variable as output. Modules can also contain other Modules, allowing to nest them in a tree structure. One can assign the submodules as regular attributes. All search space components should inherit from `nnabla_nas.module.Module` and override the `call()` method. Please refer to [`nnabla_nas/module/module.py`](nnabla_nas/module/module.py).
 
 
 ```python
@@ -144,7 +145,7 @@ class MyModel(Model):
 
 ### Searcher algorithms
 
-An Searcher interacts with the search space through a simple API. A searcher samples a model from the search space by assigning values to the architecture parameters. The results from sampled architecture is then used to update the architecture parameters of the search space. A searcher also updates the model parameters. A new Searcher should inherit API from [`nnabla_nas.runner.searcher.search.Searcher`](nnabla_nas/runner/searcher/search.py). This class has two methods `train_on_batch()` and `valid_on_batch()` which should be redefined by users. 
+A Searcher interacts with the search space through a simple API. A searcher samples a model from the search space by assigning values to the architecture parameters. The results from sampled architecture is then used to update the architecture parameters of the search space. A searcher also updates the model parameters. A new Searcher should inherit API from [`nnabla_nas.runner.searcher.search.Searcher`](nnabla_nas/runner/searcher/search.py). This class has two methods `train_on_batch()` and `valid_on_batch()` which should be redefined by users. 
 
 ```python
 from nnabla_nas.runner.searcher.search import Searcher
@@ -175,7 +176,7 @@ When running the architecture search, the evaluations in the search space are lo
 
 ### Visualization
 
-Visualization is useful for debugging and illustrating the search space. One can easily check whether the search space was build correctly. So far, only DARTS search space is supported.
+Visualization is useful for debugging and illustrating the search space. One can easily check whether the search space was built correctly.
 
 <img align="center" src="docs/source/images/darts_normal.png" alt="drawing" width="700"/>
 
@@ -208,7 +209,7 @@ optional arguments:
                         Path monitoring logs saved.
 ```
 
-You can start architecture search using `DartsSearcher` by the command below
+You can start the architecture search using `DartsSearcher` by the command below
 
 ```bash
 # search DARTS
@@ -218,7 +219,7 @@ python main.py -d 1 --search \
                -o log/darts/search
 ```
 
-For re-training the model using the architecture found in the architecture search, just run
+For re-training, the model using the architecture found in the architecture search, just run
 ```bash
 # train DARTS
 python main.py -d 1 \
@@ -238,6 +239,8 @@ pip install -r requirements.txt
 You can then build the documentation by running ``make <format>`` from the
 ``docs/`` folder. Run ``make`` to get a list of all available output formats.
 
+## Contact
+NNablaNAS is currently maintained by [SSG-DL group](mailto:STC_EUTEC-SSG-DL@eu.sony.com), [R&D Center Europe Stuttgart Laboratory 1](https://www.sony.net/SonyInfo/technology/about/stuttgart1/). For bug reports, questions, and suggestions, use [Github issues](https://github.com/nnabla/nnabla-nas/issues).
 
 ## License
 

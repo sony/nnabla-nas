@@ -16,7 +16,7 @@ from nnabla_nas.utils.helper import CommunicatorWrapper, label_smoothing_loss
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--context', '-c', type=str, default='cudnn',
-                        help="Extension module. 'cudnn' is highly.recommended.")
+                        help="Extension module. 'cudnn' is highly recommended.")
     parser.add_argument("--device-id", "-d", type=str, default='-1',
                         help='A list of device ids to use.\
                         This is only valid if you specify `-c cudnn`.')
