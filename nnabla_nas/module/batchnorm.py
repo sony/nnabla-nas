@@ -7,45 +7,46 @@ from .parameter import Parameter
 
 
 class BatchNormalization(Module):
+    r"""Batch normalization layer.
+
+    Args:
+        n_features (int): Number of dimentional features.
+        n_dims (int): Number of dimensions.
+        axes (:obj:`tuple` of :obj:`int`):
+            Mean and variance for each element in ``axes`` are calculated
+            using elements on the rest axes. For example, if an input is 4
+            dimensions, and ``axes`` is ``[1]``,  batch mean is calculated
+            as ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
+            (using numpy expression as an example).
+        decay_rate (float, optional): Decay rate of running mean and
+            variance. Defaults to 0.9
+        eps (float, optional): Tiny value to avoid zero division by std.
+            Defaults to 1e-5.
+        output_stat (bool, optional): Output batch mean and variance.
+            Defaults to `False`.
+        fix_parameters (bool): When set to `True`, the beta and gamma will
+            not be updated.
+        param_init (dict):
+            Parameter initializers can be set with a dict. A key of the
+            dict must be ``'beta'``, ``'gamma'``, ``'mean'`` or ``'var'``.
+            A value of the dict must be an :obj:`~nnabla.initializer.
+            Initializer` or a :obj:`numpy.ndarray`.
+            E.g. ``{
+                    'beta': ConstantIntializer(0),
+                    'gamma': np.ones(gamma_shape) * 2
+                    }``.
+
+    Returns:
+        :class:`~nnabla.Variable`: N-D array.
+
+    References:
+        - Ioffe and Szegedy, Batch Normalization: Accelerating Deep
+        Network Training by Reducing Internal Covariate Shift.
+        https://arxiv.org/abs/1502.03167
+    """
+
     def __init__(self, n_features, n_dims, axes=[1], decay_rate=0.9, eps=1e-5,
                  output_stat=False, fix_parameters=False, param_init=None):
-        r"""Batch normalization layer.
-
-        Args:
-            n_features (int): Number of dimentional features.
-            n_dims (int): Number of dimensions.
-            axes (:obj:`tuple` of :obj:`int`):
-                Mean and variance for each element in ``axes`` are calculated
-                using elements on the rest axes. For example, if an input is 4
-                dimensions, and ``axes`` is ``[1]``,  batch mean is calculated
-                as ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
-                (using numpy expression as an example).
-            decay_rate (float, optional): Decay rate of running mean and
-                variance. Defaults to 0.9
-            eps (float, optional): Tiny value to avoid zero division by std.
-                Defaults to 1e-5.
-            output_stat (bool, optional): Output batch mean and variance.
-                Defaults to `False`.
-            fix_parameters (bool): When set to `True`, the beta and gamma will
-                not be updated.
-            param_init (dict):
-                Parameter initializers can be set with a dict. A key of the
-                dict must be ``'beta'``, ``'gamma'``, ``'mean'`` or ``'var'``.
-                A value of the dict must be an :obj:`~nnabla.initializer.
-                Initializer` or a :obj:`numpy.ndarray`.
-                E.g. ``{
-                        'beta': ConstantIntializer(0),
-                        'gamma': np.ones(gamma_shape) * 2
-                        }``.
-
-        Returns:
-            :class:`~nnabla.Variable`: N-D array.
-
-        References:
-            - Ioffe and Szegedy, Batch Normalization: Accelerating Deep
-            Network Training by Reducing Internal Covariate Shift.
-            https://arxiv.org/abs/1502.03167
-        """
 
         assert len(axes) == 1
 
