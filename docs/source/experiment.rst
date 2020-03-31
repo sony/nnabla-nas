@@ -13,7 +13,7 @@ NNablaNAS has command line interface utility:
     optional arguments:
     -h, --help            show this help message and exit
     --context CONTEXT, -c CONTEXT
-                            Extension module. 'cudnn' is highly.recommended.
+                            Extension module. 'cudnn' is highly recommended.
     --device-id DEVICE_ID, -d DEVICE_ID
                             A list of device ids to use, e.g., 0,1,2. This is only valid if you
                             specify `-c cudnn`.

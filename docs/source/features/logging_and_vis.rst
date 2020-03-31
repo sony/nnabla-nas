@@ -3,7 +3,7 @@ Logging and visualization
 
 NNablaNAS provides numerous tools to create visualizations and logging files based on the search space results. Most of these features are integrated into  `TensorBoard <https://www.tensorflow.org/tensorboard>`_. Before going further, more details on TensorBoard can be found at `<https://www.tensorflow.org/tensorboard/>`_.
 
-Once TensorBoard is installed, we can write scalars, images, and graphs into a directory for visualization within the Tensorboard UI. To run TensorBoard, use the following command:
+Once TensorBoard is installed, we can write scalars, images, and graphs into a directory for visualization within the TensorBoard UI. To run TensorBoard, use the following command:
 
 ::
 
