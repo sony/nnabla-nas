@@ -13,6 +13,7 @@ class Normalize(object):
     Args:
         mean (sequence): Sequence of means for each channel.
         std (sequence): Sequence of standard deviations for each channel.
+        scale (float): Scales the inputs by a scalar.
     """
 
     def __init__(self, mean, std, scale):

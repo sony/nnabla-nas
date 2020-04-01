@@ -21,12 +21,12 @@ def _get_unique_params(params):
 
 
 class GraphVisitor(object):
-    r"""A visitor for nnabla graph.
+    r"""A visitor for NNabla Graph.
 
     Args:
-        model (Module): A nnabla module.
+        model (Module): A NNabla Module.
 
-    Note: all arguments in `args` should be nnabla variables, which will be used during the `call` method.
+    Note: All arguments in `args` should be NNabla Variables, which will be used during the `call` method.
     """
 
     def __init__(self, model, *args, **kargs):

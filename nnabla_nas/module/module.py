@@ -220,6 +220,5 @@ class Module(object):
         return self.call(*args, **kargs)
 
     def call(self, *args, **kargs):
-        r"""Implement the call of module. Inmediate inputs should only be
-        Variables."""
+        r"""Implement the call of module. Inputs should only be Variables."""
         raise NotImplementedError

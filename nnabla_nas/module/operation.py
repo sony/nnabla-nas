@@ -4,10 +4,10 @@ from .module import Module
 class Lambda(Module):
     r"""Lambda module.
 
-    This module wraps a nnabla operator.
+    This module wraps a NNabla operator.
 
     Args:
-        func (nnabla.functions): A nnabla funcion.
+        func (nnabla.functions): A NNabla funcion.
     """
 
     def __init__(self, func):
