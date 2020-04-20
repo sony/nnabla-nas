@@ -307,8 +307,8 @@ class TransformParser(OptionParser):
                 'valid': transforms.Compose([])
             }
 
-        mean = (0.49139968, 0.48215827, 0.44653124),
-        std = (0.24703233, 0.24348505, 0.26158768),
+        mean = (0.49139968, 0.48215827, 0.44653124)
+        std = (0.24703233, 0.24348505, 0.26158768)
         scale = 1./255.0
         pad_width = (4, 4, 4, 4)
         return {
