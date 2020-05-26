@@ -90,10 +90,10 @@ class GraphVisitor(object):
         # find lowest common ancestors
         n = np.min([len(s) for s in scopes])
         scope = []
-        for l in range(n):
-            if np.any([scopes[0][l] != scopes[i][l] for i in range(len(scopes))]):
+        for j in range(n):
+            if np.any([scopes[0][j] != scopes[i][j] for i in range(len(scopes))]):
                 break
-            scope.append(scopes[0][l])
+            scope.append(scopes[0][j])
         return '/'.join(scope)
 
     def _get_node_name(self, p):
