@@ -1,0 +1,88 @@
+name: Build nnabla-nas
+on: [push]
+
+jobs:
+  doc:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build HTML
+      uses: ammaraskar/sphinx-action@master
+      with:
+        docs-folder: "docs/"
+        build-command: "make html"
+
+    - name: Upload HTML
+      uses: actions/upload-artifact@v2
+      with:
+        name: nnabla-nas-html
+        path: ./docs/build/html
+  
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+
+    - name: Instal dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Lint with pyflakes
+      run: |
+        flake8 . --max-line-length=120
+
+  wheel:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.6
+
+    - name: Build wheel
+      run: |
+        python -m pip install --upgrade pip wheel
+        python setup.py bdist_wheel
+
+    - name: Upload Wheel
+      uses: actions/upload-artifact@v2
+      with:
+        name: nnabla-nas-wheel
+        path: ./dist/*.whl
+  
+
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Instal dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Unit test
+      run: |
+        pytest --cov=nnabla_nas tests/
