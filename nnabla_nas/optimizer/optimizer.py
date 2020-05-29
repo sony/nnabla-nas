@@ -18,6 +18,22 @@ import nnabla.solvers as S
 
 
 class Optimizer(object):
+    r"""An Optimizer class.
+
+    Args:
+        retain_state (bool, optional): Whether retaining states is true.
+            Defaults to False.
+        weight_decay (float, optional): Weight decay (L2 penalty). Should be
+            a positive value. Defaults to None.
+        grad_clip (float, optional): An input scalar of float value. Should be
+            a positive value. Defaults to None.
+        lr_scheduler (`BaseLearningRateScheduler`, optional): Learning rate
+            scheduler. Defaults to None (no learning rate scheduler is applied).
+        name (str, optional): Name of the solver. Defaults to 'Sgd'.
+
+    Raises:
+        NotImplementedError: If the solver is not supported in NNabla.
+    """
 
     def __init__(self,
                  retain_state=False,
@@ -39,6 +55,7 @@ class Optimizer(object):
         self._iter = 0  # current iter
 
     def set_parameters(self, params, **kargs):
+        r"""Set parameters by dictionary of keys and parameter Variables."""
         if self._retain_state:
             self._states.update(self._solver.get_states())
         self._solver.set_parameters(params, **kargs)
@@ -50,6 +67,11 @@ class Optimizer(object):
             )
 
     def update(self):
+        r"""Update parameters.
+
+        When this function is called, parameter values are updated using the gradients
+        accumulated in backpropagation, stored in the grad field of the parameter Variables.
+        """
         if self._lr_scheduler is not None:
             lr = self.get_learning_rate()
             self._solver.set_learning_rate(lr)
@@ -64,15 +86,21 @@ class Optimizer(object):
         self._iter += 1
 
     def zero_grad(self):
+        r"""Initialize gradients of all registered parameter by zero."""
         self._solver.zero_grad()
 
     def get_parameters(self):
+        r"""Get all registered parameters."""
         return self._solver.get_parameters()
 
     def get_learning_rate(self):
+        r"""Get the learning rate."""
+        if self._lr_scheduler is None:
+            return self._solver.learning_rate()
         return self._lr_scheduler.get_learning_rate(self._iter)
 
     def clear_parameters(self):
+        r"""Clear all parameters."""
         self._solver.clear_parameters()
         self._iter = 0
         if self._retain_state:
