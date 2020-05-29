@@ -1,6 +1,6 @@
 [![Build status](https://github.com/nnabla/nnabla-nas/workflows/Build%20nnabla-nas/badge.svg)](https://github.com/nnabla/nnabla-nas/actions)
 
-![nnabla nas_Logo](docs/source/logo/logo.png)
+<img align="center" src="docs/source/logo/logo.png" alt="drawing" width="600"/>
 
 # Neural Architecture Search for Neural Network Libraries
 
