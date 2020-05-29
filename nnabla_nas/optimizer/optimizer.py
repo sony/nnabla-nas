@@ -18,6 +18,22 @@ import nnabla.solvers as S
 
 
 class Optimizer(object):
+    r"""An Optimizer class.
+
+    Args:
+        retain_state (bool, optional): Whether retaining states is true.
+            Defaults to False.
+        weight_decay (float, optional): Weight decay (L2 penalty). Should be
+            a positive value. Defaults to 0.
+        max_norm (float, optional): An input scalar of float value. Should be
+            a positive value. Defaults to 0.
+        lr_scheduler (`BaseLearningRateScheduler`, optional): Learning rate
+            scheduler. Defaults to None (no learning rate scheduler is applied).
+        name (str, optional): Name of the solver. Defaults to 'Sgd'.
+
+    Raises:
+        NotImplementedError: If the solver is not supported in NNabla.
+    """
 
     def __init__(self,
                  retain_state=False,
@@ -70,6 +86,8 @@ class Optimizer(object):
         return self._solver.get_parameters()
 
     def get_learning_rate(self):
+        if self._lr_scheduler is None:
+            return self._solver.learning_rate()
         return self._lr_scheduler.get_learning_rate(self._iter)
 
     def clear_parameters(self):
