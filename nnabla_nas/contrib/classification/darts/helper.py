@@ -15,13 +15,13 @@
 import json
 import os
 
-import imageio
-import numpy as np
 from graphviz import Digraph
+import imageio
 from nnabla.logger import logger
+import numpy as np
 from scipy.special import softmax
 
-from ...utils.helper import write_to_json_file
+from ....utils.helper import write_to_json_file
 from .modules import CANDIDATES
 
 

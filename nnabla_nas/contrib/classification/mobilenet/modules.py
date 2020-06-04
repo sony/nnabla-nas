@@ -14,7 +14,7 @@
 
 from collections import OrderedDict
 
-from ... import module as Mo
+from .... import module as Mo
 
 CANDIDATES = OrderedDict([
     ('MB1 3x3',

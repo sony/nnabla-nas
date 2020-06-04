@@ -14,13 +14,15 @@
 
 import tarfile
 
-import numpy as np
 from nnabla import random
 from nnabla.logger import logger
 from nnabla.utils.data_iterator import data_iterator
 from nnabla.utils.data_source import DataSource
 from nnabla.utils.data_source_loader import download
+import numpy as np
 from sklearn.model_selection import train_test_split
+
+from ..utils.data.dataloader import BaseDataLoader
 
 
 def download_data(train=True):
@@ -160,3 +162,50 @@ def get_data_iterators(batch_size,
         )
 
     return train, valid
+
+
+class DataLoader(BaseDataLoader):
+    def __init__(self, batch_size=1, searching=False, training=False,
+                 train_portion=1.0, rng=None, communicator=None):
+        r"""DataLoader for cifar10.
+
+        Args:
+            batch_size (int, optional): The mini-batch size. Defaults to 1.
+            searching (bool, optional): If `True`, the training data will be split into two parts.
+                First part will be used for training the model parameters. The second part will be
+                used to update the architecture parameters. Defaults to False.
+            training (bool, optional): Whether training is `True`. Defaults to False.
+            train_portion (float, optional): Portion of data is taken to use as training data. The rest
+                will be used for validation. Defaults to 1.0. This is only considered when searching is `True`.
+            rng (:obj:`numpy.random.RandomState`), optional): Numpy random number generator.
+                Defaults to None.
+            communicator (Communicator, optional): The communicator is used to support distributed
+                learning. Defaults to None.
+        """
+
+        rng = rng or random.prng
+
+        if searching:
+            images, labels = get_data(True, communicator, rng)
+            train_size = int(len(labels) * train_portion)
+            data = train_test_split(images, labels, stratify=labels,
+                                    train_size=train_size, random_state=rng)
+            idx = 0 if training else 1
+            X, y = data[idx], data[idx + 2]
+        else:
+            X, y = get_data(training, communicator, rng)
+
+        self._data = data_iterator(
+            CifarDataSource(X, y, shuffle=searching or training, rng=rng),
+            batch_size=batch_size,
+            rng=rng,
+            with_memory_cache=False,
+            with_file_cache=False
+        )
+
+    def __len__(self):
+        return self._data.size
+
+    def next(self):
+        x, y = self._data.next()
+        return {"inputs": [x], "targets": [y]}

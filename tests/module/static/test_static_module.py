@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import nnabla as nn
-from nnabla_nas.module import static as smo
+
 from nnabla_nas import module as mo
+from nnabla_nas.module import static as smo
 
 
 def test_static_module():

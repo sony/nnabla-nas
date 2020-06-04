@@ -13,10 +13,11 @@
 # limitations under the License.
 
 import nnabla as nn
-import numpy as np
 import nnabla.functions as F
-from nnabla_nas.module import Lambda
+import numpy as np
 import pytest
+
+from nnabla_nas.module import Lambda
 
 
 @pytest.mark.parametrize('func', [F.add2, F.sub2, F.mul2, F.div2])

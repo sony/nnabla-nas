@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-from copy import deepcopy
-import networkx as nx
-from nnabla_nas.module import static as smo
-from nnabla_nas.contrib.model import Model
-import nnabla as nn
 from collections import OrderedDict
+from copy import deepcopy
+
+import networkx as nx
+import nnabla as nn
+import numpy as np
+
+from nnabla_nas.contrib.classification.base import ClassificationBase as Model
+from nnabla_nas.module import static as smo
 
 
 class RandomModule(smo.Graph):
@@ -38,6 +40,7 @@ class RandomModule(smo.Graph):
         - Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
           Proceedings of the IEEE International Conference on Computer Vision. 2019.
     """
+
     def __init__(self, parents, channels, name=''):
         smo.Graph.__init__(self,
                            parents=parents,
@@ -58,14 +61,14 @@ class RandomModule(smo.Graph):
                                  out_channels=self._channels,
                                  kernel=(1, 1)))
             self.append(
-                    smo.BatchNormalization(name='{}/input_conv_bn_{}'.format(
-                                           self.name, i),
-                                           parents=[self[-1]],
-                                           n_dims=4,
-                                           n_features=self._channels))
+                smo.BatchNormalization(name='{}/input_conv_bn_{}'.format(
+                    self.name, i),
+                    parents=[self[-1]],
+                    n_dims=4,
+                    n_features=self._channels))
             self.append(
-                    smo.ReLU(name='{}/input_conv/relu_{}'.format(self.name, i),
-                             parents=[self[-1]]))
+                smo.ReLU(name='{}/input_conv/relu_{}'.format(self.name, i),
+                         parents=[self[-1]]))
 
             projected_inputs.append(self[-1])
 
@@ -139,6 +142,7 @@ class SepConv(RandomModule):
         kernel (tuple): the kernel shape
         pad (tuple): the padding scheme used
     """
+
     def __init__(self,
                  parents,
                  channels,
@@ -185,6 +189,7 @@ class Conv3x3(Conv):
         name (string, optional): the name of the module
         channels (int): the number of output channels of this module
     """
+
     def __init__(self,
                  parents,
                  channels,
@@ -210,6 +215,7 @@ class SepConv3x3(SepConv):
         name (string, optional): the name of the module
         channels (int): the number of output channels of this module
     """
+
     def __init__(self,
                  parents,
                  channels,
@@ -234,6 +240,7 @@ class Conv5x5(Conv):
         name (string, optional): the name of the module
         channels (int): the number of output channels of this module
     """
+
     def __init__(self,
                  parents,
                  channels,
@@ -259,6 +266,7 @@ class SepConv5x5(SepConv):
         name (string, optional): the name of the module
         channels (int): the number of output channels of this module
     """
+
     def __init__(self,
                  parents,
                  channels,
@@ -284,6 +292,7 @@ class MaxPool2x2(RandomModule):
         name (string, optional): the name of the module
         channels (int): ignored
     """
+
     def __init__(self,
                  parents,
                  channels,
@@ -311,6 +320,7 @@ class AvgPool2x2(RandomModule):
         name (string, optional): the name of the module
         channels (int): ignored
     """
+
     def __init__(self,
                  parents,
                  channels,
@@ -396,7 +406,7 @@ class TrainNet(Model, smo.Graph):
                                       value=nn.Variable(self._input_shape)))
             else:
                 rnd_class = self._candidates[
-                        np.random.randint(0, len(self._candidates), 1)[0]]
+                    np.random.randint(0, len(self._candidates), 1)[0]]
                 rnd_channels = np.random.randint(self._min_channels,
                                                  self._max_channels,
                                                  1)[0]

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
 import nnabla as nn
+import numpy as np
+
 from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
 

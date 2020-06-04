@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import os
 from collections import Counter
 from collections import OrderedDict
+import json
+import os
 
 import nnabla.functions as F
-import numpy as np
 from nnabla.initializer import ConstantInitializer
+import numpy as np
 
-from ... import module as Mo
-from ..misc import AuxiliaryHeadCIFAR
-from ..model import Model
 from . import modules as darts
+from .... import module as Mo
+from ..base import ClassificationBase as Model
+from ..misc import AuxiliaryHeadCIFAR
 from .helper import save_dart_arch
 
 

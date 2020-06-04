@@ -22,7 +22,8 @@ from nnabla import random
 from nnabla.logger import logger
 from sklearn.model_selection import train_test_split
 
-from nnabla_nas.dataset import DataLoader, transforms
+from nnabla_nas.utils.data.dataloader import BaseDataLoader
+from nnabla_nas.utils.data import transforms
 from nnabla_nas.optimizer import Optimizer
 from nnabla_nas.utils import estimator as EST
 from nnabla_nas.utils import helper

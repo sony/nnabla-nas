@@ -12,44 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .. import module as Mo
+import nnabla.functions as F
+
+from ...utils.helper import label_smoothing_loss
+from ..model import Model
 
 
-class Model(Mo.Module):
-    r"""This class is a base `Model`. Your model should be based on this
-    class.
-    """
-
-    def get_net_parameters(self, grad_only=False):
-        r"""Returns an `OrderedDict` containing all network parmeters of the model.
-
-        Args:
-            grad_only (bool, optional): If sets to `True`, then only
-                parameters with `need_grad=True` will be retrieved. Defaults
-                to `False`.
-
-        Raises:
-            NotImplementedError:
-        """
-        raise NotImplementedError
-
-    def get_arch_parameters(self, grad_only=False):
-        r"""Returns an `OrderedDict` containing all architecture parameters of
-            the model.
-
-        Args:
-            grad_only (bool, optional): If sets to `True`, then only
-                parameters with `need_grad=True` will be retrieved. Defaults
-                to `False`.
-
-        Raises:
-            NotImplementedError: [description]
-        """
-        raise NotImplementedError
-
-    def summary(self):
-        r"""Returns a string summarizing the model."""
-        return ''
+class ClassificationBase(Model):
+    r"""This class is a base `Model` for classification task. Your model should be based on this class."""
 
     def loss(self, outputs, targets, loss_weights=None, *args):
         r"""Return a loss computed from a list of outputs and a list of targets.
@@ -65,10 +35,10 @@ class Model(Mo.Module):
         Returns:
             nn.Variable: A scalar NNabla variable represent the loss.
 
-        Raises:
-            NotImplementedError: [description]
         """
-        raise NotImplementedError
+        assert len(outputs) == 1 and len(targets) == 1
+
+        return F.mean(label_smoothing_loss(outputs[0], targets[0]))
 
     def metric(self, outputs, targets):
         r"""Return a dictionary of metrics to monitor during training.
@@ -80,9 +50,9 @@ class Model(Mo.Module):
             targets (list of nn.Variable): A list of target variables loaded from the data.
 
         Returns:
-            dict: A dictionary containing all metrics to monitor. E.g., {'accuracy': 0.7, 'F1': 0.3}
-
-        Raises:
-            NotImplementedError: [description]
+            dict: A dictionary containing all metrics (nn.Variable) to monitor.
+                E.g., {'error': 0.2, 'F1': 0.3}
         """
-        raise NotImplementedError
+        assert len(outputs) == 1 and len(targets) == 1
+
+        return {"error": F.mean(F.top_n_error(outputs[0], targets[0]))}

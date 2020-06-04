@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import nnabla as nn
+
 from nnabla_nas.module import static as smo
 
 

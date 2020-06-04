@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import Counter, OrderedDict
-
-import numpy as np
+from collections import Counter
+from collections import OrderedDict
 import os
 
-from ... import module as Mo
-from ...utils.helper import load_parameters
-from ..model import Model
-from .modules import CANDIDATES, ChoiceBlock, ConvBNReLU
+import numpy as np
+
+from .... import module as Mo
+from ..base import ClassificationBase as Model
 from .helper import plot_mobilenet
+from .modules import CANDIDATES
+from .modules import ChoiceBlock
+from .modules import ConvBNReLU
 
 
 def _make_divisible(x, divisible_by=8):
@@ -258,7 +260,7 @@ class TrainNet(SearchNet):
                          skip_connect=skip_connect)
 
         if genotype is not None:
-            self.set_parameters(load_parameters(genotype))
+            self.load_parameters(genotype)
             for _, module in self.get_modules():
                 if isinstance(module, ChoiceBlock):
                     idx = np.argmax(module._mixed._alpha.d)

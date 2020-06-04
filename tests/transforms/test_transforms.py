@@ -13,15 +13,15 @@
 # limitations under the License.
 
 import nnabla as nn
+from nnabla.testing import assert_allclose
 import numpy as np
 import pytest
-from nnabla.testing import assert_allclose
 
-from nnabla_nas.dataset.transforms import Normalize
-from nnabla_nas.dataset.transforms import RandomCrop
-from nnabla_nas.dataset.transforms import RandomHorizontalFlip
-from nnabla_nas.dataset.transforms import RandomVerticalFlip
-from nnabla_nas.dataset.transforms import Resize
+from nnabla_nas.utils.data.transforms import Normalize
+from nnabla_nas.utils.data.transforms import RandomCrop
+from nnabla_nas.utils.data.transforms import RandomHorizontalFlip
+from nnabla_nas.utils.data.transforms import RandomVerticalFlip
+from nnabla_nas.utils.data.transforms import Resize
 
 
 def test_normalize():

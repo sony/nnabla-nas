@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 from collections import OrderedDict
+import os
 
 import nnabla as nn
+from nnabla.testing import assert_allclose
 import numpy as np
 import pytest
-from nnabla.testing import assert_allclose
 
 from nnabla_nas.module import Parameter
 from nnabla_nas.module.module import Module

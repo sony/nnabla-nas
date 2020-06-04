@@ -19,11 +19,11 @@ import nnabla.functions as F
 from nnabla.utils.save import save
 import numpy as np
 
+from nnabla_nas.contrib.classification import misc
+from nnabla_nas.contrib.classification.base import ClassificationBase as Model
 import nnabla_nas.module as mo
 from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
-from nnabla_nas.contrib import misc
-from nnabla_nas.contrib.model import Model
 from nnabla_nas.utils.helper import load_parameters
 
 
@@ -73,6 +73,7 @@ class SepConv(misc.SepConv, smo.Module):
             considered as channel dimension, a.k.a NHWC order. Defaults to
             `False`.
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         misc.SepConv.__init__(self, *args, **kwargs)
         smo.Module.__init__(self,
@@ -153,6 +154,7 @@ class SepConv3x3(SepConvBN):
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
     """
+
     def __init__(self, parents, channels, name='', eval_prob=None):
         SepConvBN.__init__(self,
                            parents=parents,
@@ -175,6 +177,7 @@ class SepConv5x5(SepConvBN):
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
     """
+
     def __init__(self, parents, channels, name='', eval_prob=None):
         SepConvBN.__init__(self,
                            parents=parents,
@@ -197,6 +200,7 @@ class DilSepConv3x3(SepConvBN):
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
     """
+
     def __init__(self, parents, channels, name='', eval_prob=None):
         SepConvBN.__init__(self,
                            parents=parents,
@@ -219,6 +223,7 @@ class DilSepConv5x5(SepConvBN):
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
     """
+
     def __init__(self, parents, channels, name='', eval_prob=None):
         SepConvBN.__init__(self,
                            parents=parents,
@@ -238,6 +243,7 @@ class MaxPool3x3(smo.MaxPool):
             are parents to this module
         name (string, optional): the name of the module
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         smo.MaxPool.__init__(self,
                              parents=parents,
@@ -264,6 +270,7 @@ class AveragePool3x3(smo.AvgPool):
             are parents to this module
         name (string, optional): the name of the module
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         smo.AvgPool.__init__(self,
                              parents=parents,
@@ -307,6 +314,7 @@ class ZophBlock(smo.Graph):
     References:
         - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
+
     def __init__(self, parents, candidates,
                  channels, name='', join_parameters=None):
         self._candidates = candidates
@@ -404,7 +412,7 @@ class ZophCell(smo.Graph):
                                                n_features=self._channels))
             self.append(smo.ReLU(name='{}/input_conv_{}/relu'.format(
                                  self.name, i),
-                        parents=[self[-1]]))
+                                 parents=[self[-1]]))
             projected_inputs.append(self[-1])
 
         # perform shape adaptation, using pooling, if needed
@@ -694,6 +702,7 @@ class TrainNet(SearchNet):
     References:
         - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
     """
+
     def __init__(self, name, input_shape=(3, 32, 32),
                  n_classes=10, stem_channels=128,
                  cells=[ZophCell]*3, cell_depth=[7]*3,

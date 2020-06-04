@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import darts
-from . import mobilenet
-from . import pnas
-from . import zoph
-from . import random_wired
+from .classification import darts
+from .classification import mobilenet
+from .classification import pnas
+from .classification import random_wired
+from .classification import zoph
 
 __all__ = ['darts', 'pnas', 'zoph', 'mobilenet', 'random_wired']

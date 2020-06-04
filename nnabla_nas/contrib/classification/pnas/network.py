@@ -14,15 +14,15 @@
 
 import numpy as np
 
-from ... import module as Mo
-from ...utils.helper import load_parameters
+from .... import module as Mo
+from ....utils.helper import load_parameters
+from ..base import ClassificationBase as Model
 from ..darts import modules as darts
 from ..misc import AuxiliaryHeadCIFAR
-from ..model import Model
 
 
 class TrainNet(Model):
-    r"""TrainNet for ProxylessNAS
+    r"""TrainNet for ProxylessNAS.
 
     Args:
         in_channels (int): The number of input channels.

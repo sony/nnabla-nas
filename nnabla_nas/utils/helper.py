@@ -25,7 +25,7 @@ import numpy as np
 from .tensorboard import SummaryWriter
 from nnabla import random
 
-from ..dataset.transforms import Cutout
+from .data.transforms import Cutout
 
 
 class ProgressMeter(object):

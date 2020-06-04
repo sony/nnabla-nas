@@ -16,7 +16,7 @@ from collections import OrderedDict
 
 import nnabla.functions as F
 
-from ... import module as Mo
+from .... import module as Mo
 
 CANDIDATES = OrderedDict([
     ('dil_conv_3x3', lambda c, s: DDSConv(c, c, (3, 3), (2, 2), (s, s))),
