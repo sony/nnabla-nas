@@ -43,7 +43,7 @@ class ClassificationBase(Model):
     def metric(self, outputs, targets):
         r"""Return a dictionary of metrics to monitor during training.
 
-        It is expected to have a 1:1 mapping to model outputs and.
+        It is expected to have a 1:1 mapping to model outputs and targets variables.
 
         Args:
             outputs (list of nn.Variable): A list of output variables computed from the model.
@@ -51,7 +51,7 @@ class ClassificationBase(Model):
 
         Returns:
             dict: A dictionary containing all metrics (nn.Variable) to monitor.
-                E.g., {'error': 0.2, 'F1': 0.3}
+                E.g., {'error': nn.Variable, 'F1': nn.Variable}
         """
         assert len(outputs) == 1 and len(targets) == 1
 

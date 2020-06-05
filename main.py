@@ -42,7 +42,7 @@ except ImportError:
 import nnabla_nas.contrib as contrib
 from args import Configuration
 from nnabla_nas import runner
-from nnabla_nas.utils.helper import CommunicatorWrapper, label_smoothing_loss
+from nnabla_nas.utils.helper import CommunicatorWrapper
 
 
 def main():
@@ -66,52 +66,47 @@ def main():
 
     options = parser.parse_args()
 
-    config = json.load(open(options.config_file)) if options.config_file \
-        else dict()
-    config.update({k: v for k, v in vars(options).items() if v is not None})
+    config = json.load(open(options.config_file)) if options.config_file else dict()
+    hparams = config['hparams']
+
+    hparams.update({k: v for k, v in vars(options).items() if v is not None})
 
     # setup cuda visible
-    if config['device_id'] != '-1':
-        os.environ["CUDA_VISIBLE_DEVICES"] = config['device_id']
+    if hparams['device_id'] != '-1':
+        os.environ["CUDA_VISIBLE_DEVICES"] = hparams['device_id']
 
     # setup context for nnabla
     ctx = get_extension_context(
-        config['context'],
+        hparams['context'],
         device_id='0',
-        type_config=config['type_config']
+        type_config=hparams['type_config']
     )
 
     # setup for distributed training
-    config['comm'] = CommunicatorWrapper(ctx)
-    config['event'] = StreamEventHandler(int(config['comm'].ctx.device_id))
+    hparams['comm'] = CommunicatorWrapper(ctx)
+    hparams['event'] = StreamEventHandler(int(hparams['comm'].ctx.device_id))
 
-    nn.set_default_context(config['comm'].ctx)
+    nn.set_default_context(hparams['comm'].ctx)
 
-    if config['comm'].n_procs > 1 and config['comm'].rank == 0:
-        n_procs = config['comm'].n_procs
+    if hparams['comm'].n_procs > 1 and hparams['comm'].rank == 0:
+        n_procs = hparams['comm'].n_procs
         logger.info(f'Distributed Training with {n_procs} processes.')
 
     # build the model
     attributes = config['network'].copy()
     algorithm = contrib.__dict__[attributes.pop('search_space')]
 
-    model = algorithm.SearchNet(**attributes) if config['search'] else \
+    model = algorithm.SearchNet(**attributes) if hparams['search'] else \
         algorithm.TrainNet(**attributes)
 
     # Get all arguments for the runner
     conf = Configuration(config)
-    loader = conf.parse()
 
-    runner.__dict__[config['algorithm']](
+    runner.__dict__[hparams['algorithm']](
         model,
-        placeholder=loader['placeholder'],
-        optimizer=loader['optimizer'],
-        dataloader=loader['dataloader'],
-        transform=loader['transform'],
-        regularizer=loader['regularizer'],
-        criteria=lambda o, t: F.mean(label_smoothing_loss(o, t)),
-        evaluate=lambda o, t: F.mean(F.top_n_error(o, t)),
-        args=conf
+        optimizer=conf.optimizer,
+        dataloader=conf.dataloader,
+        args=conf.hparams
     ).run()
 
 

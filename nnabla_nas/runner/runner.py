@@ -28,41 +28,34 @@ class Runner(ABC):
     Args:
         model (`nnabla_nas.contrib.model.Model`): The search model used to
             search the architecture.
-        placeholder (dict): This stores `input` and `target` Variables for
-            `train` and `valid` graphs.
         optimizer (dict): This stores optimizers for both `train` and `valid`
             graphs.
         dataloader (dict): This stores dataloaders for both `train` and `valid`
             graphs.
-        criteria (function): Loss function used to train the network.
-        evaluate (function): Evaluation criteria used log the output,
-            e.g., top_1_err.
         args (Configuration): This stores all hyperparmeters used during
             training.
-        regularizer (dict, optional): This stores contraints for the network.
-            Defaults to None.
     """
 
-    def __init__(self, model, placeholder, optimizer, dataloader, transform,
-                 criteria, evaluate, args, regularizer=None):
+    def __init__(self, model, optimizer, dataloader, args):
 
         self.model = model
-        self.criteria = criteria
-        self.evaluate = evaluate
         self.dataloader = dataloader
-        self.transform = transform
-        self.regularizer = regularizer
         self.optimizer = optimizer
-        self.placeholder = placeholder
         self.args = args
 
         # aditional argurments
-        self.accum_train = self.args.bs_train // self.args.mbs_train
-        self.accum_valid = self.args.bs_valid // self.args.mbs_valid
-        self.one_epoch_train = len(self.dataloader['train']) // args.bs_train
-        self.one_epoch_valid = len(self.dataloader['valid']) // args.bs_valid
-        self.comm = args.conf['comm']
-        self.event = args.conf['event']
+        hp = self.args
+
+        self.bs_train = hp['batch_size_train']
+        self.mbs_train = hp['mini_batch_train']
+        self.bs_valid = hp['batch_size_valid']
+        self.mbs_valid = hp['mini_batch_valid']
+        self.accum_train = self.bs_train // self.mbs_train
+        self.accum_valid = self.bs_valid // self.mbs_valid
+        self.one_epoch_train = len(self.dataloader['train']) // self.bs_train
+        self.one_epoch_valid = len(self.dataloader['valid']) // self.bs_valid
+        self.comm = hp['comm']
+        self.event = hp['event']
 
         # monitor log info
         self.monitor = ProgressMeter(

@@ -23,6 +23,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from ..utils.data.dataloader import BaseDataLoader
+from ..utils.data import transforms
 
 
 def download_data(train=True):
@@ -112,77 +113,25 @@ def get_data(train, comm, rng):
     return images[selected_idx], labels[selected_idx]
 
 
-def get_data_iterators(batch_size,
-                       comm,
-                       train=True,
-                       portion=1,
-                       rng=None,
-                       with_memory_cache=False,
-                       with_file_cache=False):
-
-    if train:
-        images, labels = get_data(True, comm, rng)
-        train_size = int(len(labels) * portion)
-        X_train, X_test, y_train, y_test = train_test_split(
-            images, labels,
-            stratify=labels,
-            train_size=train_size,
-            random_state=random.prng
-        )
-        train = data_iterator(
-            CifarDataSource(X_train, y_train, shuffle=True, rng=rng),
-            batch_size[0],
-            rng,
-            with_memory_cache,
-            with_file_cache
-        )
-        valid = data_iterator(
-            CifarDataSource(X_test, y_test, shuffle=True, rng=rng),
-            batch_size[1],
-            rng,
-            with_memory_cache,
-            with_file_cache
-        )
-    else:
-        images, labels = get_data(True, comm, rng)
-        train = data_iterator(
-            CifarDataSource(images, labels, shuffle=True, rng=rng),
-            batch_size[0],
-            rng,
-            with_memory_cache,
-            with_file_cache
-        )
-        images, labels = get_data(False, comm, rng)
-        valid = data_iterator(
-            CifarDataSource(images, labels, shuffle=False, rng=rng),
-            batch_size[1],
-            rng,
-            with_memory_cache,
-            with_file_cache
-        )
-
-    return train, valid
-
-
 class DataLoader(BaseDataLoader):
+    r"""DataLoader for cifar10.
+
+    Args:
+        batch_size (int, optional): The mini-batch size. Defaults to 1.
+        searching (bool, optional): If `True`, the training data will be split into two parts.
+            First part will be used for training the model parameters. The second part will be
+            used to update the architecture parameters. Defaults to False.
+        training (bool, optional): Whether training is `True`. Defaults to False.
+        train_portion (float, optional): Portion of data is taken to use as training data. The rest
+            will be used for validation. Defaults to 1.0. This is only considered when searching is `True`.
+        rng (:obj:`numpy.random.RandomState`), optional): Numpy random number generator.
+            Defaults to None.
+        communicator (Communicator, optional): The communicator is used to support distributed
+            learning. Defaults to None.
+    """
+
     def __init__(self, batch_size=1, searching=False, training=False,
-                 train_portion=1.0, rng=None, communicator=None):
-        r"""DataLoader for cifar10.
-
-        Args:
-            batch_size (int, optional): The mini-batch size. Defaults to 1.
-            searching (bool, optional): If `True`, the training data will be split into two parts.
-                First part will be used for training the model parameters. The second part will be
-                used to update the architecture parameters. Defaults to False.
-            training (bool, optional): Whether training is `True`. Defaults to False.
-            train_portion (float, optional): Portion of data is taken to use as training data. The rest
-                will be used for validation. Defaults to 1.0. This is only considered when searching is `True`.
-            rng (:obj:`numpy.random.RandomState`), optional): Numpy random number generator.
-                Defaults to None.
-            communicator (Communicator, optional): The communicator is used to support distributed
-                learning. Defaults to None.
-        """
-
+                 train_portion=1.0, rng=None, communicator=None, *args):
         rng = rng or random.prng
 
         if searching:
@@ -209,3 +158,24 @@ class DataLoader(BaseDataLoader):
     def next(self):
         x, y = self._data.next()
         return {"inputs": [x], "targets": [y]}
+
+    def transform(self, key='train'):
+        r"""Return a transform applied to data augmentation."""
+        assert key in ('train', 'valid')
+
+        mean = (0.49139968, 0.48215827, 0.44653124)
+        std = (0.24703233, 0.24348505, 0.26158768)
+        scale = 1./255.0
+        pad_width = (4, 4, 4, 4)
+
+        if key == 'train':
+            return transforms.Compose([
+                transforms.Normalize(mean=mean, std=std, scale=scale),
+                transforms.RandomCrop((3, 32, 32), pad_width=pad_width),
+                transforms.RandomHorizontalFlip(),
+                transforms.Cutout(16)
+            ])
+
+        return transforms.Compose([
+            transforms.Normalize(mean=mean, std=std, scale=scale)
+        ])

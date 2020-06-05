@@ -91,6 +91,7 @@ class Cutout(object):
 
     Args:
         length (int): The lenth of region, which will be cutout.
+        prob (float, optional): Probability of earasing. Defaults to 0.5.
 
     References:
         [1] DeVries, Terrance, and Graham W. Taylor. "Improved regularization
@@ -98,20 +99,20 @@ class Cutout(object):
                 arXiv:1708.04552 (2017).
     """
 
-    def __init__(self, length):
+    def __init__(self, length, prob=0.5):
         self._length = length
+        self._prob = prob
 
-    def __call__(self, image):
-        h, w = image.shape[2:]
-        mask = np.ones((h, w), np.float32)
-        y = np.random.randint(h)
-        x = np.random.randint(w)
-        y1 = np.clip(y - self._length // 2, 0, h)
-        y2 = np.clip(y + self._length // 2, 0, h)
-        x1 = np.clip(x - self._length // 2, 0, w)
-        x2 = np.clip(x + self._length // 2, 0, w)
-        mask[y1: y2, x1: x2] = 0.
-        return image * mask
+    def __call__(self, images):
+        ratio = self._length**2 / np.prod(images.shape[2:])
+        area_ratios = (ratio, ratio)
+        aspect_ratios = (1.0, 1.0)
+        out = F.random_erase(images,
+                             prob=self._prob,
+                             replacements=(0.0, 0.0),
+                             aspect_ratios=aspect_ratios,
+                             area_ratios=area_ratios)
+        return out
 
     def __str__(self):
         return self.__class__.__name__ + f'(length={self._length})'

@@ -204,7 +204,7 @@ def write_to_json_file(content, file_path):
     with open(file_path, 'w+') as file:
         json.dump(content, file,
                   ensure_ascii=False, indent=4,
-                  default=lambda o: '<not serializable>')
+                  default=lambda o: o.__class__.__name__)
 
 
 def count_parameters(params):

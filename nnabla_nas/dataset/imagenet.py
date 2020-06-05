@@ -130,7 +130,7 @@ def get_data_iterators(batch_size,
 class DataLoader(BaseDataLoader):
     def __init__(self, batch_size=1, searching=False, training=False,
                  train_path=None, train_file=None, valid_path=None, valid_file=None,
-                 train_portion=1.0, rng=None, communicator=None, type_config=float):
+                 train_portion=1.0, rng=None, communicator=None, type_config=float, *args):
         r"""Dataloader for ImageNet.
 
         Args:
