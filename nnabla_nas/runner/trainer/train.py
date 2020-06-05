@@ -23,8 +23,7 @@ from ..runner import Runner
 
 
 class Trainer(Runner):
-    """Trainer class is a basic class for training a network.
-    """
+    r"""Trainer class is a basic class for training a network."""
 
     def callback_on_start(self):
         r"""Builds the graphs and assigns parameters to the optimizers."""
@@ -43,9 +42,6 @@ class Trainer(Runner):
 
         # calculate the model size
         model_size = helper.count_parameters(params)
-        if hasattr(self.model, '_auxiliary_head'):
-            model_size -= helper.count_parameters(
-                self.model._auxiliary_head.get_parameters(grad_only=True))
         self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
 
         # store a list of grads that will be synchronized
@@ -120,7 +116,7 @@ class Trainer(Runner):
             self.event.add_default_stream_event()
 
     def callback_on_epoch_end(self):
-        r"""Calculates the error and saves the best parameters."""
+        r"""Calculates the metric and saves the best parameters."""
         if self.comm.n_procs > 1:
             self.comm.all_reduce([self.loss]+list(self.metric.values()), division=True, inplace=False)
 
@@ -141,7 +137,7 @@ class Trainer(Runner):
                 path = os.path.join(self.args['output_path'], 'weights.h5')
                 self.model.save_parameters(path)
 
-        # reset loss and error
+        # reset loss and metric
         self.loss.zero()
         for k in self.metric:
             self.metric[k].zero()

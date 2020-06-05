@@ -18,6 +18,8 @@ import os
 
 import numpy as np
 
+import nnabla.functions as F
+
 from .... import module as Mo
 from ..base import ClassificationBase as Model
 from .helper import plot_mobilenet
@@ -214,6 +216,12 @@ class SearchNet(Model):
             output_path = os.path.dirname(path)
             plot_mobilenet(self, os.path.join(output_path, 'arch'))
 
+    def loss(self, outputs, targets, weight_loss=None):
+        loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
+        if len(outputs) == 2:  # use auxiliar head
+            loss += 0.4 * F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
+        return loss
+
 
 class TrainNet(SearchNet):
     r"""MobileNet V2 Train Net.
@@ -271,3 +279,9 @@ class TrainNet(SearchNet):
                 if isinstance(module, ChoiceBlock):
                     idx = np.random.randint(len(module._mixed._alpha.d))
                     module._mixed = module._mixed._ops[idx]
+
+    def loss(self, outputs, targets, weight_loss=None):
+        loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
+        if len(outputs) == 2:  # use auxiliar head
+            loss += 0.4 * F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
+        return loss

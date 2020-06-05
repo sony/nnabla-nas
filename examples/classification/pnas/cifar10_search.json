@@ -1,0 +1,56 @@
+{
+    "dataloader": {
+        "cifar10": {
+            "train_portion": 0.9
+        }
+    },
+    "network": {
+        "darts": {
+            "in_channels": 3,
+            "init_channels": 36,
+            "num_cells": 15,
+            "num_classes": 10,
+            "num_choices": 4,
+            "shared": false,
+            "mode": "sample"
+        }
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "lr_scheduler": "CosineScheduler",
+            "name": "Momentum",
+            "lr": 0.025
+        },
+        "valid": {
+            "grad_clip": 5.0,
+            "name": "Adam",
+            "alpha": 0.01,
+            "beta1": 0.5,
+            "beta2": 0.999
+        },
+        "warmup": {
+            "grad_clip": 5.0,
+            "weight_decay": 3e-4,
+            "lr_scheduler": "CosineScheduler",
+            "name": "Momentum",
+            "lr": 0.025
+        }
+    },
+    "hparams": {
+        "epoch": 150,
+        "batch_size_train": 256,
+        "batch_size_valid": 256,
+        "mini_batch_train": 64,
+        "mini_batch_valid": 64,
+        "warmup": 50,
+        "print_frequency": 20,
+        "input_shapes": [
+            [3, 32, 32]
+        ],
+        "target_shapes": [
+            [1]
+        ]
+    }
+}

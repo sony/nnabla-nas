@@ -6,22 +6,23 @@ python main.py --search \
                -o log/darts/cifar10/search
 
 # train DARTS
-python main.py  -f examples/classification/darts/cifar10_train.json \
-               -a Trainer -o log/darts/cifar10/train
+python main.py -f examples/classification/darts/cifar10_train.json \
+               -a Trainer \
+               -o log/darts/cifar10/train
 #------------------------------------------------------------------#
 
 
 #---------------------------- PNAS --------------------------------#
 # search PNAS
-python main.py  --search \
-               -f examples/pnas/search.json \
+python main.py --search \
+               -f examples/classification/pnas/cifar10_search.json \
                -a ProxylessNasSearcher \
-               -o log/pnas/search
+               -o log/pnas/cifar10/search
 
 # train PNAS
-python main.py -f examples/pnas/train.json \
+python main.py -f examples/classification/pnas/cifar10_train.json \
                -a Trainer \
-               -o log/pnas/train
+               -o log/pnas/cifar10/train
 
 # search PNAS with latency constraints
 python main.py  --search \

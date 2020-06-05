@@ -42,11 +42,12 @@ class ProxylessNasSearcher(Searcher):
         for _ in range(self.accum_train):
             self._load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
-            p['err'].forward(clear_buffer=True)
+            for k, m in p['metric'].items():
+                m.forward(clear_buffer=True)
+                self.monitor.update(f'{k}/train', m.d.copy(), bz)
             p['loss'].backward(clear_buffer=True)
-            loss, err = p['loss'].d.copy(), p['err'].d.copy()
-            self.monitor.update('train_loss', loss * self.accum_train, bz)
-            self.monitor.update('train_err', err, bz)
+            loss = p['loss'].d.copy()
+            self.monitor.update('loss/train', loss * self.accum_train, bz)
 
         if self.comm.n_procs > 1:
             self.comm.all_reduce(grads, division=True, inplace=False)
@@ -70,19 +71,21 @@ class ProxylessNasSearcher(Searcher):
             self.update_graph('valid')
             arch_params = self.model.get_arch_parameters(grad_only=True)
             self.optimizer['valid'].set_parameters(arch_params)
+
             for minibatch in valid_data:
                 self._load_data(p, minibatch)
                 p['loss'].forward(clear_buffer=True)
-                p['err'].forward(clear_buffer=True)
-                loss, err = p['loss'].d.copy(), p['err'].d.copy()
-                reward += (1 - err) / self.accum_valid
-                self.monitor.update('valid_loss', loss * self.accum_valid, bz)
-                self.monitor.update('valid_err', err, bz)
+                for k, m in p['metric'].items():
+                    m.forward(clear_buffer=True)
+                    self.monitor.update(f'{k}/valid', m.d.copy(), bz)
+                loss = p['loss'].d.copy()
+                reward += (1 - p['metric']['error'].d) / self.accum_valid
+                self.monitor.update('loss/valid', loss * self.accum_valid, bz)
 
             # adding constraints
-            for k, v in self.regularizer.items():
-                value = v['reg'].get_estimation(self.model)
-                reward *= (min(1.0, v['bound'] / value))**v['weight']
+            for k, v in self.optimizer.get('regularizer', {}).items():
+                value = v.get_estimation(self.model)
+                reward *= (min(1.0, v._bound / value))**v._weight
                 self.monitor.update(k, value, 1)
             rewards.append(reward)
             grads.append([m.g.copy() for m in arch_params.values()])
@@ -91,11 +94,10 @@ class ProxylessNasSearcher(Searcher):
         for j, m in enumerate(arch_params.values()):
             m.grad.zero()
             for i, r in enumerate(rewards):
-                m.g += (r - self._reward.data) * grads[i][j] / n_iter
+                m.g += (r - self._reward.data)*grads[i][j]/n_iter
 
         # update global reward
-        self._reward.data = (beta * sum(rewards) / n_iter +
-                             (1 - beta) * self._reward.data)
+        self._reward.data = beta*sum(rewards)/n_iter + (1 - beta)*self._reward.data
 
         if self.comm.n_procs > 1:
             self.comm.all_reduce(
