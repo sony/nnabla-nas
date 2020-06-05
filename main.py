@@ -18,7 +18,6 @@ import os
 import sys
 
 import nnabla as nn
-import nnabla.functions as F
 from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
 
@@ -59,10 +58,8 @@ def main():
     parser.add_argument('--algorithm', '-a', type=str, default='DartsSeacher',
                         choices=runner.__all__, help='Algorithm used to run')
     parser.add_argument('--config-file', '-f', type=str,
-                        help='The configuration file used to run the experiment.',
-                        default=None)
-    parser.add_argument('--output-path', '-o', type=str, help='Path monitoring logs saved.',
-                        default=None)
+                        help='The configuration file used to run the experiment.')
+    parser.add_argument('--output-path', '-o', type=str, help='Path monitoring logs saved.')
 
     options = parser.parse_args()
 
@@ -93,9 +90,8 @@ def main():
         logger.info(f'Distributed Training with {n_procs} processes.')
 
     # build the model
-    attributes = config['network'].copy()
-    algorithm = contrib.__dict__[attributes.pop('search_space')]
-
+    name, attributes = list(config['network'].items())[0]
+    algorithm = contrib.__dict__[name]
     model = algorithm.SearchNet(**attributes) if hparams['search'] else \
         algorithm.TrainNet(**attributes)
 

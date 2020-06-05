@@ -179,6 +179,12 @@ class SearchNet(Model):
             output_path = os.path.dirname(path)
             save_dart_arch(self, output_path)
 
+    def loss(self, outputs, targets, weight_loss=None):
+        loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
+        if len(outputs) == 2:  # use auxiliar head
+            loss += 0.4 * F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
+        return loss
+
 
 class TrainNet(Model):
     """TrainNet used for DARTS."""
@@ -218,7 +224,7 @@ class TrainNet(Model):
                     logits_aux = self._auxiliary_head(out_c)
         out_c = self._ave_pool(out_c)
         logits = self._linear(out_c)
-        return logits, logits_aux
+        return logits if logits_aux is None else (logits, logits_aux)
 
     def _init_cells(self, num_cells, channel_c, genotype):
         cells = Mo.ModuleList()
@@ -244,6 +250,12 @@ class TrainNet(Model):
         self._last_channels = channel_p
 
         return cells
+
+    def loss(self, outputs, targets, weight_loss=None):
+        loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
+        if len(outputs) == 2:  # use auxiliar head
+            loss += 0.4 * F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
+        return loss
 
 
 class Cell(Mo.Module):

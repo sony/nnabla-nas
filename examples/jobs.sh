@@ -1,13 +1,13 @@
 #---------------------------- DARTS --------------------------------#
 # search DARTS
 python main.py --search \
-               -f examples/darts/search.json  \
+               -f examples/classification/darts/cifar10_search.json  \
                -a DartsSearcher \
-               -o log/darts/search
+               -o log/darts/cifar10/search
 
 # train DARTS
-python main.py  -f examples/darts/train.json \
-               -a Trainer -o log/darts/train
+python main.py  -f examples/classification/darts/cifar10_train.json \
+               -a Trainer -o log/darts/cifar10/train
 #------------------------------------------------------------------#
 
 

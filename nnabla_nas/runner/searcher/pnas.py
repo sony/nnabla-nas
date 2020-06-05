@@ -32,7 +32,7 @@ class ProxylessNasSearcher(Searcher):
         self.update_graph(key)
         params = self.model.get_net_parameters(grad_only=True)
         self.optimizer[key].set_parameters(params)
-        bz, p = self.args.mbs_train, self.placeholder['train']
+        bz, p = self.mbs_train, self.placeholder['train']
         self.optimizer[key].zero_grad()
 
         if self.comm.n_procs > 1:
@@ -57,7 +57,7 @@ class ProxylessNasSearcher(Searcher):
     def valid_on_batch(self):
         r"""Update the arch parameters."""
         beta, n_iter = 0.9, 10
-        bz, p = self.args.mbs_valid, self.placeholder['valid']
+        bz, p = self.mbs_valid, self.placeholder['valid']
         valid_data = [self.dataloader['valid'].next()
                       for i in range(self.accum_valid)]
         rewards, grads = [], []
@@ -106,5 +106,5 @@ class ProxylessNasSearcher(Searcher):
             self.comm.all_reduce(self._reward, division=True, inplace=False)
             self.event.add_default_stream_event()
 
-        self.monitor.update('reward', self._reward.data[0], self.args.bs_valid)
+        self.monitor.update('reward', self._reward.data[0], self.bs_valid)
         self.optimizer['valid'].update()

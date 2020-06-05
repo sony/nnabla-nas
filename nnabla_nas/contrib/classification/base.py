@@ -53,6 +53,6 @@ class ClassificationBase(Model):
             dict: A dictionary containing all metrics (nn.Variable) to monitor.
                 E.g., {'error': nn.Variable, 'F1': nn.Variable}
         """
-        assert len(outputs) == 1 and len(targets) == 1
+        assert len(targets) == 1
 
         return {"error": F.mean(F.top_n_error(outputs[0], targets[0]))}
