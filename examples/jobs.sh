@@ -43,29 +43,28 @@ python main.py -f examples/classification/pnas/cifar10_train_latency.json \
 
 # search MobileNet
 python main.py  --search \
-               -f examples/mobilenet/cifar10_search.json \
+               -f examples/classification/mobilenet/cifar10_search.json \
                -a ProxylessNasSearcher \
                -o log/mobilenet/cifar10/search
 
 # train MobileNet
-python main.py -f examples/mobilenet/cifar10_train.json \
+python main.py -f examples/classification/mobilenet/cifar10_train.json \
                -a Trainer \
                -o log/mobilenet/cifar10/train
 
 # search MobileNet with latency
 python main.py  --search \
-               -f examples/mobilenet/cifar10_search_latency.json \
+               -f examples/classification/mobilenet/cifar10_search_latency.json \
                -a ProxylessNasSearcher \
-               -o log/mobilenet/cifar10/latency/search
+               -o log/mobilenet/cifar10/constrained/search
 
 # train MobileNet with latancy
-python main.py -d 0 \
-               -f examples/mobilenet/cifar10_train_latency.json \
+python main.py -f examples/classification/mobilenet/cifar10_train_latency.json \
                -a Trainer \
-               -o log/mobilenet/cifar10/latency/train
+               -o log/mobilenet/cifar10/constrained/train
 
-# train reference MobileNet V2
-python main.py -f examples/mobilenet/cifar10_reference.json  \
+# reference MobileNet V2
+python main.py -f examples/classification/mobilenet/cifar10_reference.json  \
                -a Trainer \
                -o log/mobilenet/cifar10/reference
 #------------------------------------------------------------------#
