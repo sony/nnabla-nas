@@ -73,13 +73,13 @@ python main.py -f examples/classification/mobilenet/cifar10_reference.json  \
 
 #----------------------------Zoph---------------------------------#
 # search zoph search space with pnas and without latency constraint
-python main.py  --search \
-               -f examples/zoph/pnas_zoph_search.json \
+python main.py --search \
+               -f examples/classification/zoph/pnas_zoph_search.json \
                -a ProxylessNasSearcher \
                -o log/zoph/search
 
 # train zoph network
-python main.py -f examples/zoph/zoph_train.json \
+python main.py -f examples/classification/zoph/zoph_train.json \
                -a Trainer \
                -o log/zoph/train
 #------------------------------------------------------------------#
