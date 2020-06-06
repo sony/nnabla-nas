@@ -26,14 +26,14 @@ python main.py -f examples/classification/pnas/cifar10_train.json \
 
 # search PNAS with latency constraints
 python main.py  --search \
-               -f examples/pnas/search_latency.json \
+               -f examples/classification/pnas/cifar10_search_latency.json \
                -a ProxylessNasSearcher \
-               -o log/pnas-lat/search
+               -o log/pnas/cifar10/constrained/search
 
 # train PNAS with latency constraints
-python main.py -f examples/pnas/train_latency.json \
+python main.py -f examples/classification/pnas/cifar10_train_latency.json \
                -a Trainer \
-               -o log/pnas-lat/train               
+               -o log/pnas/cifar10/constrained/train               
 #------------------------------------------------------------------#
 
 

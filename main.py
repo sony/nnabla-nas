@@ -37,9 +37,8 @@ except ImportError:
     print(" Please make sure that your installed nnabla-ext-cuda??? appropriate for your environment.")
     raise
 
-
-import nnabla_nas.contrib as contrib
 from args import Configuration
+from nnabla_nas import contrib
 from nnabla_nas import runner
 from nnabla_nas.utils.helper import CommunicatorWrapper
 
@@ -87,7 +86,7 @@ def main():
 
     if hparams['comm'].n_procs > 1 and hparams['comm'].rank == 0:
         n_procs = hparams['comm'].n_procs
-        logger.info(f'Distributed Training with {n_procs} processes.')
+        logger.info(f'Distributed training with {n_procs} processes.')
 
     # build the model
     name, attributes = list(config['network'].items())[0]

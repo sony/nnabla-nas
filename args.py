@@ -93,10 +93,10 @@ class Configuration(object):
         optimizer = dict()
         for name, args in conf.items():
             if name == 'regularizer':
-                optimizer[name] = list()
+                optimizer[name] = dict()
                 for k, params in args.items():
                     try:
-                        optimizer[name].append(EST.__dict__[k](**params))
+                        optimizer[name][k] = EST.__dict__[k](**params)
                     except ModuleNotFoundError:
                         print(f"regularizer `{k}` is not supported.")
                         sys.exit(-1)
