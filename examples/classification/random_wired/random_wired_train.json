@@ -1,31 +1,39 @@
 {
-    "dataset": "cifar10",
-    "epoch": 600,
-    "batch_size_train": 64,
-    "batch_size_valid": 20,
-    "mini_batch_train": 32,
-    "mini_batch_valid": 20,
-    "warmup": 0,
-    "cutout": 16,
-    "print_frequency": 50,
+    "dataloader": {
+        "cifar10": {}
+    },
     "network": {
-        "search_space": "random_wired",
-        "name": "random_wired",
-        "n_classes": 10,
-        "n_vertices": 20,
-        "min_channels": 128,
-        "max_channels": 512,
-        "k": 4,
-        "p": 0.75
+        "random_wired": {
+            "name": "random_wired",
+            "n_classes": 10,
+            "n_vertices": 20,
+            "min_channels": 128,
+            "max_channels": 512,
+            "k": 4,
+            "p": 0.75
+        }
     },
     "optimizer": {
         "train": {
             "grad_clip": 5.0,
             "weight_decay": 3e-4,
-            "solver": {
-                "name": "Momentum",
-                "lr": 0.025
-            }
+            "lr_scheduler": "CosineScheduler",
+            "name": "Momentum",
+            "lr": 0.025
         }
+    },
+    "hparams": {
+        "epoch": 600,
+        "batch_size_train": 64,
+        "batch_size_valid": 20,
+        "mini_batch_train": 64,
+        "mini_batch_valid": 20,
+        "print_frequency": 50,
+        "input_shapes": [
+            [3, 32, 32]
+        ],
+        "target_shapes": [
+            [1]
+        ]
     }
 }

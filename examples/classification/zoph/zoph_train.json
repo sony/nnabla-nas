@@ -9,7 +9,7 @@
             "stem_channels": 128,
             "merging_mode": "concat",
             "random_init": false,
-            "param_path": "log/zoph/search/arch.h5"
+            "param_path": "log/classification/zoph/search/arch.h5"
         }
     },
     "optimizer": {

@@ -10,7 +10,7 @@
             "num_classes": 10,
             "auxiliary": true,
             "drop_path": 0.1,
-            "genotype": "log/darts/cifar10/search/arch.json"
+            "genotype": "log/classification/darts/cifar10/search/arch.json"
         }
     },
     "optimizer": {

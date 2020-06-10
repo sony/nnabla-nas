@@ -14,7 +14,7 @@
                 [320, 1, 1]
             ],
             "mode": "sample",
-            "genotype": "log/mobilenet/cifar10/search/arch.h5"
+            "genotype": "log/classification/mobilenet/cifar10/search/arch.h5"
         }
     },
     "optimizer": {

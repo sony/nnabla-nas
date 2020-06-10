@@ -214,7 +214,7 @@ You can start the architecture search using `DartsSearcher` by the command below
 python main.py -d 1 --search \
                -f examples/darts_search.json  \
                -a DartsSearcher \
-               -o log/darts/search
+               -o log/classification/darts/search
 ```
 
 For re-training, the model using the architecture found in the architecture search, just run
@@ -222,7 +222,7 @@ For re-training, the model using the architecture found in the architecture sear
 # train DARTS
 python main.py -d 1 \
                -f examples/darts_train.json \
-               -a Trainer -o log/darts/train
+               -a Trainer -o log/classification/darts/train
 ```
 
 ## Documentation
