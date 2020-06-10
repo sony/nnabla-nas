@@ -21,7 +21,7 @@ import numpy as np
 import nnabla.functions as F
 
 from .... import module as Mo
-from ..base import ClassificationBase as Model
+from ..base import ClassificationModel as Model
 from .helper import plot_mobilenet
 from .modules import CANDIDATES
 from .modules import ChoiceBlock

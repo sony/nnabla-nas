@@ -16,7 +16,7 @@ import numpy as np
 
 from .... import module as Mo
 from ....utils.helper import load_parameters
-from ..base import ClassificationBase as Model
+from ..base import ClassificationModel as Model
 from ..darts import modules as darts
 from ..misc import AuxiliaryHeadCIFAR
 

@@ -22,7 +22,7 @@ from nnabla.utils.data_source_loader import download
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from ..utils.data.dataloader import BaseDataLoader
+from .dataloader import BaseDataLoader
 from ..utils.data import transforms
 
 

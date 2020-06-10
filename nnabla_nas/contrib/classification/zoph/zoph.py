@@ -20,7 +20,7 @@ from nnabla.utils.save import save
 import numpy as np
 
 from nnabla_nas.contrib.classification import misc
-from nnabla_nas.contrib.classification.base import ClassificationBase as Model
+from nnabla_nas.contrib.classification.base import ClassificationModel as Model
 import nnabla_nas.module as mo
 from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter

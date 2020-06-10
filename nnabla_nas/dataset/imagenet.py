@@ -22,7 +22,7 @@ from nvidia.dali.pipeline import Pipeline
 import nvidia.dali.types as types
 from sklearn.model_selection import train_test_split
 
-from ..utils.data.dataloader import BaseDataLoader
+from .dataloader import BaseDataLoader
 
 _pixel_mean = [255 * x for x in (0.485, 0.456, 0.406)]
 _pixel_std = [255 * x for x in (0.229, 0.224, 0.225)]

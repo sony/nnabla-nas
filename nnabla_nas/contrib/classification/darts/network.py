@@ -23,7 +23,7 @@ import numpy as np
 
 from . import modules as darts
 from .... import module as Mo
-from ..base import ClassificationBase as Model
+from ..base import ClassificationModel as Model
 from ..misc import AuxiliaryHeadCIFAR
 from .helper import save_dart_arch
 

@@ -15,7 +15,7 @@
 from abc import ABC
 from abc import abstractmethod
 
-from .transforms import Compose
+from ..utils.data.transforms import Compose
 
 
 class BaseDataLoader(ABC):

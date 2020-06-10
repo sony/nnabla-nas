@@ -18,7 +18,7 @@ from ...utils.helper import label_smoothing_loss
 from ..model import Model
 
 
-class ClassificationBase(Model):
+class ClassificationModel(Model):
     r"""This class is a base `Model` for classification task. Your model should be based on this class."""
 
     def loss(self, outputs, targets, loss_weights=None, *args):

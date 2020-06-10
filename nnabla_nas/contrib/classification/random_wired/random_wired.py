@@ -19,7 +19,7 @@ import networkx as nx
 import nnabla as nn
 import numpy as np
 
-from nnabla_nas.contrib.classification.base import ClassificationBase as Model
+from nnabla_nas.contrib.classification.base import ClassificationModel as Model
 from nnabla_nas.module import static as smo
 
 
