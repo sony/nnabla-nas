@@ -4,21 +4,6 @@
             "train_portion": 0.96
         }
     },
-    "hparams": {
-        "epoch": 120,
-        "batch_size_train": 64,
-        "batch_size_valid": 64,
-        "mini_batch_train": 32,
-        "mini_batch_valid": 32,
-        "warmup": 50,
-        "print_frequency": 100,
-        "input_shapes": [
-            [3, 224, 224]
-        ],
-        "target_shapes": [
-            [1]
-        ]
-    },
     "network": {
         "mobilenet": {
             "num_classes": 1000,
@@ -43,7 +28,6 @@
         },
         "valid": {
             "grad_clip": 5.0,
-            "lr_scheduler": "CosineScheduler",
             "name": "Adam",
             "alpha": 0.001,
             "beta1": 0.0,
@@ -56,5 +40,20 @@
             "name": "Momentum",
             "lr": 0.05
         }
+    },
+    "hparams": {
+        "epoch": 120,
+        "batch_size_train": 64,
+        "batch_size_valid": 64,
+        "mini_batch_train": 32,
+        "mini_batch_valid": 32,
+        "warmup": 50,
+        "print_frequency": 100,
+        "input_shapes": [
+            [3, 224, 224]
+        ],
+        "target_shapes": [
+            [1]
+        ]
     }
 }
