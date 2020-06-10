@@ -59,7 +59,7 @@
         "batch_size_valid": 256,
         "mini_batch_train": 128,
         "mini_batch_valid": 256,
-        "warmup": 0,
+        "warmup": 100,
         "print_frequency": 25
     }
 }
