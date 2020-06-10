@@ -181,7 +181,7 @@ nnabla_nas.utils
 Profiler
 ........
 
-.. automodule:: nnabla_nas.utils.profiler
+.. automodule:: nnabla_nas.utils.data.transforms
    :members:
    :undoc-members:
    :show-inheritance:
