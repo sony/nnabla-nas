@@ -31,13 +31,13 @@ class Trainer(Runner):
         params = self.model.get_parameters(grad_only=True)
         self.optimizer['train'].set_parameters(params)
         self.update_graph('valid')
-        self._best_metric = {k: np.inf for k in self.placeholder['valid']['metric']}
+        self._best_metric = {k: np.inf for k in self.placeholder['valid']['metrics']}
 
         # loss and metric
         self.loss = nn.NdArray.from_numpy_array(np.zeros((1,)))
         self.metric = {
             k: nn.NdArray.from_numpy_array(np.zeros((1,)))
-            for k in self.placeholder['valid']['metric']
+            for k in self.placeholder['valid']['metrics']
         }
 
         # calculate the model size
@@ -82,7 +82,7 @@ class Trainer(Runner):
         for _ in range(self.accum_train):
             self._load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
-            for k, m in p['metric'].items():
+            for k, m in p['metrics'].items():
                 m.forward(clear_buffer=True)
                 self.monitor.update(f'{k}/train', m.d.copy(), bz)
             p['loss'].backward(clear_buffer=True)
@@ -105,10 +105,10 @@ class Trainer(Runner):
         for _ in range(self.accum_valid):
             self._load_data(p, self.dataloader['valid'].next())
             p['loss'].forward(clear_buffer=True)
-            for k, m in p['metric'].items():
+            for k, m in p['metrics'].items():
                 m.forward(clear_buffer=True)
                 self.monitor.update(f'{k}/valid', m.d.copy(), bz)
-                self.metric[k].data += m.d.copy() * bz
+                self.metrics[k].data += m.d.copy() * bz
             loss = p['loss'].d.copy()
             self.loss.data += loss * self.accum_valid * bz
 
@@ -118,29 +118,29 @@ class Trainer(Runner):
     def callback_on_epoch_end(self):
         r"""Calculates the metric and saves the best parameters."""
         if self.comm.n_procs > 1:
-            self.comm.all_reduce([self.loss]+list(self.metric.values()), division=True, inplace=False)
+            self.comm.all_reduce([self.loss]+list(self.metrics.values()), division=True, inplace=False)
 
         self.loss.data /= len(self.dataloader['valid'])
-        for k in self.metric:
-            self.metric[k].data /= len(self.dataloader['valid'])
+        for k in self.metrics:
+            self.metrics[k].data /= len(self.dataloader['valid'])
 
         if self.comm.rank == 0:
             self.monitor.update('loss/valid', self.loss.data[0], 1)
             better = False
-            for k in self.metric:
-                self.monitor.update('valid/k', self.metric[k].data[0], 1)
-                self.monitor.info(f'{k}={self.metric[k].data[0]:.4f}\n')
-                better |= self._best_metric[k] > self.metric[k].data[0]
+            for k in self.metrics:
+                self.monitor.update('valid/k', self.metrics[k].data[0], 1)
+                self.monitor.info(f'{k}={self.metrics[k].data[0]:.4f}\n')
+                better |= self._best_metric[k] > self.metrics[k].data[0]
             if better:
-                for k in self.metric:
-                    self._best_metric[k] = self.metric[k].data[0]
+                for k in self.metrics:
+                    self._best_metric[k] = self.metrics[k].data[0]
                 path = os.path.join(self.args['output_path'], 'weights.h5')
                 self.model.save_parameters(path)
 
         # reset loss and metric
         self.loss.zero()
-        for k in self.metric:
-            self.metric[k].zero()
+        for k in self.metrics:
+            self.metrics[k].zero()
 
     def callback_on_finish(self):
         pass

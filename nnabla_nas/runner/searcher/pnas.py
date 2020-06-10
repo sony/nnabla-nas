@@ -42,7 +42,7 @@ class ProxylessNasSearcher(Searcher):
         for _ in range(self.accum_train):
             self._load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
-            for k, m in p['metric'].items():
+            for k, m in p['metrics'].items():
                 m.forward(clear_buffer=True)
                 self.monitor.update(f'{k}/train', m.d.copy(), bz)
             p['loss'].backward(clear_buffer=True)
@@ -75,11 +75,11 @@ class ProxylessNasSearcher(Searcher):
             for minibatch in valid_data:
                 self._load_data(p, minibatch)
                 p['loss'].forward(clear_buffer=True)
-                for k, m in p['metric'].items():
+                for k, m in p['metrics'].items():
                     m.forward(clear_buffer=True)
                     self.monitor.update(f'{k}/valid', m.d.copy(), bz)
                 loss = p['loss'].d.copy()
-                reward += (1 - p['metric']['error'].d) / self.accum_valid
+                reward += (1 - p['metrics']['error'].d) / self.accum_valid
                 self.monitor.update('loss/valid', loss * self.accum_valid, bz)
 
             # adding constraints

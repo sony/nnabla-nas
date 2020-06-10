@@ -40,7 +40,7 @@ class ClassificationModel(Model):
 
         return F.mean(label_smoothing_loss(outputs[0], targets[0]))
 
-    def metric(self, outputs, targets):
+    def metrics(self, outputs, targets):
         r"""Return a dictionary of metrics to monitor during training.
 
         It is expected to have a 1:1 mapping to model outputs and targets variables.

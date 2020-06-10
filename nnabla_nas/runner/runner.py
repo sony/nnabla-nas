@@ -104,8 +104,8 @@ class Runner(ABC):
 
         # metrics to monitor during training
         outputs = [out.get_unlinked_variable().apply(need_grad=False) for out in p['outputs']]
-        p['metric'] = self.model.metric(outputs, p['targets'])
-        for v in p['metric'].values():
+        p['metrics'] = self.model.metrics(outputs, p['targets'])
+        for v in p['metrics'].values():
             v.apply(persistent=True)
 
     @staticmethod

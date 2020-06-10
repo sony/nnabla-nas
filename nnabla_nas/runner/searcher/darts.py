@@ -45,7 +45,7 @@ class DartsSearcher(Searcher):
         for _ in range(self.accum_train):
             self._load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
-            for k, m in p['metric'].items():
+            for k, m in p['metrics'].items():
                 m.forward(clear_buffer=True)
                 self.monitor.update(f'{k}/train', m.d.copy(), bz)
             p['loss'].backward(clear_buffer=True)
@@ -69,7 +69,7 @@ class DartsSearcher(Searcher):
         for _ in range(self.accum_valid):
             self._load_data(p, self.dataloader['valid'].next())
             p['loss'].forward(clear_no_need_grad=True)
-            for k, m in p['metric'].items():
+            for k, m in p['metrics'].items():
                 m.forward(clear_buffer=True)
                 self.monitor.update(f'{k}/valid', m.d.copy(), bz)
             p['loss'].backward(clear_buffer=True)
