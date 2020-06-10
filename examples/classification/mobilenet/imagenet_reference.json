@@ -1,37 +1,46 @@
 {
-    "dataset": "imagenet",
-    "input_shape": [3, 224, 224],
-    "epoch": 120,
-    "batch_size_train": 64,
-    "batch_size_valid": 64,
-    "mini_batch_train": 32,
-    "mini_batch_valid": 32,
-    "print_frequency": 100,
+    "dataloader": {
+        "imagenet": {}
+    },
     "network": {
-        "search_space": "mobilenet",
-        "num_classes": 1000,
-        "settings": [
-            [24, 2, 2],
-            [32, 3, 2],
-            [64, 4, 2],
-            [96, 3, 1],
-            [160, 3, 2],
-            [320, 1, 1]
-        ],
-        "candidates": [
-            "MB6 3x3"
-        ],
-        "mode": "max",
-        "skip_connect": false
+        "mobilenet": {
+            "num_classes": 1000,
+            "settings": [
+                [24, 2, 2],
+                [32, 3, 2],
+                [64, 4, 2],
+                [96, 3, 1],
+                [160, 3, 2],
+                [320, 1, 1]
+            ],
+            "candidates": [
+                "MB6 3x3"
+            ],
+            "mode": "max",
+            "skip_connect": false
+        }
     },
     "optimizer": {
         "train": {
             "grad_clip": 5,
             "weight_decay": 4e-5,
-            "solver": {
-                "name": "Momentum",
-                "lr": 0.1
-            }
+            "lr_scheduler": "CosineScheduler",
+            "name": "Momentum",
+            "lr": 0.1
         }
+    },
+    "hparams": {
+        "input_shapes": [
+            [3, 224, 224]
+        ],
+        "target_shapes": [
+            [1]
+        ],
+        "epoch": 120,
+        "batch_size_train": 64,
+        "batch_size_valid": 64,
+        "mini_batch_train": 32,
+        "mini_batch_valid": 32,
+        "print_frequency": 100
     }
 }

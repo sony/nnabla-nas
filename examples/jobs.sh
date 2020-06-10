@@ -115,43 +115,43 @@ python main.py -f examples/classification/random_wired/random_wired_train.json \
 #---------------------------- ImageNet ----------------------------#
 # search MobileNet network
 mpirun -n 4 python main.py --search \
-               -f examples/mobilenet/imagenet_search.json \
+               -f examples/classification/mobilenet/imagenet_search.json \
                -a ProxylessNasSearcher \
                -o log/classification/mobilenet/imagenet/search
 
 # train MobileNet network
 mpirun -n 4 python main.py\
-               -f examples/mobilenet/imagenet_train.json \
+               -f examples/classification/mobilenet/imagenet_train.json \
                -a Trainer \
                -o log/classification/mobilenet/imagenet/train
 
 # search MobileNet network with latency
 mpirun -n 4 python main.py --search \
-               -f examples/mobilenet/imagenet_search_latency.json \
+               -f examples/classification/mobilenet/imagenet_search_latency.json \
                -a ProxylessNasSearcher \
                -o log/classification/mobilenet/imagenet/latency/search
 
 # search MobileNet network with latency
 mpirun -n 4 python main.py \
-               -f examples/mobilenet/imagenet_train_latency.json \
+               -f examples/classification/mobilenet/imagenet_train_latency.json \
                -a ProxylessNasSearcher \
                -o log/classification/mobilenet/imagenet/latency/train
 
 # search MobileNet network Songhan
 mpirun -n 4 python main.py --search \
-               -f examples/mobilenet/imagenet_search_songhan.json \
+               -f examples/classification/mobilenet/imagenet_search_songhan.json \
                -a ProxylessNasSearcher \
                -o log/classification/mobilenet/imagenet/songhan/search
 
 # train MobileNet network Songhan
 mpirun -n 4 python main.py \
-               -f examples/mobilenet/imagenet_train_songhan.json \
+               -f examples/classification/mobilenet/imagenet_train_songhan.json \
                -a Trainer \
                -o log/classification/mobilenet/imagenet/songhan/train
 
 # ref MobileNet network
 mpirun -n 4 python main.py\
-               -f examples/mobilenet/imagenet_reference.json \
+               -f examples/classification/mobilenet/imagenet_reference.json \
                -a Trainer \
                -o log/classification/mobilenet/imagenet/reference
 #------------------------------------------------------------------#
