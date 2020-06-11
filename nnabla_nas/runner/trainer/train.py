@@ -35,7 +35,7 @@ class Trainer(Runner):
 
         # loss and metric
         self.loss = nn.NdArray.from_numpy_array(np.zeros((1,)))
-        self.metric = {
+        self.metrics = {
             k: nn.NdArray.from_numpy_array(np.zeros((1,)))
             for k in self.placeholder['valid']['metrics']
         }
