@@ -84,7 +84,6 @@ class Model(Mo.Module):
         """
         raise NotImplementedError
 
-    
     def loss_weights(self):
         r"""Return a tuple containing scalar coefficients to weight the loss contributions of different model outputs.
         It is expected to have a 1:1 mapping from the model outputs and targets. Defaults to None.
