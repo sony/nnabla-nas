@@ -277,5 +277,5 @@ class TrainNet(SearchNet):
                     idx = np.random.randint(len(module._mixed._alpha.d))
                     module._mixed = module._mixed._ops[idx]
 
-    def loss(self, outputs, targets):
+    def loss(self, outputs, targets, loss_weights=None):
         return F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
