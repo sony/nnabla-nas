@@ -31,6 +31,7 @@
         "mini_batch_valid": 50,
         "warmup": 0,
         "print_frequency": 20,
+        "loss_weights": [1, 0.4],
         "input_shapes": [
             [3, 32, 32]
         ],
