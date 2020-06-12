@@ -55,6 +55,7 @@ class Configuration(object):
             "print_frequency": 20,
             "warmup": 0,
             "epoch": 50,
+            "loss_weights": None,
             "input_shapes": [
                 [3, 32, 32]
             ]

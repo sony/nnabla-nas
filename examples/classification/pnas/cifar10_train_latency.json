@@ -2,21 +2,6 @@
     "dataloader": {
         "cifar10": {}
     },
-    "hparams": {
-        "epoch": 600,
-        "batch_size_train": 256,
-        "batch_size_valid": 100,
-        "mini_batch_train": 32,
-        "mini_batch_valid": 50,
-        "warmup": 0,
-        "print_frequency": 20,
-        "input_shapes": [
-            [3, 32, 32]
-        ],
-        "target_shapes": [
-            [1]
-        ]
-    },
     "network": {
         "pnas": {
             "in_channels": 3,
@@ -37,5 +22,21 @@
             "name": "Momentum",
             "lr": 0.025
         }
+    },
+    "hparams": {
+        "epoch": 600,
+        "batch_size_train": 256,
+        "batch_size_valid": 100,
+        "mini_batch_train": 32,
+        "mini_batch_valid": 50,
+        "warmup": 0,
+        "print_frequency": 20,
+        "loss_weights": [1, 0.4],
+        "input_shapes": [
+            [3, 32, 32]
+        ],
+        "target_shapes": [
+            [1]
+        ]
     }
 }

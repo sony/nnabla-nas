@@ -57,7 +57,9 @@ class Model(Mo.Module):
         Args:
             outputs (list of nn.Variable): A list of output variables computed from the model.
             targets (list of nn.Variable): A list of target variables loaded from the data.
-            args: Additional parameters.
+            loss_weights (list of float, optional): A list specifying scalar coefficients to weight the loss
+                contributions of different model outputs. It is expected to have a 1:1 mapping to model outputs.
+                Defaults to None.
 
         Returns:
             nn.Variable: A scalar NNabla variable represent the loss.
@@ -83,9 +85,3 @@ class Model(Mo.Module):
             NotImplementedError: [description]
         """
         raise NotImplementedError
-
-    def loss_weights(self):
-        r"""Return a tuple containing scalar coefficients to weight the loss contributions of different model outputs.
-        It is expected to have a 1:1 mapping from the model outputs and targets. Defaults to None.
-        """
-        return None

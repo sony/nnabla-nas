@@ -99,7 +99,7 @@ class Runner(ABC):
         p['outputs'] = [x.apply(persistent=True) for x in outputs]
 
         # loss function
-        p['loss'] = self.model.loss(p['outputs'], p['targets']) / accum
+        p['loss'] = self.model.loss(p['outputs'], p['targets'], self.args.loss_weights) / accum
         p['loss'].apply(persistent=True)
 
         # metrics to monitor during training

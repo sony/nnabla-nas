@@ -179,10 +179,11 @@ class SearchNet(Model):
             output_path = os.path.dirname(path)
             save_dart_arch(self, output_path)
 
-    def loss(self, outputs, targets, weight_loss=None):
+    def loss(self, outputs, targets, loss_weights=(1, 0.4)):
         loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
         if len(outputs) == 2:  # use auxiliar head
-            loss += 0.4 * F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
+            aux_loss = F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
+            loss = loss_weights[0] * loss + loss_weights[1] * aux_loss
         return loss
 
 
@@ -251,15 +252,12 @@ class TrainNet(Model):
 
         return cells
 
-    def loss(self, outputs, targets):
+    def loss(self, outputs, targets, loss_weights=(1, 0.4)):
         loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
-        if len(outputs) == 2 and self.loss_weights:  # use auxiliar head
+        if len(outputs) == 2:  # use auxiliar head
             aux_loss = F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
-            loss = self.loss_weights[0] * loss + self.loss_weights[1] * aux_loss
+            loss = loss_weights[0] * loss + loss_weights[1] * aux_loss
         return loss
-
-    def loss_weights(self):
-        return (1, 0.4)
 
 
 class Cell(Mo.Module):

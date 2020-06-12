@@ -29,6 +29,7 @@
         "mini_batch_train": 48,
         "mini_batch_valid": 50,
         "print_frequency": 50,
+        "loss_weights": [1, 0.4],
         "input_shapes": [
             [3, 32, 32]
         ],
