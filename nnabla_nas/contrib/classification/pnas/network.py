@@ -113,7 +113,7 @@ class TrainNet(Model):
 
     def loss(self, outputs, targets):
         loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
-        if len(outputs) == 2:  # use auxiliar head
+        if len(outputs) == 2 and self.loss_weights:  # use auxiliar head
             aux_loss = F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
             loss = self.loss_weights[0] * loss + self.loss_weights[1] * aux_loss
         return loss
