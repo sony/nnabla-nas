@@ -99,15 +99,17 @@ class Cutout(object):
                 arXiv:1708.04552 (2017).
     """
 
-    def __init__(self, length, prob=0.5):
+    def __init__(self, length, prob=0.5, seed=-1):
         self._length = length
         self._prob = prob
+        self._seed = seed
 
     def __call__(self, images):
         ratio = self._length**2 / np.prod(images.shape[2:])
         area_ratios = (ratio, ratio)
         aspect_ratios = (1.0, 1.0)
         out = F.random_erase(images,
+                             seed=self._seed,
                              prob=self._prob,
                              replacements=(0.0, 0.0),
                              aspect_ratios=aspect_ratios,

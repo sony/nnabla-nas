@@ -173,7 +173,7 @@ class DataLoader(BaseDataLoader):
                 transforms.Normalize(mean=mean, std=std, scale=scale),
                 transforms.RandomCrop((3, 32, 32), pad_width=pad_width),
                 transforms.RandomHorizontalFlip(),
-                transforms.Cutout(16)
+                transforms.Cutout(16, prob=1, seed=123)
             ])
 
         return transforms.Compose([
