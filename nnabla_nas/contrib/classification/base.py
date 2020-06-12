@@ -21,7 +21,7 @@ from ..model import Model
 class ClassificationModel(Model):
     r"""This class is a base `Model` for classification task. Your model should be based on this class."""
 
-    def loss(self, outputs, targets, loss_weights=None, *args):
+    def loss(self, outputs, targets, loss_weights=None):
         r"""Return a loss computed from a list of outputs and a list of targets.
 
         Args:
@@ -30,7 +30,6 @@ class ClassificationModel(Model):
             loss_weights (list of float, optional): A list specifying scalar coefficients to weight the loss
                 contributions of different model outputs. It is expected to have a 1:1 mapping to model outputs.
                 Defaults to None.
-            args: Additional parameters.
 
         Returns:
             nn.Variable: A scalar NNabla variable represent the loss.
