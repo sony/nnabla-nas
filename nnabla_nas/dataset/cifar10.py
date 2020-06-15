@@ -170,7 +170,7 @@ class DataLoader(BaseDataLoader):
 
         if key == 'train':
             return transforms.Compose([
-                transforms.Cutout(10, prob=1, seed=123),
+                transforms.Cutout(16, prob=1, seed=123),
                 transforms.Normalize(mean=mean, std=std, scale=scale),
                 transforms.RandomCrop((3, 32, 32), pad_width=pad_width),
                 transforms.RandomHorizontalFlip()
