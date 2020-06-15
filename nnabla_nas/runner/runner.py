@@ -103,8 +103,8 @@ class Runner(ABC):
         p['loss'].apply(persistent=True)
 
         # metrics to monitor during training
-        outputs = [out.get_unlinked_variable().apply(need_grad=False) for out in p['outputs']]
-        p['metrics'] = self.model.metrics(outputs, p['targets'])
+        targets = [out.get_unlinked_variable().apply(need_grad=False) for out in p['outputs']]
+        p['metrics'] = self.model.metrics(targets, p['targets'])
         for v in p['metrics'].values():
             v.apply(persistent=True)
 

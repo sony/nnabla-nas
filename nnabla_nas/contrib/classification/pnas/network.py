@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import nnabla.functions as F
 import numpy as np
 
 from .... import module as Mo
+from ....utils.helper import label_smoothing_loss
 from ....utils.helper import load_parameters
 from ..base import ClassificationModel as Model
 from ..darts import modules as darts
 from ..misc import AuxiliaryHeadCIFAR
-
-import nnabla.functions as F
 
 
 class TrainNet(Model):
@@ -112,9 +112,9 @@ class TrainNet(Model):
         return cells
 
     def loss(self, outputs, targets, loss_weights=(1, 0.4)):
-        loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
+        loss = F.mean(label_smoothing_loss(outputs[0], targets[0]))
         if len(outputs) == 2:  # use auxiliar head
-            aux_loss = F.mean(F.softmax_cross_entropy(outputs[1], targets[0]))
+            aux_loss = F.mean(label_smoothing_loss(outputs[1], targets[0]))
             loss = loss_weights[0] * loss + loss_weights[1] * aux_loss
         return loss
 
