@@ -48,17 +48,17 @@ def main():
     parser.add_argument('--context', '-c', type=str, default='cudnn',
                         help="Extension module. 'cudnn' is highly recommended.")
     parser.add_argument("--device-id", "-d", type=str, default='-1',
-                        help='A list of device ids to use.\
+                        help='A list of device ids to use, e.g., `0,1,2,3`.\
                         This is only valid if you specify `-c cudnn`.')
     parser.add_argument("--type-config", "-t", type=str, default='float',
                         help='Type configuration.')
     parser.add_argument('--search', '-s', action='store_true',
-                        help='Whether search algorithm is performed.')
+                        help='Whether it is searching for the architecture.')
     parser.add_argument('--algorithm', '-a', type=str, default='DartsSeacher',
-                        choices=runner.__all__, help='Algorithm used to run')
+                        choices=runner.__all__, help='Which algorithm to use.')
     parser.add_argument('--config-file', '-f', type=str,
-                        help='The configuration file used to run the experiment.')
-    parser.add_argument('--output-path', '-o', type=str, help='Path monitoring logs saved.')
+                        help='The configuration file for the experiment.')
+    parser.add_argument('--output-path', '-o', type=str, help='Path to save the monitoring log files.')
 
     options = parser.parse_args()
 

@@ -194,35 +194,35 @@ optional arguments:
   --context CONTEXT, -c CONTEXT
                         Extension module. 'cudnn' is highly recommended.
   --device-id DEVICE_ID, -d DEVICE_ID
-                        A list of device ids to use, e.g., 0,1,2. This is only valid if you
-                        specify `-c cudnn`.
+                        A list of device ids to use, e.g., `0,1,2,3`. This is
+                        only valid if you specify `-c cudnn`.
   --type-config TYPE_CONFIG, -t TYPE_CONFIG
                         Type configuration.
-  --search, -s          Whether search algorithm is performed.
+  --search, -s          Whether it is searching for the architecture.
   --algorithm {DartsSearcher,ProxylessNasSearcher,Trainer}, -a {DartsSearcher,ProxylessNasSearcher,Trainer}
-                        Algorithm used to run
+                        Which algorithm to use.
   --config-file CONFIG_FILE, -f CONFIG_FILE
-                        The configuration file used to run the experiment.
+                        The configuration file for the experiment.
   --output-path OUTPUT_PATH, -o OUTPUT_PATH
-                        Path monitoring logs saved.
+                        Path to save the monitoring log files.
 ```
 
 You can start the architecture search using `DartsSearcher` by the command below
 
 ```bash
 # search DARTS
-python main.py -d 1 --search \
-               -f examples/darts_search.json  \
+python main.py --search \
+               -f examples/classification/darts/cifar10_search.json  \
                -a DartsSearcher \
-               -o log/classification/darts/search
+               -o log/classification/darts/cifar10/search
 ```
 
 For re-training, the model using the architecture found in the architecture search, just run
 ```bash
 # train DARTS
-python main.py -d 1 \
-               -f examples/darts_train.json \
-               -a Trainer -o log/classification/darts/train
+python main.py -f examples/classification/darts/cifar10_train.json \
+               -a Trainer \
+               -o log/classification/darts/cifar10/train
 ```
 
 ## Documentation
