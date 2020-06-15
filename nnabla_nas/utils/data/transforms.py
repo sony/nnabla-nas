@@ -114,6 +114,7 @@ class Cutout(object):
                              replacements=(0.0, 0.0),
                              aspect_ratios=aspect_ratios,
                              area_ratios=area_ratios)
+        out = out.apply(need_grad=False)
         return out
 
     def __str__(self):
