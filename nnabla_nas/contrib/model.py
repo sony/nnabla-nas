@@ -81,7 +81,7 @@ class Model(Mo.Module):
         Returns:
             dict: A dictionary containing all metrics to monitor, e.g.,
                 {
-                    'accuracy': nn.Variable((1,)), 
+                    'accuracy': nn.Variable((1,)),
                     'F1': nn.Variable((1,))
                 }
 
