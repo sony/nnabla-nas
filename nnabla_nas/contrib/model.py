@@ -62,7 +62,7 @@ class Model(Mo.Module):
                 Defaults to None.
 
         Returns:
-            nn.Variable: A scalar NNabla variable represent the loss.
+            nn.Variable: A scalar NNabla Variable represents the loss.
 
         Raises:
             NotImplementedError: [description]
@@ -72,14 +72,18 @@ class Model(Mo.Module):
     def metrics(self, outputs, targets):
         r"""Return a dictionary of metrics to monitor during training.
 
-        It is expected to have a 1:1 mapping to model outputs and.
+        It is expected to have a 1:1 mapping between the model outputs and targets.
 
         Args:
-            outputs (list of nn.Variable): A list of output variables computed from the model.
-            targets (list of nn.Variable): A list of target variables loaded from the data.
+            outputs (list of nn.Variable): A list of output variables (nn.Variable) computed from the model.
+            targets (list of nn.Variable): A list of target variables (nn.Variable) loaded from the data.
 
         Returns:
-            dict: A dictionary containing all metrics to monitor. E.g., {'accuracy': 0.7, 'F1': 0.3}
+            dict: A dictionary containing all metrics to monitor, e.g.,
+                {
+                    'accuracy': nn.Variable((1,)), 
+                    'F1': nn.Variable((1,))
+                }
 
         Raises:
             NotImplementedError: [description]
