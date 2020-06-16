@@ -24,11 +24,10 @@ from nnabla_nas.contrib.classification.base import ClassificationModel as Model
 import nnabla_nas.module as mo
 from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
-from nnabla_nas.utils.helper import load_parameters
 
 
 class SepConv(misc.SepConv, smo.Module):
-    """
+    r"""
     A static separable convolution
 
     Args:
@@ -723,4 +722,4 @@ class TrainNet(SearchNet):
                            mode='max')
 
         if param_path is not None:
-            self.set_parameters(load_parameters(param_path))
+            self.load_parameters(param_path)

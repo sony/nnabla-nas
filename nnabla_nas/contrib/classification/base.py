@@ -14,8 +14,15 @@
 
 import nnabla.functions as F
 
-from ...utils.helper import label_smoothing_loss
 from ..model import Model
+
+
+def label_smoothing_loss(pred, label, label_smoothing=0.1):
+    loss = F.softmax_cross_entropy(pred, label)
+    if label_smoothing <= 0:
+        return loss
+    return (1 - label_smoothing) * loss - label_smoothing \
+        * F.mean(F.log_softmax(pred), axis=1, keepdims=True)
 
 
 class ClassificationModel(Model):
@@ -32,7 +39,7 @@ class ClassificationModel(Model):
                 Defaults to None.
 
         Returns:
-            nn.Variable: A scalar NNabla variable represent the loss.
+            nn.Variable: A scalar NNabla Variable represents the loss.
 
         """
         assert len(outputs) == 1 and len(targets) == 1
@@ -42,7 +49,7 @@ class ClassificationModel(Model):
     def metrics(self, outputs, targets):
         r"""Return a dictionary of metrics to monitor during training.
 
-        It is expected to have a 1:1 mapping to model outputs and targets variables.
+        It is expected to have a 1:1 mapping between the model outputs and targets variables.
 
         Args:
             outputs (list of nn.Variable): A list of output variables computed from the model.
@@ -50,7 +57,7 @@ class ClassificationModel(Model):
 
         Returns:
             dict: A dictionary containing all metrics (nn.Variable) to monitor.
-                E.g., {'error': nn.Variable, 'F1': nn.Variable}
+                E.g., {'error': nn.Variable((1,)), 'F1': nn.Variable((1,))}
         """
         assert len(targets) == 1
 

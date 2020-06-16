@@ -23,8 +23,8 @@ import numpy as np
 
 from . import modules as darts
 from .... import module as Mo
-from ....utils.helper import label_smoothing_loss
 from ..base import ClassificationModel as Model
+from ..base import label_smoothing_loss
 from ..misc import AuxiliaryHeadCIFAR
 from .helper import save_dart_arch
 

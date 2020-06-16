@@ -16,9 +16,8 @@ import nnabla.functions as F
 import numpy as np
 
 from .... import module as Mo
-from ....utils.helper import label_smoothing_loss
-from ....utils.helper import load_parameters
 from ..base import ClassificationModel as Model
+from ..base import label_smoothing_loss
 from ..darts import modules as darts
 from ..misc import AuxiliaryHeadCIFAR
 
@@ -66,7 +65,7 @@ class TrainNet(Model):
                 self._c_auxiliary, num_classes)
 
         # load weights
-        self.set_parameters(load_parameters(genotype))
+        self.load_parameters(genotype)
         for _, module in self.get_modules():
             if isinstance(module, darts.ChoiceBlock):
                 idx = np.argmax(module._mixed._alpha.d)
