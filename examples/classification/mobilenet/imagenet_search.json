@@ -1,7 +1,11 @@
 {
     "dataloader": {
         "imagenet": {
-            "train_portion": 0.96
+            "train_portion": 0.96,
+            "train_path": "/speech/db/Images/ILSVRC-2012/img_train/",
+            "train_file": "/speech/db/Images/ILSVRC-2012/train.txt",
+            "valid_path": "/speech/db/Images/ILSVRC-2012/img_val",
+            "valid_file": "/speech/db/Images/ILSVRC-2012/val.txt"
         }
     },
     "network": {

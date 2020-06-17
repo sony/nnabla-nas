@@ -156,12 +156,6 @@ class DataLoader(BaseDataLoader):
 
         rng = rng or random.prng
 
-        train_path = train_path or '/speech/db/Images/ILSVRC-2012/img_train/'
-        valid_path = valid_path or '/speech/db/Images/ILSVRC-2012/img_val'
-
-        train_file = train_file or '/speech/db/Images/ILSVRC-2012/train.txt'
-        valid_file = valid_file or '/speech/db/Images/ILSVRC-2012/val.txt'
-
         if searching:
             train_file, valid_file = self._split_data(train_file, train_portion)
             valid_path = train_path

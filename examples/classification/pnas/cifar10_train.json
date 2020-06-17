@@ -29,7 +29,6 @@
         "batch_size_valid": 100,
         "mini_batch_train": 32,
         "mini_batch_valid": 50,
-        "warmup": 0,
         "print_frequency": 20,
         "loss_weights": [1, 0.4],
         "input_shapes": [
