@@ -107,7 +107,6 @@ class Trainer(Runner):
             p['loss'].forward(clear_buffer=True)
             for k, m in p['metrics'].items():
                 m.forward(clear_buffer=True)
-                self.monitor.update(f'{k}/valid', m.d.copy(), bz)
                 self.metrics[k].data += m.d.copy() * bz
             loss = p['loss'].d.copy()
             self.loss.data += loss * self.accum_valid * bz
@@ -128,7 +127,7 @@ class Trainer(Runner):
             self.monitor.update('loss/valid', self.loss.data[0], 1)
             better = False
             for k in self.metrics:
-                self.monitor.update('valid/k', self.metrics[k].data[0], 1)
+                self.monitor.update(f'{k}/valid', self.metrics[k].data[0], 1)
                 self.monitor.info(f'{k}={self.metrics[k].data[0]:.4f}\n')
                 better |= self._best_metric[k] > self.metrics[k].data[0]
             if better:

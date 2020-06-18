@@ -17,14 +17,6 @@ import nnabla.functions as F
 from ..model import Model
 
 
-def label_smoothing_loss(pred, label, label_smoothing=0.1):
-    loss = F.softmax_cross_entropy(pred, label)
-    if label_smoothing <= 0:
-        return loss
-    return (1 - label_smoothing) * loss - label_smoothing \
-        * F.mean(F.log_softmax(pred), axis=1, keepdims=True)
-
-
 class ClassificationModel(Model):
     r"""This class is a base `Model` for classification task. Your model should be based on this class."""
 
@@ -44,7 +36,7 @@ class ClassificationModel(Model):
         """
         assert len(outputs) == 1 and len(targets) == 1
 
-        return F.mean(label_smoothing_loss(outputs[0], targets[0]))
+        return F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))
 
     def metrics(self, outputs, targets):
         r"""Return a dictionary of metrics to monitor during training.

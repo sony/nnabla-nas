@@ -16,6 +16,7 @@ from collections import Counter
 from collections import OrderedDict
 import os
 
+import nnabla.functions as F
 import numpy as np
 
 from .... import module as Mo
@@ -30,6 +31,14 @@ def _make_divisible(x, divisible_by=8):
     r"""It ensures that all layers have a channel number that is divisible by
     divisible_by."""
     return int(np.ceil(x * 1. / divisible_by) * divisible_by)
+
+
+def label_smoothing_loss(pred, label, label_smoothing=0.1):
+    loss = F.softmax_cross_entropy(pred, label)
+    if label_smoothing <= 0:
+        return loss
+    return (1 - label_smoothing) * loss - label_smoothing \
+        * F.mean(F.log_softmax(pred), axis=1, keepdims=True)
 
 
 class SearchNet(Model):
@@ -213,6 +222,10 @@ class SearchNet(Model):
         if isinstance(self._features[2]._mixed, Mo.MixedOp):
             output_path = os.path.dirname(path)
             plot_mobilenet(self, os.path.join(output_path, 'arch'))
+
+    def loss(self, outputs, targets, loss_weights=None):
+        assert len(outputs) == 1 and len(targets) == 1
+        return F.mean(label_smoothing_loss(outputs[0], targets[0]))
 
 
 class TrainNet(SearchNet):
