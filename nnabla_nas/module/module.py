@@ -172,7 +172,7 @@ class Module(object):
                 key = prefix + ('/' if prefix else '') + name
                 if key in params:
                     p.d = params[key].d.copy()
-                    nn.logger.info(f'`{key}` loaded.)')
+                    nn.logger.info(f'`{key}` loaded.')
                 elif raise_if_missing:
                     raise ValueError(
                         f'A child module {name} cannot be found in '

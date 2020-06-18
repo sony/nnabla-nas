@@ -16,7 +16,7 @@ import nnabla as nn
 import numpy as np
 import pytest
 
-from nnabla_nas.contrib.misc import AuxiliaryHeadCIFAR
+from nnabla_nas.contrib.classification.misc import AuxiliaryHeadCIFAR
 
 
 @pytest.mark.parametrize('in_channels', [8, 16, 32])

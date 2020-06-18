@@ -1,5 +1,5 @@
 Neural Architecture Search for NNabla
-============================
+======================================
 
 NNablaNAS is a Python package that provides methods in neural architecture search for NNabla
 

@@ -17,7 +17,7 @@ import nnabla.parametric_functions as PF
 import pytest
 
 from nnabla_nas import module as Mo
-from nnabla_nas.contrib.darts.modules import FactorizedReduce
+from nnabla_nas.contrib.classification.darts.modules import FactorizedReduce
 
 
 @pytest.mark.parametrize('batch_size', [8, 16, 32])

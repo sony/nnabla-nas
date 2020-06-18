@@ -1,0 +1,48 @@
+{
+    "dataloader": {
+        "imagenet": {
+            "train_path": "/speech/db/Images/ILSVRC-2012/img_train/",
+            "train_file": "/speech/db/Images/ILSVRC-2012/train.txt",
+            "valid_path": "/speech/db/Images/ILSVRC-2012/img_val",
+            "valid_file": "/speech/db/Images/ILSVRC-2012/val.txt"
+        }
+    },
+    "network": {
+        "mobilenet": {
+            "num_classes": 1000,
+            "mode": "sample",
+            "settings": [
+                [24, 4, 2],
+                [40, 4, 2],
+                [80, 4, 2],
+                [96, 4, 1],
+                [192, 4, 2],
+                [320, 1, 1]
+            ],
+            "genotype": "log/classification/mobilenet/imagenet/latency/search/arch.h5"
+        }
+    },
+    "optimizer": {
+        "train": {
+            "grad_clip": 5.0,
+            "weight_decay": 4e-5,
+            "lr_scheduler": "CosineScheduler",
+            "name": "Momentum",
+            "lr": 0.05
+        }
+    },
+    "hparams": {
+        "input_shapes": [
+            [3, 224, 224]
+        ],
+        "target_shapes": [
+            [1]
+        ],
+        "epoch": 300,
+        "batch_size_train": 64,
+        "batch_size_valid": 64,
+        "mini_batch_train": 32,
+        "mini_batch_valid": 32,
+        "print_frequency": 100
+    }
+}

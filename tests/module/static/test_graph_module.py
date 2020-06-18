@@ -14,8 +14,9 @@
 
 import nnabla as nn
 import nnabla.functions as F
-from nnabla_nas.module.parameter import Parameter
+
 from nnabla_nas.module import static as smo
+from nnabla_nas.module.parameter import Parameter
 
 
 def test_graph_module():

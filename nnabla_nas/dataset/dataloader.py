@@ -12,28 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class DataLoader(object):
-    r""" Dataloader class.
+from abc import ABC
+from abc import abstractmethod
 
-    Combines a data iterator and a transform (on numpy), and provides an
-    iterable over the given dataset.  All subclasses should overwrite
-    `__len__` and `next`.
+from ..utils.data.transforms import Compose
 
-    Args:
-        data_iterator (iterator): Data iterator
-        transform (object, optional): A transform to be applied on a sample.
-            Defaults to None.
+
+class BaseDataLoader(ABC):
+    r"""Dataloader is a base class to load your data.
+
+    It provides an iterable over the given dataset.
+    Your dataloader should overwrite `next`, `transform`, and `__len__`.
     """
 
-    def __init__(self, data_iterator, transform=None):
-        self.data_iterator = data_iterator
-        self.transform = transform
-
+    @abstractmethod
     def next(self):
-        x, t = self.data_iterator.next()
-        if self.transform:
-            x = self.transform(x)
-        return x, t
+        """Load the next minibatch.
 
+        Returns:
+            dict: A dictionary having the following structure:
+                {
+                    "inputs": <A list containing inputs (each must be `numpy.ndarray`)>,
+                    "targets": <A list containing targets (each must be `numpy.ndarray`)>
+                }
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def __len__(self):
-        return self.data_iterator.size
+        raise NotImplementedError
+
+    def transform(self, key='train'):
+        r"""Return a transform.
+
+        Args:
+            key (str, optional): Type of transform. Defaults to 'train'.
+        """
+        assert key in ('train', 'valid')
+
+        return Compose([])

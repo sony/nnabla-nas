@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 
-import numpy as np
+import nnabla as nn
 
 from ..utils.helper import ProgressMeter
 
@@ -28,48 +29,48 @@ class Runner(ABC):
     Args:
         model (`nnabla_nas.contrib.model.Model`): The search model used to
             search the architecture.
-        placeholder (dict): This stores `input` and `target` Variables for
-            `train` and `valid` graphs.
         optimizer (dict): This stores optimizers for both `train` and `valid`
             graphs.
         dataloader (dict): This stores dataloaders for both `train` and `valid`
             graphs.
-        criteria (function): Loss function used to train the network.
-        evaluate (function): Evaluation criteria used log the output,
-            e.g., top_1_err.
         args (Configuration): This stores all hyperparmeters used during
             training.
-        regularizer (dict, optional): This stores contraints for the network.
-            Defaults to None.
     """
 
-    def __init__(self, model, placeholder, optimizer, dataloader, transform,
-                 criteria, evaluate, args, regularizer=None):
+    def __init__(self, model, optimizer, dataloader, args):
 
         self.model = model
-        self.criteria = criteria
-        self.evaluate = evaluate
         self.dataloader = dataloader
-        self.transform = transform
-        self.regularizer = regularizer
         self.optimizer = optimizer
-        self.placeholder = placeholder
         self.args = args
 
         # aditional argurments
-        self.accum_train = self.args.bs_train // self.args.mbs_train
-        self.accum_valid = self.args.bs_valid // self.args.mbs_valid
-        self.one_epoch_train = len(self.dataloader['train']) // args.bs_train
-        self.one_epoch_valid = len(self.dataloader['valid']) // args.bs_valid
-        self.comm = args.conf['comm']
-        self.event = args.conf['event']
+        hp = self.args
+        self.bs_train = hp['batch_size_train']
+        self.mbs_train = hp['mini_batch_train']
+        self.bs_valid = hp['batch_size_valid']
+        self.mbs_valid = hp['mini_batch_valid']
+        self.accum_train = self.bs_train // self.mbs_train
+        self.accum_valid = self.bs_valid // self.mbs_valid
+        self.one_epoch_train = len(self.dataloader['train']) // self.bs_train
+        self.one_epoch_valid = len(self.dataloader['valid']) // self.bs_valid
+        self.comm = hp['comm']
+        self.event = hp['event']
+
+        # setup placeholder
+        self.placeholder = {
+            'train': {
+                'inputs': [nn.Variable([self.mbs_train] + shape) for shape in args['input_shapes']],
+                'targets': [nn.Variable([self.mbs_train] + shape) for shape in args['target_shapes']]
+            },
+            'valid': {
+                'inputs': [nn.Variable([self.mbs_valid] + shape) for shape in args['input_shapes']],
+                'targets': [nn.Variable([self.mbs_valid] + shape) for shape in args['target_shapes']]
+            }
+        }
 
         # monitor log info
-        self.monitor = ProgressMeter(
-            self.one_epoch_train,
-            path=args.output_path,
-            quiet=self.comm.rank > 0
-        )
+        self.monitor = ProgressMeter(self.one_epoch_train, path=args['output_path'], quiet=self.comm.rank > 0)
 
     @abstractmethod
     def run(self):
@@ -83,44 +84,38 @@ class Runner(ABC):
             key (str, optional): Type of graph. Defaults to 'train'.
         """
         assert key in ('train', 'valid', 'warmup')
-
         self.model.apply(training=key != 'valid')
-        p = self.placeholder['valid' if key == 'valid' else 'train']
 
-        transform = self.transform['valid' if key == 'valid' else 'train']
+        fake_key = 'valid' if key == 'valid' else 'train'
+        p = self.placeholder[fake_key]
+        transform = self.dataloader[fake_key].transform(fake_key)
         accum = self.accum_valid if key == 'valid' else self.accum_train
 
-        # output features
-        output, aux = self.model(transform(p['input'])), None
-        if isinstance(output, tuple):
-            aux, w = output[1], self.args.aux_weight
-            p['output'] = output[0]
-        else:
-            p['output'] = output
-        p['output'].apply(persistent=True)
+        # outputs
+        inputs = [transform(x) for x in p['inputs']]
+        outputs = self.model(*inputs)
+        outputs = outputs if isinstance(outputs, tuple) else (outputs,)
+
+        p['outputs'] = [x.apply(persistent=True) for x in outputs]
 
         # loss function
-        p['loss'] = self.criteria(p['output'], p['target']) / accum
-        if aux is not None:
-            p['loss'] += w * self.criteria(aux, p['target']) / accum
+        p['loss'] = self.model.loss(p['outputs'], p['targets'], self.args['loss_weights']) / accum
         p['loss'].apply(persistent=True)
 
-        # top_n_error
-        p['err'] = self.evaluate(
-            p['output'].get_unlinked_variable().apply(need_grad=False),
-            p['target']
-        )
-        p['err'].apply(persistent=True)
+        # metrics to monitor during training
+        targets = [out.get_unlinked_variable().apply(need_grad=False) for out in p['outputs']]
+        p['metrics'] = self.model.metrics(targets, p['targets'])
+        for v in p['metrics'].values():
+            v.apply(persistent=True)
 
     @staticmethod
     def _load_data(placeholder, data):
-        # TODO: improving the dataloader
-        if isinstance(data[0], np.ndarray):
-            placeholder['input'].d = data[0]
-            placeholder['target'].d = data[1]
-        else:
-            placeholder['input'].data = data[0]
-            placeholder['target'].data = data[1]
+        for key in ('inputs', 'targets'):
+            for inp, x in zip(placeholder[key], data[key]):
+                if isinstance(x, nn.NdArray):
+                    inp.data = x
+                else:
+                    inp.d = x
 
     @abstractmethod
     def train_on_batch(self, key='train'):

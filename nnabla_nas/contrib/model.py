@@ -50,3 +50,42 @@ class Model(Mo.Module):
     def summary(self):
         r"""Returns a string summarizing the model."""
         return ''
+
+    def loss(self, outputs, targets, loss_weights=None, *args):
+        r"""Return a loss computed from a list of outputs and a list of targets.
+
+        Args:
+            outputs (list of nn.Variable): A list of output variables computed from the model.
+            targets (list of nn.Variable): A list of target variables loaded from the data.
+            loss_weights (list of float, optional): A list specifying scalar coefficients to weight the loss
+                contributions of different model outputs. It is expected to have a 1:1 mapping to model outputs.
+                Defaults to None.
+
+        Returns:
+            nn.Variable: A scalar NNabla Variable represents the loss.
+
+        Raises:
+            NotImplementedError: [description]
+        """
+        raise NotImplementedError
+
+    def metrics(self, outputs, targets):
+        r"""Return a dictionary of metrics to monitor during training.
+
+        It is expected to have a 1:1 mapping between the model outputs and targets.
+
+        Args:
+            outputs (list of nn.Variable): A list of output variables (nn.Variable) computed from the model.
+            targets (list of nn.Variable): A list of target variables (nn.Variable) loaded from the data.
+
+        Returns:
+            dict: A dictionary containing all metrics to monitor, e.g.,
+                {
+                    'accuracy': nn.Variable((1,)),
+                    'F1': nn.Variable((1,))
+                }
+
+        Raises:
+            NotImplementedError: [description]
+        """
+        raise NotImplementedError

@@ -34,20 +34,20 @@ First, we will run the search with the default setting::
       python main.py -d 0 --search 
                      -f examples/mobilenet_cifar10_search.json \
                      -a ProxylessNasSearcher \
-                     -o log/mobilenet/cifar10/search
+                     -o log/classification/mobilenet/cifar10/search
 
 We used the following arguments:
  * ``main.py`` is the entry script for all search and training examples. 
  * ``-d 0`` indicates the GPU device 0 will be used.
  * ``-f examples/mobilenet_cifar10_search.json`` points to a json file describing the experiment configuration (we will look into the configuration later in this tutorial).
  * ``-a ProxylessNasSearcher`` to use the PNAS algorithm.
- * ``-o log/mobilenet/cifar10/search`` gives the output path to save the logs, models, etc. 
+ * ``-o log/classification/mobilenet/cifar10/search`` gives the output path to save the logs, models, etc. 
 
 Note that the device number and the algorithm could be set directly in the json file. If defined in the json file, you can omit it in the command line. 
 
 The command runs the search using the PNAS algorithm, it will take several hours (around 12 hours depending on the GPU) to run. While it is running, let's have a look at the output path. 
 
-In ``./log/mobilenet/cifar10/search`` you will find the following files:
+In ``./log/classification/mobilenet/cifar10/search`` you will find the following files:
  * ``arch.h5`` it contains the best architecture so far.
  * ``arch.png`` to visualize the best architecture so far. 
  * ``config.json`` is the configuration used for this experiment
@@ -75,7 +75,7 @@ Once the search is finished, retrain the winning architecture from scratch using
    python main.py -d 0 \
                   -f examples/mobilenet_cifar10_train.json \
                   -a Trainer \
-                  -o log/mobilenet/cifar10/train
+                  -o log/classification/mobilenet/cifar10/train
 
 Note that, this time, we use the ``Training`` algorithm. The retraining will take several hours. You can monitor the training from your TensorBoard.
 
@@ -84,7 +84,7 @@ If you want to compare with the original implementation of MobileNetV2, just run
    python main.py -d 1\
                   -f examples/mobilenet_cifar10_reference.json  \
                   -a Trainer \
-                  -o log/mobilenet/cifar10/reference
+                  -o log/classification/mobilenet/cifar10/reference
 
 Congratulations, you have performed your first neural architecture search using NNablaNAS. Now let's have a look at how to customize the search and training configuration. 
 
@@ -196,7 +196,7 @@ Train Configuration
 Let's have a look at the MobileNet example ``examples/mobilenet_cifar10_train.json``. Most of the configuration parameters are the same as for the search json file. 
 The only new configuration parameter is::
 
-     "genotype": "log/mobilenet/cifar10/search/arch.h5"
+     "genotype": "log/classification/mobilenet/cifar10/search/arch.h5"
 
 ``genotype`` is used to provide the path to the previously learn architecture (.h5 file).
 

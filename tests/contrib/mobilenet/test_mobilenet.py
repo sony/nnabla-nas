@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import nnabla as nn
-from nnabla_nas.contrib.mobilenet import SearchNet
+
+from nnabla_nas.contrib.classification.mobilenet import SearchNet
 
 
 def test_mobilenet():

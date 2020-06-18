@@ -16,7 +16,7 @@ import nnabla as nn
 import numpy as np
 import pytest
 
-from nnabla_nas.contrib.darts.modules import ReLUConvBN
+from nnabla_nas.contrib.classification.darts.modules import ReLUConvBN
 
 
 @pytest.mark.parametrize('in_channels', [3, 5, 10])

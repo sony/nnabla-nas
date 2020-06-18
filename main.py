@@ -18,7 +18,6 @@ import os
 import sys
 
 import nnabla as nn
-import nnabla.functions as F
 from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
 
@@ -38,11 +37,10 @@ except ImportError:
     print(" Please make sure that your installed nnabla-ext-cuda??? appropriate for your environment.")
     raise
 
-
-import nnabla_nas.contrib as contrib
 from args import Configuration
+from nnabla_nas import contrib
 from nnabla_nas import runner
-from nnabla_nas.utils.helper import CommunicatorWrapper, label_smoothing_loss
+from nnabla_nas.utils.helper import CommunicatorWrapper
 
 
 def main():
@@ -50,68 +48,60 @@ def main():
     parser.add_argument('--context', '-c', type=str, default='cudnn',
                         help="Extension module. 'cudnn' is highly recommended.")
     parser.add_argument("--device-id", "-d", type=str, default='-1',
-                        help='A list of device ids to use.\
+                        help='A list of device ids to use, e.g., `0,1,2,3`.\
                         This is only valid if you specify `-c cudnn`.')
     parser.add_argument("--type-config", "-t", type=str, default='float',
                         help='Type configuration.')
     parser.add_argument('--search', '-s', action='store_true',
-                        help='Whether search algorithm is performed.')
+                        help='Whether it is searching for the architecture.')
     parser.add_argument('--algorithm', '-a', type=str, default='DartsSeacher',
-                        choices=runner.__all__, help='Algorithm used to run')
+                        choices=runner.__all__, help='Which algorithm to use.')
     parser.add_argument('--config-file', '-f', type=str,
-                        help='The configuration file used to run the experiment.',
-                        default=None)
-    parser.add_argument('--output-path', '-o', type=str, help='Path monitoring logs saved.',
-                        default=None)
+                        help='The configuration file for the experiment.')
+    parser.add_argument('--output-path', '-o', type=str, help='Path to save the monitoring log files.')
 
     options = parser.parse_args()
 
-    config = json.load(open(options.config_file)) if options.config_file \
-        else dict()
-    config.update({k: v for k, v in vars(options).items() if v is not None})
+    config = json.load(open(options.config_file)) if options.config_file else dict()
+    hparams = config['hparams']
+
+    hparams.update({k: v for k, v in vars(options).items() if v is not None})
 
     # setup cuda visible
-    if config['device_id'] != '-1':
-        os.environ["CUDA_VISIBLE_DEVICES"] = config['device_id']
+    if hparams['device_id'] != '-1':
+        os.environ["CUDA_VISIBLE_DEVICES"] = hparams['device_id']
 
     # setup context for nnabla
     ctx = get_extension_context(
-        config['context'],
+        hparams['context'],
         device_id='0',
-        type_config=config['type_config']
+        type_config=hparams['type_config']
     )
 
     # setup for distributed training
-    config['comm'] = CommunicatorWrapper(ctx)
-    config['event'] = StreamEventHandler(int(config['comm'].ctx.device_id))
+    hparams['comm'] = CommunicatorWrapper(ctx)
+    hparams['event'] = StreamEventHandler(int(hparams['comm'].ctx.device_id))
 
-    nn.set_default_context(config['comm'].ctx)
+    nn.set_default_context(hparams['comm'].ctx)
 
-    if config['comm'].n_procs > 1 and config['comm'].rank == 0:
-        n_procs = config['comm'].n_procs
-        logger.info(f'Distributed Training with {n_procs} processes.')
+    if hparams['comm'].n_procs > 1 and hparams['comm'].rank == 0:
+        n_procs = hparams['comm'].n_procs
+        logger.info(f'Distributed training with {n_procs} processes.')
 
     # build the model
-    attributes = config['network'].copy()
-    algorithm = contrib.__dict__[attributes.pop('search_space')]
-
-    model = algorithm.SearchNet(**attributes) if config['search'] else \
+    name, attributes = list(config['network'].items())[0]
+    algorithm = contrib.__dict__[name]
+    model = algorithm.SearchNet(**attributes) if hparams['search'] else \
         algorithm.TrainNet(**attributes)
 
     # Get all arguments for the runner
     conf = Configuration(config)
-    loader = conf.parse()
 
-    runner.__dict__[config['algorithm']](
+    runner.__dict__[hparams['algorithm']](
         model,
-        placeholder=loader['placeholder'],
-        optimizer=loader['optimizer'],
-        dataloader=loader['dataloader'],
-        transform=loader['transform'],
-        regularizer=loader['regularizer'],
-        criteria=lambda o, t: F.mean(label_smoothing_loss(o, t)),
-        evaluate=lambda o, t: F.mean(F.top_n_error(o, t)),
-        args=conf
+        optimizer=conf.optimizer,
+        dataloader=conf.dataloader,
+        args=conf.hparams
     ).run()
 
 

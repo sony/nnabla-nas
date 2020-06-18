@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import nnabla as nn
-from nnabla_nas.module import static as smo
+
 from nnabla_nas.contrib import zoph
-from nnabla_nas.contrib.zoph import ZOPH_CANDIDATES
+from nnabla_nas.contrib.classification.zoph import ZOPH_CANDIDATES
+from nnabla_nas.module import static as smo
 
 
 def test_zophcell_module():

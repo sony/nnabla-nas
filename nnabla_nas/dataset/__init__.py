@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .dataloader import DataLoader
+from . import cifar10
+from . import imagenet
 
-__all__ = ['DataLoader']
+__all__ = ['cifar10', 'imagenet']

@@ -97,9 +97,11 @@ class LatencyEstimator(Estimator):
         ext_name (str): Extension name. e.g. 'cpu', 'cuda', 'cudnn' etc.
         n_run (int): This argument specifies how many times the each functions
             execution time are measured. Default value is 10.
+        weight (float, optional): Weight used in the reinforce algorithm.
+        bound (float, optional): Maximum bound used in the reinforce algorithm.
     """
 
-    def __init__(self, device_id=None, ext_name=None, n_run=10):
+    def __init__(self, device_id=None, ext_name=None, n_run=10, weight=0.1, bound=5):
         ctx = nn.context.get_current_context()
         if device_id is None:
             device_id = int(ctx.device_id)
@@ -108,6 +110,8 @@ class LatencyEstimator(Estimator):
         self._device_id = device_id
         self._ext_name = ext_name
         self._n_run = n_run
+        self._weight = weight
+        self._bound = bound
 
     def predict(self, module):
         idm = str(module)

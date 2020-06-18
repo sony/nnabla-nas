@@ -26,14 +26,12 @@ class BatchNormalization(Module):
     Args:
         n_features (int): Number of dimentional features.
         n_dims (int): Number of dimensions.
-        axes (:obj:`tuple` of :obj:`int`):
-            Mean and variance for each element in ``axes`` are calculated
-            using elements on the rest axes. For example, if an input is 4
-            dimensions, and ``axes`` is ``[1]``,  batch mean is calculated
-            as ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
+        axes (:obj:`tuple` of :obj:`int`): Mean and variance for each element in ``axes``
+            are calculated using elements on the rest axes. For example, if an input is 4 dimensions,
+            and ``axes`` is ``[1]``, batch mean is calculated as ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
             (using numpy expression as an example).
         decay_rate (float, optional): Decay rate of running mean and
-            variance. Defaults to 0.9
+            variance. Defaults to 0.9.
         eps (float, optional): Tiny value to avoid zero division by std.
             Defaults to 1e-5.
         output_stat (bool, optional): Output batch mean and variance.

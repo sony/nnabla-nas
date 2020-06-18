@@ -12,20 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import nnabla.communicators as C
+from collections import OrderedDict
 import json
 import os
 import sys
-from collections import OrderedDict
 
-import nnabla as nn
-import nnabla.functions as F
+from nnabla import random
+import nnabla.communicators as C
 from nnabla.ext_utils import get_extension_context
 import numpy as np
-from .tensorboard import SummaryWriter
-from nnabla import random
 
-from ..dataset.transforms import Cutout
+from .tensorboard import SummaryWriter
 
 
 class ProgressMeter(object):
@@ -162,38 +159,6 @@ def sample(pvals, mode='sample', rng=None):
     return rng.choice(len(pvals), p=pvals, replace=False)
 
 
-def dataset_transformer(conf):
-    r"""Returns data transformers for training and validating the model.
-
-    Args:
-        conf (dict): A dictionary containing configurations.
-
-    Returns:
-        (Transformer, Transformer): Training and validating transformers.
-
-    Note: This function will be deleted.
-    """
-    train_transform = None
-    if conf.get('cutout', 0) > 0:
-        train_transform = Cutout(conf['cutout'])
-    return train_transform, None
-
-
-def load_parameters(path):
-    r"""Loads the parameters from a file.
-
-    Args:
-        path (str): The path to file.
-
-    Returns:
-        OrderedDict: An `OrderedDict` containing parameters.
-    """
-    with nn.parameter_scope('', OrderedDict()):
-        nn.load_parameters(path)
-        params = nn.get_parameters(grad_only=False)
-    return params
-
-
 def write_to_json_file(content, file_path):
     r"""Saves a dictionary to a json file.
 
@@ -204,7 +169,7 @@ def write_to_json_file(content, file_path):
     with open(file_path, 'w+') as file:
         json.dump(content, file,
                   ensure_ascii=False, indent=4,
-                  default=lambda o: '<not serializable>')
+                  default=lambda o: o.__class__.__name__)
 
 
 def count_parameters(params):
@@ -223,14 +188,6 @@ def create_float_context(ctx):
     ctx_float = get_extension_context(ctx.backend[0].split(':')[
                                       0], device_id=ctx.device_id)
     return ctx_float
-
-
-def label_smoothing_loss(pred, label, label_smoothing=0.1):
-    loss = F.softmax_cross_entropy(pred, label)
-    if label_smoothing <= 0:
-        return loss
-    return (1 - label_smoothing) * loss - label_smoothing \
-        * F.mean(F.log_softmax(pred), axis=1, keepdims=True)
 
 
 class CommunicatorWrapper(object):
