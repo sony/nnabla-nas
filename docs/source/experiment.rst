@@ -28,7 +28,7 @@ NNablaNAS has command line interface utility:
                             Path monitoring logs saved.
 
 To run an experiment with NNablaNAS, one should create a configuration file (in ``json`` format). Example configurations 
-that run the DARTS and PNAS algorithms for object detection tasks on various search spaces are given in the experiments folder.
+that run the DARTS and PNAS algorithms for classification tasks on various search spaces are given in the experiments folder.
 The configuration files contain: 1) The definition of the dataset. 2) The training parameters. 3) The search space definition. 4) The parameters of the optimizers that are used
 to update the architecture and model parameters of the DNN. 
 For each architecture search, you need to create two separate configuration files, one for the search phase and one for the retraining phase.
