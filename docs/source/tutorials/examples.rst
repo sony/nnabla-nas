@@ -7,7 +7,7 @@ NNablaNAS contains several examples including:
  * ``Zoph`` :cite:`zoph2016neural` search space (can be searched with DARTS or PNAS algorithms) 
  * ``Randomly wired neural network`` :cite:`xie2019exploring`
 
-The examples can be launched from a unique entry point ``./main.py`` and all the configurations for each of the experiment is predefined in a ``json`` file. The list of command lines to run the prepared examples can be found in ``./jobs.sh``. 
+The examples can be launched from a unique entry point ``./main.py`` and all the configurations for each of the experiment is predefined in a ``json`` file. The list of command lines to run the prepared examples can be found in ``./examples/jobs.sh``. 
 
 In this tutorial we will see how to run the examples and how you can modify the configurations to run your experiments.
 
@@ -31,14 +31,13 @@ Running your first example
 
 First, we will run the search with the default setting::
 
-      python main.py -d 0 --search 
-                     -f examples/mobilenet_cifar10_search.json \
-                     -a ProxylessNasSearcher \
-                     -o log/classification/mobilenet/cifar10/search
+      python main.py --search \
+               -f examples/classification/pnas/cifar10_search.json \
+               -a ProxylessNasSearcher \
+               -o log/classification/pnas/cifar10/search
 
 We used the following arguments:
  * ``main.py`` is the entry script for all search and training examples. 
- * ``-d 0`` indicates the GPU device 0 will be used.
  * ``-f examples/mobilenet_cifar10_search.json`` points to a json file describing the experiment configuration (we will look into the configuration later in this tutorial).
  * ``-a ProxylessNasSearcher`` to use the PNAS algorithm.
  * ``-o log/classification/mobilenet/cifar10/search`` gives the output path to save the logs, models, etc. 
@@ -47,7 +46,7 @@ Note that the device number and the algorithm could be set directly in the json 
 
 The command runs the search using the PNAS algorithm, it will take several hours (around 12 hours depending on the GPU) to run. While it is running, let's have a look at the output path. 
 
-In ``./log/classification/mobilenet/cifar10/search`` you will find the following files:
+In ``./log/classification/pnas/cifar10/search`` you will find the following files:
  * ``arch.h5`` it contains the best architecture so far.
  * ``arch.png`` to visualize the best architecture so far. 
  * ``config.json`` is the configuration used for this experiment
@@ -72,10 +71,9 @@ Access your TensorBoard page using your browser at the given address (typically:
 
 Once the search is finished, retrain the winning architecture from scratch using the same entry point python script::
 
-   python main.py -d 0 \
-                  -f examples/mobilenet_cifar10_train.json \
-                  -a Trainer \
-                  -o log/classification/mobilenet/cifar10/train
+   python main.py -f examples/classification/pnas/cifar10_train.json \
+               -a Trainer \
+               -o log/classification/pnas/cifar10/train
 
 Note that, this time, we use the ``Training`` algorithm. The retraining will take several hours. You can monitor the training from your TensorBoard.
 
@@ -91,54 +89,39 @@ Congratulations, you have performed your first neural architecture search using 
 Search Configuration
 ^^^^^^^^^^^^^^^^^^^^
 
-Without writing any python code, you can flexibly change the search configuration. Let's go through ``examples/mobilenet_cifar10_search.json``::
+Without writing any python code, you can flexibly change the search configuration. Let's go through ``examples\classification\mobilenet\cifar10_search.json``::
    
-    "dataset": "cifar10",
-    "epoch": 200,
-    "input_shape": [3, 32, 32],
-    "batch_size_train": 128,
-    "batch_size_valid": 256,
-    "mini_batch_train": 128,
-    "mini_batch_valid": 256,
-    "warmup": 100,
-    "cutout": 16,
-    "print_frequency": 25,
-    "train_portion": 0.9,
+    "dataloader": {
+        "cifar10": {
+            "train_portion": 0.9
+        }
+    },
 
-
-These are the arguments of the runner. ``dataset``, ``epoch`` and ``input_shape`` are self-explanatory. 
-
-``batch_size_train`` is the batch size used for training and ``mini_batch_train`` specifies the number of examples transfer into the GPU at one time. The gradients of the ``mini_batch_train`` are accumulated before updating the model. Keep ``mini_batch_train`` to the same value of ``batch_size_train`` if you have enough GPU memory but it is useful to set a lower ``mini_batch_train`` so that the mini-batch can fit in GPU memory while still doing the update on a larger batch. ``batch_size_valid`` and ``mini_batch_valid`` set the corresponding batch size and mini-batch size for the validation. 
-
-Before starting updating the architecture, it is beneficial to warm up the model parameters. The number of warmup epoch is defined with the ``warmup`` argument.
-
-Cutout is a simple regularization technique for convolutional neural networks that involves removing contiguous sections of input images, effectively augmenting the dataset with partially occluded versions of existing samples. The ``cutout`` argument specifies the length of the region that will be cut out. 
-
-``print_frequency`` sets how often the partial results are printed in the log file. 
-
+These describe the define the dataset to be used; here it is CIFAR10. 
 During the search, the training data is split into two parts. One part is used to train the model parameters and the other part is used to update the architecture parameters. ``train_portion`` sets the portion of the training sample that is used to train the parameters. 
 
 Now let's have a look at the search space configuration::
 
-    "network": {
-        "search_space": "mobilenet",
-        "num_classes": 10,
-        "settings": [
-            [24, 4, 1],
-            [32, 4, 1],
-            [64, 4, 2],
-            [96, 4, 1],
-            [160, 4, 2],
-            [320, 1, 1]
-        ],
-        "mode": "sample"
+   "network": {
+        "mobilenet": {
+            "num_classes": 10,
+            "settings": [
+                [24, 4, 1],
+                [32, 4, 1],
+                [64, 4, 2],
+                [96, 4, 1],
+                [160, 4, 2],
+                [320, 1, 1]
+            ],
+            "mode": "sample"
+        }
     },
- 
-``search_space`` defines the search space to be used. NNablaNAS contains several search spaces including ``Darts``, ``Zoph`` and ``MobileNet``. You can also prepare your own search space. Here we choose ``MobileNet`` and the following configurations are the arguments specific to this search space. ``num_classes`` is the number of the output of the classification network. ``settings`` defines the architecture backbone. Each line is a block of inverted residual convolutions with different feature sizes. The first column defines the number of feature maps for each block. The second column defines the maximum number of inverted residual convolutions for each block. The third column defines the stride used in the first inverted residual convolution of the block (this has the effect of reducing the feature map size). 
+
+``mobilenet`` is the name of the search space to be used. NNablaNAS contains several search spaces including ``darts``, ``zoph`` and ``mobilenet``. You can also prepare your own search space. Here we choose ``mobilenet`` and the following configurations are the arguments specific to this search space. ``num_classes`` is the number of the output of the classification network. ``settings`` defines the architecture backbone. Each line is a block of inverted residual convolutions with different feature sizes. The first column defines the number of feature maps for each block. The second column defines the maximum number of inverted residual convolutions for each block. The third column defines the stride used in the first inverted residual convolution of the block (this has the effect of reducing the feature map size). 
 
 ``mode`` should be set to ``sample`` for PNAS algorithm. 
 
-In addition, the MobileNet search space has two important arguments call ``candidates`` and ``skip_connect``, they define the choices for each inverted residual convolution. The example uses the default setting so they don't need to be explicitly set. The default setting is::
+In addition, the MobileNet search space has two important arguments call  ``candidates`` and ``skip_connect``, they define the choices for each inverted residual convolution. The example uses the default setting so they don't need to be explicitly set. The default setting is::
 
          "candidates" = [
                 "MB3 3x3",
@@ -154,42 +137,64 @@ In addition, the MobileNet search space has two important arguments call ``candi
 
 ``candidates`` defines the possible inverted residual convolution settings. The number after MB corresponds to the expansion factor and the kxk corresponds to the kernel size. 
 
-Finally, it is possible to set the optimizer arguments for the parameter training (``train``), the architecture search (``valid``) and the warmup (``warmup``)::
+Next, it is possible to set the optimizer arguments for the parameter training::
 
-   "optimizer": {
+    "optimizer": {
         "train": {
             "grad_clip": 5.0,
             "weight_decay": 4e-5,
-            "solver": {
-                "name": "Momentum",
-                "lr": 0.1
-            }
+            "lr_scheduler": "CosineScheduler",
+            "name": "Momentum",
+            "lr": 0.1
         },
         "valid": {
             "grad_clip": 5.0,
-            "solver": {
-                "name": "Adam",
-                "alpha": 0.001,
-                "beta1": 0.5,
-                "beta2": 0.999
-            }
+            "name": "Adam",
+            "alpha": 0.001,
+            "beta1": 0.5,
+            "beta2": 0.999
         },
         "warmup": {
             "grad_clip": 5.0,
             "weight_decay": 4e-5,
-            "solver": {
-                "name": "Momentum",
-                "lr": 0.1
-            }
+            "lr_scheduler": "CosineScheduler",
+            "name": "Momentum",
+            "lr": 0.1
         }
-    }
+    },
+
+Here we set three optimizers for warmup, training, validation. In PNAS The ``train`` and ``valid`` optimizers will train the models parameters and the architecture parameters respectively. Before starting updating the architecture, it is beneficial to warm up the model parameters. 
 
 If ``grad_clip`` is specified, the gradients are clipped at the specified value.
 
 If ``weight_decay`` is specified, weight decay will be used.
 
-``solver`` defines the NNabla solver to use (``name``) and its parameters (including the learning rate). 
+Finally, we set the general hyper-parameters for the search::
 
+    "hparams": {
+        "epoch": 200,
+        "input_shapes": [
+            [3, 32, 32]
+        ],
+        "target_shapes": [
+            [1]
+        ],
+        "batch_size_train": 128,
+        "batch_size_valid": 256,
+        "mini_batch_train": 128,
+        "mini_batch_valid": 256,
+        "warmup": 100,
+        "print_frequency": 25
+    }
+}
+
+``epoch``, ``input_shape`` and ````are self-explanatory. 
+
+``batch_size_train`` is the batch size used for training and ``mini_batch_train`` specifies the number of examples transfer into the GPU at one time. The gradients of the ``mini_batch_train`` are accumulated before updating the model. Keep ``mini_batch_train`` to the same value of ``batch_size_train`` if you have enough GPU memory but it is useful to set a lower ``mini_batch_train`` so that the mini-batch can fit in GPU memory while still doing the update on a larger batch. ``batch_size_valid`` and ``mini_batch_valid`` set the corresponding batch size and mini-batch size for the validation. 
+
+The number of warmup epoch is defined with the ``warmup`` argument.
+
+``print_frequency`` sets how often the partial results are printed in the log file. 
 
 Train Configuration
 ^^^^^^^^^^^^^^^^^^^^
