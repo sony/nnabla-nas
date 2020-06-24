@@ -32,9 +32,9 @@ Running your first example
 First, we will run the search with the default setting::
 
       python main.py --search \
-               -f examples/classification/pnas/cifar10_search.json \
+               -f examples/classification/mobilenet/cifar10_search.json \
                -a ProxylessNasSearcher \
-               -o log/classification/pnas/cifar10/search
+               -o log/classification/mobilenet/cifar10/search
 
 We used the following arguments:
  * ``main.py`` is the entry script for all search and training examples. 
@@ -71,19 +71,19 @@ Access your TensorBoard page using your browser at the given address (typically:
 
 Once the search is finished, retrain the winning architecture from scratch using the same entry point python script::
 
-   python main.py -f examples/classification/pnas/cifar10_train.json \
+   python main.py -f examples/classification/mobilenet/cifar10_train.json \
                -a Trainer \
-               -o log/classification/pnas/cifar10/train
+               -o log/classification/mobilenet/cifar10/train
+
 
 Note that, this time, we use the ``Training`` algorithm. The retraining will take several hours. You can monitor the training from your TensorBoard.
 
 If you want to compare with the original implementation of MobileNetV2, just run::
 
-   python main.py -d 1\
-                  -f examples/mobilenet_cifar10_reference.json  \
-                  -a Trainer \
-                  -o log/classification/mobilenet/cifar10/reference
-
+  python main.py -f examples/classification/mobilenet/cifar10_train_latency.json \
+               -a Trainer \
+               -o log/classification/mobilenet/cifar10/constrained/train
+ 
 Congratulations, you have performed your first neural architecture search using NNablaNAS. Now let's have a look at how to customize the search and training configuration. 
 
 Search Configuration
@@ -188,7 +188,7 @@ Finally, we set the general hyper-parameters for the search::
     }
 }
 
-``epoch``, ``input_shape`` and ````are self-explanatory. 
+``epoch``, ``input_shape`` and ``target_shapes``are self-explanatory. 
 
 ``batch_size_train`` is the batch size used for training and ``mini_batch_train`` specifies the number of examples transfer into the GPU at one time. The gradients of the ``mini_batch_train`` are accumulated before updating the model. Keep ``mini_batch_train`` to the same value of ``batch_size_train`` if you have enough GPU memory but it is useful to set a lower ``mini_batch_train`` so that the mini-batch can fit in GPU memory while still doing the update on a larger batch. ``batch_size_valid`` and ``mini_batch_valid`` set the corresponding batch size and mini-batch size for the validation. 
 
@@ -198,7 +198,7 @@ The number of warmup epoch is defined with the ``warmup`` argument.
 
 Train Configuration
 ^^^^^^^^^^^^^^^^^^^^
-Let's have a look at the MobileNet example ``examples/mobilenet_cifar10_train.json``. Most of the configuration parameters are the same as for the search json file. 
+Let's have a look at the MobileNet example ``examples/classification/mobilenet/cifar10_train.json``. Most of the configuration parameters are the same as for the search json file. 
 The only new configuration parameter is::
 
      "genotype": "log/classification/mobilenet/cifar10/search/arch.h5"
