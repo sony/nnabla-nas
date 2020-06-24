@@ -37,7 +37,7 @@ Here we show how to install NNablaNAS and build a simple search space.
 For a local installation, run the following code snippet:
 
 ```bash
-git clone git@gitlab.stc.eu.sony.com:bacnguyencong/nnabla_nas.git
+git clone git@github.com:sony/nnabla-nas.git
 cd nnabla_nas
 ```
 
