@@ -188,7 +188,7 @@ Finally, we set the general hyper-parameters for the search::
     }
 }
 
-``epoch``, ``input_shape`` and ``target_shapes``are self-explanatory. 
+``epoch``, ``input_shape`` and ``target_shapes`` are self-explanatory. 
 
 ``batch_size_train`` is the batch size used for training and ``mini_batch_train`` specifies the number of examples transfer into the GPU at one time. The gradients of the ``mini_batch_train`` are accumulated before updating the model. Keep ``mini_batch_train`` to the same value of ``batch_size_train`` if you have enough GPU memory but it is useful to set a lower ``mini_batch_train`` so that the mini-batch can fit in GPU memory while still doing the update on a larger batch. ``batch_size_valid`` and ``mini_batch_valid`` set the corresponding batch size and mini-batch size for the validation. 
 
