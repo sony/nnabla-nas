@@ -46,10 +46,10 @@ Note that the device number and the algorithm could be set directly in the json 
 
 The command runs the search using the PNAS algorithm, it will take several hours (around 12 hours depending on the GPU) to run. While it is running, let's have a look at the output path. 
 
-In ``./log/classification/pnas/cifar10/search`` you will find the following files:
+In ``./log/classification/mobilenet/cifar10/search`` you will find the following files:
  * ``arch.h5`` it contains the best architecture so far.
  * ``arch.png`` to visualize the best architecture so far. 
- * ``config.json`` is the configuration used for this experiment
+ * ``config.json`` is the configuration used for this experiment.
  * ``log.txt`` contains the search log
 
 Here is an example of a MobileNet architecture:
@@ -76,7 +76,7 @@ Once the search is finished, retrain the winning architecture from scratch using
                -o log/classification/mobilenet/cifar10/train
 
 
-Note that, this time, we use the ``Training`` algorithm. The retraining will take several hours. You can monitor the training from your TensorBoard.
+Note that, this time, we use the ``Trainer`` algorithm. The retraining will take several hours. You can monitor the training from your TensorBoard.
 
 If you want to compare with the original implementation of MobileNetV2, just run::
 
