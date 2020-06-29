@@ -154,7 +154,7 @@ class DataLoader(BaseDataLoader):
             type_config (type, optional): Configuration type. Defaults to `float`.
         """
 
-        rng = rng or random.prng
+        self.rng = rng or random.prng
 
         if searching:
             train_file, valid_file = self._split_data(train_file, train_portion)
@@ -186,7 +186,7 @@ class DataLoader(BaseDataLoader):
         train_size = int(len(labels) * portion)
         train, valid = train_test_split(list_files, stratify=labels,
                                         train_size=train_size,
-                                        random_state=random.prng)
+                                        random_state=self.rng)
 
         path = os.path.join('__nnabla_nas__', 'imagenet')
 
