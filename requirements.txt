@@ -1,5 +1,5 @@
---extra-index-url https://developer.download.nvidia.com/compute/redist/cuda/10.0
-nvidia-dali
+--extra-index-url https://developer.download.nvidia.com/compute/redist/
+nvidia-dali-cuda100
 flake8
 pylint
 mypy
@@ -11,6 +11,6 @@ tqdm
 graphviz
 sklearn
 nnabla
-nnabla_ext_cuda101
+nnabla_ext_cuda102
 networkx
 mako

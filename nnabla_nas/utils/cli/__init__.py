@@ -11,13 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from . import cifar10
-try:
-    from . import imagenet
-except ImportError:
-    from nnabla.logger import logger
-    logger.warning('Could not import nnabla_nas.dataset.imagenet')
-    logger.warning('  If you want to use nnabla_nas.dataset.imagenet, please install nvidia-dali-cuda???.')
-
-__all__ = ['cifar10', 'imagenet']
