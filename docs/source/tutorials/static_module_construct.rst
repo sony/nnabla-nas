@@ -18,9 +18,7 @@ that defines a simple d layer CNN:
 
    from nnabla_nas import module as Mo
    import nnabla as nn
-
    inp = nn.Variable((10, 3, 32, 32))
-
    def net(x, d=10):
       c_inp = Mo.Conv(3, 64, (3,3))
       c_l = [Mo.Conv(64, 64, (3,3)) for i in range(d-1)]
@@ -49,16 +47,18 @@ The example network from the example above can, for example, be defined as:
 
 .. code-block:: python
 
-   from nnabla_nas.module import static_module as Smo
+   from nnabla_nas.module import static as Smo
    import nnabla as nn
-
+   
+   inp = nn.Variable((10, 3, 32, 32))
+   
    def net(x, d=10):
       modules = [Smo.Input(nn.Variable((10, 3, 32, 32)))]
-      for i in range(d):
-         modules.append(Smo.Conv(parents=[modules[-1]], modules[-1].shape[1], 64, (3,3)))
+      for i in range(d-1):
+         modules.append(Smo.Conv(parents=[modules[-1]], in_channels=modules[-1].shape[1], out_channels=64, kernel=(3,3)))
       return modules[-1]
-
-   out = net()
+   
+   out = net(inp)
 
 In comparison to dynamic modules, each static module keeps a list of its parents. Therefore, the graph structure is stored within and can later be retrieved from the modules. Furthermore, static_modules introduce a sort of shape security, i.e., once a module is instantiated, the input and output shape of the module are fixed and cannot be changed anymore.
 
