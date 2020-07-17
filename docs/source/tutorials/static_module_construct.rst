@@ -76,45 +76,49 @@ while others are dropped. For an efficient search, it is desirable to have simpl
 graph optimization algorithms in place, i.e., algorithms that optimize the computational
 graph of the selected subnetworks before executing them.
 
-Consider for example the following search space: 1) The network applies an input convolution (conv 1). 2) Two candidate
-layers are applied to the output of conv 1, that are a zero operation and another convolution (conv 2). 3) The Join layer
-randomly selects the output of one of the candidate layers and feeds it to conv 3. If Join selects Conv 2, we need to calculate
-the output of Conv 1, Conv 2 and Conv 3. However, if Join selects Zero, only the output of Conv 3 must be calculated, because
-selecting Zero, effectively cuts the computational graph, meaning that all layers that are the parent of Zero and that have
-no shortcut connection to any following layer can be deleted from the computational graph. Static modules implement such graph optimization, meaning that they can speed up computations.
+Consider for example the following search space: 
+   - The network applies an input convolution (conv 1). 
+   - Two candidate layers are applied to the output of conv 1: a zero operation and another convolution (conv 2). 
+   - The Join layer randomly selects the output of one of the candidate layers and feeds it to (conv 3). 
+   
+If Join selects Conv 2, we need to calculate the output of Conv 1, Conv 2 and Conv 3. However, if Join selects Zero, only the output of Conv 3 must be calculated, because
+selecting Zero, effectively cuts the computational graph, meaning that all layers that are parents of Zero and that have no shortcut connection to any following layers can be deleted from the computational graph. 
+
+Static modules implement such graph optimization, meaning that they can speed up computations.
 
 .. image:: ../images/static_example_graph.png
 
 A second reason why a static graph definition is a natural choice for hardware aware NAS is related to latency modeling.
-To perform hardware aware NAS, we need to estimate the latency of the subnetworks that have been
+In order to perform hardware aware NAS, we need to estimate the latency of the subnetworks that have been
 drawn from the candidate space in order to decide whether the network meets our latency requirements or not.
 Typically, the latency of all layers (modules) within the search space are measured once individually. The latency of a
-subnetwork of the search space, then, is a function of those individual latencies and of the structure of the subnetwork. Note,
-simply summing up all the latencies of the modules that are contained in the subnetwork is wrong. This is obvious if we reconsider the
-example from above. All the modules Conv 1 to Conv 3 have a latency > 0, while Zero and Join have a latency of 0. If Join selects Zero,
-Conv 1, Zero, Join and Conv 3 are part of the subnetwork. However, summing up the latency of Conv 1,
-Zero, Join and Conv 3 are wrong. The correct latency would be if we only consider Conv 3.
+subnetwork of the search space, then, is a function of those individual latencies and of the structure of the subnetwork. 
+Simply summing up all the latencies of the modules that are contained in the subnetwork is wrong. 
+
+This is obvious if we reconsider the example from above. All the modules Conv 1 to Conv 3 have a latency > 0, while Zero and Join have a latency of 0. If Join selects Zero,
+Conv 1, Zero, Join and Conv 3 are part of the subnetwork. However, summing up the latency of Conv 1, Zero, Join and Conv 3 are wrong. The correct latency would be calculated if we only consider Conv 3.
 
 Other problems which need knowledge of the graph structure are for example:
-1) Graph similarity calculation
-2) NAS, using Bayesian optimization algorithms
-3) Modeling the memory footprint of DNNs (activation memory)
+   - Graph similarity calculation
+   - NAS, using Bayesian optimization algorithms
+   - Modeling the memory footprint of DNNs (activation memory)
 
 Which modules are currently implemented?
 ........................................
 
-There is a static version of all dynamic modules implemented in nnabla_nas.modules. There are currently two static search spaces,
-namely contrib.zoph and the contrib.random_wired.
+There is a static version of all dynamic modules implemented in nnabla_nas.modules. There are currently two static search spaces,  namely contrib.zoph and  contrib.random_wired.
 
 Implementing new static modules
 ...............................
 
 There are different ways of how to define static modules. 
 
-- You can derive a static version from a dynamic module. Consider the following
+You can derive a static version from a dynamic module. Consider the following
 example, where we want to derive a static Conv module from the dynamic Conv module.
-First, we derive our StaticConv module from A) The dynamic Conv class, B) The StaticModule base class. 
-We call the __init__() of both parent classes. Please note, that the order of inheritance is important.
+First, we derive our StaticConv module from
+   - The dynamic Conv class
+   - The StaticModule base class
+We call the __init__() of both parent classes. Please note that the order of inheritance is important !
 
 .. code-block:: python
 
@@ -128,8 +132,9 @@ We call the __init__() of both parent classes. Please note, that the order of in
             if len(self._parents) > 1:
                 raise RuntimeError
 
-- We can also implement a new static module from scratch, implementing the call method. Please follow the same steps that are documented in the dynamic module tutorial. In the following example, we define a StaticConv, implementing
-the call method. You can either use the NNabla API or dynamic modules to define the transfer function. In our case, we use dynamic modules.
+We can also implement a new static module from scratch, implementing the call method. Please follow the same steps that are documented in the dynamic module tutorial. 
+
+In the following example, we define a StaticConv, implementing the call method. You can either use the NNabla API or dynamic modules to define the transfer function. In our case, we use dynamic modules.
 
 .. code-block:: python
 
