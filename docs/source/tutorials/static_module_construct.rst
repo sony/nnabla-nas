@@ -22,8 +22,8 @@ that defines a simple d layer CNN:
    inp = nn.Variable((10, 3, 32, 32))
 
    def net(x, d=10):
-      c_inp = Mo.Conv(3, 64, (32,32))
-      c_l = [Mo.Conv(64, 64, (32,32)) for i in range(d-1)]
+      c_inp = Mo.Conv(3, 64, (3,3))
+      c_l = [Mo.Conv(64, 64, (3,3)) for i in range(d-1)]
       x = c_inp(x)
 
       for i in range(d-1):
@@ -32,7 +32,7 @@ that defines a simple d layer CNN:
 
    out = net(inp)
 
-The network consists of 3 convolutional layers, with a 3x3 kernel. Each layer
+The network consists of 10 convolutional layers, with a 3x3 kernel. Each layer
 computes 64 feature maps. Following the dynamic graph paradigm,
 the structure of the network is only defined in the code, i.e., it is only defined
 by the sequence in which we apply the layers c_l. The modules themselves are agnostic to
@@ -55,7 +55,7 @@ The example network from the example above can, for example, be defined as:
    def net(x, d=10):
       modules = [Smo.Input(nn.Variable((10, 3, 32, 32)))]
       for i in range(d):
-         modules.append(Smo.Conv(parents=[modules[-1]], modules[-1].shape[1], 64, (32,32)))
+         modules.append(Smo.Conv(parents=[modules[-1]], modules[-1].shape[1], 64, (3,3)))
       return modules[-1]
 
    out = net()
