@@ -23,7 +23,7 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 
-import nnabla_nas.module as mo
+from ... import module as mo
 
 from graphviz import Digraph
 
@@ -308,6 +308,7 @@ class Identity(mo.Identity, Module):
        >>> inp_module = smo.Input(value=input)
        >>> identity = smo.Identity(parents=[inp_module])
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         Module.__init__(self, parents, name, eval_prob=eval_prob)
         if len(self._parents) > 1:
@@ -327,6 +328,7 @@ class Zero(mo.Zero, Module):
     Examples:
         >>> my_module = Zero(parents=[...], name='my_module')
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.Zero.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name, eval_prob=eval_prob)
@@ -394,6 +396,7 @@ class Conv(mo.Conv, Module):
             considered as channel dimension, a.k.a NHWC order. Defaults to
             `False`.
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.Conv.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name,  eval_prob=eval_prob)
@@ -424,6 +427,7 @@ class Linear(mo.Linear, Module):
         rng (numpy.random.RandomState): Random generator for Initializer.
         with_bias (bool): Specify whether to include the bias term.
     """
+
     def __init__(self, parents, name='', *args, **kwargs):
         mo.Linear.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name)
@@ -474,6 +478,7 @@ class DwConv(mo.DwConv, Module):
         - F. Chollet: Chollet, Francois. "Xception: Deep Learning with
         Depthwise Separable Convolutions. https://arxiv.org/abs/1610.02357
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.DwConv.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -498,6 +503,7 @@ class MaxPool(mo.MaxPool, Module):
         channel_last(bool): If True, the last dimension is considered as
             channel dimension, a.k.a NHWC order. Defaults to ``False``.
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.MaxPool.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -522,6 +528,7 @@ class AvgPool(mo.AvgPool, Module):
         channel_last(bool): If True, the last dimension is considered as
             channel dimension, a.k.a NHWC order. Defaults to ``False``.
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.AvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -538,6 +545,7 @@ class GlobalAvgPool(mo.GlobalAvgPool, Module):
         parents (list): the parents of this module
         name (string): the name of this module
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.GlobalAvgPool.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -556,6 +564,7 @@ class ReLU(mo.ReLU, Module):
         inplace (bool, optional): can optionally do the operation in-place.
             Default: ``False``.
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.ReLU.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -574,6 +583,7 @@ class Dropout(mo.Dropout, Module):
         drop_prob (:obj:`int`, optional): The probability of an element to be
             zeroed. Defaults to 0.5.
     """
+
     def __init__(self, parents, name='', *args, **kwargs):
         mo.Dropout.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name)
@@ -624,6 +634,7 @@ class BatchNormalization(mo.BatchNormalization, Module):
         Network Training by Reducing Internal Covariate Shift.
         https://arxiv.org/abs/1502.03167
     """
+
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
         mo.BatchNormalization.__init__(self, *args, **kwargs)
         Module.__init__(self, parents, name=name, eval_prob=eval_prob)
@@ -644,6 +655,7 @@ class Merging(mo.Merging, Module):
         axis (int, optional): The axis for merging when 'concat' is used.
             Defaults to 1.
     """
+
     def __init__(self, parents, mode, name='', eval_prob=None, axis=1):
         mo.Merging.__init__(self, mode, axis)
         Module.__init__(self, parents=parents, name=name,
@@ -662,6 +674,7 @@ class Collapse(Module):
         parents (list): the parents of this module
         name (string): the name of this module
     """
+
     def __init__(self, parents, name=''):
         Module.__init__(self, parents, name=name)
         if len(self._parents) > 1:
@@ -670,7 +683,7 @@ class Collapse(Module):
     def call(self, *inputs):
         return F.reshape(inputs[0],
                          shape=(inputs[0].shape[0],
-                         inputs[0].shape[1]))
+                                inputs[0].shape[1]))
 
 
 class Join(Module):
@@ -690,12 +703,13 @@ class Join(Module):
         mode (string): can be 'linear'/'sample'/'max'. Determines
             how Join combines the output of the parents.
     """
+
     def __init__(self, parents, join_parameters, name='',
                  mode='linear', *args, **kwargs):
         if len(parents) < 2:
             raise Exception("Join vertice {} must have at "
                             "least 2 inputs, but has {}.".format(
-                                    self.name, len(parents)))
+                                self.name, len(parents)))
 
         self._supported_modes = ('linear', 'sample', 'max')
         self.mode = mode
@@ -781,6 +795,7 @@ class Graph(mo.ModuleList, Module):
     must define self._output, i.e. the StaticModule which acts
     as the output node of this graph.
     """
+
     def __init__(self, parents=[],
                  name='', eval_prob=None,
                  *args, **kwargs):

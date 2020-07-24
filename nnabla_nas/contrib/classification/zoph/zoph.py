@@ -19,11 +19,11 @@ import nnabla.functions as F
 from nnabla.utils.save import save
 import numpy as np
 
-from nnabla_nas.contrib.classification import misc
-from nnabla_nas.contrib.classification.base import ClassificationModel as Model
-import nnabla_nas.module as mo
-from nnabla_nas.module import static as smo
-from nnabla_nas.module.parameter import Parameter
+from ...classification import misc
+from ...classification.base import ClassificationModel as Model
+from .... import module as mo
+from ....module import static as smo
+from ....module.parameter import Parameter
 
 
 class SepConv(misc.SepConv, smo.Module):
