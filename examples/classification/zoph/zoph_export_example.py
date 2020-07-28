@@ -33,9 +33,9 @@ def zoph_export():
 
     zn1 = zoph.SearchNet()
 
-    #with open('zn1a.txt', 'w') as f:
-    #    print_me(zn1, f)
-    #zn1a_unique_active_modules = get_modules(zn1)
+    with open('zn1a.txt', 'w') as f:
+        print_me(zn1, f)
+    zn1a_unique_active_modules = get_modules(zn1)
     #import pdb; pdb.set_trace()
 
     out1b = zn1(input)
@@ -43,14 +43,14 @@ def zoph_export():
         print_me(zn1, f)
     zn1b_unique_active_modules = get_modules(zn1)
     
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     
     out1c = zn1(input)
     with open('zn1c.txt', 'w') as f:
         print_me(zn1, f)
     zn1c_unique_active_modules = get_modules(zn1)
 
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
 
     zn2 = zoph.SearchNet()
     out2 = zn2(input)
