@@ -16,14 +16,15 @@ def print_me(zn,f):
     print(zn.get_net_modules(active_only=True), file=f)
 
 
-def get_modules(zn):
+def get_active_and_profiled_modules(zn):
+    print('\n**START PRINT ******************************')
     list = []
     for mi in zn.get_net_modules(active_only=True):
         if type(mi) in zn.modules_to_profile:
             if type(mi) not in list:
                 print(type(mi))        
                 list.append(type(mi)) 
-    print('\n********************************\n')
+    print('**END PRINT ******************************\n')
     return list
 
 def zoph_export():
@@ -35,20 +36,20 @@ def zoph_export():
 
     with open('zn1a.txt', 'w') as f:
         print_me(zn1, f)
-    zn1a_unique_active_modules = get_modules(zn1)
+    zn1a_unique_active_modules = get_active_and_profiled_modules(zn1)
     #import pdb; pdb.set_trace()
 
     out1b = zn1(input)
     with open('zn1b.txt', 'w') as f:
         print_me(zn1, f)
-    zn1b_unique_active_modules = get_modules(zn1)
+    zn1b_unique_active_modules = get_active_and_profiled_modules(zn1)
     
     #import pdb; pdb.set_trace()
     
     out1c = zn1(input)
     with open('zn1c.txt', 'w') as f:
         print_me(zn1, f)
-    zn1c_unique_active_modules = get_modules(zn1)
+    zn1c_unique_active_modules = get_active_and_profiled_modules(zn1)
 
     #import pdb; pdb.set_trace()
 
@@ -56,14 +57,14 @@ def zoph_export():
     out2 = zn2(input)
     with open('zn2.txt', 'w') as f:
         print_me(zn2, f)
-    zn2_unique_active_modules = get_modules(zn2)
+    zn2_unique_active_modules = get_active_and_profiled_modules(zn2)
 
 
     zn3 = zoph.SearchNet()
     out3 = zn3(input)
     with open('zn3.txt', 'w') as f:
         print_me(zn3, f)
-    zn3_unique_active_modules = get_modules(zn3)
+    zn3_unique_active_modules = get_active_and_profiled_modules(zn3)
 
 
     #zn4 = zoph.SearchNet()
