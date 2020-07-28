@@ -32,53 +32,44 @@ def zoph_export():
     shape = (10, 3, 32, 32)
     input = nn.Variable(shape)
 
+    #import pdb; pdb.set_trace()
+
     zn1 = zoph.SearchNet()
 
     with open('zn1a.txt', 'w') as f:
         print_me(zn1, f)
     zn1a_unique_active_modules = get_active_and_profiled_modules(zn1)
-    #import pdb; pdb.set_trace()
+    zn1.save('./graphs/zn1a')
+    #zn1.save_modules_nnp('./graphs/zn1a', active_only=True)
 
     out1b = zn1(input)
     with open('zn1b.txt', 'w') as f:
         print_me(zn1, f)
     zn1b_unique_active_modules = get_active_and_profiled_modules(zn1)
-    
+    zn1.save('./graphs/zn1b')
     #import pdb; pdb.set_trace()
+    zn1.save_modules_nnp('./graphs/zn1b', active_only=True)
     
     out1c = zn1(input)
     with open('zn1c.txt', 'w') as f:
         print_me(zn1, f)
     zn1c_unique_active_modules = get_active_and_profiled_modules(zn1)
-
-    #import pdb; pdb.set_trace()
+    zn1.save('./graphs/zn1c')
 
     zn2 = zoph.SearchNet()
     out2 = zn2(input)
     with open('zn2.txt', 'w') as f:
         print_me(zn2, f)
     zn2_unique_active_modules = get_active_and_profiled_modules(zn2)
-
+    zn2.save('./graphs/zn2')
 
     zn3 = zoph.SearchNet()
     out3 = zn3(input)
     with open('zn3.txt', 'w') as f:
         print_me(zn3, f)
     zn3_unique_active_modules = get_active_and_profiled_modules(zn3)
+    zn3.save('./graphs/zn3')
 
-
-    #zn4 = zoph.SearchNet()
-    #out4 = zn4(input)
-
-    #zn5 = zoph.SearchNet()
-    #out5 = zn5(input)
-
-    #import pdb; pdb.set_trace()    
-    
-    #zn1.save_modules_nnp('.', True)
-    #zn1.save('.')
-    
-    
 
 
 
