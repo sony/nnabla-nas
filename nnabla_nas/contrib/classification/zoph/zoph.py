@@ -21,7 +21,8 @@ import numpy as np
 
 from nnabla_nas.contrib.classification import misc
 from nnabla_nas.contrib.classification.base import ClassificationModel as Model
-import nnabla_nas.module as mo
+#import nnabla_nas.module as mo
+from .... import module as mo
 from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
 
@@ -474,6 +475,7 @@ class SearchNet(Model, smo.Graph):
                  reducing=[False, True, True],
                  join_parameters=[[None]*7]*3,
                  candidates=ZOPH_CANDIDATES, mode='sample'):
+        
         smo.Graph.__init__(self, parents=[], name=name)
         self._n_classes = n_classes
         self._stem_channels = stem_channels
@@ -574,6 +576,8 @@ class SearchNet(Model, smo.Graph):
                 smo.ReLU,
                 smo.BatchNormalization,
                 smo.Merging,
+                SepConv,
+                SepConvBN,
                 SepConv3x3,
                 SepConv5x5,
                 DilSepConv3x3,
@@ -600,6 +604,14 @@ class SearchNet(Model, smo.Graph):
         for name, module in self.get_modules():
             if isinstance(module,
                           smo.Module) and not isinstance(module, smo.Join):
+                #if isinstance(module, DilSepConv5x5):
+                #    print(type(module))
+                #    print(module._value)
+                #    import pdb; pdb.set_trace()
+                #if isinstance(module, MaxPool3x3) and module._value is not None:
+                #    print(type(module))
+                #    print(module._value)
+                #    import pdb; pdb.set_trace()                    
                 if active_only:
                     if module._value is not None:
                         ans.append(module)
@@ -665,11 +677,13 @@ class SearchNet(Model, smo.Graph):
         for mi in mods:
             if type(mi) in self.modules_to_profile:
                 print(type(mi))
+                
                 inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
 
                 out = mi.call(*inp)
                 filename = path + mi.name + '.nnp'
                 d = {str(i): inpi for i, inpi in enumerate(inp)}
+                
                 contents = {'networks': [{'name': mi.name,
                                           'batch_size': 1,
                                           'outputs': {'out': out},
@@ -678,9 +692,9 @@ class SearchNet(Model, smo.Graph):
                                            'network': mi.name,
                                            'data': ['inp'],
                                            'output': ['out']}]}
-
+                
                 save(filename, contents)
-
+                
 
 class TrainNet(SearchNet):
     """

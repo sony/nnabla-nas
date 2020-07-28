@@ -23,7 +23,8 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 
-import nnabla_nas.module as mo
+#import nnabla_nas.module as mo
+from ... import module as mo
 
 from graphviz import Digraph
 
