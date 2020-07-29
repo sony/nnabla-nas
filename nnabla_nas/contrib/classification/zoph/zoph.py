@@ -676,23 +676,25 @@ class SearchNet(Model, smo.Graph):
 
         for mi in mods:
             if type(mi) in self.modules_to_profile:
+                #import pdb; pdb.set_trace()
                 print(type(mi))
                 
                 inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
-
                 out = mi.call(*inp)
+
                 filename = path + mi.name + '.nnp'
-                d = {str(i): inpi for i, inpi in enumerate(inp)}
-                
+                d_dict = {str(i): inpi for i, inpi in enumerate(inp)}
+                d_keys = [str(i) for i, inpi in enumerate(inp)]
+
                 contents = {'networks': [{'name': mi.name,
-                                          'batch_size': 1,
+                                          'batch_size': 128,
                                           'outputs': {'out': out},
-                                          'names': d}],
+                                          'names': d_dict}],
                             'executors': [{'name': 'runtime',
                                            'network': mi.name,
-                                           'data': ['inp'],
+                                           'data': d_keys,
                                            'output': ['out']}]}
-                
+                #import pdb; pdb.set_trace()
                 save(filename, contents)
                 
 
