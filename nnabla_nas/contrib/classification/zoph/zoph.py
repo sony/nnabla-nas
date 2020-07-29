@@ -677,18 +677,21 @@ class SearchNet(Model, smo.Graph):
 
         for mi in mods:
             if type(mi) in self.modules_to_profile:
-                #import pdb; pdb.set_trace()
                 
+                ########### DEBUG CODE
+                # import pdb; pdb.set_trace()
+                #
                 #if isinstance(mi, smo.Conv):
                 #if isinstance(mi, smo.Zero):
                 #    continue
                 #if isinstance(mi, smo.Identity):
                 #    continue
-            
+                #
                 #if isinstance(mi, smo.Zero) or isinstance(mi, smo.Identity) or isinstance(mi, MaxPool3x3) \
                 #                            or isinstance(mi, smo.Identity) or isinstance(mi, AveragePool3x3):
                 #    import pdb; pdb.set_trace()
-                
+                ###########################
+
                 print(type(mi))
                 
                 param_list = list(mi.get_parameters().values())
