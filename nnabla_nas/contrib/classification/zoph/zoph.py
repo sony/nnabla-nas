@@ -570,8 +570,8 @@ class SearchNet(Model, smo.Graph):
 
     @property
     def modules_to_profile(self):
-        return [smo.Identity,
-                smo.Zero,
+        return [#smo.Identity, # we do not want to profile Identity modules
+                #smo.Zero,     # we do not want to profile Zero modules
                 smo.Conv,
                 smo.Join,
                 smo.ReLU,
@@ -677,9 +677,21 @@ class SearchNet(Model, smo.Graph):
 
         for mi in mods:
             if type(mi) in self.modules_to_profile:
+                #import pdb; pdb.set_trace()
+                
+                #if isinstance(mi, smo.Conv):
+                #if isinstance(mi, smo.Zero):
+                #    continue
+                #if isinstance(mi, smo.Identity):
+                #    continue
+            
+                #if isinstance(mi, smo.Zero) or isinstance(mi, smo.Identity) or isinstance(mi, MaxPool3x3) \
+                #                            or isinstance(mi, smo.Identity) or isinstance(mi, AveragePool3x3):
+                #    import pdb; pdb.set_trace()
+                
                 print(type(mi))
                 
-                param_list = list(mi.parameters.values())
+                param_list = list(mi.get_parameters().values())
                 if len(param_list) > 0:
                     batch_size = param_list[0].shape[0]
                     for param in param_list[1:]:
