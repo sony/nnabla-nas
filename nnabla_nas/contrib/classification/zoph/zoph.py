@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from collections import OrderedDict
 
 import nnabla as nn
@@ -676,25 +677,38 @@ class SearchNet(Model, smo.Graph):
 
         for mi in mods:
             if type(mi) in self.modules_to_profile:
-                #import pdb; pdb.set_trace()
                 print(type(mi))
                 
-                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                param_list = list(mi.parameters.values())
+                if len(param_list) > 0:
+                    batch_size = param_list[0].shape[0]
+                    for param in param_list[1:]:
+                        new_batch_size = param.shape[0]
+                        if new_batch_size != batch_size:
+                            raise RuntimeError('Different batch sizes inside the module to export: {}', mi.name)
+                else:
+                    batch_size = mi.input_shapes[0][0]
+                
+                inp = [nn.Variable((batch_size,)+si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
 
                 filename = path + mi.name + '.nnp'
+                pathname = os.path.dirname(filename)
+                if not os.path.exists(pathname):
+                    os.mkdir(pathname)
+
                 d_dict = {str(i): inpi for i, inpi in enumerate(inp)}
                 d_keys = [str(i) for i, inpi in enumerate(inp)]
 
                 contents = {'networks': [{'name': mi.name,
-                                          'batch_size': 128,
+                                          'batch_size': batch_size,
                                           'outputs': {'out': out},
                                           'names': d_dict}],
                             'executors': [{'name': 'runtime',
                                            'network': mi.name,
                                            'data': d_keys,
                                            'output': ['out']}]}
-                #import pdb; pdb.set_trace()
+
                 save(filename, contents)
                 
 
