@@ -162,7 +162,7 @@ class SepConv3x3(SepConvBN):
                            out_channels=channels,
                            kernel=(3, 3),
                            dilation=None,
-                           name=name,
+                           name='{}_SepConv3x3'.format(name),
                            eval_prob=eval_prob)
 
 
@@ -185,7 +185,7 @@ class SepConv5x5(SepConvBN):
                            out_channels=channels,
                            kernel=(5, 5),
                            dilation=None,
-                           name=name,
+                           name='{}_SepConv5x5'.format(name),
                            eval_prob=eval_prob)
 
 
@@ -208,7 +208,7 @@ class DilSepConv3x3(SepConvBN):
                            out_channels=channels,
                            kernel=(3, 3),
                            dilation=(2, 2),
-                           name=name,
+                           name='{}_DilSepConv3x3'.format(name),
                            eval_prob=eval_prob)
 
 
@@ -231,7 +231,7 @@ class DilSepConv5x5(SepConvBN):
                            out_channels=channels,
                            kernel=(5, 5),
                            dilation=(2, 2),
-                           name=name,
+                           name='{}_DilSepConv5x5'.format(name),
                            eval_prob=eval_prob)
 
 
@@ -251,7 +251,7 @@ class MaxPool3x3(smo.MaxPool):
                              kernel=(3, 3),
                              stride=(1, 1),
                              pad=(1, 1),
-                             name=name,
+                             name='{}_MaxPool3x3_bn_relu'.format(name),
                              eval_prob=eval_prob)
         self.bn = mo.BatchNormalization(n_features=self.parents[0].shape[1],
                                         n_dims=4)
@@ -278,7 +278,7 @@ class AveragePool3x3(smo.AvgPool):
                              kernel=(3, 3),
                              stride=(1, 1),
                              pad=(1, 1),
-                             name=name,
+                             name='{}_AveragePool3x3_bn_relu'.format(name),
                              eval_prob=eval_prob)
         self.bn = mo.BatchNormalization(
             n_features=self.parents[0].shape[1], n_dims=4)
@@ -344,18 +344,20 @@ class ZophBlock(smo.Graph):
                               kernel=(1, 1),
                               eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
+
+        # @TODO: why do we need this BN and ReLU if we take it out with line below?
         self.append(smo.BatchNormalization(name='{}/input_conv_bn'.format(
                                            self.name),
                                            parents=[self[-1]],
                                            n_dims=4,
                                            n_features=self._channels))
 
-        self.append(smo.ReLU(name='{}/input_conv/relu'.format(self.name),
+        self.append(smo.ReLU(name='{}/input_conv_relu'.format(self.name),
                              parents=[self[-1]]))
 
         for i, ci in enumerate(self._candidates):
             self.append(ci(name='{}/candidate_{}'.format(self.name, i),
-                           parents=[input_conv],
+                           parents=[input_conv], # this line makes the BN and RELU go out
                            channels=self._channels,
                            eval_prob=join_prob[i]))
         self.append(smo.Join(name='{}/join'.format(self.name),
@@ -411,7 +413,7 @@ class ZophCell(smo.Graph):
                                                parents=[self[-1]],
                                                n_dims=4,
                                                n_features=self._channels))
-            self.append(smo.ReLU(name='{}/input_conv_{}/relu'.format(
+            self.append(smo.ReLU(name='{}/input_conv_{}_relu'.format(
                                  self.name, i),
                                  parents=[self[-1]]))
             projected_inputs.append(self[-1])
