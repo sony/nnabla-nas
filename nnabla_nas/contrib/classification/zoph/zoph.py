@@ -345,19 +345,9 @@ class ZophBlock(smo.Graph):
                               eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
 
-        # @TODO: why do we need this BN and ReLU if we take it out with line below?
-        self.append(smo.BatchNormalization(name='{}/input_conv_bn'.format(
-                                           self.name),
-                                           parents=[self[-1]],
-                                           n_dims=4,
-                                           n_features=self._channels))
-
-        self.append(smo.ReLU(name='{}/input_conv_relu'.format(self.name),
-                             parents=[self[-1]]))
-
         for i, ci in enumerate(self._candidates):
             self.append(ci(name='{}/candidate_{}'.format(self.name, i),
-                           parents=[input_conv], # this line makes the BN and RELU go out
+                           parents=[input_conv],
                            channels=self._channels,
                            eval_prob=join_prob[i]))
         self.append(smo.Join(name='{}/join'.format(self.name),

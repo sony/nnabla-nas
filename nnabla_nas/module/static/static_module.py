@@ -78,7 +78,11 @@ class Module(mo.Module):
         for pi in parents:
             pi.add_child(self)
         self._children = []
+        
         self._name = name
+        #new_name = (self.__str__()).split("(",1)
+        #self._name = new_name[0]
+
         self._value = None
         self._eval_probs = None
         self._shape = -1
@@ -142,6 +146,7 @@ class Module(mo.Module):
             string: the name of the module
         """
         return self._name
+        
 
     @property
     def parents(self):
