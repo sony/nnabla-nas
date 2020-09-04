@@ -34,13 +34,17 @@ def zoph_export():
 
     #import pdb; pdb.set_trace()
 
+    # 0 : currently empty
+    # 1 : preliminary creation / exporting tests - sandbox
+    # 2 : create one instance of zoph network and save it
+    # 3 : load saved files ancd check them
     runme = [False, False, True, False]
     
-    # ZN 0 **************************
+    #  0 **************************
     if runme[0]:
         pass
 
-    # ZN 1 **************************
+    #  1 **************************
     if runme[1]:
         zn1 = zoph.SearchNet()
         with open('zn1a.txt', 'w') as f:
@@ -63,7 +67,7 @@ def zoph_export():
         zn1.save('./graphs/zn1c')
         zn1.save_modules_nnp('./graphs/zn1c', active_only=True)
     
-    # ZN 2 **************************
+    #  2 **************************
     if runme[2]:
         zn2 = zoph.SearchNet()
         out2 = zn2(input)
@@ -73,16 +77,9 @@ def zoph_export():
         zn2.save('./graphs/zn2')
         zn2.save_modules_nnp('./graphs/zn2', active_only=True)
 
-    # ZN 3 **************************
+    #  3 **************************
     if runme[3]:
-        zn3 = zoph.SearchNet()
-        out3 = zn3(input)
-        with open('zn3.txt', 'w') as f:
-            print_me(zn3, f)
-        zn3_unique_active_modules = get_active_and_profiled_modules(zn3)
-        zn3.save('./graphs/zn3')
-        zn3.save_modules_nnp('./graphs/zn3', active_only=True)
-    
+        pass
 
 
 
@@ -91,7 +88,7 @@ def zoph_export():
 
 
 
-    
+
 
 if __name__ == '__main__':
     zoph_export()
