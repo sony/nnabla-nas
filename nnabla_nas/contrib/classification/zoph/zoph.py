@@ -344,16 +344,15 @@ class ZophBlock(smo.Graph):
                               kernel=(1, 1),
                               eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
-
+        
         for i, ci in enumerate(self._candidates):
             self.append(ci(name='{}/candidate_{}'.format(self.name, i),
                            parents=[input_conv],
                            channels=self._channels,
                            eval_prob=join_prob[i]))
         self.append(smo.Join(name='{}/join'.format(self.name),
-                             parents=self[4:],
+                             parents=self[2:],
                              join_parameters=self._join_parameters))
-
 
 class ZophCell(smo.Graph):
     """
