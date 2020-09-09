@@ -1,7 +1,10 @@
 
+import os
 import nnabla as nn
 
 from nnabla_nas.contrib import zoph
+
+from nnabla.utils.nnp_graph import NnpLoader as load
 
 def print_me(zn,f):
     print(zn.summary(), file=f)
@@ -29,17 +32,20 @@ def get_active_and_profiled_modules(zn):
 
 def zoph_export():
     
+    #import pdb; pdb.set_trace()
+
+    OUTPUT_DIR = './output/'
+    runme = [
+             False, # 0 : currently empty
+             False,  # 1 : preliminary creation / exporting tests - sandbox
+             True,  # 2 : create one instance of zoph network and save it to OUTPUT_DIR
+             True,  # 3 : convert all networks in OUTPUT_DIR to onnx
+             False  # 4 : load saved files ancd check them
+            ]
+
     shape = (10, 3, 32, 32)
     input = nn.Variable(shape)
 
-    #import pdb; pdb.set_trace()
-
-    # 0 : currently empty
-    # 1 : preliminary creation / exporting tests - sandbox
-    # 2 : create one instance of zoph network and save it
-    # 3 : load saved files ancd check them
-    runme = [False, False, True, False]
-    
     #  0 **************************
     if runme[0]:
         pass
@@ -47,39 +53,55 @@ def zoph_export():
     #  1 **************************
     if runme[1]:
         zn1 = zoph.SearchNet()
-        with open('zn1a.txt', 'w') as f:
-            print_me(zn1, f)
+
         zn1a_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save('./graphs/zn1a')
-        zn1.save_modules_nnp('./graphs/zn1a', active_only=True)
+        zn1.save('./sandbox/zn1a')
+        zn1.save_modules_nnp('./sandbox/zn1a', active_only=True)
+        with open('./sandbox/zn1a.txt', 'w') as f:
+            print_me(zn1, f)
 
         out1b = zn1(input)
-        with open('zn1b.txt', 'w') as f:
-            print_me(zn1, f)
         zn1b_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save('./graphs/zn1b')
-        zn1.save_modules_nnp('./graphs/zn1b', active_only=True)
+        zn1.save('./sandbox/zn1b')
+        zn1.save_modules_nnp('./sandbox/zn1b', active_only=True)
+        with open('./sandbox/zn1b.txt', 'w') as f:
+            print_me(zn1, f)
     
         out1c = zn1(input)
-        with open('zn1c.txt', 'w') as f:
-            print_me(zn1, f)
         zn1c_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save('./graphs/zn1c')
-        zn1.save_modules_nnp('./graphs/zn1c', active_only=True)
+        zn1.save('./sandbox/zn1c')
+        zn1.save_modules_nnp('./sandbox/zn1c', active_only=True)
+        with open('./sandbox/zn1c.txt', 'w') as f:
+            print_me(zn1, f)
     
     #  2 **************************
     if runme[2]:
-        zn2 = zoph.SearchNet()
-        out2 = zn2(input)
-        with open('zn2.txt', 'w') as f:
-            print_me(zn2, f)
-        zn2_unique_active_modules = get_active_and_profiled_modules(zn2)
-        zn2.save('./graphs/zn2')
-        zn2.save_modules_nnp('./graphs/zn2', active_only=True)
+        zn = zoph.SearchNet()
+        out = zn(input)
+        zn_unique_active_modules = get_active_and_profiled_modules(zn)
+        zn.save(OUTPUT_DIR + 'zn')
+        zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True)
+        with open(OUTPUT_DIR + 'zn.txt', 'w') as f:
+            print_me(zn, f)
 
     #  3 **************************
     if runme[3]:
-        pass
+        # NOTE: The actual bash shell command is:
+        # > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
+        # which, for each file found with find, outputs the following:
+        # > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'
+        # which, for each file, generates the final conversion command:
+        # > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
+        os.system('find ' + OUTPUT_DIR + ' -name "*.nnp" -exec echo echo {} \| awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh')
+
+    #  4 **************************
+    if runme[4]:
+        #nnp = load(filename)
+        #net = nnp.get_network(nnp.get_network_names()[0])
+        nnp = load('./graphs/zn2/stem_conv_2.nnp')
+        net_name = nnp.get_network_names()[0]
+        net = nnp.get_network(net_name)
+        import pdb; pdb.set_trace()
 
 
 
