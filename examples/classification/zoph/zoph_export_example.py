@@ -34,7 +34,7 @@ def zoph_export():
     
     #import pdb; pdb.set_trace()
 
-    OUTPUT_DIR = './output_3/'
+    OUTPUT_DIR = './output_4/'
     runme = [
              False, # 0 : currently empty
              False,  # 1 : preliminary creation / exporting tests - sandbox

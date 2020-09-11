@@ -667,7 +667,7 @@ class SearchNet(smo.Graph):
     # save whole network/graph nnp
     def save_whole_network(self, path):
         
-        batch_size = 10
+        batch_size = 1
         shape = (batch_size, 3, 32, 32)
         
         inp = nn.Variable(shape)
