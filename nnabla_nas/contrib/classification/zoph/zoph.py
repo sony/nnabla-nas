@@ -21,7 +21,7 @@ from nnabla.utils.save import save
 import numpy as np
 
 from nnabla_nas.contrib.classification import misc
-from nnabla_nas.contrib.classification.base import ClassificationModel as Model
+
 #import nnabla_nas.module as mo
 from .... import module as mo
 from nnabla_nas.module import static as smo
@@ -440,7 +440,7 @@ class ZophCell(smo.Graph):
                                 parents=cell_modules, mode='concat'))
 
 
-class SearchNet(Model, smo.Graph):
+class SearchNet(smo.Graph):
     """
     A search space as defined in [Bender et. al]
 
@@ -659,43 +659,57 @@ class SearchNet(Model, smo.Graph):
                 str_summary += str(mi._eval_prob.d) + "\n"
         return str_summary
 
-    def save(self, output_path):
+    # save whole network/graph as a PDF
+    def save(self, path):
         gvg = self.get_gv_graph()
-        gvg.render(output_path+'/graph')
+        gvg.render(path + '/graph')
 
+    # save whole network/graph nnp
+    def save_whole_network(self, path):
+        
+        batch_size = 10
+        shape = (batch_size, 3, 32, 32)
+        
+        inp = nn.Variable(shape)
+        out = self(inp)
+
+        if self.name is '':
+            name = '_whole_net'
+        else:
+            name = '_' + self.name
+
+        filename = path + name + '.nnp'
+        pathname = os.path.dirname(filename)
+        if not os.path.exists(pathname):
+            os.mkdir(pathname)
+
+        dict = {'0': inp}
+        keys = ['0']
+
+        contents = {'networks': [{'name': name,
+                                  'batch_size': batch_size,
+                                  'outputs': {'out': out},
+                                  'names': dict}],
+                    'executors': [{'name': 'runtime',
+                                   'network': name,
+                                   'data': keys,
+                                   'output': ['out']}]}
+
+        save(filename, contents, variable_batch_size=False)
+
+
+    # save every module as nnp
     def save_modules_nnp(self, path, active_only=False):
+        # saving individual layers / constructions of layers
         mods = self.get_net_modules(active_only=active_only)
-
         for mi in mods:
             if type(mi) in self.modules_to_profile:
                 
-                ########### DEBUG CODE
-                # import pdb; pdb.set_trace()
-                #
-                #if isinstance(mi, smo.Conv):
-                #if isinstance(mi, smo.Zero):
-                #    continue
-                #if isinstance(mi, smo.Identity):
-                #    continue
-                #
-                #if isinstance(mi, smo.Zero) or isinstance(mi, smo.Identity) or isinstance(mi, MaxPool3x3) \
-                #                            or isinstance(mi, smo.Identity) or isinstance(mi, AveragePool3x3):
-                #    import pdb; pdb.set_trace()
-                ###########################
+                #import pdb; pdb.set_trace()
 
                 print(type(mi))
                 
-                param_list = list(mi.get_parameters().values())
-                if len(param_list) > 0:
-                    batch_size = param_list[0].shape[0]
-                    for param in param_list[1:]:
-                        new_batch_size = param.shape[0]
-                        if new_batch_size != batch_size:
-                            raise RuntimeError('Different batch sizes inside the module to export: {}', mi.name)
-                else:
-                    batch_size = mi.input_shapes[0][0]
-                
-                inp = [nn.Variable((batch_size,)+si[1:]) for si in mi.input_shapes]
+                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
 
                 filename = path + mi.name + '.nnp'
@@ -707,15 +721,15 @@ class SearchNet(Model, smo.Graph):
                 d_keys = [str(i) for i, inpi in enumerate(inp)]
 
                 contents = {'networks': [{'name': mi.name,
-                                          'batch_size': batch_size,
+                                          'batch_size': 1,
                                           'outputs': {'out': out},
                                           'names': d_dict}],
                             'executors': [{'name': 'runtime',
                                            'network': mi.name,
                                            'data': d_keys,
                                            'output': ['out']}]}
-
-                save(filename, contents)
+                
+                save(filename, contents, variable_batch_size=False)
                 
 
 class TrainNet(SearchNet):

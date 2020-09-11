@@ -34,7 +34,7 @@ def zoph_export():
     
     #import pdb; pdb.set_trace()
 
-    OUTPUT_DIR = './output/'
+    OUTPUT_DIR = './output_3/'
     runme = [
              False, # 0 : currently empty
              False,  # 1 : preliminary creation / exporting tests - sandbox
@@ -77,10 +77,14 @@ def zoph_export():
     #  2 **************************
     if runme[2]:
         zn = zoph.SearchNet()
-        out = zn(input)
+        output = zn(input)
+
         zn_unique_active_modules = get_active_and_profiled_modules(zn)
+
         zn.save(OUTPUT_DIR + 'zn')
+        zn.save_whole_network(OUTPUT_DIR + 'zn')
         zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True)
+        
         with open(OUTPUT_DIR + 'zn.txt', 'w') as f:
             print_me(zn, f)
 
