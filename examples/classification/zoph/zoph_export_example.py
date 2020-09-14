@@ -34,13 +34,13 @@ def zoph_export():
     
     #import pdb; pdb.set_trace()
 
-    OUTPUT_DIR = './output_1/'
+    OUTPUT_DIR = './output_2/'
     runme = [
              False, # 0 : currently empty
-             False,  # 1 : preliminary creation / exporting tests - sandbox
+             False, # 1 : sandbox - preliminary creation / exporting tests
              True,  # 2 : create one instance of zoph network and save it to OUTPUT_DIR
              True,  # 3 : convert all networks in OUTPUT_DIR to onnx
-             False  # 4 : load saved files ancd check them
+             True  # 4 : load one of the saved files and check it
             ]
 
     shape = (10, 3, 32, 32)
@@ -76,6 +76,7 @@ def zoph_export():
     
     #  2 **************************
     if runme[2]:
+        # Sample one ZOPH search space
         zn = zoph.SearchNet()
         output = zn(input)
 
@@ -90,23 +91,16 @@ def zoph_export():
 
     #  3 **************************
     if runme[3]:
-        # NOTE: The actual bash shell command is:
-        # > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
-        # which, for each file found with find, outputs the following:
-        # > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'
-        # which, for each file, generates the final conversion command:
-        # > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
-        os.system('find ' + OUTPUT_DIR + ' -name "*.nnp" -exec echo echo {} \| awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh')
+        zn.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  4 **************************
     if runme[4]:
         #nnp = load(filename)
         #net = nnp.get_network(nnp.get_network_names()[0])
-        #nnp = load('./graphs/zn2/stem_conv_2.nnp')
-        #net_name = nnp.get_network_names()[0]
-        #net = nnp.get_network(net_name)
-        #import pdb; pdb.set_trace()
-        pass
+
+        nnp = load('./output/zn_whole_net.nnp')
+        net_name = nnp.get_network_names()[0]
+        net = nnp.get_network(net_name)
 
 
 if __name__ == '__main__':

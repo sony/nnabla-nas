@@ -561,8 +561,8 @@ class SearchNet(smo.Graph):
 
     @property
     def modules_to_profile(self):
-        return [#smo.Identity, # we do not want to profile Identity modules
-                #smo.Zero,     # we do not want to profile Zero modules
+        return [#smo.Identity, # commented since we do not want to profile Identity modules
+                #smo.Zero,     # commented since we do not want to profile Zero modules
                 smo.Conv,
                 smo.Join,
                 smo.ReLU,
@@ -596,14 +596,6 @@ class SearchNet(smo.Graph):
         for name, module in self.get_modules():
             if isinstance(module,
                           smo.Module) and not isinstance(module, smo.Join):
-                #if isinstance(module, DilSepConv5x5):
-                #    print(type(module))
-                #    print(module._value)
-                #    import pdb; pdb.set_trace()
-                #if isinstance(module, MaxPool3x3) and module._value is not None:
-                #    print(type(module))
-                #    print(module._value)
-                #    import pdb; pdb.set_trace()                    
                 if active_only:
                     if module._value is not None:
                         ans.append(module)
@@ -659,14 +651,25 @@ class SearchNet(smo.Graph):
                 str_summary += str(mi._eval_prob.d) + "\n"
         return str_summary
 
-    # save whole network/graph (in a PDF file)
+
     def save_graph(self, path):
+        """
+            save whole network/graph (in a PDF file)
+            Args:
+                path
+        """
         gvg = self.get_gv_graph()
         gvg.render(path + '/graph')
 
-    # save whole network/graph as nnp file
+
     def save_net_nnp(self, path, inp, out):
-        
+        """
+            Saves whole net as one nnp
+            Args:
+                path
+                inp: input of the created network
+                out: output of the created network
+        """
         batch_size = inp.shape[0]
 
         if self.name is '':
@@ -694,9 +697,14 @@ class SearchNet(smo.Graph):
         save(filename, contents, variable_batch_size=False)
 
 
-    # Save every module of the network as individual nnp, using folder structure given by name convention
     def save_modules_nnp(self, path, active_only=False):
-        # saving individual layers / constructions of layers
+        """
+            Saves all modules of the network as individual nnp files, using folder structure given by name convention
+            Args:
+                path
+                active_only: if True, only active modules are saved
+        """
+
         mods = self.get_net_modules(active_only=active_only)
         for mi in mods:
             if type(mi) in self.modules_to_profile:
@@ -724,7 +732,25 @@ class SearchNet(smo.Graph):
                                            'output': ['out']}]}
                 
                 save(filename, contents, variable_batch_size=False)
-                
+    
+    def convert_npp_to_onnx(self, path):
+        """
+            Finds all nnp files in the given path and its subfolders and converts them to ONNX
+            For this to run smoothly, nnabla_cli must be installed and added to your python path.
+            Args:
+                path
+
+        The actual bash shell command used is:
+        > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
+        which, for each file found with find, outputs the following:
+        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'
+        which, for each file, generates the final conversion command:
+        > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
+
+        """
+
+        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \| awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh')
+        
 
 class TrainNet(SearchNet):
     """
