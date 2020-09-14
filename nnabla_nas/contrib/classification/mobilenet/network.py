@@ -17,6 +17,8 @@ from collections import OrderedDict
 import os
 
 import nnabla.functions as F
+from nnabla.utils.save import save
+
 import numpy as np
 
 from .... import module as Mo
@@ -226,6 +228,57 @@ class SearchNet(Model):
     def loss(self, outputs, targets, loss_weights=None):
         assert len(outputs) == 1 and len(targets) == 1
         return F.mean(label_smoothing_loss(outputs[0], targets[0]))
+
+    def save_net_nnp(self, path, inp, out):
+        """
+            Saves whole net as one nnp
+            Args:
+                path
+                inp: input of the created network
+                out: output of the created network
+        """
+        batch_size = inp.shape[0]
+
+        name = '_whole_net'
+        filename = path + name + '.nnp'
+        pathname = os.path.dirname(filename)
+        if not os.path.exists(pathname):
+            os.mkdir(pathname)
+
+        dict = {'0': inp}
+        keys = ['0']
+
+        contents = {'networks': [{'name': name,
+                                  'batch_size': batch_size,
+                                  'outputs': {'out': out},
+                                  'names': dict}],
+                    'executors': [{'name': 'runtime',
+                                   'network': name,
+                                   'data': keys,
+                                   'output': ['out']}]}
+
+        save(filename, contents, variable_batch_size=False)
+
+    def convert_npp_to_onnx(self, path):
+        """
+            Finds all nnp files in the given path and its subfolders and converts them to ONNX
+            For this to run smoothly, nnabla_cli must be installed and added to your python path.
+            Args:
+                path
+
+        The actual bash shell command used is:
+        > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
+        which, for each file found with find, outputs the following:
+        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'
+        which, for each file, generates the final conversion command:
+        > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
+
+        """
+
+        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'
+                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'
+                 )
+
 
 
 class TrainNet(SearchNet):

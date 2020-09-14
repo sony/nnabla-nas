@@ -2,9 +2,7 @@
 import os
 import nnabla as nn
 
-from nnabla_nas.contrib import zoph
 
-from nnabla.utils.nnp_graph import NnpLoader as load
 
 def print_me(zn,f):
     print(zn.summary(), file=f)
@@ -34,24 +32,22 @@ def zoph_export():
     
     #import pdb; pdb.set_trace()
 
-    OUTPUT_DIR = './output_2/'
     runme = [
-             False, # 0 : currently empty
-             False, # 1 : sandbox - preliminary creation / exporting tests
-             True,  # 2 : create one instance of zoph network and save it to OUTPUT_DIR
-             True,  # 3 : convert all networks in OUTPUT_DIR to onnx
-             True  # 4 : load one of the saved files and check it
+             False, # 0 : sandbox - preliminary creation / exporting tests
+             False, # 1 : create one instance of zoph network, save it and its modules, convert them to ONNX
+             False,  # 2 : sample a set of networks and export all of them (but just the whole net not the modules), export them to ONNX
+             True, # 3 : testing the export for dynamic modules
+             False  # 4 : load one of the saved files and check it
             ]
 
-    shape = (10, 3, 32, 32)
-    input = nn.Variable(shape)
 
     #  0 **************************
     if runme[0]:
-        pass
+        from nnabla_nas.contrib import zoph
 
-    #  1 **************************
-    if runme[1]:
+        shape = (10, 3, 32, 32)
+        input = nn.Variable(shape)
+        
         zn1 = zoph.SearchNet()
 
         zn1a_unique_active_modules = get_active_and_profiled_modules(zn1)
@@ -73,28 +69,68 @@ def zoph_export():
         zn1.save_modules_nnp('./sandbox/zn1c', active_only=True)
         with open('./sandbox/zn1c.txt', 'w') as f:
             print_me(zn1, f)
-    
-    #  2 **************************
-    if runme[2]:
-        # Sample one ZOPH search space
+
+    #  1 **************************
+    if runme[1]:
+        from nnabla_nas.contrib import zoph
+
+        OUTPUT_DIR = './output_1/'
+
+        # Sample one ZOPH network from the search space
+        shape = (10, 3, 32, 32)
+        input = nn.Variable(shape)
         zn = zoph.SearchNet()
         output = zn(input)
 
-        zn_unique_active_modules = get_active_and_profiled_modules(zn)
+        #zn_unique_active_modules = get_active_and_profiled_modules(zn)
 
         zn.save_graph      (OUTPUT_DIR + 'zn')
         zn.save_net_nnp    (OUTPUT_DIR + 'zn', input, output)
         zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True)
-        
+        zn.convert_npp_to_onnx(OUTPUT_DIR)
+
         with open(OUTPUT_DIR + 'zn.txt', 'w') as f:
             print_me(zn, f)
+    
+
+    #  2 **************************
+    if runme[2]:
+        from nnabla_nas.contrib import zoph
+
+        OUTPUT_DIR = './output_2/'
+        
+        shape = (10, 3, 32, 32)
+        input = nn.Variable(shape)
+        N = 10  # number of random networks to sample
+
+        # Sample N zoph networks from the search space
+        for i in range(0,N):
+            zn = zoph.SearchNet()
+            output = zn(input)
+            zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output)
+        zn.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  3 **************************
     if runme[3]:
-        zn.convert_npp_to_onnx(OUTPUT_DIR)
+        from nnabla_nas.contrib.classification.mobilenet import SearchNet
+
+        OUTPUT_DIR = './output_3/'
+        
+        mobile_net = SearchNet(num_classes=1000)
+        input = nn.Variable((1, 3, 224, 224))
+        output = mobile_net(input)
+        
+        mobile_net.save_net_nnp(OUTPUT_DIR + 'mn', input, output)
+        
+        mobile_net.convert_npp_to_onnx(OUTPUT_DIR)
+        
+#assert net(input).shape == (1, net._num_classes)        
+        
 
     #  4 **************************
     if runme[4]:
+        from nnabla.utils.nnp_graph import NnpLoader as load
+
         #nnp = load(filename)
         #net = nnp.get_network(nnp.get_network_names()[0])
 
