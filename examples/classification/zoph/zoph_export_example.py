@@ -34,7 +34,7 @@ def zoph_export():
     
     #import pdb; pdb.set_trace()
 
-    OUTPUT_DIR = './output_4/'
+    OUTPUT_DIR = './output_1/'
     runme = [
              False, # 0 : currently empty
              False,  # 1 : preliminary creation / exporting tests - sandbox
@@ -55,21 +55,21 @@ def zoph_export():
         zn1 = zoph.SearchNet()
 
         zn1a_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save('./sandbox/zn1a')
+        zn1.save_graph('./sandbox/zn1a')
         zn1.save_modules_nnp('./sandbox/zn1a', active_only=True)
         with open('./sandbox/zn1a.txt', 'w') as f:
             print_me(zn1, f)
 
         out1b = zn1(input)
         zn1b_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save('./sandbox/zn1b')
+        zn1.save_graph('./sandbox/zn1b')
         zn1.save_modules_nnp('./sandbox/zn1b', active_only=True)
         with open('./sandbox/zn1b.txt', 'w') as f:
             print_me(zn1, f)
     
         out1c = zn1(input)
         zn1c_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save('./sandbox/zn1c')
+        zn1.save_graph('./sandbox/zn1c')
         zn1.save_modules_nnp('./sandbox/zn1c', active_only=True)
         with open('./sandbox/zn1c.txt', 'w') as f:
             print_me(zn1, f)
@@ -81,8 +81,8 @@ def zoph_export():
 
         zn_unique_active_modules = get_active_and_profiled_modules(zn)
 
-        zn.save(OUTPUT_DIR + 'zn')
-        zn.save_whole_network(OUTPUT_DIR + 'zn')
+        zn.save_graph      (OUTPUT_DIR + 'zn')
+        zn.save_net_nnp    (OUTPUT_DIR + 'zn', input, output)
         zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True)
         
         with open(OUTPUT_DIR + 'zn.txt', 'w') as f:
@@ -102,18 +102,11 @@ def zoph_export():
     if runme[4]:
         #nnp = load(filename)
         #net = nnp.get_network(nnp.get_network_names()[0])
-        nnp = load('./graphs/zn2/stem_conv_2.nnp')
-        net_name = nnp.get_network_names()[0]
-        net = nnp.get_network(net_name)
-        import pdb; pdb.set_trace()
-
-
-
-
-
-
-
-
+        #nnp = load('./graphs/zn2/stem_conv_2.nnp')
+        #net_name = nnp.get_network_names()[0]
+        #net = nnp.get_network(net_name)
+        #import pdb; pdb.set_trace()
+        pass
 
 
 if __name__ == '__main__':

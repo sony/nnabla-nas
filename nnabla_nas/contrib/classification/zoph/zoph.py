@@ -659,19 +659,15 @@ class SearchNet(smo.Graph):
                 str_summary += str(mi._eval_prob.d) + "\n"
         return str_summary
 
-    # save whole network/graph as a PDF
-    def save(self, path):
+    # save whole network/graph (in a PDF file)
+    def save_graph(self, path):
         gvg = self.get_gv_graph()
         gvg.render(path + '/graph')
 
-    # save whole network/graph nnp
-    def save_whole_network(self, path):
+    # save whole network/graph as nnp file
+    def save_net_nnp(self, path, inp, out):
         
-        batch_size = 1
-        shape = (batch_size, 3, 32, 32)
-        
-        inp = nn.Variable(shape)
-        out = self(inp)
+        batch_size = inp.shape[0]
 
         if self.name is '':
             name = '_whole_net'
@@ -698,16 +694,14 @@ class SearchNet(smo.Graph):
         save(filename, contents, variable_batch_size=False)
 
 
-    # save every module as nnp
+    # Save every module of the network as individual nnp, using folder structure given by name convention
     def save_modules_nnp(self, path, active_only=False):
         # saving individual layers / constructions of layers
         mods = self.get_net_modules(active_only=active_only)
         for mi in mods:
             if type(mi) in self.modules_to_profile:
                 
-                #import pdb; pdb.set_trace()
-
-                print(type(mi))
+                #print(type(mi))
                 
                 inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
