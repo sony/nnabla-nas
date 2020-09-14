@@ -749,7 +749,9 @@ class SearchNet(smo.Graph):
 
         """
 
-        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \| awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh')
+        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'
+                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'
+                 )
         
 
 class TrainNet(SearchNet):
