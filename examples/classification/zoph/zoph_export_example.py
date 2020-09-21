@@ -28,16 +28,17 @@ def get_active_and_profiled_modules(zn):
     print('**END PRINT ******************************\n')
     return list
 
-def zoph_export():
+def export_all():
     
     #import pdb; pdb.set_trace()
 
     runme = [
              False, # 0 : sandbox - preliminary creation / exporting tests
-             False, # 1 : create one instance of zoph network, save it and its modules, convert them to ONNX
-             False,  # 2 : sample a set of networks and export all of them (but just the whole net not the modules), export them to ONNX
-             True, # 3 : testing the export for dynamic modules
-             False  # 4 : load one of the saved files and check it
+             False, # 1 : create one instance of ZOPH network, save it and its modules, convert them to ONNX
+             False,  # 2 : sample a set of ZOPH networks and export all of them (but just the whole net not the modules), export them to ONNX
+             True,  # 3 : random wired search space (static).  create one instance of ZOPH network, save it and its modules, convert to ONNX
+             True,  # 4 :  sample a set of RANDOM WIRED networks and export all of them (but just the whole net not the modules), export them to ONNX
+             False, # 5 : testing the export for dynamic modules
             ]
 
 
@@ -112,32 +113,61 @@ def zoph_export():
 
     #  3 **************************
     if runme[3]:
-        from nnabla_nas.contrib.classification.mobilenet import SearchNet
+        from nnabla_nas.contrib import random_wired
 
         OUTPUT_DIR = './output_3/'
+
+        # Sample one random wired network from the search space
+        shape = (10, 3, 32, 32)
+        input = nn.Variable(shape)
+        rw = random_wired.TrainNet()
+        output = rw(input)
+        
+        rw.save_graph      (OUTPUT_DIR + 'rw')
+        rw.save_net_nnp    (OUTPUT_DIR + 'rw', input, output)
+        rw.save_modules_nnp(OUTPUT_DIR + 'rw', active_only=True)
+        rw.convert_npp_to_onnx(OUTPUT_DIR)
+
+
+    #  4 **************************
+    if runme[4]:
+        from nnabla_nas.contrib import random
+
+        OUTPUT_DIR = './output_4/'
+        
+        shape = (10, 3, 32, 32)
+        input = nn.Variable(shape)
+        N = 10  # number of random networks to sample
+
+        # Sample N zoph networks from the search space
+        for i in range(0,N):
+            rw = random_wired.TrainNet()
+            output = rw(input)
+            rw.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output)
+        zn.convert_npp_to_onnx(OUTPUT_DIR)
+
+    #  5 **************************
+    if runme[5]:
+        from nnabla_nas.contrib.classification.mobilenet import SearchNet
+
+        OUTPUT_DIR = './output_5/'
         
         mobile_net = SearchNet(num_classes=1000)
         input = nn.Variable((1, 3, 224, 224))
         output = mobile_net(input)
         
-        mobile_net.save_net_nnp(OUTPUT_DIR + 'mn', input, output)
+        #mobile_net.save_modules_nnp(OUTPUT_DIR + 'mn', True)
+
+        # mobile_net.save_net_nnp(OUTPUT_DIR + 'mn', input, output)
+        # it seems the last affine layer cannot be converted to ONNX (!?),
+        # thus export without it
+        mobile_net.save_net_nnp(OUTPUT_DIR + 'mn', input, output.parent.inputs[0])
         
         mobile_net.convert_npp_to_onnx(OUTPUT_DIR)
         
-#assert net(input).shape == (1, net._num_classes)        
-        
 
-    #  4 **************************
-    if runme[4]:
-        from nnabla.utils.nnp_graph import NnpLoader as load
 
-        #nnp = load(filename)
-        #net = nnp.get_network(nnp.get_network_names()[0])
-
-        nnp = load('./output/zn_whole_net.nnp')
-        net_name = nnp.get_network_names()[0]
-        net = nnp.get_network(net_name)
 
 
 if __name__ == '__main__':
-    zoph_export()
+    export_all()
