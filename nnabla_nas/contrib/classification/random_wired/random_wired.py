@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from collections import OrderedDict
 from copy import deepcopy
 
 import networkx as nx
 import nnabla as nn
+from nnabla.utils.save import save
+
 import numpy as np
 
 from nnabla_nas.contrib.classification.base import ClassificationModel as Model
@@ -67,7 +71,7 @@ class RandomModule(smo.Graph):
                     n_dims=4,
                     n_features=self._channels))
             self.append(
-                smo.ReLU(name='{}/input_conv/relu_{}'.format(self.name, i),
+                smo.ReLU(name='{}/input_conv_relu_{}'.format(self.name, i),
                          parents=[self[-1]]))
 
             projected_inputs.append(self[-1])
@@ -124,7 +128,7 @@ class Conv(RandomModule):
                                            parents=[self[-1]],
                                            n_dims=4,
                                            n_features=self._channels))
-        self.append(smo.ReLU(name='{}/conv/relu'.format(self.name),
+        self.append(smo.ReLU(name='{}/conv_relu'.format(self.name),
                              parents=[self[-1]]))
 
 
@@ -173,7 +177,7 @@ class SepConv(RandomModule):
                                            parents=[self[-1]],
                                            n_dims=4,
                                            n_features=self._channels))
-        self.append(smo.ReLU(name='{}/conv/relu'.format(self.name),
+        self.append(smo.ReLU(name='{}/conv_relu'.format(self.name),
                              parents=[self[-1]]))
 
 
@@ -459,7 +463,23 @@ class TrainNet(Model, smo.Graph):
     @property
     def input_shapes(self):
         return [self[0].shape]
-
+    
+    @property
+    def modules_to_profile(self):
+        return [smo.ReLU,
+                smo.BatchNormalization,
+                smo.Merging,
+                smo.Conv,
+                smo.MaxPool,
+                Conv,
+                SepConv,
+                SepConv3x3,
+                SepConv5x5,
+                MaxPool2x2,
+                AvgPool2x2,
+                RandomModule,
+                ]
+    
     def get_arch_modules(self):
         ans = []
         for name, module in self.get_modules():
@@ -527,9 +547,106 @@ class TrainNet(Model, smo.Graph):
                 str_summary += str(mi._eval_prob.d) + "\n"
         return str_summary
 
-    def save(self, output_path):
+    def save_graph(self, path):
+        """
+            save whole network/graph (in a PDF file)
+            Args:
+                path
+        """
         gvg = self.get_gv_graph()
-        gvg.render(output_path+'/graph')
+        gvg.render(path + '/graph')
+
+    def save_net_nnp(self, path, inp, out):
+        """
+            Saves whole net as one nnp
+            Args:
+                path
+                inp: input of the created network
+                out: output of the created network
+        """
+        batch_size = inp.shape[0]
+
+        if self.name is '':
+            name = '_whole_net'
+        else:
+            name = '_' + self.name
+
+        filename = path + name + '.nnp'
+        pathname = os.path.dirname(filename)
+        if not os.path.exists(pathname):
+            os.mkdir(pathname)
+
+        dict = {'0': inp}
+        keys = ['0']
+
+        contents = {'networks': [{'name': name,
+                                  'batch_size': batch_size,
+                                  'outputs': {'out': out},
+                                  'names': dict}],
+                    'executors': [{'name': 'runtime',
+                                   'network': name,
+                                   'data': keys,
+                                   'output': ['out']}]}
+
+        save(filename, contents, variable_batch_size=False)
+
+
+    def save_modules_nnp(self, path, active_only=False):
+        """
+            Saves all modules of the network as individual nnp files, using folder structure given by name convention
+            Args:
+                path
+                active_only: if True, only active modules are saved
+        """
+
+        mods = self.get_net_modules(active_only=active_only)
+        for mi in mods:
+            print(type(mi))
+            if type(mi) in self.modules_to_profile:
+                
+                #print(type(mi))
+                
+                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                out = mi.call(*inp)
+
+                filename = path + mi.name + '.nnp'
+                pathname = os.path.dirname(filename)
+                if not os.path.exists(pathname):
+                    os.mkdir(pathname)
+
+                d_dict = {str(i): inpi for i, inpi in enumerate(inp)}
+                d_keys = [str(i) for i, inpi in enumerate(inp)]
+
+                contents = {'networks': [{'name': mi.name,
+                                          'batch_size': 1,
+                                          'outputs': {'out': out},
+                                          'names': d_dict}],
+                            'executors': [{'name': 'runtime',
+                                           'network': mi.name,
+                                           'data': d_keys,
+                                           'output': ['out']}]}
+                
+                save(filename, contents, variable_batch_size=False)
+    
+    def convert_npp_to_onnx(self, path):
+        """
+            Finds all nnp files in the given path and its subfolders and converts them to ONNX
+            For this to run smoothly, nnabla_cli must be installed and added to your python path.
+            Args:
+                path
+
+        The actual bash shell command used is:
+        > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
+        which, for each file found with find, outputs the following:
+        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'
+        which, for each file, generates the final conversion command:
+        > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
+
+        """
+
+        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'
+                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'
+                 )
 
 
 if __name__ == '__main__':
