@@ -52,30 +52,30 @@ def export_all():
         zn1 = zoph.SearchNet()
 
         zn1a_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save_graph('./sandbox/zn1a')
-        zn1.save_modules_nnp('./sandbox/zn1a', active_only=True)
-        with open('./sandbox/zn1a.txt', 'w') as f:
+        zn1.save_graph('./logs/sandbox/zn1a')
+        zn1.save_modules_nnp('./logs/sandbox/zn1a', active_only=True)
+        with open('./logs/sandbox/zn1a.txt', 'w') as f:
             print_me(zn1, f)
 
         out1b = zn1(input)
         zn1b_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save_graph('./sandbox/zn1b')
-        zn1.save_modules_nnp('./sandbox/zn1b', active_only=True)
-        with open('./sandbox/zn1b.txt', 'w') as f:
+        zn1.save_graph('./logs/sandbox/zn1b')
+        zn1.save_modules_nnp('./logs/sandbox/zn1b', active_only=True)
+        with open('./logs/sandbox/zn1b.txt', 'w') as f:
             print_me(zn1, f)
     
         out1c = zn1(input)
         zn1c_unique_active_modules = get_active_and_profiled_modules(zn1)
-        zn1.save_graph('./sandbox/zn1c')
-        zn1.save_modules_nnp('./sandbox/zn1c', active_only=True)
-        with open('./sandbox/zn1c.txt', 'w') as f:
+        zn1.save_graph('./logs/sandbox/zn1c')
+        zn1.save_modules_nnp('./logs/sandbox/zn1c', active_only=True)
+        with open('./logs/sandbox/zn1c.txt', 'w') as f:
             print_me(zn1, f)
 
     #  1 **************************
     if runme[1]:
         from nnabla_nas.contrib import zoph
 
-        OUTPUT_DIR = './output_1/'
+        OUTPUT_DIR = './logs/zoph/modules/'
 
         # Sample one ZOPH network from the search space
         shape = (10, 3, 32, 32)
@@ -98,7 +98,7 @@ def export_all():
     if runme[2]:
         from nnabla_nas.contrib import zoph
 
-        OUTPUT_DIR = './output_2/'
+        OUTPUT_DIR = './logs/zoph/whole/'
         
         shape = (10, 3, 32, 32)
         input = nn.Variable(shape)
@@ -115,7 +115,7 @@ def export_all():
     if runme[3]:
         from nnabla_nas.contrib import random_wired
 
-        OUTPUT_DIR = './output_3/'
+        OUTPUT_DIR = './logs/rdn/modules/'
 
         # Sample one random wired network from the search space
         shape = (10, 3, 32, 32)
@@ -131,9 +131,9 @@ def export_all():
 
     #  4 **************************
     if runme[4]:
-        from nnabla_nas.contrib import random
+        from nnabla_nas.contrib import random_wired
 
-        OUTPUT_DIR = './output_4/'
+        OUTPUT_DIR = './logs/rdn/whole/'
         
         shape = (10, 3, 32, 32)
         input = nn.Variable(shape)
@@ -143,14 +143,14 @@ def export_all():
         for i in range(0,N):
             rw = random_wired.TrainNet()
             output = rw(input)
-            rw.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output)
-        zn.convert_npp_to_onnx(OUTPUT_DIR)
+            rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output)
+        rw.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  5 **************************
     if runme[5]:
         from nnabla_nas.contrib.classification.mobilenet import SearchNet
 
-        OUTPUT_DIR = './output_5/'
+        OUTPUT_DIR = './logs/output_runme_5/'
         
         mobile_net = SearchNet(num_classes=1000)
         input = nn.Variable((1, 3, 224, 224))
