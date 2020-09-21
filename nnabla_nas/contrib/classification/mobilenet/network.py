@@ -19,6 +19,7 @@ import os
 import nnabla.functions as F
 from nnabla.utils.save import save
 
+import nnabla as nn
 import numpy as np
 
 from .... import module as Mo
@@ -27,6 +28,7 @@ from .helper import plot_mobilenet
 from .modules import CANDIDATES
 from .modules import ChoiceBlock
 from .modules import ConvBNReLU
+from .modules import InvertedResidual
 
 
 def _make_divisible(x, divisible_by=8):
@@ -147,6 +149,24 @@ class SearchNet(Model):
             Mo.Linear(self.last_channel, num_classes),
         )
 
+    @property
+    def modules_to_profile(self):
+        return [Mo.Sequential,
+                ConvBNReLU,
+                Mo.Conv,
+                Mo.BatchNormalization,
+                Mo.ReLU6,
+                ChoiceBlock,
+                InvertedResidual,
+                Mo.ModuleList,
+                Mo.Dropout,
+                Mo.Identity,
+                Mo.Linear,
+                Mo.MixedOp,
+                Mo.GlobalAvgPool
+                ]
+
+
     def get_net_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing model parameters.
 
@@ -228,6 +248,60 @@ class SearchNet(Model):
     def loss(self, outputs, targets, loss_weights=None):
         assert len(outputs) == 1 and len(targets) == 1
         return F.mean(label_smoothing_loss(outputs[0], targets[0]))
+
+
+    def get_net_modules(self, active_only=False):
+        ans = []
+        for name, module in self.get_modules():
+            if isinstance(module, Mo.Module): #and not isinstance(module, smo.Join)
+                ans.append(module)
+        return ans
+
+    def save_modules_nnp(self, path, active_only=False):
+        """
+            *** This script does not work  ***
+            since the input shapes of the CANDIDATES are only defined at run time!
+
+            Saves all modules of the network as individual nnp files,
+            using folder structure given by name convention
+            
+            Args:
+                path
+                active_only: if True, only active modules are saved
+        """
+        mods = self.get_net_modules()
+        idx = 0
+        for mi in mods:
+            if type(mi) in self.modules_to_profile:
+                if len(mi.input_shapes) == 0:
+                    print('NOT DEFINED: ', type(mi))
+                    continue
+                pass
+
+                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                out = mi.call(*inp)
+
+                filename = path + mi.__module__ + '_' + str(idx) + '.nnp'
+                pathname = os.path.dirname(filename)
+                if not os.path.exists(pathname):
+                    os.mkdir(pathname)
+
+                d_dict = {str(i): inpi for i, inpi in enumerate(inp)}
+                d_keys = [str(i) for i, inpi in enumerate(inp)]
+
+                contents = {'networks': [{'name': mi.__module__,
+                                          'batch_size': 1,
+                                          'outputs': {'out': out},
+                                          'names': d_dict}],
+                            'executors': [{'name': 'runtime',
+                                           'network': mi.__module__,
+                                           'data': d_keys,
+                                           'output': ['out']}]}
+                
+                save(filename, contents, variable_batch_size=False)
+                idx = idx + 1
+
+        #import pdb; pdb.set_trace()
 
     def save_net_nnp(self, path, inp, out):
         """
