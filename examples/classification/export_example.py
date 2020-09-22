@@ -1,6 +1,7 @@
-
+import sys
 import os
 import nnabla as nn
+import glob
 
 
 
@@ -28,22 +29,10 @@ def get_active_and_profiled_modules(zn):
     print('**END PRINT ******************************\n')
     return list
 
-def export_all():
+def export_all(runme):
     
-    #import pdb; pdb.set_trace()
-
-    runme = [
-             False, # 0 : sandbox - preliminary creation / exporting tests
-             False, # 1 : create one instance of ZOPH network, save it and its modules, convert them to ONNX
-             False,  # 2 : sample a set of ZOPH networks and export all of them (but just the whole net not the modules), export them to ONNX
-             True,  # 3 : random wired search space (static).  create one instance of ZOPH network, save it and its modules, convert to ONNX
-             True,  # 4 :  sample a set of RANDOM WIRED networks and export all of them (but just the whole net not the modules), export them to ONNX
-             False, # 5 : testing the export for dynamic modules
-            ]
-
-
     #  0 **************************
-    if runme[0]:
+    if runme is '0':
         from nnabla_nas.contrib import zoph
 
         shape = (10, 3, 32, 32)
@@ -72,10 +61,10 @@ def export_all():
             print_me(zn1, f)
 
     #  1 **************************
-    if runme[1]:
+    if runme is '1':
         from nnabla_nas.contrib import zoph
 
-        OUTPUT_DIR = './logs/zoph/modules/'
+        OUTPUT_DIR = './logs/zoph/one_net/'
 
         # Sample one ZOPH network from the search space
         shape = (10, 3, 32, 32)
@@ -90,32 +79,34 @@ def export_all():
         zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True)
         zn.convert_npp_to_onnx(OUTPUT_DIR)
 
-        with open(OUTPUT_DIR + 'zn.txt', 'w') as f:
-            print_me(zn, f)
+        #with open(OUTPUT_DIR + 'zn.txt', 'w') as f:
+        #    print_me(zn, f)
     
 
     #  2 **************************
-    if runme[2]:
+    if runme is '2':
         from nnabla_nas.contrib import zoph
 
-        OUTPUT_DIR = './logs/zoph/whole/'
+        OUTPUT_DIR = './logs/zoph/many_nets/'
         
         shape = (10, 3, 32, 32)
         input = nn.Variable(shape)
-        N = 10  # number of random networks to sample
+        N = 5  # number of random networks to sample
 
         # Sample N zoph networks from the search space
         for i in range(0,N):
             zn = zoph.SearchNet()
             output = zn(input)
+            zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
             zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output)
+            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True)
         zn.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  3 **************************
-    if runme[3]:
+    if runme is '3':
         from nnabla_nas.contrib import random_wired
 
-        OUTPUT_DIR = './logs/rdn/modules/'
+        OUTPUT_DIR = './logs/rdn/one_net/'
 
         # Sample one random wired network from the search space
         shape = (10, 3, 32, 32)
@@ -130,24 +121,26 @@ def export_all():
 
 
     #  4 **************************
-    if runme[4]:
+    if runme is '4':
         from nnabla_nas.contrib import random_wired
 
-        OUTPUT_DIR = './logs/rdn/whole/'
+        OUTPUT_DIR = './logs/rdn/many_nets/'
         
         shape = (10, 3, 32, 32)
         input = nn.Variable(shape)
-        N = 10  # number of random networks to sample
+        N = 5  # number of random networks to sample
 
-        # Sample N zoph networks from the search space
+        # Sample N random wired networks from the search space
         for i in range(0,N):
             rw = random_wired.TrainNet()
             output = rw(input)
+            rw.save_graph      (OUTPUT_DIR + 'rw' + str(i))
             rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output)
+            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True)
         rw.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  5 **************************
-    if runme[5]:
+    if runme is '5':
         from nnabla_nas.contrib.classification.mobilenet import SearchNet
 
         OUTPUT_DIR = './logs/output_runme_5/'
@@ -164,10 +157,47 @@ def export_all():
         mobile_net.save_net_nnp(OUTPUT_DIR + 'mn', input, output.parent.inputs[0])
         
         mobile_net.convert_npp_to_onnx(OUTPUT_DIR)
+    
+    #  6 **************************        
+    if runme is '6':
+        from nnabla.utils.nnp_graph import NnpLoader as load
+ 
+        for filename in glob.glob('./logs/zoph/one_net/zn/**/*.nnp', recursive=True):
+            #if 'zn.nnp' in filename:
+            #    import pdb; pdb.set_trace()
+
+            print(filename)
+            nnp = load(filename)
+            net_name = nnp.get_network_names()[0]
+            net = nnp.get_network(net_name)
         
+            params = nnp.network_dict[list(nnp.network_dict.keys())[0]]
 
-
+            print(net.inputs)
+            print(net.outputs)
+            for fx in params.function:
+                #print(fx.type)
+                print(fx)
+            
+            #import pdb; pdb.set_trace()
+        
+        #nnp = load('./logs/zoph/modules/zn/output_conv_1.nnp')
 
 
 if __name__ == '__main__':
-    export_all()
+    # import pdb; pdb.set_trace()
+    if len(sys.argv) > 1:
+        export_all(sys.argv[1])
+    else:
+        print('Usage: python export_example.py <NUM>')
+        print('Possible values for NUM:')
+        print('# 0 : sandbox -  creation / exporting tests')
+        print('# 1 : create 1 instance of ZOPH network,                      save it and its modules,     convert to ONNX')
+        print('# 2 : Sample a set of N ZOPH networks,         export all of them (whole net and modules), convert to ONNX')
+        print('# 3 : create 1 instance of random wired search space network, save it and its modules,     convert to ONNX')
+        print('# 4 : Sample a set of N RANDOM WIRED networks, export all of them (whole net and modules), convert to ONNX')
+        print('# 5 : WIP: the export for dynamic modules')
+        print('# 6 : WIP: load nnp and read params')
+    pass
+
+    
