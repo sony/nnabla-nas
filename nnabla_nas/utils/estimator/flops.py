@@ -53,7 +53,7 @@ def depthwise_convolution(func):
     return num_channelwise + num_depthwise
 
 
-def elementwise_operation(func):
+def basic_operation(func):
     r"""Returns the number of FLOPs for a basic function."""
     return np.prod(func.inputs[0].shape[1:])
 
@@ -91,24 +91,24 @@ class _Visitor():
             'AveragePooling': average_pooling,
             'GlobalAveragePooling': global_average_pooling,
 
-            'Add2': elementwise_operation,
-            'Sub2': elementwise_operation,
-            'Div2': elementwise_operation,
-            'Mul2': elementwise_operation,
-            'Pow2': elementwise_operation,
+            'Add2': basic_operation,
+            'Sub2': basic_operation,
+            'Div2': basic_operation,
+            'Mul2': basic_operation,
+            'Pow2': basic_operation,
 
-            'AddScalar': elementwise_operation,
-            'PowScalar': elementwise_operation,
-            'MulScalar': elementwise_operation,
+            'AddScalar': basic_operation,
+            'PowScalar': basic_operation,
+            'MulScalar': basic_operation,
 
-            'Sum': elementwise_operation,
-            'Mean': elementwise_operation,
-            'ReLu': elementwise_operation,
-            'SELU': elementwise_operation,
-            'Tanh': elementwise_operation,
-            'LeakyReLU': elementwise_operation,
-            'ReLU6': elementwise_operation,
-            'Sigmoid': elementwise_operation,
+            'Sum': basic_operation,
+            'Mean': basic_operation,
+            'ReLu': basic_operation,
+            'SELU': basic_operation,
+            'Tanh': basic_operation,
+            'LeakyReLU': basic_operation,
+            'ReLU6': basic_operation,
+            'Sigmoid': basic_operation,
         }
 
         self.reset()
