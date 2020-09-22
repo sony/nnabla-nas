@@ -28,4 +28,4 @@ def test_FLOPsEstimator():
     z = F.global_average_pooling(z)
 
     est = FLOPsEstimator()
-    assert est.predict(z) == 20524
+    assert est.predict(z) == 17644
