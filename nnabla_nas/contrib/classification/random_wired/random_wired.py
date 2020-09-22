@@ -566,10 +566,11 @@ class TrainNet(Model, smo.Graph):
         """
         batch_size = inp.shape[0]
 
-        if self.name is '':
-            name = '_whole_net'
-        else:
-            name = '_' + self.name
+        #if self.name is '':
+        #    name = '_whole_net'
+        #else:
+        #    name = '_' + self.name
+        name = self.name
 
         filename = path + name + '.nnp'
         pathname = os.path.dirname(filename)
