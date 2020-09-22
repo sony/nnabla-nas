@@ -108,7 +108,7 @@ class _Visitor():
             'Tanh': elementwise_operation,
             'LeakyReLU': elementwise_operation,
             'ReLU6': elementwise_operation,
-            'ReLU6': elementwise_operation,
+            'Sigmoid': elementwise_operation,
         }
 
         self.reset()
