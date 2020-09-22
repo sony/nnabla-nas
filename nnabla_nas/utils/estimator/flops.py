@@ -103,7 +103,7 @@ class _Visitor():
 
             'Sum': basic_operation,
             'Mean': basic_operation,
-            'ReLu': basic_operation,
+            'ReLU': basic_operation,
             'SELU': basic_operation,
             'Tanh': basic_operation,
             'LeakyReLU': basic_operation,
