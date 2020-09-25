@@ -160,11 +160,67 @@ def export_all(runme):
     
     #  6 **************************        
     if runme is '6':
+        import onnx
+        
+        INPUT_DIR = './logs/zoph/many_nets/'
+
+        existing_networks = glob.glob(INPUT_DIR + '/*' + os.path.sep)
+        all_net_latencies = dict.fromkeys([])
+        net_idx = 0
+        for network in existing_networks:
+            all_blocks = glob.glob(network + '**/*.onnx', recursive=True)
+            blocks = dict.fromkeys([])
+            block_idx = 0
+            accumulated_latency = 0
+            for filename in all_blocks:
+                print('.... READING .... -->  ' + filename)
+
+                # Interesting FIELDS in params.graph: 'input', 'name', 'node', 'output'
+                params = onnx.load(filename)
+            
+                latency = 0 # @TODO load latency of each of the blocks in here
+                accumulated_latency += latency
+
+                this_block = dict.fromkeys([])
+                this_block['latency'] = latency
+                this_block['name']    = params.graph.name
+                this_block['input']   = params.graph.input
+                this_block['output']  = params.graph.output
+                this_block['nodes']   = params.graph.node
+                blocks[block_idx] = this_block
+                block_idx += 1
+
+            whole_net  = network[:-1] + '.onnx'
+            print('xxxx READING xxxx -->  ' + whole_net)
+            params = onnx.load(whole_net)
+        
+            net_latency = 0 # @TODO load latency of whole network in here
+        
+            net = dict.fromkeys([])
+            net['latency'] = net_latency
+            net['name']    = params.graph.name
+            net['input']   = params.graph.input
+            net['output']  = params.graph.output
+            net['nodes']   = params.graph.node
+
+            all_net_latencies[net_idx] = [net_latency, accumulated_latency]
+
+            net_idx += 1
+
+
+        # Compare accumulated latency to net latencies, do a plot:
+
+
+
+        
+        import pdb; pdb.set_trace()
+
+    #  7 **************************        
+    if runme is '7':
         from nnabla.utils.nnp_graph import NnpLoader as load
- 
         for filename in glob.glob('./logs/zoph/one_net/zn/**/*.nnp', recursive=True):
-            #if 'zn.nnp' in filename:
-            #    import pdb; pdb.set_trace()
+            if 'SepConv' in filename:
+                import pdb; pdb.set_trace()
 
             print(filename)
             nnp = load(filename)
@@ -179,10 +235,6 @@ def export_all(runme):
                 #print(fx.type)
                 print(fx)
             
-            #import pdb; pdb.set_trace()
-        
-        #nnp = load('./logs/zoph/modules/zn/output_conv_1.nnp')
-
 
 if __name__ == '__main__':
     # import pdb; pdb.set_trace()
@@ -197,7 +249,8 @@ if __name__ == '__main__':
         print('# 3 : create 1 instance of random wired search space network, save it and its modules,     convert to ONNX')
         print('# 4 : Sample a set of N RANDOM WIRED networks, export all of them (whole net and modules), convert to ONNX')
         print('# 5 : WIP: the export for dynamic modules')
-        print('# 6 : WIP: load nnp and read params')
+        print('# 6 : WIP: load ONNXs, load latencies, put everything on dictionary')
+        print('# 7 : WIP: load nnp files')
     pass
 
     
