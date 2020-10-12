@@ -662,13 +662,14 @@ class SearchNet(smo.Graph):
         gvg.render(path + '/graph')
 
 
-    def save_net_nnp(self, path, inp, out):
+    def save_net_nnp(self, path, inp, out, save_latency=False):
         """
             Saves whole net as one nnp
             Args:
                 path
                 inp: input of the created network
                 out: output of the created network
+                save_latency: calculate and save also latency
         """
         batch_size = inp.shape[0]
 
@@ -697,21 +698,31 @@ class SearchNet(smo.Graph):
 
         save(filename, contents, variable_batch_size=False)
 
+        if save_latency:
+            from nnabla_nas.utils.estimator import LatencyEstimator
+            estimation = LatencyEstimator(n_run = 100)
+            latency = estimation.get_estimation(self)
+            filename = path + name + '.lat'
+            with open(filename, 'w') as f:
+                print(latency.__str__(), file=f)
 
-    def save_modules_nnp(self, path, active_only=False):
+
+
+    def save_modules_nnp(self, path, active_only=False, save_latency=False):
         """
             Saves all modules of the network as individual nnp files, using folder structure given by name convention
             Args:
                 path
                 active_only: if True, only active modules are saved
         """
+        from nnabla_nas.utils.estimator import LatencyEstimator
 
         mods = self.get_net_modules(active_only=active_only)
         for mi in mods:
             if type(mi) in self.modules_to_profile:
                 
                 #print(type(mi))
-                
+
                 inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
 
@@ -734,6 +745,14 @@ class SearchNet(smo.Graph):
                 
                 save(filename, contents, variable_batch_size=False)
     
+                if save_latency:
+                    estimation = LatencyEstimator(n_run = 100)
+                    latency = estimation.get_estimation(mi)
+                    filename = path + mi.name + '.lat'
+                    with open(filename, 'w') as f:
+                        print(latency.__str__(), file=f)
+
+
     def convert_npp_to_onnx(self, path):
         """
             Finds all nnp files in the given path and its subfolders and converts them to ONNX

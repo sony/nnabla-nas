@@ -2,6 +2,7 @@ import sys
 import os
 import nnabla as nn
 import glob
+from nnabla_nas.utils.estimator import LatencyEstimator
 
 
 
@@ -35,7 +36,7 @@ def export_all(runme):
     if runme is '0':
         from nnabla_nas.contrib import zoph
 
-        shape = (10, 3, 32, 32)
+        shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
         
         zn1 = zoph.SearchNet()
@@ -67,21 +68,30 @@ def export_all(runme):
         OUTPUT_DIR = './logs/zoph/one_net/'
 
         # Sample one ZOPH network from the search space
-        shape = (10, 3, 32, 32)
+        shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
         zn = zoph.SearchNet()
         output = zn(input)
-
+        
         #zn_unique_active_modules = get_active_and_profiled_modules(zn)
 
+        # GRAPH PDF
         zn.save_graph      (OUTPUT_DIR + 'zn')
-        zn.save_net_nnp    (OUTPUT_DIR + 'zn', input, output)
-        zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True)
+
+        # WHOLE NET incl. latency
+        zn.save_net_nnp    (OUTPUT_DIR + 'zn', input, output, save_latency=True)
+
+        # MODULES incl. latency
+        zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True, save_latency=True)
+        
+        # CONVERT TO ONNX
         zn.convert_npp_to_onnx(OUTPUT_DIR)
 
+        # VERBOSITY - INFO OF NETWORK CONTENT
         #with open(OUTPUT_DIR + 'zn.txt', 'w') as f:
         #    print_me(zn, f)
-    
+
+   
 
     #  2 **************************
     if runme is '2':
@@ -89,7 +99,7 @@ def export_all(runme):
 
         OUTPUT_DIR = './logs/zoph/many_nets/'
         
-        shape = (10, 3, 32, 32)
+        shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
         N = 5  # number of random networks to sample
 
@@ -98,8 +108,8 @@ def export_all(runme):
             zn = zoph.SearchNet()
             output = zn(input)
             zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
-            zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output)
-            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True)
+            zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, save_latency=True)
+            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
         zn.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  3 **************************
@@ -109,7 +119,7 @@ def export_all(runme):
         OUTPUT_DIR = './logs/rdn/one_net/'
 
         # Sample one random wired network from the search space
-        shape = (10, 3, 32, 32)
+        shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
         rw = random_wired.TrainNet()
         output = rw(input)
@@ -126,7 +136,7 @@ def export_all(runme):
 
         OUTPUT_DIR = './logs/rdn/many_nets/'
         
-        shape = (10, 3, 32, 32)
+        shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
         N = 5  # number of random networks to sample
 
@@ -161,7 +171,7 @@ def export_all(runme):
     #  6 **************************        
     if runme is '6':
         import onnx
-        
+
         INPUT_DIR = './logs/zoph/many_nets/'
 
         existing_networks = glob.glob(INPUT_DIR + '/*' + os.path.sep)
@@ -193,8 +203,11 @@ def export_all(runme):
             whole_net  = network[:-1] + '.onnx'
             print('xxxx READING xxxx -->  ' + whole_net)
             params = onnx.load(whole_net)
-        
+
+
             net_latency = 0 # @TODO load latency of whole network in here
+
+
         
             net = dict.fromkeys([])
             net['latency'] = net_latency
@@ -209,7 +222,6 @@ def export_all(runme):
 
 
         # Compare accumulated latency to net latencies, do a plot:
-
 
 
         
