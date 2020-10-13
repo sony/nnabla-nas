@@ -182,13 +182,17 @@ def export_all(runme):
             blocks = dict.fromkeys([])
             block_idx = 0
             accumulated_latency = 0
-            for filename in all_blocks:
-                print('.... READING .... -->  ' + filename)
+            for block in all_blocks:
+                print('.... READING .... -->  ' + block)
 
                 # Interesting FIELDS in params.graph: 'input', 'name', 'node', 'output'
-                params = onnx.load(filename)
-            
-                latency = 0 # @TODO load latency of each of the blocks in here
+                params = onnx.load(block)
+
+                # Reading latency for each of the blocks of layers
+                block_lat = block[:-5] + '.lat'
+                with open(block_lat, 'r') as f:
+                    latency = float(f.read())
+
                 accumulated_latency += latency
 
                 this_block = dict.fromkeys([])
@@ -200,15 +204,14 @@ def export_all(runme):
                 blocks[block_idx] = this_block
                 block_idx += 1
 
-            whole_net  = network[:-1] + '.onnx'
-            print('xxxx READING xxxx -->  ' + whole_net)
-            params = onnx.load(whole_net)
+            net_file  = network[:-1] + '.onnx'
+            print('xxxx READING xxxx -->  ' + net_file)
+            params = onnx.load(net_file)
 
+            net_lat_file = net_file[:-5] + '.lat'
+            with open(net_lat_file, 'r') as f:
+                net_latency = float(f.read())
 
-            net_latency = 0 # @TODO load latency of whole network in here
-
-
-        
             net = dict.fromkeys([])
             net['latency'] = net_latency
             net['name']    = params.graph.name
@@ -220,10 +223,7 @@ def export_all(runme):
 
             net_idx += 1
 
-
         # Compare accumulated latency to net latencies, do a plot:
-
-
         
         import pdb; pdb.set_trace()
 
