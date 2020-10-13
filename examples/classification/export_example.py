@@ -175,13 +175,14 @@ def export_all(runme):
         INPUT_DIR = './logs/zoph/many_nets/'
 
         existing_networks = glob.glob(INPUT_DIR + '/*' + os.path.sep)
-        all_net_latencies = dict.fromkeys([])
+        all_nets_latencies = dict.fromkeys([])
+        all_nets = dict.fromkeys([])
         net_idx = 0
         for network in existing_networks:
             all_blocks = glob.glob(network + '**/*.onnx', recursive=True)
             blocks = dict.fromkeys([])
             block_idx = 0
-            accumulated_latency = 0
+            this_net_accumulated_latency = 0
             for block in all_blocks:
                 print('.... READING .... -->  ' + block)
 
@@ -191,12 +192,12 @@ def export_all(runme):
                 # Reading latency for each of the blocks of layers
                 block_lat = block[:-5] + '.lat'
                 with open(block_lat, 'r') as f:
-                    latency = float(f.read())
+                    block_latency = float(f.read())
 
-                accumulated_latency += latency
+                this_net_accumulated_latency += block_latency
 
                 this_block = dict.fromkeys([])
-                this_block['latency'] = latency
+                this_block['latency'] = block_latency
                 this_block['name']    = params.graph.name
                 this_block['input']   = params.graph.input
                 this_block['output']  = params.graph.output
@@ -208,24 +209,26 @@ def export_all(runme):
             print('xxxx READING xxxx -->  ' + net_file)
             params = onnx.load(net_file)
 
-            net_lat_file = net_file[:-5] + '.lat'
+            net_lat_file = network[:-1] + '.lat'
             with open(net_lat_file, 'r') as f:
-                net_latency = float(f.read())
+                this_net_latency = float(f.read())
 
-            net = dict.fromkeys([])
-            net['latency'] = net_latency
-            net['name']    = params.graph.name
-            net['input']   = params.graph.input
-            net['output']  = params.graph.output
-            net['nodes']   = params.graph.node
+            this_net = dict.fromkeys([])
+            this_net['latency'] = this_net_latency
+            this_net['accum_latency'] = this_net_accumulated_latency
+            this_net['name']    = params.graph.name
+            this_net['input']   = params.graph.input
+            this_net['output']  = params.graph.output
+            this_net['nodes']   = params.graph.node
 
-            all_net_latencies[net_idx] = [net_latency, accumulated_latency]
+            all_nets_latencies[net_idx] = [this_net_latency, this_net_accumulated_latency]
+            all_nets          [net_idx] = this_net
 
             net_idx += 1
 
         # Compare accumulated latency to net latencies, do a plot:
         
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
 
     #  7 **************************        
     if runme is '7':
