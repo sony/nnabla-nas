@@ -20,17 +20,15 @@ import nnabla.functions as F
 from nnabla.utils.save import save
 import numpy as np
 
-from nnabla_nas.contrib.classification import misc
-
 #import nnabla_nas.module as mo
 from .... import module as mo
 from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
 
 
-class SepConv(misc.SepConv, smo.Module):
-    r"""
-    A static separable convolution
+class SepConv(smo.Graph):
+    """
+    A static separable convolution (DepthWise conv + PointWise conv) 
 
     Args:
         parents (list): a list of static modules that
@@ -46,48 +44,52 @@ class SepConv(misc.SepConv, smo.Module):
             (width) two-dimensional kernel, specify (3,5).
         pad (:obj:`tuple` of :obj:`int`, optional): Padding sizes for
             dimensions. Defaults to None.
-        stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
-            dimensions. Defaults to None.
         dilation (:obj:`tuple` of :obj:`int`, optional): Dilation sizes for
             dimensions. Defaults to None.
-        group (int, optional): Number of groups of channels. This makes
-            connections across channels more sparse by grouping connections
-            along map direction. Defaults to 1.
-        w_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
-            Initializer for weight. By default, it is initialized with
-            :obj:`nnabla.initializer.UniformInitializer` within the range
-            determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
-        b_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
-            Initializer for bias. By default, it is initialized with zeros if
-            `with_bias` is `True`.
-        base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
-            treated as the sample dimensions. Defaults to 1.
-        fix_parameters (bool, optional): When set to `True`, the weights and
-            biases will not be updated. Defaults to `False`.
-        rng (numpy.random.RandomState, optional): Random generator for
-            Initializer.  Defaults to None.
         with_bias (bool, optional): Specify whether to include the bias term.
             Defaults to `True`.
-        channel_last(bool, optional): If True, the last dimension is
-            considered as channel dimension, a.k.a NHWC order. Defaults to
-            `False`.
-    """
 
-    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
-        misc.SepConv.__init__(self, *args, **kwargs)
-        smo.Module.__init__(self,
-                            parents=parents,
-                            name=name,
-                            eival_prob=eval_prob)
-        if len(self._parents) > 1:
-            raise RuntimeError
+    """
+    def __init__(self, parents,
+                in_channels, out_channels, 
+                kernel, pad, dilation, with_bias,
+                name='', eval_prob=None):
+
+        smo.Graph.__init__(self,
+                           parents=parents,
+                           name=name,
+                           eval_prob=eval_prob,
+                           )
+        
+        # add DepthWiseConvolution
+        dw_conv = smo.DwConv(name='{}/dwconv'.format(self.name),
+                            parents=self.parents,
+                            eval_prob=eval_prob,
+                            in_channels=in_channels,
+                            kernel=kernel,
+                            pad=pad,
+                            dilation=dilation,
+                            with_bias=with_bias,
+                            )
+        self.append(dw_conv)
+
+        # add PointWisewConvolution
+        conv = smo.Conv(name='{}/pwconv'.format(self.name),
+                        parents=[dw_conv],
+                        eval_prob=eval_prob,
+                        in_channels=in_channels,
+                        out_channels=out_channels,
+                        kernel=(1, 1),
+                        pad=None,
+                        group=1,
+                        with_bias=False,
+                        )
+        self.append(conv)
 
 
 class SepConvBN(smo.Graph):
     """
-    A static separable convolution that applies batchnorm and relu at the end.
+    Two static separable convolutions followed by batchnorm and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -564,6 +566,7 @@ class SearchNet(smo.Graph):
         return [#smo.Identity, # commented since we do not want to profile Identity modules
                 #smo.Zero,     # commented since we do not want to profile Zero modules
                 smo.Conv,
+                smo.DwConv,
                 smo.Join,
                 smo.ReLU,
                 smo.BatchNormalization,
@@ -728,6 +731,9 @@ class SearchNet(smo.Graph):
 
                 filename = path + mi.name + '.nnp'
                 pathname = os.path.dirname(filename)
+                upper_pathname = os.path.dirname(pathname)
+                if not os.path.exists(upper_pathname):
+                    os.mkdir(upper_pathname)
                 if not os.path.exists(pathname):
                     os.mkdir(pathname)
 
@@ -745,9 +751,19 @@ class SearchNet(smo.Graph):
                 
                 save(filename, contents, variable_batch_size=False)
     
+                
+                #if type(mi) is SepConv or smo.Conv:
+                #    save_latency = True
+                #
+                #if len(mi.modules) > 0:
+                #    print(type(mi))
+                #    save_latency = True
+                #    import pdb; pdb.set_trace()
+
                 if save_latency:
                     estimation = LatencyEstimator(n_run = 100)
                     latency = estimation.get_estimation(mi)
+                    # print('--->', latency, len(mi.modules))
                     filename = path + mi.name + '.lat'
                     with open(filename, 'w') as f:
                         print(latency.__str__(), file=f)
