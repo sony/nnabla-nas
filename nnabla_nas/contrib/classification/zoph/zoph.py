@@ -20,8 +20,6 @@ import nnabla.functions as F
 from nnabla.utils.save import save
 import numpy as np
 
-#import nnabla_nas.module as mo
-from .... import module as mo
 from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
 
@@ -237,58 +235,88 @@ class DilSepConv5x5(SepConvBN):
                            eval_prob=eval_prob)
 
 
-class MaxPool3x3(smo.MaxPool):
+class MaxPool3x3(smo.Graph):
     """
-    A static max pooling of size 3x3
-
+    A static max pooling of size 3x3 followed by batch normalization and ReLU
     Args:
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
+        channels (int): the number of features
     """
+    def __init__(self, parents,
+                channels,
+                name='', eval_prob=None):
+        smo.Graph.__init__(self,
+                           parents=parents,
+                           name=name,
+                           eval_prob=eval_prob,
+                           )
 
-    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
-        smo.MaxPool.__init__(self,
-                             parents=parents,
-                             kernel=(3, 3),
-                             stride=(1, 1),
-                             pad=(1, 1),
-                             name='{}_MaxPool3x3_bn_relu'.format(name),
-                             eval_prob=eval_prob)
-        self.bn = mo.BatchNormalization(n_features=self.parents[0].shape[1],
-                                        n_dims=4)
-        self.relu = mo.ReLU()
+        pool = smo.MaxPool(name='{}_MaxPool3x3/maxpool'.format(name),
+                            parents=parents,
+                            eval_prob=eval_prob,
+                            kernel=(3, 3),
+                            stride=(1, 1),
+                            pad=(1, 1),
+                            )
+        self.append(pool)
 
-    def call(self, *inputs):
-        return self.relu(self.bn(smo.MaxPool.call(self,
-                                                  *inputs)))
+        bn = smo.BatchNormalization(name='{}_MaxPool3x3/bn'.format(name),
+                                    parents=[pool],
+                                    eval_prob=eval_prob,
+                                    n_features=channels,
+                                    n_dims=4,
+                                    )
+        self.append(bn)
 
-
-class AveragePool3x3(smo.AvgPool):
+        relu = smo.ReLU(name='{}_MaxPool3x3/relu'.format(name),
+                        parents=[bn],
+                        eval_prob=eval_prob
+                        )
+        self.append(relu)
+    
+class AveragePool3x3(smo.Graph):
     """
-    A static avg pooling of size 3x3
-
+    A static average pooling of size 3x3 followed by batch normalization and ReLU
     Args:
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
+        channels (int): the number of features
     """
+    def __init__(self, parents,
+                channels,
+                name='', eval_prob=None):
 
-    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
-        smo.AvgPool.__init__(self,
-                             parents=parents,
-                             kernel=(3, 3),
-                             stride=(1, 1),
-                             pad=(1, 1),
-                             name='{}_AveragePool3x3_bn_relu'.format(name),
-                             eval_prob=eval_prob)
-        self.bn = mo.BatchNormalization(
-            n_features=self.parents[0].shape[1], n_dims=4)
-        self.relu = mo.ReLU()
+        smo.Graph.__init__(self,
+                           parents=parents,
+                           name=name,
+                           eval_prob=eval_prob,
+                           )
 
-    def call(self, *inputs):
-        return self.relu(self.bn(smo.AvgPool.call(self,
-                                                  *inputs)))
+        pool = smo.AvgPool(name='{}_AveragePool3x3/avgpool'.format(name),
+                            parents=parents,
+                            eval_prob=eval_prob,
+                            kernel=(3, 3),
+                            stride=(1, 1),
+                            pad=(1, 1),
+                            )
+        self.append(pool)
+
+        bn = smo.BatchNormalization(name='{}_AveragePool3x3/bn'.format(name),
+                                    parents=[pool],
+                                    eval_prob=eval_prob,
+                                    n_features=channels,
+                                    n_dims=4,
+                                    )
+        self.append(bn)
+
+        relu = smo.ReLU(name='{}_AveragePool3x3/relu'.format(name),
+                        parents=[bn],
+                        eval_prob=eval_prob
+                        )
+        self.append(relu)
 
 
 ZOPH_CANDIDATES = [SepConv3x3,
@@ -567,21 +595,15 @@ class SearchNet(smo.Graph):
                 #smo.Zero,     # commented since we do not want to profile Zero modules
                 smo.Conv,
                 smo.DwConv,
-                smo.Join,
+                smo.MaxPool,
+                smo.AvgPool,
+                smo.GlobalAvgPool,
                 smo.ReLU,
                 smo.BatchNormalization,
+                smo.Join,
                 smo.Merging,
-                SepConv,
-                SepConvBN,
-                SepConv3x3,
-                SepConv5x5,
-                DilSepConv3x3,
-                DilSepConv5x5,
-                MaxPool3x3,
-                AveragePool3x3,
-                smo.MaxPool,
-                smo.GlobalAvgPool,
-                smo.Collapse]
+                smo.Collapse,
+                ]
 
     @property
     def input_shapes(self):
@@ -763,7 +785,6 @@ class SearchNet(smo.Graph):
                 if save_latency:
                     estimation = LatencyEstimator(n_run = 100)
                     latency = estimation.get_estimation(mi)
-                    # print('--->', latency, len(mi.modules))
                     filename = path + mi.name + '.lat'
                     with open(filename, 'w') as f:
                         print(latency.__str__(), file=f)
