@@ -698,10 +698,6 @@ class SearchNet(smo.Graph):
         """
         batch_size = inp.shape[0]
 
-        #if self.name is '':
-        #    name = '_whole_net'
-        #else:
-        #    name = '_' + self.name
         name = self.name
 
         filename = path + name + '.nnp'
@@ -725,7 +721,8 @@ class SearchNet(smo.Graph):
 
         if save_latency:
             from nnabla_nas.utils.estimator import LatencyEstimator
-            estimation = LatencyEstimator(n_run = 100)
+            #estimation = LatencyEstimator(n_run = 100, ext_name='cuda', device_id = 0)
+            estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
             latency = estimation.get_estimation(self)
             filename = path + name + '.lat'
             with open(filename, 'w') as f:
@@ -774,7 +771,7 @@ class SearchNet(smo.Graph):
                 save(filename, contents, variable_batch_size=False)
     
                 
-                #if type(mi) is SepConv or smo.Conv:
+                #if type(mi) is smo.Conv:
                 #    save_latency = True
                 #
                 #if len(mi.modules) > 0:
@@ -783,7 +780,8 @@ class SearchNet(smo.Graph):
                 #    import pdb; pdb.set_trace()
 
                 if save_latency:
-                    estimation = LatencyEstimator(n_run = 100)
+                    #estimation = LatencyEstimator(n_run = 100, ext_name='cuda', device_id = 0)
+                    estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
                     latency = estimation.get_estimation(mi)
                     filename = path + mi.name + '.lat'
                     with open(filename, 'w') as f:

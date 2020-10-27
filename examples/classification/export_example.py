@@ -66,7 +66,7 @@ def export_all(runme):
         from nnabla_nas.contrib import zoph
 
         OUTPUT_DIR = './logs/zoph/one_net/'
-
+        
         # Sample one ZOPH network from the search space
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
@@ -97,19 +97,21 @@ def export_all(runme):
     if runme is '2':
         from nnabla_nas.contrib import zoph
 
-        OUTPUT_DIR = './logs/zoph/many_nets/'
+        OUTPUT_DIR = './logs/zoph/snpe_machine_test/'
+        #OUTPUT_DIR = './logs/zoph/4_same_net_many_times/'
         
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
-        N = 5  # number of random networks to sample
+        N = 20  # number of random networks to sample
+        zn = zoph.SearchNet()
+        output = zn(input)
 
         # Sample N zoph networks from the search space
         for i in range(0,N):
-            zn = zoph.SearchNet()
-            output = zn(input)
-            zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
+            #zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
             zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, save_latency=True)
-            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
+            #zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
+        
         zn.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  3 **************************
@@ -172,8 +174,13 @@ def export_all(runme):
     if runme is '6':
         import onnx
 
-        INPUT_DIR = './logs/zoph/many_nets/'
-
+        #INPUT_DIR = './logs/zoph/0_app74busy_many_nets/'
+        #INPUT_DIR = './logs/zoph/1_app46free_many_nets/'
+        #INPUT_DIR = './logs/zoph/2_app46free_many_nets/'
+        #INPUT_DIR = './logs/zoph/3_app79free_many_nets/'
+        #INPUT_DIR = './logs/zoph/2_same_net_many_times/'
+        INPUT_DIR = './logs/zoph/app46cpu/'
+        
         existing_networks = glob.glob(INPUT_DIR + '/*' + os.path.sep)
         all_nets_latencies = dict.fromkeys([])
         all_nets = dict.fromkeys([])
@@ -227,8 +234,7 @@ def export_all(runme):
             net_idx += 1
 
         # Compare accumulated latency to net latencies, do a plot:
-        
-        #import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
 
     #  7 **************************        
     if runme is '7':
