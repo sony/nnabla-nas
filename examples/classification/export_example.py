@@ -108,9 +108,9 @@ def export_all(runme):
 
         # Sample N zoph networks from the search space
         for i in range(0,N):
-            #zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
+            zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
             zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, save_latency=True)
-            #zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
+            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
         
         zn.convert_npp_to_onnx(OUTPUT_DIR)
 
@@ -179,7 +179,7 @@ def export_all(runme):
         #INPUT_DIR = './logs/zoph/2_app46free_many_nets/'
         #INPUT_DIR = './logs/zoph/3_app79free_many_nets/'
         #INPUT_DIR = './logs/zoph/2_same_net_many_times/'
-        INPUT_DIR = './logs/zoph/app46cpu/'
+        INPUT_DIR = './logs/zoph/snpe_machine_test/'
         
         existing_networks = glob.glob(INPUT_DIR + '/*' + os.path.sep)
         all_nets_latencies = dict.fromkeys([])

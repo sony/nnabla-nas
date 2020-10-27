@@ -142,3 +142,5 @@ dmypy.json
 *.onnx
 *.nnp
 *.lat
+graph
+graph.pdf
