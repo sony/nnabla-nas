@@ -30,10 +30,10 @@ def get_active_and_profiled_modules(zn):
     print('**END PRINT ******************************\n')
     return list
 
-def export_all(runme):
+def export_all(exp_nr):
     
     #  0 **************************
-    if runme is '0':
+    if exp_nr == 0:
         from nnabla_nas.contrib import zoph
 
         shape = (1, 3, 32, 32)
@@ -62,7 +62,7 @@ def export_all(runme):
             print_me(zn1, f)
 
     #  1 **************************
-    if runme is '1':
+    if exp_nr == 1:
         from nnabla_nas.contrib import zoph
 
         OUTPUT_DIR = './logs/zoph/one_net/'
@@ -94,28 +94,48 @@ def export_all(runme):
    
 
     #  2 **************************
-    if runme is '2':
+    if exp_nr == 2:
         from nnabla_nas.contrib import zoph
 
-        OUTPUT_DIR = './logs/zoph/snpe_machine_test/'
-        #OUTPUT_DIR = './logs/zoph/4_same_net_many_times/'
+        #OUTPUT_DIR = './logs/zoph/snpe_machine_test/'
+        OUTPUT_DIR = './logs/zoph/app79cpu/'
         
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
-        N = 20  # number of random networks to sample
-        zn = zoph.SearchNet()
-        output = zn(input)
+        N = 10  # number of random networks to sample
 
         # Sample N zoph networks from the search space
         for i in range(0,N):
+            zn = zoph.SearchNet()
+            output = zn(input)
             zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
             zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, save_latency=True)
             zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
         
         zn.convert_npp_to_onnx(OUTPUT_DIR)
 
+    if exp_nr == 20:
+        from nnabla_nas.contrib import zoph
+
+        OUTPUT_DIR = './logs/zoph/snpe_machine_test/'
+        
+        shape = (1, 3, 32, 32)
+        input = nn.Variable(shape)
+        zn = zoph.SearchNet()
+        output = zn(input)
+
+        N = 20  # Measure latency on same zoph network N times
+        for i in range(0,N):
+            zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, save_latency=True)
+            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
+        
+        zn.convert_npp_to_onnx(OUTPUT_DIR)
+
+
+
+
     #  3 **************************
-    if runme is '3':
+    if exp_nr == 3:
         from nnabla_nas.contrib import random_wired
 
         OUTPUT_DIR = './logs/rdn/one_net/'
@@ -133,7 +153,7 @@ def export_all(runme):
 
 
     #  4 **************************
-    if runme is '4':
+    if exp_nr == 4:
         from nnabla_nas.contrib import random_wired
 
         OUTPUT_DIR = './logs/rdn/many_nets/'
@@ -152,34 +172,57 @@ def export_all(runme):
         rw.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  5 **************************
-    if runme is '5':
+    if exp_nr == 5:
         from nnabla_nas.contrib.classification.mobilenet import SearchNet
 
-        OUTPUT_DIR = './logs/output_runme_5/'
-        
-        mobile_net = SearchNet(num_classes=1000)
-        input = nn.Variable((1, 3, 224, 224))
-        output = mobile_net(input)
-        
-        #mobile_net.save_modules_nnp(OUTPUT_DIR + 'mn', True)
+        OUTPUT_DIR = './logs/mobilenet/app46/'
 
-        # mobile_net.save_net_nnp(OUTPUT_DIR + 'mn', input, output)
-        # it seems the last affine layer cannot be converted to ONNX (!?),
-        # thus export without it
-        mobile_net.save_net_nnp(OUTPUT_DIR + 'mn', input, output.parent.inputs[0])
+        input = nn.Variable((1, 3, 224, 224))
+        N = 10  # number of random networks to sample
+        
+        # Sample N networks from the search space
+        for i in range(0,N):
+            mobile_net = SearchNet(num_classes=1000)
+            output = mobile_net(input)
+            
+            #mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output, save_latency=True)
+            
+            # it seems the last affine layer cannot be converted to ONNX (!?), here export without it
+            mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output.parent.inputs[0], save_latency=True)
+            
+            #mobile_net.save_modules_nnp() ## NOT AVAILABLE YET
         
         mobile_net.convert_npp_to_onnx(OUTPUT_DIR)
     
+    if exp_nr == 50:
+        from nnabla_nas.contrib.classification.mobilenet import SearchNet
+
+        OUTPUT_DIR = './logs/mobilenet/snpe_test/'
+
+        input = nn.Variable((1, 3, 224, 224))
+        mobile_net = SearchNet(num_classes=1000)
+        output = mobile_net(input)
+        
+        N = 10  # Measure latency on same network N times
+        for i in range(0,N):
+            mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output, save_latency=True)
+        
+        #mobile_net.save_modules_nnp()
+        # it seems the last affine layer cannot be converted to ONNX (!?), here export without it
+        #mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output.parent.inputs[0], save_latency=True)
+        #mobile_net.convert_npp_to_onnx(OUTPUT_DIR)
+
+
     #  6 **************************        
-    if runme is '6':
+    if exp_nr == 6:
         import onnx
 
         #INPUT_DIR = './logs/zoph/0_app74busy_many_nets/'
         #INPUT_DIR = './logs/zoph/1_app46free_many_nets/'
         #INPUT_DIR = './logs/zoph/2_app46free_many_nets/'
         #INPUT_DIR = './logs/zoph/3_app79free_many_nets/'
-        #INPUT_DIR = './logs/zoph/2_same_net_many_times/'
-        INPUT_DIR = './logs/zoph/snpe_machine_test/'
+        INPUT_DIR = './logs/zoph/app79cpu/'
+        #INPUT_DIR = './logs/zoph/snpe_machine_test/'
         
         existing_networks = glob.glob(INPUT_DIR + '/*' + os.path.sep)
         all_nets_latencies = dict.fromkeys([])
@@ -237,7 +280,7 @@ def export_all(runme):
         import pdb; pdb.set_trace()
 
     #  7 **************************        
-    if runme is '7':
+    if exp_nr == 7:
         from nnabla.utils.nnp_graph import NnpLoader as load
         for filename in glob.glob('./logs/zoph/one_net/zn/**/*.nnp', recursive=True):
             if 'SepConv' in filename:
@@ -260,16 +303,18 @@ def export_all(runme):
 if __name__ == '__main__':
     # import pdb; pdb.set_trace()
     if len(sys.argv) > 1:
-        export_all(sys.argv[1])
+        export_all(int(sys.argv[1]))
     else:
         print('Usage: python export_example.py <NUM>')
         print('Possible values for NUM:')
         print('# 0 : sandbox -  creation / exporting tests')
         print('# 1 : create 1 instance of ZOPH network,                      save it and its modules,     convert to ONNX')
         print('# 2 : Sample a set of N ZOPH networks,         export all of them (whole net and modules), convert to ONNX')
+        print('# 20 : Sample one ZOPH network, calculate latency N times')
         print('# 3 : create 1 instance of random wired search space network, save it and its modules,     convert to ONNX')
         print('# 4 : Sample a set of N RANDOM WIRED networks, export all of them (whole net and modules), convert to ONNX')
-        print('# 5 : WIP: the export for dynamic modules')
+        print('# 5 : WIP: the export for dynamic modules using mobilenet')
+        print('# 50 : Sample one mobilenet network, calculate latency N times')        
         print('# 6 : WIP: load ONNXs, load latencies, put everything on dictionary')
         print('# 7 : WIP: load nnp files')
     pass
