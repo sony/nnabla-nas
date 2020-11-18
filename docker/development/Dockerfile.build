@@ -37,3 +37,4 @@ RUN umask 0 \
     && rm -rf /tmp/*
 
 ENV PATH /opt/miniconda3/bin:$PATH
+
