@@ -315,6 +315,24 @@ def export_all(exp_nr):
         rw.save_modules_nnp(OUTPUT_DIR + 'rw', active_only=True)
         rw.convert_npp_to_onnx(OUTPUT_DIR)
 
+    #  4 **************************    
+    if exp_nr == 4:
+        from nnabla_nas.contrib import random_wired
+
+        OUTPUT_DIR = './logs/rdn/manynets/'
+        
+        shape = (1, 3, 32, 32)
+        input = nn.Variable(shape)
+
+        N = 10  # Measure latency on same rdn network N times
+        for i in range(0,N):
+            rw = random_wired.TrainNet()
+            output = rw(input)
+            rw.save_graph      (OUTPUT_DIR + 'rw' + str(i))
+            rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output, save_latency=True)
+            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True, save_latency=True)
+        rw.convert_npp_to_onnx(OUTPUT_DIR)
+
     #  40 **************************
     if exp_nr == 40:
         from nnabla_nas.contrib import random_wired
@@ -347,7 +365,7 @@ def export_all(exp_nr):
         for i in range(0,N):
             print('****************** RUN ********************')
             rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output, save_latency=True)
-            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True)
+            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True, save_latency=True)
         rw.save_graph      (OUTPUT_DIR + 'rw' + str(i))
         rw.convert_npp_to_onnx(OUTPUT_DIR)
 
@@ -355,7 +373,7 @@ def export_all(exp_nr):
     if exp_nr == 5:
         from nnabla_nas.contrib.classification.mobilenet import SearchNet
 
-        OUTPUT_DIR = './logs/mobilenet/app46/'
+        OUTPUT_DIR = './logs/mobilenet/test/'
 
         input = nn.Variable((1, 3, 224, 224))
         N = 10  # number of random networks to sample
@@ -416,14 +434,17 @@ def export_all(exp_nr):
     #  6 **************************        
     if exp_nr == 6:
         import onnx
-
-        #INPUT_DIR = './logs/zoph/0_app74busy_many_nets/'
-        #INPUT_DIR = './logs/zoph/1_app46free_many_nets/'
-        #INPUT_DIR = './logs/zoph/2_app46free_many_nets/'
-        #INPUT_DIR = './logs/zoph/3_app79free_many_nets/'
-        #INPUT_DIR = './logs/zoph/app79cpu/'
-        #INPUT_DIR = './logs/zoph/snpe_machine_test/'
-        INPUT_DIR = './logs/zoph/test_8/'
+        
+        if len(sys.argv) > 2:
+            INPUT_DIR = sys.argv[2]
+        else:  
+            #INPUT_DIR = './logs/zoph/0_app74busy_many_nets/'
+            #INPUT_DIR = './logs/zoph/1_app46free_many_nets/'
+            #INPUT_DIR = './logs/zoph/2_app46free_many_nets/'
+            #INPUT_DIR = './logs/zoph/3_app79free_many_nets/'
+            #INPUT_DIR = './logs/zoph/app79cpu/'
+            #INPUT_DIR = './logs/zoph/snpe_machine_test/'
+            INPUT_DIR = './logs/zoph/final_10times_same_network/'
 
         existing_networks = glob.glob(INPUT_DIR + '/*' + os.path.sep)
         all_nets_latencies = dict.fromkeys([])
@@ -478,7 +499,12 @@ def export_all(exp_nr):
             net_idx += 1
 
         # Compare accumulated latency to net latencies, do a plot:
-        import pdb; pdb.set_trace()
+        print('Results from ' + INPUT_DIR)
+        print('NETWORK MEASURED LATENCY, ACCUMULATED LATENCY (adding up all layers)')
+        for i in range(len(all_nets_latencies)):
+            print(all_nets_latencies[i])
+        
+        #import pdb; pdb.set_trace()
 
     #  7 **************************        
     if exp_nr == 7:
@@ -506,11 +532,11 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         export_all(int(sys.argv[1]))
     else:
-        print('Usage: python export_example.py <NUM>')
+        print('Usage: python export_example.py <NUM> [DIRECTORY]')
         print('Possible values for NUM:')
         print('# 0 : sandbox -  creation / exporting tests')
-        print('# 1 : create 1 instance of ZOPH network,                      save it and its modules,     convert to ONNX')
-        print('# 2 : Sample a set of N ZOPH networks,         export all of them (whole net and modules), convert to ONNX')
+        print('# 1 : create 1 instance of ZOPH network,   save it and its modules,     convert to ONNX')
+        print('# 2 : Sample a set of N ZOPH networks, calculate latency, export all of them (whole net and modules), convert to ONNX')
         print('# 20 : Sample one ZOPH network, calculate latency of this network N times')
         print('# 21 : Sample several static convolutions (predefined), calc latency on each of them many times')
         print('# 22 : Sample several random-sized static convolutions. Calc latency on each of them many times')                
@@ -519,7 +545,7 @@ if __name__ == '__main__':
         print('# 40 : Sample one Random wired network, calculate latency of this network N times, convert to ONNX')
         print('# 5 : WIP: the export for dynamic modules using mobilenet')
         print('# 50 : Sample one mobilenet network, calculate latency N times')        
-        print('# 6 : WIP: load ONNXs, load latencies, put everything on dictionary')
+        print('# 6 [DIR]: (WIP) from the given DIR, load ONNXs, load latencies, put everything on dictionary, display it')
         print('# 7 : WIP: load nnp files')
     pass
 
