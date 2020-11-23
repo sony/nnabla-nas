@@ -315,21 +315,19 @@ def export_all(exp_nr):
         rw.save_modules_nnp(OUTPUT_DIR + 'rw', active_only=True)
         rw.convert_npp_to_onnx(OUTPUT_DIR)
 
-    #  4 **************************
-    if exp_nr == 4:
+    #  40 **************************
+    if exp_nr == 40:
         from nnabla_nas.contrib import random_wired
         import time
 
-        OUTPUT_DIR = './logs/rdn/test_1/'
+        OUTPUT_DIR = './logs/rdn/test_2/'
         
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
         rw = random_wired.TrainNet()
         output = rw(input)
 
-
-        N = 2 
-
+        N = 5 
         for i in range(0,N):
             n_run = 10
             # warm up
@@ -346,13 +344,13 @@ def export_all(exp_nr):
             mean_time = result / n_run
             print(mean_time)
 
-        N = 20  # Measure latency on same rdn network N times
+        N = 10  # Measure latency on same rdn network N times
         for i in range(0,N):
             print('****************** RUN ********************')
             rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output, save_latency=True)
-            #rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True)
+            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True)
         rw.save_graph      (OUTPUT_DIR + 'rw' + str(i))
-        #rw.convert_npp_to_onnx(OUTPUT_DIR)
+        rw.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  5 **************************
     if exp_nr == 5:
@@ -382,14 +380,13 @@ def export_all(exp_nr):
         from nnabla_nas.contrib.classification.mobilenet import SearchNet
         import time
 
-        OUTPUT_DIR = './logs/mobilenet/test_1/'
+        OUTPUT_DIR = './logs/mobilenet/test_2/'
 
         input = nn.Variable((1, 3, 224, 224))
         mobile_net = SearchNet(num_classes=1000)
         output = mobile_net(input)
         
-        N = 2 
-
+        N = 5 
         for i in range(0,N):
             n_run = 100
             # warm up
@@ -407,8 +404,7 @@ def export_all(exp_nr):
             print(mean_time)
 
 
-        N = 20  # Measure latency on same network N times
-        
+        N = 10  # Measure latency on same network N times
         for i in range(0,N):
             print('****************** RUN ********************')
             mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output, save_latency=True)
@@ -520,7 +516,8 @@ if __name__ == '__main__':
         print('# 21 : Sample several static convolutions (predefined), calc latency on each of them many times')
         print('# 22 : Sample several random-sized static convolutions. Calc latency on each of them many times')                
         print('# 3 : create 1 instance of random wired search space network, save it and its modules,     convert to ONNX')
-        print('# 4 : Sample a set of N RANDOM WIRED networks, export all of them (whole net and modules), convert to ONNX')
+        print('# 4 : Sample a set of N Random wired networks, export them (net and modules), convert to ONNX')
+        print('# 40 : Sample one Random wired network, calculate latency of this network N times, convert to ONNX')
         print('# 5 : WIP: the export for dynamic modules using mobilenet')
         print('# 50 : Sample one mobilenet network, calculate latency N times')        
         print('# 6 : WIP: load ONNXs, load latencies, put everything on dictionary')
