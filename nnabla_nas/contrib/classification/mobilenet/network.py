@@ -333,14 +333,20 @@ class SearchNet(Model):
                                    'output': ['out']}]}
 
         save(filename, contents, variable_batch_size=False)
+        
         if save_latency:
-            from nnabla_nas.utils.estimator import LatencyEstimator
-            #estimation = LatencyEstimator(n_run = 100, ext_name='cuda', device_id = 0)
-            estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
-            latency = estimation.get_estimation(self)
+            from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
+            
+            #estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
+            #latency = estimation.get_estimation(self)
+
+            estimation = LatencyGraphEstimator(n_run = 100, ext_name='cpu')
+            latency = estimation.get_estimation(out)
+
             filename = path + name + '.lat'
             with open(filename, 'w') as f:
                 print(latency.__str__(), file=f)
+
 
 
     def convert_npp_to_onnx(self, path):
