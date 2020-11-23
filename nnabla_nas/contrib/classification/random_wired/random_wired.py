@@ -614,7 +614,7 @@ class TrainNet(smo.Graph):
                 active_only: if True, only active modules are saved
         """
         from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
-        
+
         mods = self.get_net_modules(active_only=active_only)
         for mi in mods:
             print(type(mi))
@@ -627,8 +627,12 @@ class TrainNet(smo.Graph):
 
                 filename = path + mi.name + '.nnp'
                 pathname = os.path.dirname(filename)
+                upper_pathname = os.path.dirname(pathname)
+                if not os.path.exists(upper_pathname):
+                    os.mkdir(upper_pathname)
                 if not os.path.exists(pathname):
                     os.mkdir(pathname)
+
 
                 d_dict = {str(i): inpi for i, inpi in enumerate(inp)}
                 d_keys = [str(i) for i, inpi in enumerate(inp)]
