@@ -555,7 +555,7 @@ class TrainNet(smo.Graph):
         gvg = self.get_gv_graph()
         gvg.render(path + '/graph')
 
-    def save_net_nnp(self, path, inp, out):
+    def save_net_nnp(self, path, inp, out, save_latency=False):
         """
             Saves whole net as one nnp
             Args:
@@ -589,6 +589,18 @@ class TrainNet(smo.Graph):
                                    'output': ['out']}]}
 
         save(filename, contents, variable_batch_size=False)
+
+        if save_latency:
+            from nnabla_nas.utils.estimator import LatencyEstimator
+            #estimation = LatencyEstimator(n_run = 100, ext_name='cuda', device_id = 0)
+            estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
+            
+            #import pdb; pdb.set_trace()
+            latency = estimation.get_estimation(self)
+            filename = path + name + '.lat'
+            with open(filename, 'w') as f:
+                print(latency.__str__(), file=f)
+
 
 
     def save_modules_nnp(self, path, active_only=False):
