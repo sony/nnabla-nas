@@ -720,10 +720,14 @@ class SearchNet(smo.Graph):
         save(filename, contents, variable_batch_size=False)
 
         if save_latency:
-            from nnabla_nas.utils.estimator import LatencyEstimator
-            #estimation = LatencyEstimator(n_run = 100, ext_name='cuda', device_id = 0)
-            estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
-            latency = estimation.get_estimation(self)
+            from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
+            
+            #estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
+            #latency = estimation.get_estimation(self)
+
+            estimation = LatencyGraphEstimator(n_run = 100, ext_name='cpu')
+            latency = estimation.get_estimation(out)
+
             filename = path + name + '.lat'
             with open(filename, 'w') as f:
                 print(latency.__str__(), file=f)
@@ -737,7 +741,7 @@ class SearchNet(smo.Graph):
                 path
                 active_only: if True, only active modules are saved
         """
-        from nnabla_nas.utils.estimator import LatencyEstimator
+        from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
 
         mods = self.get_net_modules(active_only=active_only)
         for mi in mods:
@@ -769,20 +773,15 @@ class SearchNet(smo.Graph):
                                            'output': ['out']}]}
                 
                 save(filename, contents, variable_batch_size=False)
-    
-                
-                #if type(mi) is smo.Conv:
-                #    save_latency = True
-                #
-                #if len(mi.modules) > 0:
-                #    print(type(mi))
-                #    save_latency = True
-                #    import pdb; pdb.set_trace()
 
                 if save_latency:
                     #estimation = LatencyEstimator(n_run = 100, ext_name='cuda', device_id = 0)
-                    estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
-                    latency = estimation.get_estimation(mi)
+                    #estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
+                    #latency = estimation.get_estimation(mi)
+
+                    estimation = LatencyGraphEstimator(n_run = 100, ext_name='cpu')
+                    latency = estimation.get_estimation(out)
+
                     filename = path + mi.name + '.lat'
                     with open(filename, 'w') as f:
                         print(latency.__str__(), file=f)
