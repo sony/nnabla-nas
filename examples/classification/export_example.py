@@ -340,9 +340,8 @@ def export_all(exp_nr):
                 output.forward()
                 stop = time.time()
                 result += stop - start
-                print('\r.\r')
             mean_time = result / n_run
-            print(mean_time)
+            print(mean_time*1000)
 
         N = 10  # Measure latency on same rdn network N times
         for i in range(0,N):
@@ -401,7 +400,7 @@ def export_all(exp_nr):
                 result += stop - start
 
             mean_time = result / n_run
-            print(mean_time)
+            print(mean_time*1000)
 
 
         N = 10  # Measure latency on same network N times
