@@ -26,9 +26,23 @@ from nnabla.logger import logger
 from nnabla.utils.profiler import GraphProfiler, convert_time_scale
 from sklearn.neural_network import MLPRegressor
 from tqdm import tqdm
+import nnabla.function as F
+from nnabla.context import get_current_context
 
 from ... import contrib
 from .estimator import Estimator
+
+def _zero_variables(variables):
+    for v in variables:
+        v.data.zero()
+        v.grad.zero()
+
+from collections import namedtuple
+
+
+ProfileStat = namedtuple("ProfileStat", ["parameter_scope", "inputs_shape",
+                                         "args_info", "function_name", "mean_time", "n_run"])
+
 
 
 class Profiler(GraphProfiler):
@@ -64,6 +78,42 @@ class Profiler(GraphProfiler):
         self.n_warmup = n_warmup
         self.outlier = outlier
 
+    def _time_profiling(self, f, target_process):
+        if target_process is "forward":
+            process = f.forward
+        elif target_process is "backward":
+            process = f.backward
+        else:
+            raise NotImplementedError(
+                "target process must be [forward, backward]")
+        # Zero-ing to avoid invalid memory access in some layers
+        # such as softmax cross entropy.
+        _zero_variables(f.inputs)
+        _zero_variables(f.outputs)
+        mean_time, measured_count = self._measure_execution_time(
+            process, f.inputs, f.outputs)
+        # Releasing array memory to avoid the increasing memory usage
+        # (`NdArray.zero()` releases any device memory internally.)
+        _zero_variables(f.inputs)
+        _zero_variables(f.outputs)
+
+        parameter_scope = None
+        if len(f.inputs) > 1:
+            if f.inputs[1] in self.name2val.keys():
+                parameter_scope = os.path.dirname(self.name2val[f.inputs[1]])
+
+        inputs_shape = [x.shape for x in f.inputs]
+
+        function_name = f.name
+
+        args_info = f.info.args.items()
+
+        self.result[target_process].append(ProfileStat(parameter_scope=parameter_scope,
+                                                       inputs_shape=inputs_shape,
+                                                       args_info=args_info,
+                                                       function_name=function_name,
+                                                       mean_time=mean_time,
+                                                       n_run=measured_count))
     def _measure_execution_time(self, execution, *execution_args):
         runtime = []
         for i in range(self.n_run + self.n_warmup):
@@ -73,13 +123,18 @@ class Profiler(GraphProfiler):
             self.ext_module.synchronize(device_id=self.device_id)
             stop = time.perf_counter()
             if i >= self.n_warmup:
+                if stop - start > self.max_measure_execution_time:
+                    # print('WARNING!! - here there was some huge calculation ')
+                    break
                 runtime.append(stop - start)
-
+        
         excluded = int(self.outlier * self.n_run)
-        runtime = np.sort(runtime)
+        runtime_sorted = np.sort(runtime)
+    
+        runtime = runtime_sorted
         if excluded:
             runtime = runtime[excluded:-excluded]
-
+            
         mean_time = convert_time_scale(np.mean(runtime), format=self.time_scale)
         mean_time = "{:.8f}".format(mean_time)
 
@@ -87,6 +142,7 @@ class Profiler(GraphProfiler):
         std_time = "{:.8f}".format(std_time)
 
         return mean_time, std_time
+        #return mean_time, runtime_sorted*1000
 
 
 class LatencyEstimator(Estimator):
@@ -119,7 +175,7 @@ class LatencyEstimator(Estimator):
             self.memo[idm] = dict()
         mem = self.memo[idm]
         key = '-'.join([str(k[1:]) for k in module.input_shapes])
-
+        
         if key not in mem:
             state = module.training
             module.apply(training=False)  # turn off training
@@ -133,6 +189,7 @@ class LatencyEstimator(Estimator):
                                        n_run=self._n_run)
                 runner.run()
                 latency = float(runner.result['forward_all'])
+                #print('1->', type(module), ':', runner.result['n_run_forward_all'], ':', latency, ':', module.input_shapes)
             except Exception as err:
                 latency = 0
                 logger.warning(f'Latency calculation fails: {idm}[{key}]')
@@ -140,7 +197,73 @@ class LatencyEstimator(Estimator):
 
             mem[key] = latency
             module.apply(training=state)  # recover training state
-        return mem[key]
+        return mem[key], self.memo
+
+
+class _EstimatorVisitor():
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self._functions = list()
+
+    def __call__(self, func):
+        self._functions.append(func)
+
+
+class LatencyGraphEstimator(Estimator):
+    def __init__(self, device_id=None, ext_name=None, n_run=10, weight=0.1, bound=5,
+                 max_measure_execution_time=1, time_scale="m",
+                 n_warmup=10, outlier=0.0):
+        ctx = nn.context.get_current_context()
+        if device_id is None:
+            device_id = int(ctx.device_id)
+        if ext_name is None:
+            ext_name = ctx.backend[0].split(':')[0]
+        self._device_id = device_id
+        self._ext_name = ext_name
+        self._n_run = n_run
+        self._weight = weight
+        self._bound = bound
+        self._max_measure_execution_time = max_measure_execution_time
+        self._time_scale = time_scale
+        self._n_warmup = n_warmup
+        self._outlier = outlier
+        self._visitor = _EstimatorVisitor()
+
+    def get_estimation(self, graph):
+        self._visitor.reset()
+        graph.visit(self._visitor)
+        flops = 0
+        for func in self._visitor._functions:
+            args = [func.name] + [str(inp.shape) for inp in func.inputs] + [str(func.info.args)]
+            key = '-'.join(args)
+            ff = getattr(F, func.name)(get_current_context(), **func.info.args)
+            if key not in self.memo:
+                try:  # run profiler
+                    nnabla_vars = [nn.Variable(inp.shape, need_grad=inp.need_grad) for inp in func.inputs]
+                    runner = Profiler(
+                        ff(*nnabla_vars),
+                        device_id=self._device_id,
+                        ext_name=self._ext_name,
+                        n_run=self._n_run,
+                        outlier=self._outlier,
+                        max_measure_execution_time=self._max_measure_execution_time,
+                        time_scale=self._time_scale,
+                        n_warmup=self._n_warmup
+                    )
+                    runner.run()
+                    latency = float(runner.result['forward_all'])
+                    #all_latencies = runner.result['n_run_forward_all']
+                    #print('2->', func.name, ':', 'dummy',    ':', latency, ':', args[1:])
+                    #print(all_latencies)
+                except Exception as err:
+                    latency = 0
+                    logger.warning(f'Latency calculation failed: {key}')
+                    logger.warning(str(err))
+                self.memo[key] = latency
+            flops += self.memo[key]
+        return flops
 
 
 class LatencyPredictor(Estimator):
@@ -268,3 +391,4 @@ if __name__ == "__main__":
 
     Path(os.path.dirname(args.output)).mkdir(parents=True, exist_ok=True)
     generate_dataset(args, model, shape)
+
