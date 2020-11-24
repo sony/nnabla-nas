@@ -144,3 +144,4 @@ dmypy.json
 *.lat
 graph
 graph.pdf
+examples/*
