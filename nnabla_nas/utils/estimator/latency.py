@@ -124,7 +124,7 @@ class Profiler(GraphProfiler):
             stop = time.perf_counter()
             if i >= self.n_warmup:
                 if stop - start > self.max_measure_execution_time:
-                    # print('WARNING!! - here there was some huge calculation ')
+                    print('WARNING!! - here there was some huge calculation, not taken into account')
                     break
                 runtime.append(stop - start)
         
@@ -134,7 +134,12 @@ class Profiler(GraphProfiler):
         runtime = runtime_sorted
         if excluded:
             runtime = runtime[excluded:-excluded]
-            
+    	
+        if any(np.isnan(runtime)):
+            nb_nan = len(runtime[np.isnan(runtime)])
+            runtime = runtime[~np.isnan(runtime)]
+            print('WARNING -- Found and removed ', nb_nan, 'NaN measurements in one layer')
+
         mean_time = convert_time_scale(np.mean(runtime), format=self.time_scale)
         mean_time = "{:.8f}".format(mean_time)
 
@@ -213,7 +218,7 @@ class _EstimatorVisitor():
 
 class LatencyGraphEstimator(Estimator):
     def __init__(self, device_id=None, ext_name=None, n_run=10, weight=0.1, bound=5,
-                 max_measure_execution_time=1, time_scale="m",
+                 max_measure_execution_time=1000, time_scale="m",
                  n_warmup=10, outlier=0.0):
         ctx = nn.context.get_current_context()
         if device_id is None:
@@ -254,6 +259,11 @@ class LatencyGraphEstimator(Estimator):
                     )
                     runner.run()
                     latency = float(runner.result['forward_all'])
+
+                    #if np.isnan(latency):
+                    #    print('WARNING -> NaN measurements in one layer')
+                    #    import pdb; pdb.set_trace()
+
                     #all_latencies = runner.result['n_run_forward_all']
                     #print('2->', func.name, ':', 'dummy',    ':', latency, ':', args[1:])
                     #print(all_latencies)
