@@ -723,14 +723,13 @@ class SearchNet(smo.Graph):
         if save_latency:
             from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
             
-            if not ext_name == 'cpu':
-                ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
-                nn.set_default_context(ctx)
+            ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+            nn.set_default_context(ctx)
 
-            #estimation = LatencyEstimator(n_run = 100)
+            #estimation = LatencyEstimator(n_run = 100, ext_name=ext_name, device_id=device_id)
             #latency = estimation.get_estimation(self)
             
-            estimation = LatencyGraphEstimator(n_run = 100)
+            estimation = LatencyGraphEstimator(n_run = 100, ext_name=ext_name, device_id=device_id)
             latency = estimation.get_estimation(out)
 
             filename = path + name + '.lat'
@@ -780,14 +779,13 @@ class SearchNet(smo.Graph):
                 save(filename, contents, variable_batch_size=False)
 
                 if save_latency:
-                    if not ext_name == 'cpu':
-                        ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
-                        nn.set_default_context(ctx)
+                    ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+                    nn.set_default_context(ctx)
 
-                    #estimation = LatencyEstimator(n_run = 100)
+                    #estimation = LatencyEstimator(n_run = 100, ext_name=ext_name, device_id=device_id)
                     #latency = estimation.get_estimation(mi)
                     
-                    estimation = LatencyGraphEstimator(n_run = 100)
+                    estimation = LatencyGraphEstimator(n_run = 100, ext_name=ext_name, device_id=device_id)
                     latency = estimation.get_estimation(out)
 
                     filename = path + mi.name + '.lat'

@@ -138,9 +138,8 @@ def export_all(exp_nr, ext_name='cpu', device_id=0):
         import time
 
         OUTPUT_DIR = './logs/zoph/same_net_repeated/'
-        if not ext_name == 'cpu':
-            ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
-            nn.set_default_context(ctx)
+        ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+        nn.set_default_context(ctx)
         
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
