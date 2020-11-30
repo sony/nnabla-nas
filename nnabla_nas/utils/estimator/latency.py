@@ -73,6 +73,7 @@ class Profiler(GraphProfiler):
     def __init__(self, graph, device_id, ext_name, solver=None, n_run=100,
                  max_measure_execution_time=1, time_scale="m",
                  n_warmup=10, outlier=0.0):
+
         super().__init__(graph=graph, device_id=device_id, ext_name=ext_name, solver=solver,
                          n_run=n_run, max_measure_execution_time=max_measure_execution_time)
         self.n_warmup = n_warmup
@@ -220,6 +221,7 @@ class LatencyGraphEstimator(Estimator):
     def __init__(self, device_id=None, ext_name=None, n_run=10, weight=0.1, bound=5,
                  max_measure_execution_time=1000, time_scale="m",
                  n_warmup=10, outlier=0.0):
+
         ctx = nn.context.get_current_context()
         if device_id is None:
             device_id = int(ctx.device_id)
@@ -241,9 +243,12 @@ class LatencyGraphEstimator(Estimator):
         graph.visit(self._visitor)
         flops = 0
         for func in self._visitor._functions:
-            args = [func.name] + [str(inp.shape) for inp in func.inputs] + [str(func.info.args)]
+            
+            args = [func.info.type_name] + [str(inp.shape) for inp in func.inputs] + [str(func.info.args)]            
             key = '-'.join(args)
-            ff = getattr(F, func.name)(get_current_context(), **func.info.args)
+
+            ff = getattr(F, func.info.type_name)(get_current_context(), **func.info.args)
+
             if key not in self.memo:
                 try:  # run profiler
                     nnabla_vars = [nn.Variable(inp.shape, need_grad=inp.need_grad) for inp in func.inputs]
