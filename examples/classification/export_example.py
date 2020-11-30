@@ -2,6 +2,7 @@ import sys
 import os
 import nnabla as nn
 import glob
+from nnabla.ext_utils import get_extension_context
 
 def print_me(zn,f):
     print(zn.summary(), file=f)
@@ -43,7 +44,7 @@ def estim_fwd(output, n_run=100):
     return result / n_run
 
 
-def export_all(exp_nr):
+def export_all(exp_nr, ext_name='cpu', device_id=0):
     
     #  0 **************************
     if exp_nr == 0:
@@ -79,6 +80,8 @@ def export_all(exp_nr):
         from nnabla_nas.contrib import zoph
 
         OUTPUT_DIR = './logs/zoph/one_net/'
+        ext_name='cudnn'
+        device_id = 0
         
         # Sample one ZOPH network from the search space
         shape = (1, 3, 32, 32)
@@ -92,10 +95,12 @@ def export_all(exp_nr):
         zn.save_graph      (OUTPUT_DIR + 'zn')
 
         # WHOLE NET incl. latency
-        zn.save_net_nnp    (OUTPUT_DIR + 'zn', input, output, save_latency=True)
+        zn.save_net_nnp    (OUTPUT_DIR + 'zn', input, output,
+                            save_latency=True, ext_name=ext_name, device_id=device_id)
 
         # MODULES incl. latency
-        zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True, save_latency=True)
+        zn.save_modules_nnp(OUTPUT_DIR + 'zn', active_only=True, 
+                            save_latency=True, ext_name=ext_name, device_id=device_id)
         
         # CONVERT TO ONNX
         zn.convert_npp_to_onnx(OUTPUT_DIR)
@@ -109,19 +114,21 @@ def export_all(exp_nr):
         from nnabla_nas.contrib import zoph
 
         OUTPUT_DIR = './logs/zoph/many_different_nets/'
-        
+
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
 
-        N = 20  # number of random networks to sample
+        N = 10  # number of random networks to sample
 
         # Sample N zoph networks from the search space
         for i in range(0,N):
             zn = zoph.SearchNet()
             output = zn(input)
             zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
-            zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, save_latency=True)
-            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
+            zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, 
+                                save_latency=True, ext_name=ext_name, device_id=device_id)
+            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, 
+                                save_latency=True, ext_name=ext_name, device_id=device_id)
         
         zn.convert_npp_to_onnx(OUTPUT_DIR)
 
@@ -131,14 +138,17 @@ def export_all(exp_nr):
         import time
 
         OUTPUT_DIR = './logs/zoph/same_net_repeated/'
+        if not ext_name == 'cpu':
+            ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+            nn.set_default_context(ctx)
         
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
-
         zn = zoph.SearchNet()
         output = zn(input)
 
-        N = 10 # Measure add-hoc latency of zoph network
+
+        N = 3 # Measure add-hoc latency of zoph network
         for i in range(0,N):
             n_run = 100
             # warm up
@@ -155,11 +165,13 @@ def export_all(exp_nr):
             mean_time = result / n_run
             print(mean_time*1000)
         
-        N = 10  # Measure latency on same zoph network N times using LatencyEstimator or LatencyGraphEstimator
+        N = 5  # Measure latency on same zoph network N times using LatencyEstimator or LatencyGraphEstimator
         for i in range(0,N):
             print('****************** RUN ********************')
-            zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, save_latency=True)
-            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, save_latency=True)
+            zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, 
+                                save_latency=True, ext_name=ext_name, device_id=device_id)
+            zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, 
+                                save_latency=True, ext_name=ext_name, device_id=device_id)
         zn.save_graph (OUTPUT_DIR)
         zn.convert_npp_to_onnx(OUTPUT_DIR)
     
@@ -331,8 +343,10 @@ def export_all(exp_nr):
             rw = random_wired.TrainNet()
             output = rw(input)
             rw.save_graph      (OUTPUT_DIR + 'rw' + str(i))
-            rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output, save_latency=True)
-            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True, save_latency=True)
+            rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output,
+                                 save_latency=True, ext_name=ext_name, device_id=device_id)
+            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True, 
+                                 save_latency=True, ext_name=ext_name, device_id=device_id)
         rw.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  40 **************************
@@ -341,13 +355,16 @@ def export_all(exp_nr):
         import time
 
         OUTPUT_DIR = './logs/rdn/same_net_many_times/'
-        
+        if not ext_name == 'cpu':
+            ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+            nn.set_default_context(ctx)
+
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
         rw = random_wired.TrainNet()
         output = rw(input)
 
-        N = 5 
+        N = 3 
         for i in range(0,N):
             n_run = 10
             # warm up
@@ -366,8 +383,10 @@ def export_all(exp_nr):
         N = 5  # Measure latency on same rdn network N times
         for i in range(0,N):
             print('****************** RUN ********************')
-            rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output, save_latency=True)
-            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True, save_latency=True)
+            rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output,
+                                save_latency=True, ext_name=ext_name, device_id=device_id)
+            rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True,
+                                save_latency=True, ext_name=ext_name, device_id=device_id)
         rw.save_graph      (OUTPUT_DIR + 'rw' + str(i))
         rw.convert_npp_to_onnx(OUTPUT_DIR)
 
@@ -437,7 +456,7 @@ def export_all(exp_nr):
     #  6 **************************        
     if exp_nr == 6:
         import onnx
-        
+
         if len(sys.argv) > 2:
             INPUT_DIR = sys.argv[2]
         else:  
@@ -531,12 +550,21 @@ def export_all(exp_nr):
             
 
 if __name__ == '__main__':
-    # import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     if len(sys.argv) > 1:
-        export_all(int(sys.argv[1]))
+        if len(sys.argv) > 2:
+            if len(sys.argv) > 3:
+                export_all(int(sys.argv[1]), sys.argv[2], int(sys.argv[3]))    
+            else:
+                export_all(int(sys.argv[1]), sys.argv[2])    
+        else:
+            export_all(int(sys.argv[1]))
+
     else:
-        print('Usage: python export_example.py <NUM> [DIRECTORY]')
-        print('Possible values for NUM:')
+        print('Usage: python export_example.py <ID> <ext_name> <device-id> [DIRECTORY]')
+        print('Possible values for ext_name: cpu, cuda, cudnn. Default = cpu')
+        print('Possible values for device_id: 0..7 . Default = 0')
+        print('Possible values for ID:')
         print('# 0  : sandbox -  creation / exporting tests')
         print('# 1  : (one net) create 1 instance of ZOPH network,   save it and its modules,     convert to ONNX')
         print('# 2  : (many different nets) Sample a set of N ZOPH networks, calculate latency, export all of them (whole net and modules), convert to ONNX')
@@ -548,7 +576,7 @@ if __name__ == '__main__':
         print('# 40 : (one net many times) Sample one Random wired network, calculate latency of this network N times, convert to ONNX')
         print('# 5  : (many different nets) WIP: the export for dynamic modules using mobilenet')
         print('# 50 : (one net many times)  WIP: Sample one mobilenet network, calculate latency N times')        
-        print('# 6 [DIR]: (WIP) from the given DIR, load ONNXs, load latencies, put everything on dictionary, display it')
+        print('# 6 [DIRECTORY]  (do not use ext_name or device_id): (WIP) from the given DIRECTORY, load ONNXs, load latencies, put everything on dictionary, display it')
         print('# 7 : WIP: load nnp files')
     pass
 

@@ -25,6 +25,7 @@ import numpy as np
 
 from nnabla_nas.module import static as smo
 
+from nnabla.ext_utils import get_extension_context
 
 class RandomModule(smo.Graph):
     """
@@ -555,7 +556,7 @@ class TrainNet(smo.Graph):
         gvg = self.get_gv_graph()
         gvg.render(path + '/graph')
 
-    def save_net_nnp(self, path, inp, out, save_latency=False):
+    def save_net_nnp(self, path, inp, out, save_latency=False, ext_name='cpu', device_id=0):
         """
             Saves whole net as one nnp
             Args:
@@ -592,12 +593,15 @@ class TrainNet(smo.Graph):
 
         if save_latency:
             from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
+            
+            if not ext_name == 'cpu':
+                ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+                nn.set_default_context(ctx)
 
-            #estimation = LatencyEstimator(n_run = 100, ext_name='cuda', device_id = 0)
-            #estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
+            #estimation = LatencyEstimator(n_run = 100)
             #latency = estimation.get_estimation(self)
-
-            estimation = LatencyGraphEstimator(n_run = 100, ext_name='cpu')
+            
+            estimation = LatencyGraphEstimator(n_run = 100)
             latency = estimation.get_estimation(out)
 
             filename = path + name + '.lat'
@@ -606,7 +610,7 @@ class TrainNet(smo.Graph):
 
 
 
-    def save_modules_nnp(self, path, active_only=False, save_latency=False):
+    def save_modules_nnp(self, path, active_only=False, save_latency=False, ext_name='cpu', device_id=0):
         """
             Saves all modules of the network as individual nnp files, using folder structure given by name convention
             Args:
@@ -649,11 +653,14 @@ class TrainNet(smo.Graph):
                 save(filename, contents, variable_batch_size=False)
 
                 if save_latency:
-                    #estimation = LatencyEstimator(n_run = 100, ext_name='cuda', device_id = 0)
-                    #estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
-                    #latency = estimation.get_estimation(mi)
+                    if not ext_name == 'cpu':
+                        ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+                        nn.set_default_context(ctx)
 
-                    estimation = LatencyGraphEstimator(n_run = 100, ext_name='cpu')
+                    #estimation = LatencyEstimator(n_run = 100)
+                    #latency = estimation.get_estimation(mi)
+                    
+                    estimation = LatencyGraphEstimator(n_run = 100)
                     latency = estimation.get_estimation(out)
 
                     filename = path + mi.name + '.lat'
