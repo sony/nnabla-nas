@@ -11,6 +11,10 @@ time_scale = "m"
 n_warmup = 10
 n_runs = 100
 
+estim_accum=None
+estim_real =None
+
+
 def print_me(zn,f):
     print(zn.summary(), file=f)
     print('\n***************************\n', file=f)
@@ -73,7 +77,7 @@ def init_calc_latency(output, ext_name='cpu', device_id=0):
 
 
 
-def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
+def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=False):
     
     #  0 **************************
     if exp_nr == 0:
@@ -120,10 +124,6 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
 
         if calc_latency:
             estim_real, estim_accum = init_calc_latency(output, ext_name=ext_name, device_id=device_id)
-        else:
-            estim_accum=None
-            estim_real =None
-        pass
 
         #zn_unique_active_modules = get_active_and_profiled_modules(zn)
 
@@ -139,7 +139,8 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
             calc_latency=calc_latency, func_latency=estim_accum)
 
         # CONVERT ALL TO ONNX
-        zn.convert_npp_to_onnx(OUTPUT_DIR)
+        if onnx:
+            zn.convert_npp_to_onnx(OUTPUT_DIR)
 
         # VERBOSITY - INFO OF NETWORK CONTENT
         #with open(OUTPUT_DIR + 'zn.txt', 'w') as f:
@@ -165,17 +166,15 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
             output = zn(input)
             if calc_latency:
                 estim_real, estim_accum = init_calc_latency(output, ext_name=ext_name, device_id=device_id)
-            else:
-                estim_accum=None
-                estim_real =None
-            pass
+
             zn.save_graph      (OUTPUT_DIR + 'zn' + str(i))
             zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, 
                 calc_latency=calc_latency, func_real_latency=estim_real, func_accum_latency=estim_accum)
             zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, 
                 calc_latency=calc_latency, func_latency=estim_accum)
         
-        zn.convert_npp_to_onnx(OUTPUT_DIR)
+        if onnx:
+            zn.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  20 **************************
     if exp_nr == 20:
@@ -213,16 +212,13 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
         for i in range(0,N):
             if calc_latency:
                 estim_real, estim_accum = init_calc_latency(output, ext_name=ext_name, device_id=device_id)
-            else:
-                estim_accum=None
-                estim_real =None
-            pass
             zn.save_net_nnp    (OUTPUT_DIR + 'zn' + str(i), input, output, 
                 calc_latency=calc_latency, func_real_latency=estim_real, func_accum_latency=estim_accum)
             zn.save_modules_nnp(OUTPUT_DIR + 'zn' + str(i), active_only=True, 
                 calc_latency=calc_latency, func_latency=estim_accum)
         zn.save_graph (OUTPUT_DIR)
-        #zn.convert_npp_to_onnx(OUTPUT_DIR)
+        if onnx:
+            zn.convert_npp_to_onnx(OUTPUT_DIR)
     
     #  21 **************************
     if exp_nr == 21:    
@@ -364,6 +360,8 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
     #  3 **************************
     if exp_nr == 3:
         from nnabla_nas.contrib import random_wired
+        ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+        nn.set_default_context(ctx)
 
         OUTPUT_DIR = './logs/rdn/one_net/'
 
@@ -372,15 +370,24 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
         input = nn.Variable(shape)
         rw = random_wired.TrainNet()
         output = rw(input)
-        
+
+        if calc_latency:
+            estim_real, estim_accum = init_calc_latency(output, ext_name=ext_name, device_id=device_id)
+
         rw.save_graph      (OUTPUT_DIR + 'rw')
-        rw.save_net_nnp    (OUTPUT_DIR + 'rw', input, output)
-        rw.save_modules_nnp(OUTPUT_DIR + 'rw', active_only=True)
-        rw.convert_npp_to_onnx(OUTPUT_DIR)
+        rw.save_net_nnp    (OUTPUT_DIR + 'rw', input, output,
+            calc_latency=calc_latency, func_real_latency=estim_real, func_accum_latency=estim_accum)
+        rw.save_modules_nnp(OUTPUT_DIR + 'rw', active_only=True,
+            calc_latency=calc_latency, func_latency=estim_accum)
+        
+        if onnx:
+            rw.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  4 **************************    
     if exp_nr == 4:
         from nnabla_nas.contrib import random_wired
+        ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+        nn.set_default_context(ctx)
 
         OUTPUT_DIR = './logs/rdn/many_different_nets/'
         
@@ -391,12 +398,17 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
         for i in range(0,N):
             rw = random_wired.TrainNet()
             output = rw(input)
+            if calc_latency:
+                estim_real, estim_accum = init_calc_latency(output, ext_name=ext_name, device_id=device_id)
+            
             rw.save_graph      (OUTPUT_DIR + 'rw' + str(i))
             rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output,
-                                 save_latency=True, ext_name=ext_name, device_id=device_id)
+                calc_latency=calc_latency, func_real_latency=estim_real, func_accum_latency=estim_accum)
             rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True, 
-                                 save_latency=True, ext_name=ext_name, device_id=device_id)
-        rw.convert_npp_to_onnx(OUTPUT_DIR)
+                calc_latency=calc_latency, func_latency=estim_accum)
+        
+        if onnx:
+            rw.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  40 **************************
     if exp_nr == 40:
@@ -430,13 +442,16 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
 
         N = 5  # Measure latency on same rdn network N times
         for i in range(0,N):
-            print('****************** RUN ********************')
+            if calc_latency:
+                estim_real, estim_accum = init_calc_latency(output, ext_name=ext_name, device_id=device_id)
             rw.save_net_nnp    (OUTPUT_DIR + 'rw' + str(i), input, output,
-                                save_latency=True, ext_name=ext_name, device_id=device_id)
+                calc_latency=calc_latency, func_real_latency=estim_real, func_accum_latency=estim_accum)
             rw.save_modules_nnp(OUTPUT_DIR + 'rw' + str(i), active_only=True,
-                                save_latency=True, ext_name=ext_name, device_id=device_id)
+                calc_latency=calc_latency, func_latency=estim_accum)
         rw.save_graph      (OUTPUT_DIR + 'rw' + str(i))
-        rw.convert_npp_to_onnx(OUTPUT_DIR)
+        
+        if onnx:
+            rw.convert_npp_to_onnx(OUTPUT_DIR)
 
     #  5 **************************
     if exp_nr == 5:
@@ -614,34 +629,46 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0):
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         if len(sys.argv) > 2:
-            if sys.argv[2] == 'LAT':
+            if sys.argv[2] == '0' or sys.argv[2] == 'LO' or sys.argv[2] == 'OL':
+                onnx=True
+            else:
+                onnx=False
+            pass
+            if sys.argv[2] == 'L' or sys.argv[2] == 'LO' or sys.argv[2] == 'OL':
+                calc_latency=True
+            else:
+                calc_latency=False
+            pass
+            if sys.argv[2] == 'L' or sys.argv[2] == 'LO' or sys.argv[2] == 'OL' or sys.argv[2] == 'O':
                 if len(sys.argv) > 3:
                     if len(sys.argv) > 4:
-                        export_all(int(sys.argv[1]), calc_latency=True, ext_name=sys.argv[3], device_id=int(sys.argv[4]))    
+                        export_all(int(sys.argv[1]), calc_latency=calc_latency, ext_name=sys.argv[3], device_id=int(sys.argv[4]), onnx=onnx)    
                     else:
-                        export_all(int(sys.argv[1]), calc_latency=True, ext_name=sys.argv[3])    
+                        export_all(int(sys.argv[1]), calc_latency=calc_latency, ext_name=sys.argv[3], onnx=onnx)    
                     pass
                 else:
-                    export_all(int(sys.argv[1]), calc_latency=True)
+                    export_all(int(sys.argv[1]), calc_latency=calc_latency, onnx=onnx)
                 pass
             else:
                 if len(sys.argv) > 3:
-                    export_all(int(sys.argv[1]), calc_latency=False, ext_name=sys.argv[2], device_id=int(sys.argv[3]))    
+                    export_all(int(sys.argv[1]), calc_latency=calc_latency, ext_name=sys.argv[2], device_id=int(sys.argv[3]), onnx=onnx)    
                 else:
-                    export_all(int(sys.argv[1]), calc_latency=False, ext_name=sys.argv[2])    
+                    export_all(int(sys.argv[1]), calc_latency=calc_latency, ext_name=sys.argv[2], onnx=onnx)    
                 pass
             pass
         else:
             export_all(int(sys.argv[1]), calc_latency=False)
 
     else:
-        print('Usage: python export_example.py <id> [LAT|<path>] [<ext_name> [<device-id>]]')
-        print('If LAT is used, the estimation for latency will be calculated')
+        print('Usage: python export_example.py <id> [L|LO|O|<path>] [<ext_name> [<device-id>]]')
+        print('If L is used, the estimation for latency will be calculated')
+        print('If O is used, the exporting to ONNX will be done')
+        print('If LO or OL is used, the estimation and the exporting to ONNX will be done')
         print('Possible values for <ext_name>: cpu, cuda, cudnn. Default = cpu')
         print('Possible values for <device_id>: 0..7 . Default = 0')
         print('Possible values for <id>:')
         print('# 0  : sandbox -  creation / exporting tests')
-        print('# 1  : (one net) create 1 instance of ZOPH network,   save it and its modules,  [calc latency] [convert to ONNX]')
+        print('# 1  : (one net) create 1 instance of ZOPH network,   save it and its modules,  calc latency, convert to ONNX')
         print('# 2  : (many different nets) Sample a set of N ZOPH networks, calculate latency, export all of them (whole net and modules), convert to ONNX')
         print('# 20 : (one net many times) Sample one ZOPH network, calculate latency of this network N times')
         print('# 21 : Sample several static convolutions (predefined), calc latency on each of them many times')
