@@ -688,14 +688,14 @@ class SearchNet(smo.Graph):
         gvg.render(path + '/graph')
 
 
-    def save_net_nnp(self, path, inp, out, save_latency=False, ext_name='cpu', device_id=0):
+    def save_net_nnp(self, path, inp, out, calc_latency=False, func_real_latency=None, func_accum_latency=None):
         """
             Saves whole net as one nnp
             Args:
                 path
                 inp: input of the created network
                 out: output of the created network
-                save_latency: calculate and save also latency
+                calc_latency: calculate and save also latency
         """
         batch_size = inp.shape[0]
 
@@ -720,33 +720,27 @@ class SearchNet(smo.Graph):
 
         save(filename, contents, variable_batch_size=False)
 
-        if save_latency:
-            from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
-            
-            ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
-            nn.set_default_context(ctx)
-
-            #estimation = LatencyEstimator(n_run = 100, ext_name=ext_name, device_id=device_id)
-            #latency = estimation.get_estimation(self)
-            
-            estimation = LatencyGraphEstimator(n_run = 100, ext_name=ext_name, device_id=device_id)
-            latency = estimation.get_estimation(out)
-
-            filename = path + name + '.lat'
+        if calc_latency:
+            acc_latency = func_accum_latency.get_estimation(out)
+            filename = path + name + '.acclat'
             with open(filename, 'w') as f:
-                print(latency.__str__(), file=f)
+                print(acc_latency.__str__(), file=f)
+            
+            func_real_latency.run()
+            real_latency = float(func_real_latency.result['forward_all'])
+            filename = path + name + '.realat'
+            with open(filename, 'w') as f:
+                print(real_latency.__str__(), file=f)
 
 
-
-    def save_modules_nnp(self, path, active_only=False, save_latency=False, ext_name='cpu', device_id=0):
+    def save_modules_nnp(self, path, active_only=False, calc_latency=False, func_latency=None):
         """
             Saves all modules of the network as individual nnp files, using folder structure given by name convention
             Args:
                 path
                 active_only: if True, only active modules are saved
         """
-        from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
-
+        
         mods = self.get_net_modules(active_only=active_only)
         for mi in mods:
             if type(mi) in self.modules_to_profile:
@@ -778,19 +772,12 @@ class SearchNet(smo.Graph):
                 
                 save(filename, contents, variable_batch_size=False)
 
-                if save_latency:
-                    ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
-                    nn.set_default_context(ctx)
-
-                    #estimation = LatencyEstimator(n_run = 100, ext_name=ext_name, device_id=device_id)
-                    #latency = estimation.get_estimation(mi)
-                    
-                    estimation = LatencyGraphEstimator(n_run = 100, ext_name=ext_name, device_id=device_id)
-                    latency = estimation.get_estimation(out)
-
-                    filename = path + mi.name + '.lat'
+                if calc_latency:
+                    latency = func_latency.get_estimation(out)
+                    filename = path + mi.name + '.acclat'
                     with open(filename, 'w') as f:
                         print(latency.__str__(), file=f)
+
 
 
     def convert_npp_to_onnx(self, path):
