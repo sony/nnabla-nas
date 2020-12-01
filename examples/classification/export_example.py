@@ -4,6 +4,13 @@ import nnabla as nn
 import glob
 from nnabla.ext_utils import get_extension_context
 
+# Global params for the latency estimation
+outlier = 0.05
+max_measure_execution_time = 500
+time_scale = "m"
+n_warmup = 10
+n_run = 100
+
 def print_me(zn,f):
     print(zn.summary(), file=f)
     print('\n***************************\n', file=f)
@@ -80,8 +87,6 @@ def export_all(exp_nr, ext_name='cpu', device_id=0):
         from nnabla_nas.contrib import zoph
 
         OUTPUT_DIR = './logs/zoph/one_net/'
-        ext_name='cudnn'
-        device_id = 0
         
         # Sample one ZOPH network from the search space
         shape = (1, 3, 32, 32)
@@ -354,9 +359,8 @@ def export_all(exp_nr, ext_name='cpu', device_id=0):
         import time
 
         OUTPUT_DIR = './logs/rdn/same_net_many_times/'
-        if not ext_name == 'cpu':
-            ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
-            nn.set_default_context(ctx)
+        ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+        nn.set_default_context(ctx)
 
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
