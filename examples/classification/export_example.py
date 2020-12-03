@@ -394,7 +394,7 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
 
-        N = 5  # Measure latency on same rdn network N times
+        N = 10  # Measure latency on same rdn network N times
         for i in range(0,N):
             rw = random_wired.TrainNet()
             output = rw(input)
@@ -424,7 +424,7 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
         rw = random_wired.TrainNet()
         output = rw(input)
 
-        N = 3 
+        N = 5 
         for i in range(0,N):
             n_run = 10
             # warm up
@@ -544,16 +544,43 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
             all_blocks = glob.glob(network + '**/*.acclat', recursive=True)
             blocks = dict.fromkeys([])
             block_idx = 0
-            this_net_accumulated_latency = 0
+
+            this_net_accumulated_latency = 0.0
+            this_net_accumulated_latency_of_convs = 0.0
+            this_net_accumulated_latency_of_relus = 0.0
+            this_net_accumulated_latency_of_bns = 0.0
+            this_net_accumulated_latency_of_merges = 0.0
+            this_net_accumulated_latency_of_pools = 0.0
+            this_net_accumulated_latency_of_reshapes = 0.0
+
             for block_lat in all_blocks:
                 block = block_lat[:-7] + '.onnx'
                 print('.... READING .... -->  ' + block)
+    
 
                 # Reading latency for each of the blocks of layers
                 with open(block_lat, 'r') as f:
                     block_latency = float(f.read())
 
                 this_net_accumulated_latency += block_latency
+
+                # Layer-type-wise latencies tested for Zoph and for Random Wired networks
+                layer_name = block.split('/')[-1].split('.')[0]
+                if layer_name.find('bn') != -1:
+                    this_net_accumulated_latency_of_bns += block_latency
+                elif layer_name.find('relu') != -1:
+                    this_net_accumulated_latency_of_relus += block_latency
+                elif layer_name.find('conv') != -1:
+                    this_net_accumulated_latency_of_convs += block_latency
+                elif layer_name.find('merg') != -1:
+                    this_net_accumulated_latency_of_merges += block_latency
+                elif layer_name.find('pool') != -1:
+                    this_net_accumulated_latency_of_pools += block_latency
+                elif layer_name.find('con') != -1: # from concat
+                    this_net_accumulated_latency_of_merges += block_latency
+                elif layer_name.find('reshape') != -1:
+                    this_net_accumulated_latency_of_reshapes += block_latency
+                pass
 
                 this_block = dict.fromkeys([])
                 this_block['latency'] = block_latency
@@ -577,11 +604,11 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
             net_acclat_file = network[:-1] + '.acclat'
             with open(net_acclat_file, 'r') as f:
                 this_net_acc_latency = float(f.read())
-
+            
             this_net = dict.fromkeys([])
             this_net['real_latency'] = this_net_real_latency
-            this_net['accum_latency'] = this_net_acc_latency
-            this_net['accum_latency_v2'] = this_net_accumulated_latency
+            this_net['accum_latency_graph'] = this_net_acc_latency
+            this_net['accum_latency_module'] = this_net_accumulated_latency
             
             if load_onnx:
                 net_file  = network[:-1] + '.onnx'
@@ -592,17 +619,24 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
                 this_net['output']  = params.graph.output
                 this_net['nodes']   = params.graph.node
 
-            all_nets_latencies[net_idx] = [this_net_real_latency, this_net_acc_latency, this_net_accumulated_latency]
+            all_nets_latencies[net_idx] = [this_net_real_latency, this_net_acc_latency, this_net_accumulated_latency,
+                                        this_net_accumulated_latency_of_convs,    this_net_accumulated_latency_of_bns, 
+                                        this_net_accumulated_latency_of_relus,  this_net_accumulated_latency_of_pools, 
+                                        this_net_accumulated_latency_of_merges, this_net_accumulated_latency_of_reshapes,
+                                        ]
             all_nets          [net_idx] = this_net
 
             net_idx += 1
 
         # Compare accumulated latency to net latencies, do a plot:
-        print('Results from ' + INPUT_DIR)
-        print('NETWORK REAL LATENCY, ACCUM LATENCY v1 and v2')
+        print('LATENCY Results from ' + INPUT_DIR)
+        print('NETWORK REAL, ACCUM by graph analysis, ACCUM by module analysis,', 
+               ' of CONVs,  of BNs,  of RELUs, of POOLs, of MERGEs/CONCATs, of RESHAPEs',
+                )
         for i in range(len(all_nets_latencies)):
-            print(all_nets_latencies[i])
-        
+            #print(all_nets_latencies[i])
+            print(['%7.4f' % val for val in all_nets_latencies[i]])
+
         #import pdb; pdb.set_trace()
 
     #  7 **************************        
