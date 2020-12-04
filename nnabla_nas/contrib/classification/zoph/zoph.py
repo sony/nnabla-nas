@@ -703,6 +703,9 @@ class SearchNet(smo.Graph):
 
         filename = path + name + '.nnp'
         pathname = os.path.dirname(filename)
+        upper_pathname = os.path.dirname(pathname)
+        if not os.path.exists(upper_pathname):
+            os.mkdir(upper_pathname)
         if not os.path.exists(pathname):
             os.mkdir(pathname)
 
@@ -740,7 +743,7 @@ class SearchNet(smo.Graph):
                 path
                 active_only: if True, only active modules are saved
         """
-        
+          
         mods = self.get_net_modules(active_only=active_only)
         for mi in mods:
             if type(mi) in self.modules_to_profile:
