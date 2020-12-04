@@ -17,6 +17,7 @@ from collections import OrderedDict
 import os
 
 import nnabla.functions as F
+import nnabla.function as Function
 from nnabla.utils.save import save
 
 import nnabla as nn
@@ -29,6 +30,8 @@ from .modules import CANDIDATES
 from .modules import ChoiceBlock
 from .modules import ConvBNReLU
 from .modules import InvertedResidual
+
+from nnabla.context import get_current_context
 
 
 def _make_divisible(x, divisible_by=8):
@@ -151,14 +154,9 @@ class SearchNet(Model):
 
     @property
     def modules_to_profile(self):
-        return [Mo.Sequential,
-                ConvBNReLU,
-                Mo.Conv,
+        return [Mo.Conv,
                 Mo.BatchNormalization,
                 Mo.ReLU6,
-                ChoiceBlock,
-                InvertedResidual,
-                Mo.ModuleList,
                 Mo.Dropout,
                 Mo.Identity,
                 Mo.Linear,
@@ -250,6 +248,65 @@ class SearchNet(Model):
         return F.mean(label_smoothing_loss(outputs[0], targets[0]))
 
 
+    #def save_graph(self, path):
+    #    """
+    #        save whole network/graph (in a PDF file)
+    #        Args:
+    #            path
+    #    """
+    #    gvg = self.get_gv_graph()
+    #    gvg.render(path + '/graph')
+
+
+    def save_net_nnp(self, path, inp, out, calc_latency=False, func_real_latency=None, func_accum_latency=None):
+        """
+            Saves whole net as one nnp
+            Args:
+                path
+                inp: input of the created network
+                out: output of the created network
+                save_latency: calculate and save also latency
+        """
+        batch_size = inp.shape[0]
+
+        name = ''
+
+        filename = path + name + '.nnp'
+        pathname = os.path.dirname(filename)
+        upper_pathname = os.path.dirname(pathname)
+        if not os.path.exists(upper_pathname):
+            os.mkdir(upper_pathname)
+        if not os.path.exists(pathname):
+            os.mkdir(pathname)
+
+        dict = {'0': inp}
+        keys = ['0']
+
+        contents = {'networks': [{'name': name,
+                                  'batch_size': batch_size,
+                                  'outputs': {'out': out},
+                                  'names': dict}],
+                    'executors': [{'name': 'runtime',
+                                   'network': name,
+                                   'data': keys,
+                                   'output': ['out']}]}
+
+        save(filename, contents, variable_batch_size=False)
+
+        if calc_latency:
+            acc_latency = func_accum_latency.get_estimation(out)
+            filename = path + name + '.acclat'
+            with open(filename, 'w') as f:
+                print(acc_latency.__str__(), file=f)
+            
+            func_real_latency.run()
+            real_latency = float(func_real_latency.result['forward_all'])
+            filename = path + name + '.realat'
+            with open(filename, 'w') as f:
+                print(real_latency.__str__(), file=f)
+
+
+
     def get_net_modules(self, active_only=False):
         ans = []
         for name, module in self.get_modules():
@@ -257,25 +314,82 @@ class SearchNet(Model):
                 ans.append(module)
         return ans
 
-    def save_modules_nnp(self, path, active_only=False):
+    def calc_latency_modules(self, path, graph, func_latency=None):
         """
-            *** This script does not work  ***
-            since the input shapes of the CANDIDATES are only defined at run time!
-
-            Saves all modules of the network as individual nnp files,
-            using folder structure given by name convention
-            
             Args:
                 path
-                active_only: if True, only active modules are saved
+                graph: 
+        """
+        from ....utils.estimator.latency import Profiler
+
+        func_latency._visitor.reset()
+        graph.visit(func_latency._visitor)
+        total_latency = 0.0
+        idx = 0
+        for func in func_latency._visitor._functions:
+            args = [func.info.type_name] + [str(inp.shape) for inp in func.inputs] + [str(func.info.args)]            
+            key = '-'.join(args)
+
+            ff = getattr(Function, func.info.type_name)(get_current_context(), **func.info.args)
+
+            if key not in func_latency.memo:
+                try:  # run profiler
+                    nnabla_vars = [nn.Variable(inp.shape, need_grad=inp.need_grad) for inp in func.inputs]
+                    runner = Profiler(
+                        ff(*nnabla_vars),
+                        device_id=func_latency._device_id,
+                        ext_name=func_latency._ext_name,
+                        n_run=func_latency._n_run,
+                        outlier=func_latency._outlier,
+                        max_measure_execution_time=func_latency._max_measure_execution_time,
+                        time_scale=func_latency._time_scale,
+                        n_warmup=func_latency._n_warmup
+                    )
+                    runner.run()
+                    latency = float(runner.result['forward_all'])
+
+                except Exception as err:
+                    latency = 0
+                    logger.warning(f'Latency calculation failed: {key}')
+                    logger.warning(str(err))
+                
+                func_latency.memo[key] = latency
+            else:
+                latency = func_latency.memo[key]
+            
+            total_latency += latency
+            
+            # save latency of this layer (name: id_XXX_{key}.acclat)
+            filename = path + '/id_' + str(idx) + '_' + key + '.acclat'
+            pathname = os.path.dirname(filename)
+            upper_pathname = os.path.dirname(pathname)
+            if not os.path.exists(upper_pathname):
+                os.mkdir(upper_pathname)
+            if not os.path.exists(pathname):
+                os.mkdir(pathname)
+            idx += 1
+            with open(filename, 'w') as f:
+                print(latency.__str__(), file=f)
+        
+        # save accum latency of all layers
+        filename = path + '.acclat_sum'
+        with open(filename, 'w') as f:
+            print(total_latency.__str__(), file=f)
+
+
+        """
+            *** The script as below does not work  ***
+            since the input shapes of the CANDIDATES are only defined at run time!
+        """
         """
         mods = self.get_net_modules()
         idx = 0
         for mi in mods:
             if type(mi) in self.modules_to_profile:
+                print(type(mi))
                 if len(mi.input_shapes) == 0:
                     print('NOT DEFINED: ', type(mi))
-                    continue
+                    import pdb; pdb.set_trace()
                 pass
 
                 inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
@@ -300,53 +414,7 @@ class SearchNet(Model):
                 
                 save(filename, contents, variable_batch_size=False)
                 idx = idx + 1
-
-        #import pdb; pdb.set_trace()
-
-    def save_net_nnp(self, path, inp, out, save_latency=False):
         """
-            Saves whole net as one nnp
-            Args:
-                path
-                inp: input of the created network
-                out: output of the created network
-                save_latency: calculate and save also latency
-        """
-        batch_size = inp.shape[0]
-
-        name = '_whole_net'
-        filename = path + name + '.nnp'
-        pathname = os.path.dirname(filename)
-        if not os.path.exists(pathname):
-            os.mkdir(pathname)
-
-        dict = {'0': inp}
-        keys = ['0']
-
-        contents = {'networks': [{'name': name,
-                                  'batch_size': batch_size,
-                                  'outputs': {'out': out},
-                                  'names': dict}],
-                    'executors': [{'name': 'runtime',
-                                   'network': name,
-                                   'data': keys,
-                                   'output': ['out']}]}
-
-        save(filename, contents, variable_batch_size=False)
-        
-        if save_latency:
-            from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
-            
-            #estimation = LatencyEstimator(n_run = 100, ext_name='cpu')
-            #latency = estimation.get_estimation(self)
-
-            estimation = LatencyGraphEstimator(n_run = 100, ext_name='cpu')
-            latency = estimation.get_estimation(out)
-
-            filename = path + name + '.lat'
-            with open(filename, 'w') as f:
-                print(latency.__str__(), file=f)
-
 
 
     def convert_npp_to_onnx(self, path):
