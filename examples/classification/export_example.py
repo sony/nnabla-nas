@@ -158,7 +158,7 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
         shape = (1, 3, 32, 32)
         input = nn.Variable(shape)
 
-        N = 10  # number of random networks to sample
+        N = 50  # number of random networks to sample
 
         # Sample N zoph networks from the search space
         for i in range(0,N):
@@ -456,26 +456,34 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
     #  5 **************************
     if exp_nr == 5:
         from nnabla_nas.contrib.classification.mobilenet import SearchNet
+        ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
+        nn.set_default_context(ctx)
 
-        OUTPUT_DIR = './logs/mobilenet/many_different_nets/'
+        OUTPUT_DIR = './logs/mobilenet/many_different_nets_gpu/'
 
         input = nn.Variable((1, 3, 224, 224))
         
         N = 10  # number of random networks to sample
-
         # Sample N networks from the search space
         for i in range(0,N):
             mobile_net = SearchNet(num_classes=1000)
             output = mobile_net(input)
+            if calc_latency:
+                estim_real, estim_accum = init_calc_latency(output, ext_name=ext_name, device_id=device_id)
             
-            #mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output, save_latency=True)
+            #mobile_net.save_graph      (OUTPUT_DIR + 'mn' + str(i))
             
+            mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output, 
+                calc_latency=calc_latency, func_real_latency=estim_real, func_accum_latency=estim_accum)
+
             # it seems the last affine layer cannot be converted to ONNX (!?), here export without it
-            mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output.parent.inputs[0], save_latency=True)
-            
-            #mobile_net.save_modules_nnp() ## NOT AVAILABLE YET
+            #mobile_net.save_net_nnp(OUTPUT_DIR + 'mn' + str(i), input, output.parent.inputs[0], save_latency=True)
+
+            if calc_latency:
+                mobile_net.calc_latency_modules(OUTPUT_DIR + 'mn' + str(i), output,  func_latency=estim_accum)
         
-        mobile_net.convert_npp_to_onnx(OUTPUT_DIR)
+        if onnx:
+            mobile_net.convert_npp_to_onnx(OUTPUT_DIR)
     
     #  50 **************************
     if exp_nr == 50:
@@ -552,6 +560,7 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
             this_net_accumulated_latency_of_merges = 0.0
             this_net_accumulated_latency_of_pools = 0.0
             this_net_accumulated_latency_of_reshapes = 0.0
+            this_net_accumulated_latency_of_affines = 0.0
 
             for block_lat in all_blocks:
                 block = block_lat[:-7] + '.onnx'
@@ -565,6 +574,7 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
                 this_net_accumulated_latency += block_latency
 
                 # Layer-type-wise latencies tested for Zoph and for Random Wired networks
+                
                 layer_name = block.split('/')[-1].split('.')[0]
                 if layer_name.find('bn') != -1:
                     this_net_accumulated_latency_of_bns += block_latency
@@ -580,6 +590,20 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
                     this_net_accumulated_latency_of_merges += block_latency
                 elif layer_name.find('reshape') != -1:
                     this_net_accumulated_latency_of_reshapes += block_latency
+                
+                # for mobilenet
+                elif layer_name.find('BatchNorm') != -1:
+                    this_net_accumulated_latency_of_bns += block_latency
+                elif layer_name.find('Convolution') != -1:
+                    this_net_accumulated_latency_of_convs += block_latency
+                elif layer_name.find('ReLU6') != -1:
+                    this_net_accumulated_latency_of_relus += block_latency
+                elif layer_name.find('Pool') != -1:
+                    this_net_accumulated_latency_of_pools += block_latency
+                elif layer_name.find('Add2') != -1:
+                    this_net_accumulated_latency_of_merges += block_latency
+                elif layer_name.find('Affine') != -1:
+                    this_net_accumulated_latency_of_affines += block_latency
                 pass
 
                 this_block = dict.fromkeys([])
@@ -623,6 +647,7 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
                                         this_net_accumulated_latency_of_convs,    this_net_accumulated_latency_of_bns, 
                                         this_net_accumulated_latency_of_relus,  this_net_accumulated_latency_of_pools, 
                                         this_net_accumulated_latency_of_merges, this_net_accumulated_latency_of_reshapes,
+                                        this_net_accumulated_latency_of_affines,
                                         ]
             all_nets          [net_idx] = this_net
 
@@ -631,11 +656,11 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
         # Compare accumulated latency to net latencies, do a plot:
         print('LATENCY Results from ' + INPUT_DIR)
         print('NETWORK REAL, ACCUM by graph analysis, ACCUM by module analysis,', 
-               ' of CONVs,  of BNs,  of RELUs, of POOLs, of MERGEs/CONCATs, of RESHAPEs',
+               ' of CONVs,  of BNs,  of RELUs, of POOLs, of MERGEs/CONCATs, of RESHAPEs, of AFFINEs',
                 )
         for i in range(len(all_nets_latencies)):
             #print(all_nets_latencies[i])
-            print(['%7.4f' % val for val in all_nets_latencies[i]])
+            print(['%7.3f' % val for val in all_nets_latencies[i]])
 
         #import pdb; pdb.set_trace()
 
