@@ -468,16 +468,13 @@ class TrainNet(smo.Graph):
     def modules_to_profile(self):
         return [smo.ReLU,
                 smo.BatchNormalization,
+                smo.Join,
                 smo.Merging,
+                smo.Collapse,
                 smo.Conv,
                 smo.MaxPool,
-                Conv,
-                SepConv,
-                SepConv3x3,
-                SepConv5x5,
-                MaxPool2x2,
-                AvgPool2x2,
-                RandomModule,
+                smo.AvgPool,
+                smo.GlobalAvgPool,
                 ]
     
     def get_arch_modules(self):
@@ -566,14 +563,13 @@ class TrainNet(smo.Graph):
         """
         batch_size = inp.shape[0]
 
-        #if self.name is '':
-        #    name = '_whole_net'
-        #else:
-        #    name = '_' + self.name
         name = self.name
 
         filename = path + name + '.nnp'
         pathname = os.path.dirname(filename)
+        upper_pathname = os.path.dirname(pathname)
+        if not os.path.exists(upper_pathname):
+            os.mkdir(upper_pathname)
         if not os.path.exists(pathname):
             os.mkdir(pathname)
 
@@ -616,12 +612,10 @@ class TrainNet(smo.Graph):
         from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
 
         mods = self.get_net_modules(active_only=active_only)
+        
         for mi in mods:
-            print(type(mi))
             if type(mi) in self.modules_to_profile:
-                
-                #print(type(mi))
-                
+
                 inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
 
@@ -654,7 +648,6 @@ class TrainNet(smo.Graph):
                     with open(filename, 'w') as f:
                         print(latency.__str__(), file=f)
 
-    
     def convert_npp_to_onnx(self, path):
         """
             Finds all nnp files in the given path and its subfolders and converts them to ONNX
