@@ -7,7 +7,7 @@ Run the following code snippet for a local installation:
 
 ::
     
-    git clone git@gitlab.stc.eu.sony.com:bacnguyencong/nnabla_nas.git
+    git clone git@github.com:sony/nnabla-nas.git
     cd nnabla_nas
     pip install -r requirements.txt
 
