@@ -79,6 +79,9 @@ def init_calc_latency(output, ext_name='cpu', device_id=0):
 
 def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=False):
     
+    estim_real = None
+    estim_accum = None
+
     #  0 **************************
     if exp_nr == 0:
         from nnabla_nas.contrib import zoph
@@ -688,7 +691,7 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         if len(sys.argv) > 2:
-            if sys.argv[2] == '0' or sys.argv[2] == 'LO' or sys.argv[2] == 'OL':
+            if sys.argv[2] == 'O' or sys.argv[2] == 'LO' or sys.argv[2] == 'OL':
                 onnx=True
             else:
                 onnx=False
