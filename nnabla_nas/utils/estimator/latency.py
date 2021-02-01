@@ -148,7 +148,6 @@ class Profiler(GraphProfiler):
         std_time = "{:.8f}".format(std_time)
 
         return mean_time, std_time
-        #return mean_time, runtime_sorted*1000
 
 
 class LatencyEstimator(Estimator):
@@ -265,13 +264,6 @@ class LatencyGraphEstimator(Estimator):
                     runner.run()
                     latency = float(runner.result['forward_all'])
 
-                    #if np.isnan(latency):
-                    #    print('WARNING -> NaN measurements in one layer')
-                    #    import pdb; pdb.set_trace()
-
-                    #all_latencies = runner.result['n_run_forward_all']
-                    #print('2->', func.name, ':', 'dummy',    ':', latency, ':', args[1:])
-                    #print(all_latencies)
                 except Exception as err:
                     latency = 0
                     logger.warning(f'Latency calculation failed: {key}')

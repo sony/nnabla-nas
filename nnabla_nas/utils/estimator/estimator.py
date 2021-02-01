@@ -24,6 +24,8 @@ class Estimator(object):
 
     def get_estimation(self, module):
         """Returns the estimation of the whole module."""
+        
+        ### ORIGINAL CODE
         #return sum(self.predict(m) for _, m in module.get_modules()
         #          if len(m.modules) == 0 and m.need_grad)
 
@@ -33,11 +35,6 @@ class Estimator(object):
             if len(m.modules) == 0 and m.need_grad:
                 tmp, mem = self.predict(m)
                 final += tmp
-                #print(type(m), ",", tmp, ",", m.input_shapes)
-                #if tmp > 100:
-                #  import pdb; pdb.set_trace()
-        #print(mem)
-        
         return final
         
 
