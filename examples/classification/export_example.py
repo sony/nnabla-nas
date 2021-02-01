@@ -459,11 +459,11 @@ def export_all(exp_nr, calc_latency=False, ext_name='cpu', device_id=0, onnx=Fal
         ctx = get_extension_context(ext_name=ext_name, device_id=device_id)
         nn.set_default_context(ctx)
 
-        OUTPUT_DIR = './logs/mobilenet/many_different_nets_gpu/'
+        OUTPUT_DIR = './logs/mobilenet/many_different_nets_cpu/'
 
         input = nn.Variable((1, 3, 224, 224))
         
-        N = 10  # number of random networks to sample
+        N = 20  # number of random networks to sample
         # Sample N networks from the search space
         for i in range(0,N):
             mobile_net = SearchNet(num_classes=1000)
@@ -735,10 +735,10 @@ if __name__ == '__main__':
         print('# 3  : (one net) create 1 instance of random wired search space network, save it and its modules,     convert to ONNX')
         print('# 4  : (many different nets) Sample a set of N Random wired networks, export them (net and modules), convert to ONNX')
         print('# 40 : (one net many times) Sample one Random wired network, calculate latency of this network N times, convert to ONNX')
-        print('# 5  : (many different nets) WIP: the export for dynamic modules using mobilenet')
-        print('# 50 : (one net many times)  WIP: Sample one mobilenet network, calculate latency N times')        
-        print('# 6 <path>  (do not use ext_name or device_id): (WIP) from the given <path>, load ONNXs, load latencies, put everything on dictionary, display it')
-        print('# 7 : WIP: load nnp files')
+        print('# 5  : (many different nets): the export for dynamic modules using mobilenet. Latency measurement works. Indivudual export of all layers not yet')
+        print('# 50 : (one net many times)  [WIP]: Sample one mobilenet network, calculate latency N times')        
+        print('# 6 <path>  (do not use ext_name or device_id): from the given <path>, load ONNXs if existing, load latencies, put everything on dictionary, display it -- (working for zoph, random wired and mobilenet)')
+        print('# 7 : sandbox to load nnp files')
     pass
 
     
