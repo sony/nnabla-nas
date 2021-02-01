@@ -11,7 +11,7 @@ NNablaNAS is a Python package that provides methods in neural architecture searc
 
 - Regularizers (e.g., *LatencyEstimator* and *MemoryEstimator*) which can be used to enforce hardware constraints
 
-In this document, we will describe how to use the Python APIs, some examples, and the contribution guideline for developers. The latest release version can be installed from  `here <https://gitlab.stc.eu.sony.com/bacnguyencong/nnabla_nas>`_.
+In this document, we will describe how to use the Python APIs, some examples, and the contribution guideline for developers. The latest release version can be installed from  `here <https://github.com/sony/nnabla-nas>`_.
 
 
 

@@ -20,6 +20,8 @@ import nnabla.functions as F
 from nnabla.utils.save import save
 import numpy as np
 
+# from ....module import static as smo
+# from ....module.parameter import Parameter
 from nnabla_nas.module import static as smo
 from nnabla_nas.module.parameter import Parameter
 

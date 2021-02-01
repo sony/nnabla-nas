@@ -102,7 +102,7 @@ def get_data(train, comm, rng):
         rng = random.prng
 
     if train:
-        index = rng.randint(0, n, size=n)
+        index = rng.permutation(n)
     else:
         index = np.arange(n)
 
@@ -131,7 +131,7 @@ class DataLoader(BaseDataLoader):
     """
 
     def __init__(self, batch_size=1, searching=False, training=False,
-                 train_portion=1.0, rng=None, communicator=None, *args):
+                 train_portion=1.0, rng=None, communicator=None):
         rng = rng or random.prng
 
         if searching:
