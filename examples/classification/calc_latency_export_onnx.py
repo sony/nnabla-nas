@@ -722,7 +722,7 @@ if __name__ == '__main__':
             export_all(int(sys.argv[1]), calc_latency=False)
 
     else:
-        print('Usage: python calc_latency_and_export_onnx.py <id> [L|LO|O|<path>] [<ext_name> [<device-id>]]')
+        print('Usage: python examples_calc_latency_export_onnx.py <id> [L|LO|O|<path>] [<ext_name> [<device-id>]]')
         print('If L is used, the estimation for latency will be calculated')
         print('If O is used, the exporting to ONNX will be done')
         print('If LO or OL is used, both the estimation and the exporting to ONNX will be done')
