@@ -818,16 +818,17 @@ class SearchNet(smo.Graph):
                 path
 
         The actual bash shell command used is:
-        > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
+        > find <DIR> -name '*.nnp' -exec echo echo {} \| 
+            awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh  # noqa: E501
         which, for each file found with find, outputs the following:
-        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'
+        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'  # noqa: E501
         which, for each file, generates the final conversion command:
         > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
 
         """
 
         os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'
-                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'
+                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'  # noqa: E501
                   )
 
 
@@ -845,7 +846,7 @@ class TrainNet(SearchNet):
         cell_depth (list): the number of modules within each cell
         reducing (list): specifies for each cell if it reduces the feature map
                          dimensions through pooling
-        join_parameters (list): the join_parameters used in each cell and block.
+        join_parameters (list): the join_parameters used in each cell and block
         candidates (list, optional): the candidate modules instantiated within
                          this block (e.g. ZOPH_CANDIDATES)
         mode (string): the mode which the join modules within this network use

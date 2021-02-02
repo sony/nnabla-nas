@@ -207,7 +207,7 @@ class LatencyEstimator(Estimator):
                                        n_run=self._n_run)
                 runner.run()
                 latency = float(runner.result['forward_all'])
-                # print('1->', type(module), ':', runner.result['n_run_forward_all'], ':', latency, ':', module.input_shapes)
+                # print('1->', type(module), ':', runner.result['n_run_forward_all'], ':', latency, ':', module.input_shapes)  # noqa: E501
             except Exception as err:
                 latency = 0
                 logger.warning(f'Latency calculation fails: {idm}[{key}]')
@@ -261,7 +261,7 @@ class LatencyGraphEstimator(Estimator):
                     [str(func.info.args)])
             key = '-'.join(args)
 
-            ff = getattr(F, func.info.type_name)(get_current_context(), **func.info.args)
+            ff = getattr(F, func.info.type_name)(get_current_context(), **func.info.args)  # noqa: E501
 
             if key not in self.memo:
                 try:  # run profiler
@@ -275,7 +275,7 @@ class LatencyGraphEstimator(Estimator):
                         ext_name=self._ext_name,
                         n_run=self._n_run,
                         outlier=self._outlier,
-                        max_measure_execution_time=self._max_measure_execution_time,
+                        max_measure_execution_time=self._max_measure_execution_time,  # noqa: E501
                         time_scale=self._time_scale,
                         n_warmup=self._n_warmup
                     )

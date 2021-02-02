@@ -849,24 +849,24 @@ if __name__ == '__main__':
             export_all(int(sys.argv[1]), calc_latency=False)
 
     else:
-        print('Usage: python examples_calc_latency_export_onnx.py <id> [L|LO|O|<path>] [<ext_name> [<device-id>]]')
+        print('Usage: python examples_calc_latency_export_onnx.py <id> [L|LO|O|<path>] [<ext_name> [<device-id>]]')  # noqa: E501
         print('If L is used, the estimation for latency will be calculated')
         print('If O is used, the exporting to ONNX will be done')
-        print('If LO or OL is used, both the estimation and the exporting to ONNX will be done')
-        print('Possible values for <ext_name>: cpu, cuda, cudnn. Default = cpu')
+        print('If LO or OL is used, both the estimation and the exporting to ONNX will be done')  # noqa: E501
+        print('Possible values for <ext_name>: cpu, cuda, cudnn. Default = cpu')  # noqa: E501
         print('Possible values for <device_id>: 0..7 . Default = 0')
         print('Possible values for <id>:')
         print('# 0  : just a sandbox -  creation / exporting tests ')
-        print('# 1  : ZOPH - (one net) - create 1 instance of ZOPH network,  save it and its modules, calc latency, export to ONNX')
-        print('# 2  : ZOPH - (many different nets)- sample a set of N ZOPH networks, calculate latency, export all of them (whole net and modules), convert to ONNX')
-        print('# 20 : ZOPH - (one net many times) Sample one ZOPH network, calculate latency of this network N times')
-        print('# 21 : Sample several static convolutions (predefined), calc latency on each of them many times')
-        print('# 22 : Sample several random-sized static convolutions. Calc latency on each of them many times')
-        print('# 3  : RANDOM WIRED - (one net) - create 1 instance of random wired search space network, save it and its modules, calc latency, convert to ONNX')
-        print('# 4  : RANDOM WIRED - (many different nets) - Sample a set of N Random wired networks, calc latency, export them (net and modules), convert to ONNX')
-        print('# 40 : RANDOM WIRED - (one net many times) Sample one Random wired network, calculate latency of this network N times, convert to ONNX')
-        print('# 5  : MOBILENET - (many different nets): the export for dynamic modules using mobilenet, calc Latency. Individual export of all layers does not work yet')
-        print('# 50 : MOBILENET - (one net many times)  [this is WIP]: Sample one mobilenet network, calculate latency N times')
-        print('# 6 <path>  (please do not use <ext_name> or <device_id>): from the given <path>, load ONNXs if existing, load latencies, put everything on dictionary, display it -- (Works for zoph, random wired and mobilenet)')
+        print('# 1  : ZOPH - (one net) - create 1 instance of ZOPH network,  save it and its modules, calc latency, export to ONNX')  # noqa: E501
+        print('# 2  : ZOPH - (many different nets)- sample a set of N ZOPH networks, calculate latency, export all of them (whole net and modules), convert to ONNX')  # noqa: E501
+        print('# 20 : ZOPH - (one net many times) Sample one ZOPH network, calculate latency of this network N times')  # noqa: E501
+        print('# 21 : Sample several static convolutions (predefined), calc latency on each of them many times')  # noqa: E501
+        print('# 22 : Sample several random-sized static convolutions. Calc latency on each of them many times')  # noqa: E501
+        print('# 3  : RANDOM WIRED - (one net) - create 1 instance of random wired search space network, save it and its modules, calc latency, convert to ONNX')  # noqa: E501
+        print('# 4  : RANDOM WIRED - (many different nets) - Sample a set of N Random wired networks, calc latency, export them (net and modules), convert to ONNX')  # noqa: E501
+        print('# 40 : RANDOM WIRED - (one net many times) Sample one Random wired network, calculate latency of this network N times, convert to ONNX')  # noqa: E501
+        print('# 5  : MOBILENET - (many different nets): the export for dynamic modules using mobilenet, calc Latency. Individual export of all layers does not work yet')  # noqa: E501
+        print('# 50 : MOBILENET - (one net many times)  [this is WIP]: Sample one mobilenet network, calculate latency N times')  # noqa: E501
+        print('# 6 <path>  (please do not use <ext_name> or <device_id>): from the given <path>, load ONNXs if existing, load latencies, put everything on dictionary, display it -- (Works for zoph, random wired and mobilenet)')  # noqa: E501
         print('# 7 : another sandbox to load nnp files')
     pass
