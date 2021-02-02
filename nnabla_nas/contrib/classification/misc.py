@@ -47,5 +47,3 @@ class AuxiliaryHeadCIFAR(Mo.Module):
 
     def extra_repr(self):
         return f'channels={self._channels}, num_classes={self._num_classes}'
-
-
