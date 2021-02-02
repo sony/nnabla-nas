@@ -20,11 +20,12 @@ from nnabla_nas.module import static as smo
 
 def test_avgpool3x3_module():
     shape = (10, 3, 32, 32)
+    n_channels = 20
     input = smo.Input(nn.Variable(shape))
 
-    pool = zoph.AveragePool3x3(parents=[input])
+    pool = zoph.AveragePool3x3(parents=[input], channels=n_channels)
 
-    assert pool.shape == (10, 3, 32, 32)
+    assert pool.input_shapes[0] == (10, 3, 32, 32)
 
 
 if __name__ == '__main__':
