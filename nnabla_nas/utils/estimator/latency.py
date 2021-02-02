@@ -256,9 +256,9 @@ class LatencyGraphEstimator(Estimator):
         flops = 0
         for func in self._visitor._functions:
 
-            args = ([func.info.type_name] +
-                    [str(inp.shape) for inp in func.inputs] +
-                    [str(func.info.args)])
+            args = [func.info.type_name] + \
+                   [str(inp.shape) for inp in func.inputs] + \
+                   [str(func.info.args)]
             key = '-'.join(args)
 
             ff = getattr(F, func.info.type_name)(get_current_context(),

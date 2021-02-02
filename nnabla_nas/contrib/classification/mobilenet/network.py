@@ -327,9 +327,9 @@ class SearchNet(Model):
         total_latency = 0.0
         idx = 0
         for func in func_latency._visitor._functions:
-            args = ([func.info.type_name] +
-                    [str(inp.shape) for inp in func.inputs] +
-                    [str(func.info.args)])
+            args = [func.info.type_name] + \
+                   [str(inp.shape) for inp in func.inputs] + \
+                   [str(func.info.args)]
             key = '-'.join(args)
 
             ff = getattr(Function, func.info.type_name)(get_current_context(),
