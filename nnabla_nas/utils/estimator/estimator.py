@@ -24,21 +24,18 @@ class Estimator(object):
 
     def get_estimation(self, module):
         """Returns the estimation of the whole module."""
-        
-        ### ORIGINAL CODE
-        #return sum(self.predict(m) for _, m in module.get_modules()
+
+        # ## ORIGINAL CODE
+        # return sum(self.predict(m) for _, m in module.get_modules()
         #          if len(m.modules) == 0 and m.need_grad)
 
-        ### Human-readable and debuggable code ###
+        # ## Human-readable and debuggable code ###
         final = 0
         for _, m in module.get_modules():
             if len(m.modules) == 0 and m.need_grad:
                 tmp, mem = self.predict(m)
                 final += tmp
         return final
-        
-
-
 
     def reset(self):
         """Clear cache."""

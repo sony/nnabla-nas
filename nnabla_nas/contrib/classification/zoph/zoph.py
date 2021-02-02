@@ -25,11 +25,10 @@ from ....module.parameter import Parameter
 # from nnabla_nas.module import static as smo
 # from nnabla_nas.module.parameter import Parameter
 
-from nnabla.ext_utils import get_extension_context
 
 class SepConv(smo.Graph):
     """
-    A static separable convolution (DepthWise conv + PointWise conv) 
+    A static separable convolution (DepthWise conv + PointWise conv)
 
     Args:
         parents (list): a list of static modules that
@@ -52,26 +51,26 @@ class SepConv(smo.Graph):
 
     """
     def __init__(self, parents,
-                in_channels, out_channels, 
-                kernel, pad, dilation, with_bias,
-                name='', eval_prob=None):
+                 in_channels, out_channels,
+                 kernel, pad, dilation, with_bias,
+                 name='', eval_prob=None):
 
         smo.Graph.__init__(self,
                            parents=parents,
                            name=name,
                            eval_prob=eval_prob,
                            )
-        
+
         # add DepthWiseConvolution
         dw_conv = smo.DwConv(name='{}/dwconv'.format(self.name),
-                            parents=self.parents,
-                            eval_prob=eval_prob,
-                            in_channels=in_channels,
-                            kernel=kernel,
-                            pad=pad,
-                            dilation=dilation,
-                            with_bias=with_bias,
-                            )
+                             parents=self.parents,
+                             eval_prob=eval_prob,
+                             in_channels=in_channels,
+                             kernel=kernel,
+                             pad=pad,
+                             dilation=dilation,
+                             with_bias=with_bias,
+                             )
         self.append(dw_conv)
 
         # add PointWisewConvolution
@@ -90,7 +89,8 @@ class SepConv(smo.Graph):
 
 class SepConvBN(smo.Graph):
     """
-    Two static separable convolutions followed by batchnorm and relu at the end.
+    Two static separable convolutions followed by batchnorm
+    and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -148,7 +148,8 @@ class SepConvBN(smo.Graph):
 
 class SepConv3x3(SepConvBN):
     """
-    A static separable convolution of shape 3x3 that applies batchnorm and relu at the end.
+    A static separable convolution of shape 3x3 that applies batchnorm
+    and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -171,7 +172,8 @@ class SepConv3x3(SepConvBN):
 
 class SepConv5x5(SepConvBN):
     """
-    A static separable convolution of shape 5x5 that applies batchnorm and relu at the end.
+    A static separable convolution of shape 5x5 that applies
+    batchnorm and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -194,7 +196,8 @@ class SepConv5x5(SepConvBN):
 
 class DilSepConv3x3(SepConvBN):
     """
-    A static dilated separable convolution of shape 3x3 that applies batchnorm and relu at the end.
+    A static dilated separable convolution of shape 3x3 that applies batchnorm
+    and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -217,7 +220,8 @@ class DilSepConv3x3(SepConvBN):
 
 class DilSepConv5x5(SepConvBN):
     """
-    A static dilated separable convolution of shape 5x5 that applies batchnorm and relu at the end.
+    A static dilated separable convolution of shape 5x5 that applies batchnorm
+    and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -248,8 +252,8 @@ class MaxPool3x3(smo.Graph):
         channels (int): the number of features
     """
     def __init__(self, parents,
-                channels,
-                name='', eval_prob=None):
+                 channels,
+                 name='', eval_prob=None):
         smo.Graph.__init__(self,
                            parents=parents,
                            name=name,
@@ -257,12 +261,12 @@ class MaxPool3x3(smo.Graph):
                            )
 
         pool = smo.MaxPool(name='{}_MaxPool3x3/maxpool'.format(name),
-                            parents=parents,
-                            eval_prob=eval_prob,
-                            kernel=(3, 3),
-                            stride=(1, 1),
-                            pad=(1, 1),
-                            )
+                           parents=parents,
+                           eval_prob=eval_prob,
+                           kernel=(3, 3),
+                           stride=(1, 1),
+                           pad=(1, 1),
+                           )
         self.append(pool)
 
         bn = smo.BatchNormalization(name='{}_MaxPool3x3/bn'.format(name),
@@ -278,10 +282,12 @@ class MaxPool3x3(smo.Graph):
                         eval_prob=eval_prob
                         )
         self.append(relu)
-    
+
+
 class AveragePool3x3(smo.Graph):
     """
-    A static average pooling of size 3x3 followed by batch normalization and ReLU
+    A static average pooling of size 3x3 followed by
+    batch normalization and ReLU
     Args:
         parents (list): a list of static modules that
             are parents to this module
@@ -289,8 +295,8 @@ class AveragePool3x3(smo.Graph):
         channels (int): the number of features
     """
     def __init__(self, parents,
-                channels,
-                name='', eval_prob=None):
+                 channels,
+                 name='', eval_prob=None):
 
         smo.Graph.__init__(self,
                            parents=parents,
@@ -299,12 +305,12 @@ class AveragePool3x3(smo.Graph):
                            )
 
         pool = smo.AvgPool(name='{}_AveragePool3x3/avgpool'.format(name),
-                            parents=parents,
-                            eval_prob=eval_prob,
-                            kernel=(3, 3),
-                            stride=(1, 1),
-                            pad=(1, 1),
-                            )
+                           parents=parents,
+                           eval_prob=eval_prob,
+                           kernel=(3, 3),
+                           stride=(1, 1),
+                           pad=(1, 1),
+                           )
         self.append(pool)
 
         bn = smo.BatchNormalization(name='{}_AveragePool3x3/bn'.format(name),
@@ -340,13 +346,18 @@ class ZophBlock(smo.Graph):
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
-        candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        candidates (list): the candidate modules instantiated
+                           within this block (e.g. ZOPH_CANDIDATES)
         channels (int): the number of output channels of this block
-        join_parameters (nnabla variable, optional): the architecture parameters used to join the outputs
-            of the candidate modules. join_parameters must have the same number of elements as we have candidates.
+        join_parameters (nnabla variable, optional): the architecture
+                        parameters used to join the outputs
+                        of the candidate modules.
+                        join_parameters must have the same number
+                        of elements as we have candidates.
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        - Bender, Gabriel. "Understanding and simplifying one-shot
+         architecture search." (2019).
     """
 
     def __init__(self, parents, candidates,
@@ -377,7 +388,7 @@ class ZophBlock(smo.Graph):
                               kernel=(1, 1),
                               eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
-        
+
         for i, ci in enumerate(self._candidates):
             self.append(ci(name='{}/candidate_{}'.format(self.name, i),
                            parents=[input_conv],
@@ -387,24 +398,29 @@ class ZophBlock(smo.Graph):
                              parents=self[2:],
                              join_parameters=self._join_parameters))
 
+
 class ZophCell(smo.Graph):
     """
-    A zoph cell that consists of multiple zoph blocks, as defined in [Bender et. al]
+    A zoph cell that consists of multiple zoph blocks,
+    as defined in [Bender et. al]
 
     Args:
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
-        candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        candidates (list): the candidate modules instantiated within
+                          this block (e.g. ZOPH_CANDIDATES)
         channels (int): the number of output channels of this block
-        join_parameters (list of nnabla variable, optional): lift of the architecture
+        join_parameters (list of nnabla variable, optional):
+            lift of the architecture
             parameters used to join the outputs
-            of the candidate modules. each element in join_parameters must have
+            of the candidate modules.Each element in join_parameters must have
             the same number of elements as we have candidates.
             The length of this list must be n_modules.
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        - Bender, Gabriel. "Understanding and simplifying one-shot
+         architecture search." (2019).
     """
 
     def __init__(self, parents, candidates, channels, name='',
@@ -484,13 +500,17 @@ class SearchNet(smo.Graph):
         stem_channels (int): the number of channels for the stem convolutions
         cells (list): the type of the cells used within this search space
         cell_depth (list): the number of modules within each cell
-        reducing (list): specifies for each cell if it reduces the feature map dimensions through pooling
-        join_parameters (list): the join_parameters used in each cell and block.
-        candidates (list, optional): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        reducing (list): specifies for each cell if it reduces the feature
+                         map dimensions through pooling
+        join_parameters (list): the join_parameters used in each
+                         cell and block.
+        candidates (list, optional): the candidate modules instantiated
+                         within this block (e.g. ZOPH_CANDIDATES)
         mode (string): the mode which the join modules within this network use
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        - Bender, Gabriel. "Understanding and simplifying one-shot
+         architecture search." (2019).
     """
 
     def __init__(self, name='', input_shape=(3, 32, 32),
@@ -500,7 +520,7 @@ class SearchNet(smo.Graph):
                  reducing=[False, True, True],
                  join_parameters=[[None]*7]*3,
                  candidates=ZOPH_CANDIDATES, mode='sample'):
-        
+
         smo.Graph.__init__(self, parents=[], name=name)
         self._n_classes = n_classes
         self._stem_channels = stem_channels
@@ -594,8 +614,8 @@ class SearchNet(smo.Graph):
 
     @property
     def modules_to_profile(self):
-        return [#smo.Identity, # commented since we do not want to profile Identity modules
-                #smo.Zero,     # commented since we do not want to profile Zero modules
+        return [  # smo.Identity, # not want to profile Identity modules
+                  # smo.Zero,     # not want to profile Zero modules
                 smo.Conv,
                 smo.DwConv,
                 smo.MaxPool,
@@ -679,7 +699,6 @@ class SearchNet(smo.Graph):
                 str_summary += str(mi._eval_prob.d) + "\n"
         return str_summary
 
-
     def save_graph(self, path):
         """
             save whole network/graph (in a PDF file)
@@ -689,15 +708,18 @@ class SearchNet(smo.Graph):
         gvg = self.get_gv_graph()
         gvg.render(path + '/graph')
 
-
-    def save_net_nnp(self, path, inp, out, calc_latency=False, func_real_latency=None, func_accum_latency=None):
+    def save_net_nnp(self, path, inp, out, calc_latency=False,
+                     func_real_latency=None, func_accum_latency=None):
         """
             Saves whole net as one nnp
             Args:
                 path
                 inp: input of the created network
                 out: output of the created network
-                calc_latency: calculate and save also latency
+                calc_latency: flag for calc latency
+                func_real_latency: function to use to calc actual latency
+                func_accum_latency: function to use to calc accum. latency
+
         """
         batch_size = inp.shape[0]
 
@@ -730,27 +752,30 @@ class SearchNet(smo.Graph):
             filename = path + name + '.acclat'
             with open(filename, 'w') as f:
                 print(acc_latency.__str__(), file=f)
-            
+
             func_real_latency.run()
             real_latency = float(func_real_latency.result['forward_all'])
             filename = path + name + '.realat'
             with open(filename, 'w') as f:
                 print(real_latency.__str__(), file=f)
 
-
-    def save_modules_nnp(self, path, active_only=False, calc_latency=False, func_latency=None):
+    def save_modules_nnp(self, path, active_only=False,
+                         calc_latency=False, func_latency=None):
         """
-            Saves all modules of the network as individual nnp files, using folder structure given by name convention
+            Saves all modules of the network as individual nnp files,
+            using folder structure given by name convention
             Args:
                 path
                 active_only: if True, only active modules are saved
+                calc_latency: flag for calc latency
+                func_latency: function to use to calc latency
         """
-          
+
         mods = self.get_net_modules(active_only=active_only)
         for mi in mods:
             if type(mi) in self.modules_to_profile:
-                
-                #print(type(mi))
+
+                # print(type(mi))
 
                 inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
@@ -774,7 +799,7 @@ class SearchNet(smo.Graph):
                                            'network': mi.name,
                                            'data': d_keys,
                                            'output': ['out']}]}
-                
+
                 save(filename, contents, variable_batch_size=False)
 
                 if calc_latency:
@@ -783,12 +808,12 @@ class SearchNet(smo.Graph):
                     with open(filename, 'w') as f:
                         print(latency.__str__(), file=f)
 
-
-
     def convert_npp_to_onnx(self, path):
         """
-            Finds all nnp files in the given path and its subfolders and converts them to ONNX
-            For this to run smoothly, nnabla_cli must be installed and added to your python path.
+            Finds all nnp files in the given path and its subfolders
+            and converts them to ONNX
+            For this to run smoothly, nnabla_cli must be installed and added
+            to your python path.
             Args:
                 path
 
@@ -803,12 +828,13 @@ class SearchNet(smo.Graph):
 
         os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'
                   ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'
-                 )
-        
+                  )
+
 
 class TrainNet(SearchNet):
     """
-    A search space as defined in [Bender et. al]. Its the same as SearchNet, just that mode is fixed to 'max'.
+    A search space as defined in [Bender et. al]. Its the same as SearchNet,
+    just that mode is fixed to 'max'.
 
     Args:
         name (string, optional): the name of the module
@@ -817,13 +843,16 @@ class TrainNet(SearchNet):
         stem_channels (int): the number of channels for the stem convolutions
         cells (list): the type of the cells used within this search space
         cell_depth (list): the number of modules within each cell
-        reducing (list): specifies for each cell if it reduces the feature map dimensions through pooling
+        reducing (list): specifies for each cell if it reduces the feature map
+                         dimensions through pooling
         join_parameters (list): the join_parameters used in each cell and block.
-        candidates (list, optional): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        candidates (list, optional): the candidate modules instantiated within
+                         this block (e.g. ZOPH_CANDIDATES)
         mode (string): the mode which the join modules within this network use
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        - Bender, Gabriel. "Understanding and simplifying one-shot
+        architecture search." (2019).
     """
 
     def __init__(self, name, input_shape=(3, 32, 32),
