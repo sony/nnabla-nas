@@ -25,7 +25,6 @@ import numpy as np
 
 from nnabla_nas.module import static as smo
 
-from nnabla.ext_utils import get_extension_context
 
 class RandomModule(smo.Graph):
     """
@@ -41,8 +40,9 @@ class RandomModule(smo.Graph):
         channels (int): the number of output channels of this module
 
     References:
-        - Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
-          Proceedings of the IEEE International Conference on Computer Vision. 2019.
+        - Xie, Saining, et al. "Exploring randomly wired neural
+          networks for image recognition."  Proceedings of the IEEE
+          International Conference on Computer Vision. 2019.
     """
 
     def __init__(self, parents, channels, name=''):
@@ -92,8 +92,9 @@ class RandomModule(smo.Graph):
 
 class Conv(RandomModule):
     """
-    A convolution that accepts multiple parents. This convolution is a random module, meaning that
-    it automatically adjusts the dimensions of all input tensors and aggregates the
+    A convolution that accepts multiple parents. This convolution
+    is a random module, meaning that it automatically adjusts the
+    dimensions of all input tensors and aggregates the
     result before applying the convolution.
 
     Args:
@@ -354,23 +355,26 @@ RANDOM_CANDIDATES = [RandomModule,
 
 class TrainNet(smo.Graph):
     """
-    A randomly wired DNN that uses the Watts-Strogatz process to generate random
-    DNN architectures. Please refer to [Xie et. al]
+    A randomly wired DNN that uses the Watts-Strogatz process to generate
+    random DNN architectures. Please refer to [Xie et. al]
 
     Args:
         n_vertice (int): the number of random modules within this network
         input_shape (tuple): the shape of the input of this network
         n_classes (int): the number of output classes of this network
-        candidates (list): a list of random_modules which are randomly instantiated as vertices
+        candidates (list): a list of random_modules which are randomly
+                            instantiated as vertices
         min_channels (int): the minimum channel count of a vertice
         max_channels (int): the maximum channel count of a vertice
         k (int): the connectivity parameter of the Watts-Strogatz process
-        p (float): the re-wiring probability parameter of the Watts-Strogatz process
+        p (float): the re-wiring probability parameter of the
+                Watts-Strogatz process
         name (string): the name of the network
 
     References:
-        - Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
-          Proceedings of the IEEE International Conference on Computer Vision. 2019.
+        - Xie, Saining, et al. "Exploring randomly wired neural networks
+             for image recognition." Proceedings of the IEEE International
+             Conference on Computer Vision. 2019.
     """
 
     def __init__(self, n_vertices=20, input_shape=(3, 32, 32),
@@ -463,7 +467,7 @@ class TrainNet(smo.Graph):
     @property
     def input_shapes(self):
         return [self[0].shape]
-    
+
     @property
     def modules_to_profile(self):
         return [smo.ReLU,
@@ -476,7 +480,7 @@ class TrainNet(smo.Graph):
                 smo.AvgPool,
                 smo.GlobalAvgPool,
                 ]
-    
+
     def get_arch_modules(self):
         ans = []
         for name, module in self.get_modules():
@@ -553,13 +557,20 @@ class TrainNet(smo.Graph):
         gvg = self.get_gv_graph()
         gvg.render(path + '/graph')
 
-    def save_net_nnp(self, path, inp, out, calc_latency=False, func_real_latency=None, func_accum_latency=None):
+    def save_net_nnp(self, path, inp, out, calc_latency=False,
+                     func_real_latency=None, func_accum_latency=None):
         """
             Saves whole net as one nnp
             Args:
                 path
                 inp: input of the created network
                 out: output of the created network
+                calc_latency: flag for calc latency
+                func_real_latency: function to use to calc actual latency
+                func_accum_latency: function to use to calc accum. latency
+                        this is, dissecting the network layer by layer,
+                        calc. latency for each layer and add up the results
+
         """
         batch_size = inp.shape[0]
 
@@ -587,32 +598,32 @@ class TrainNet(smo.Graph):
 
         save(filename, contents, variable_batch_size=False)
 
-
         if calc_latency:
             acc_latency = func_accum_latency.get_estimation(out)
             filename = path + name + '.acclat'
             with open(filename, 'w') as f:
                 print(acc_latency.__str__(), file=f)
-            
+
             func_real_latency.run()
             real_latency = float(func_real_latency.result['forward_all'])
             filename = path + name + '.realat'
             with open(filename, 'w') as f:
                 print(real_latency.__str__(), file=f)
 
-
-
-    def save_modules_nnp(self, path, active_only=False, calc_latency=False, func_latency=None):
+    def save_modules_nnp(self, path, active_only=False,
+                         calc_latency=False, func_latency=None):
         """
-            Saves all modules of the network as individual nnp files, using folder structure given by name convention
+            Saves all modules of the network as individual nnp files,
+            using folder structure given by name convention
             Args:
                 path
                 active_only: if True, only active modules are saved
+                calc_latency: flag for calc latency
+                func_latency: function to use to calc latency of
+                              each of the extracted modules
         """
-        from nnabla_nas.utils.estimator import LatencyEstimator, LatencyGraphEstimator
-
         mods = self.get_net_modules(active_only=active_only)
-        
+
         for mi in mods:
             if type(mi) in self.modules_to_profile:
 
@@ -627,7 +638,6 @@ class TrainNet(smo.Graph):
                 if not os.path.exists(pathname):
                     os.mkdir(pathname)
 
-
                 d_dict = {str(i): inpi for i, inpi in enumerate(inp)}
                 d_keys = [str(i) for i, inpi in enumerate(inp)]
 
@@ -639,9 +649,9 @@ class TrainNet(smo.Graph):
                                            'network': mi.name,
                                            'data': d_keys,
                                            'output': ['out']}]}
-                
+
                 save(filename, contents, variable_batch_size=False)
- 
+
                 if calc_latency:
                     latency = func_latency.get_estimation(out)
                     filename = path + mi.name + '.acclat'
@@ -650,23 +660,25 @@ class TrainNet(smo.Graph):
 
     def convert_npp_to_onnx(self, path):
         """
-            Finds all nnp files in the given path and its subfolders and converts them to ONNX
-            For this to run smoothly, nnabla_cli must be installed and added to your python path.
+            Finds all nnp files in the given path and its subfolders
+            and converts them to ONNX
+            For this to run smoothly, nnabla_cli must be installed
+            and added to your python path.
             Args:
                 path
 
         The actual bash shell command used is:
-        > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
+        > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh  # noqa: E501,W605
         which, for each file found with find, outputs the following:
-        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'
+        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'  # noqa: E501,W605
         which, for each file, generates the final conversion command:
         > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
 
         """
 
-        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'
-                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'
-                 )
+        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'  # noqa: E501,W605
+                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'  # noqa: E501,W605
+                  )
 
 
 if __name__ == '__main__':

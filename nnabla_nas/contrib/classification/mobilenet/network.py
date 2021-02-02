@@ -19,6 +19,7 @@ import os
 import nnabla.functions as F
 import nnabla.function as Function
 from nnabla.utils.save import save
+from nnabla.logger import logger
 
 import nnabla as nn
 import numpy as np
@@ -29,7 +30,6 @@ from .helper import plot_mobilenet
 from .modules import CANDIDATES
 from .modules import ChoiceBlock
 from .modules import ConvBNReLU
-from .modules import InvertedResidual
 
 from nnabla.context import get_current_context
 
@@ -164,7 +164,6 @@ class SearchNet(Model):
                 Mo.GlobalAvgPool
                 ]
 
-
     def get_net_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing model parameters.
 
@@ -247,8 +246,7 @@ class SearchNet(Model):
         assert len(outputs) == 1 and len(targets) == 1
         return F.mean(label_smoothing_loss(outputs[0], targets[0]))
 
-
-    #def save_graph(self, path):
+    # def save_graph(self, path):
     #    """
     #        save whole network/graph (in a PDF file)
     #        Args:
@@ -257,15 +255,19 @@ class SearchNet(Model):
     #    gvg = self.get_gv_graph()
     #    gvg.render(path + '/graph')
 
-
-    def save_net_nnp(self, path, inp, out, calc_latency=False, func_real_latency=None, func_accum_latency=None):
+    def save_net_nnp(self, path, inp, out, calc_latency=False,
+                     func_real_latency=None, func_accum_latency=None):
         """
             Saves whole net as one nnp
             Args:
                 path
                 inp: input of the created network
                 out: output of the created network
-                save_latency: calculate and save also latency
+                calc_latency: flag for calc latency
+                func_real_latency: function to use to calc actual latency
+                func_accum_latency: function to use to calc accum. latency
+                        this is, dissecting the network layer by layer,
+                        calc. latency for each layer and add up the results
         """
         batch_size = inp.shape[0]
 
@@ -298,19 +300,17 @@ class SearchNet(Model):
             filename = path + name + '.acclat'
             with open(filename, 'w') as f:
                 print(acc_latency.__str__(), file=f)
-            
+
             func_real_latency.run()
             real_latency = float(func_real_latency.result['forward_all'])
             filename = path + name + '.realat'
             with open(filename, 'w') as f:
                 print(real_latency.__str__(), file=f)
 
-
-
     def get_net_modules(self, active_only=False):
         ans = []
         for name, module in self.get_modules():
-            if isinstance(module, Mo.Module): #and not isinstance(module, smo.Join)
+            if isinstance(module, Mo.Module):
                 ans.append(module)
         return ans
 
@@ -318,7 +318,7 @@ class SearchNet(Model):
         """
             Args:
                 path
-                graph: 
+                graph:
         """
         from ....utils.estimator.latency import Profiler
 
@@ -327,21 +327,26 @@ class SearchNet(Model):
         total_latency = 0.0
         idx = 0
         for func in func_latency._visitor._functions:
-            args = [func.info.type_name] + [str(inp.shape) for inp in func.inputs] + [str(func.info.args)]            
+            args = ([func.info.type_name] +
+                    [str(inp.shape) for inp in func.inputs] +
+                    [str(func.info.args)])
             key = '-'.join(args)
 
-            ff = getattr(Function, func.info.type_name)(get_current_context(), **func.info.args)
+            ff = getattr(Function, func.info.type_name)(get_current_context(),
+                                                        **func.info.args)
 
             if key not in func_latency.memo:
                 try:  # run profiler
-                    nnabla_vars = [nn.Variable(inp.shape, need_grad=inp.need_grad) for inp in func.inputs]
+                    nnabla_vars = [nn.Variable(inp.shape,
+                                   need_grad=inp.need_grad)
+                                   for inp in func.inputs]
                     runner = Profiler(
                         ff(*nnabla_vars),
                         device_id=func_latency._device_id,
                         ext_name=func_latency._ext_name,
                         n_run=func_latency._n_run,
                         outlier=func_latency._outlier,
-                        max_measure_execution_time=func_latency._max_measure_execution_time,
+                        max_measure_execution_time=func_latency._max_measure_execution_time,  # noqa: E501
                         time_scale=func_latency._time_scale,
                         n_warmup=func_latency._n_warmup
                     )
@@ -352,13 +357,13 @@ class SearchNet(Model):
                     latency = 0
                     logger.warning(f'Latency calculation failed: {key}')
                     logger.warning(str(err))
-                
+
                 func_latency.memo[key] = latency
             else:
                 latency = func_latency.memo[key]
-            
+
             total_latency += latency
-            
+
             # save latency of this layer (name: id_XXX_{key}.acclat)
             filename = path + '/id_' + str(idx) + '_' + key + '.acclat'
             pathname = os.path.dirname(filename)
@@ -370,16 +375,15 @@ class SearchNet(Model):
             idx += 1
             with open(filename, 'w') as f:
                 print(latency.__str__(), file=f)
-        
+
         # save accum latency of all layers
         filename = path + '.acclat_sum'
         with open(filename, 'w') as f:
             print(total_latency.__str__(), file=f)
 
-
         """
-            *** The script as below does not work  ***
-            since the input shapes of the CANDIDATES are only defined at run time!
+        *** The script as below does not work  ***
+        since the input shapes of the CANDIDATES are only defined at run time!
         """
         """
         mods = self.get_net_modules()
@@ -411,32 +415,32 @@ class SearchNet(Model):
                                            'network': mi.__module__,
                                            'data': d_keys,
                                            'output': ['out']}]}
-                
+
                 save(filename, contents, variable_batch_size=False)
                 idx = idx + 1
         """
 
-
     def convert_npp_to_onnx(self, path):
         """
-            Finds all nnp files in the given path and its subfolders and converts them to ONNX
-            For this to run smoothly, nnabla_cli must be installed and added to your python path.
+            Finds all nnp files in the given path and its
+            subfolders and converts them to ONNX
+            For this to run smoothly, nnabla_cli must be
+            installed and added to your python path.
             Args:
                 path
 
         The actual bash shell command used is:
-        > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
+        > find <DIR> -name '*.nnp' -exec echo echo {} \| awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh  # noqa: E501,W605
         which, for each file found with find, outputs the following:
-        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'
+        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'  # noqa: E501,W605
         which, for each file, generates the final conversion command:
         > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
 
         """
 
-        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'
-                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'
-                 )
-
+        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'  # noqa: E501,W605
+                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'  # noqa: E501,W605
+                  )
 
 
 class TrainNet(SearchNet):

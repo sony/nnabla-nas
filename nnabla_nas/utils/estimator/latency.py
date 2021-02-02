@@ -261,7 +261,8 @@ class LatencyGraphEstimator(Estimator):
                     [str(func.info.args)])
             key = '-'.join(args)
 
-            ff = getattr(F, func.info.type_name)(get_current_context(), **func.info.args)  # noqa: E501
+            ff = getattr(F, func.info.type_name)(get_current_context(),
+                                                 **func.info.args)
 
             if key not in self.memo:
                 try:  # run profiler

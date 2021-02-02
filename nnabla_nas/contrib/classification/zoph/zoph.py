@@ -719,6 +719,8 @@ class SearchNet(smo.Graph):
                 calc_latency: flag for calc latency
                 func_real_latency: function to use to calc actual latency
                 func_accum_latency: function to use to calc accum. latency
+                        this is, dissecting the network layer by layer,
+                        calc. latency for each layer and add up the results
 
         """
         batch_size = inp.shape[0]
@@ -768,7 +770,8 @@ class SearchNet(smo.Graph):
                 path
                 active_only: if True, only active modules are saved
                 calc_latency: flag for calc latency
-                func_latency: function to use to calc latency
+                func_latency: function to use to calc latency of
+                              each of the extracted modules
         """
 
         mods = self.get_net_modules(active_only=active_only)
@@ -818,17 +821,17 @@ class SearchNet(smo.Graph):
                 path
 
         The actual bash shell command used is:
-        > find <DIR> -name '*.nnp' -exec echo echo {} \| 
-            awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh  # noqa: E501
+        > find <DIR> -name '*.nnp' -exec echo echo {} \|  # noqa: E501,W605
+            awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh  # noqa: E501,W605
         which, for each file found with find, outputs the following:
-        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'  # noqa: E501
+        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'  # noqa: E501,W605
         which, for each file, generates the final conversion command:
         > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.onnx
 
         """
 
-        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'
-                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'  # noqa: E501
+        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'  # noqa: E501,W605
+                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d opset_11 \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'  # noqa: E501,W605
                   )
 
 

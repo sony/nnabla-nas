@@ -23,7 +23,7 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 
-#import nnabla_nas.module as mo
+# import nnabla_nas.module as mo
 from ... import module as mo
 
 from graphviz import Digraph
@@ -78,7 +78,7 @@ class Module(mo.Module):
         for pi in parents:
             pi.add_child(self)
         self._children = []
-        
+
         self._name = name
 
         self._value = None
