@@ -47,7 +47,8 @@ for i in range(10):
         n_run=n_run
     )
 
-    runner = Profiler(out,
+    runner = Profiler(
+        out,
         device_id=device_id, ext_name=ext_name,
         outlier=outlier,
         time_scale=time_scale,
