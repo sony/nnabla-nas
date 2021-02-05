@@ -2,4 +2,4 @@ matplotlib
 Sphinx
 javasphinx
 sphinx_rtd_theme
-sphinxcontrib-bibtex
+sphinxcontrib-bibtex==1.0.0
