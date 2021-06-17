@@ -25,7 +25,11 @@ def test_sepconv_module():
     conv = zoph.SepConv(parents=[input],
                         in_channels=3,
                         out_channels=64,
-                        kernel=(3, 3))
+                        kernel=(3, 3),
+                        pad=(0, 0),
+                        dilation=(1, 1),
+                        with_bias=False
+                        )
 
     assert conv.shape == (10, 64, 30, 30)
 

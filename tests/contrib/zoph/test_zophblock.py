@@ -32,8 +32,8 @@ def test_zophblock_module():
     out = zb()
     assert out.shape == (10, 64, 32, 32)
     assert zb.shape == (10, 64, 32, 32)
-    assert len(zb) == 13
-    cand = zb[4:-1]
+    assert len(zb) == 11
+    cand = zb[2:-1]
     for ci, cri in zip(cand, ZOPH_CANDIDATES):
         assert type(ci) == cri
 

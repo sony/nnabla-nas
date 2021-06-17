@@ -63,12 +63,17 @@ class Conv(Module):
         channel_last(bool, optional): If True, the last dimension is
             considered as channel dimension, a.k.a NHWC order. Defaults to
             `False`.
+        name (string): the name of this module
     """
 
     def __init__(self, in_channels, out_channels, kernel, pad=None,
                  stride=None, dilation=None, group=1, w_init=None, b_init=None,
                  base_axis=1, fix_parameters=False, rng=None, with_bias=True,
-                 channel_last=False):
+                 channel_last=False, name=''):
+
+        Module.__init__(self, name=name)
+        self._scope_name = f'<convolution at {hex(id(self))}>'
+
         if w_init is None:
             w_init = UniformInitializer(
                 calc_uniform_lim_glorot(
@@ -88,9 +93,11 @@ class Conv(Module):
             if with_bias:
                 self._b = nn.Variable.from_numpy_array(b_init(b_shape))
         else:
-            self._W = Parameter(w_shape, initializer=w_init)
+            self._W = Parameter(w_shape, initializer=w_init,
+                                scope=self._scope_name)
             if with_bias:
-                self._b = Parameter(b_shape, initializer=b_init)
+                self._b = Parameter(b_shape, initializer=b_init,
+                                    scope=self._scope_name)
 
         self._base_axis = base_axis
         self._pad = pad
@@ -157,6 +164,7 @@ class DwConv(Module):
             Initializer.  Defaults to None.
         with_bias (bool, optional): Specify whether to include the bias term.
             Defaults to `True`.
+        name (string): the name of this module
 
     References:
         - F. Chollet: Chollet, Francois. "Xception: Deep Learning with
@@ -165,7 +173,11 @@ class DwConv(Module):
 
     def __init__(self, in_channels, kernel, pad=None, stride=None,
                  dilation=None, multiplier=1, w_init=None, b_init=None,
-                 base_axis=1, fix_parameters=False, rng=None, with_bias=True):
+                 base_axis=1, fix_parameters=False, rng=None, with_bias=True,
+                 name=''):
+
+        Module.__init__(self, name=name)
+        self._scope_name = f'<dwconvolution at {hex(id(self))}>'
         if w_init is None:
             w_init = UniformInitializer(
                 calc_uniform_lim_glorot(
@@ -181,15 +193,16 @@ class DwConv(Module):
         b_shape = (in_channels, )
 
         self._b = None
-
         if fix_parameters:
             self._W = nn.Variable.from_numpy_array(w_init(w_shape))
             if with_bias:
                 self._b = nn.Variable.from_numpy_array(b_init(b_shape))
         else:
-            self._W = Parameter(w_shape, initializer=w_init)
+            self._W = Parameter(w_shape, initializer=w_init,
+                                scope=self._scope_name)
             if with_bias:
-                self._b = Parameter(b_shape, initializer=b_init)
+                self._b = Parameter(b_shape, initializer=b_init,
+                                    scope=self._scope_name)
         self._pad = pad
         self._stride = stride
         self._dilation = dilation

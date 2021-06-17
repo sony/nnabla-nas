@@ -36,9 +36,12 @@ class MixedOp(Module):
         alpha (Parameter, optional): The weights used to calculate the
             evaluation probabilities. Defaults to None.
         rng (numpy.random.RandomState): Random generator for random choice.
+        name (string): the name of this module
     """
 
-    def __init__(self, operators, mode='full', alpha=None, rng=None):
+    def __init__(self, operators, mode='full', alpha=None, rng=None, name=''):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<mixedop at {hex(id(self))}>'
         if mode not in ('max', 'sample', 'full'):
             raise ValueError(f'mode={mode} is not supported.')
 

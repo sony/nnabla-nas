@@ -65,6 +65,7 @@ class SearchNet(Model):
     """
 
     def __init__(self,
+                 name='',
                  num_classes=1000,
                  width_mult=1,
                  settings=None,
@@ -73,6 +74,7 @@ class SearchNet(Model):
                  mode='sample',
                  skip_connect=True):
 
+        Mo.Module.__init__(self, name=name)
         self._num_classes = num_classes
         self._width_mult = width_mult
         self._skip_connect = skip_connect
@@ -88,11 +90,12 @@ class SearchNet(Model):
             last_channel * max(1.0, width_mult),
             round_nearest
         )
-        features = [ConvBNReLU(3, in_channels, stride=(2, 2))]
+        features = [ConvBNReLU(3, in_channels, stride=(2, 2),
+                    name='/init_conv')]
 
         first_cell_width = _make_divisible(16 * width_mult, 8)
         features += [CANDIDATES['MB1 3x3'](
-            in_channels, first_cell_width, 1)]
+            in_channels, first_cell_width, 1, '/init_block')]
         in_channels = first_cell_width
 
         if settings is None:
@@ -128,22 +131,37 @@ class SearchNet(Model):
                 features.append(
                     ChoiceBlock(in_channels, output_channel,
                                 stride=stride, mode=mode,
-                                ops=curr_candidates)
+                                ops=curr_candidates,
+                                name='/res_block_{}'.format(i))
                 )
                 in_channels = output_channel
 
         # building last several layers
         features.append(ConvBNReLU(in_channels, self.last_channel,
-                                   kernel=(1, 1)))
+                                   kernel=(1, 1), name='/final_conv'))
         # make it nn.Sequential
         self._features = Mo.Sequential(*features)
 
         # building classifier
         self._classifier = Mo.Sequential(
-            Mo.GlobalAvgPool(),
-            Mo.Dropout(drop_rate),
-            Mo.Linear(self.last_channel, num_classes),
+            Mo.GlobalAvgPool(name='/final_avgpool'),
+            Mo.Dropout(drop_rate, name='/final_dropout'),
+            Mo.Linear(self.last_channel, num_classes, name='/final_affine'),
         )
+
+    @property
+    def modules_to_profile(self):
+        r"""Returns a list with the modules that will be profiled when the
+        Profiler functions are called. All other modules in the network will
+        not be profiled
+        """
+        return [Mo.Conv,
+                Mo.BatchNormalization,
+                Mo.ReLU6,
+                Mo.GlobalAvgPool,
+                Mo.Add2,
+                Mo.Linear,
+                ]
 
     def get_net_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing model parameters.
@@ -226,6 +244,16 @@ class SearchNet(Model):
     def loss(self, outputs, targets, loss_weights=None):
         assert len(outputs) == 1 and len(targets) == 1
         return F.mean(label_smoothing_loss(outputs[0], targets[0]))
+
+    def get_net_modules(self, active_only=False):
+        ans = []
+        for name, module in self.get_modules():
+            if isinstance(module, Mo.Module):
+                if active_only:
+                    ans.append(module)
+                else:
+                    ans.append(module)
+        return ans
 
 
 class TrainNet(SearchNet):

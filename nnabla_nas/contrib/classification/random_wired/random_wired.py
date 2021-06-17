@@ -19,7 +19,6 @@ import networkx as nx
 import nnabla as nn
 import numpy as np
 
-from nnabla_nas.contrib.classification.base import ClassificationModel as Model
 from nnabla_nas.module import static as smo
 
 
@@ -37,8 +36,9 @@ class RandomModule(smo.Graph):
         channels (int): the number of output channels of this module
 
     References:
-        - Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
-          Proceedings of the IEEE International Conference on Computer Vision. 2019.
+        - Xie, Saining, et al. "Exploring randomly wired neural
+          networks for image recognition."  Proceedings of the IEEE
+          International Conference on Computer Vision. 2019.
     """
 
     def __init__(self, parents, channels, name=''):
@@ -67,7 +67,7 @@ class RandomModule(smo.Graph):
                     n_dims=4,
                     n_features=self._channels))
             self.append(
-                smo.ReLU(name='{}/input_conv/relu_{}'.format(self.name, i),
+                smo.ReLU(name='{}/input_conv_relu_{}'.format(self.name, i),
                          parents=[self[-1]]))
 
             projected_inputs.append(self[-1])
@@ -88,8 +88,9 @@ class RandomModule(smo.Graph):
 
 class Conv(RandomModule):
     """
-    A convolution that accepts multiple parents. This convolution is a random module, meaning that
-    it automatically adjusts the dimensions of all input tensors and aggregates the
+    A convolution that accepts multiple parents. This convolution
+    is a random module, meaning that it automatically adjusts the
+    dimensions of all input tensors and aggregates the
     result before applying the convolution.
 
     Args:
@@ -124,7 +125,7 @@ class Conv(RandomModule):
                                            parents=[self[-1]],
                                            n_dims=4,
                                            n_features=self._channels))
-        self.append(smo.ReLU(name='{}/conv/relu'.format(self.name),
+        self.append(smo.ReLU(name='{}/conv_relu'.format(self.name),
                              parents=[self[-1]]))
 
 
@@ -173,7 +174,7 @@ class SepConv(RandomModule):
                                            parents=[self[-1]],
                                            n_dims=4,
                                            n_features=self._channels))
-        self.append(smo.ReLU(name='{}/conv/relu'.format(self.name),
+        self.append(smo.ReLU(name='{}/conv_relu'.format(self.name),
                              parents=[self[-1]]))
 
 
@@ -348,25 +349,28 @@ RANDOM_CANDIDATES = [RandomModule,
                      AvgPool2x2]
 
 
-class TrainNet(Model, smo.Graph):
+class TrainNet(smo.Graph):
     """
-    A randomly wired DNN that uses the Watts-Strogatz process to generate random
-    DNN architectures. Please refer to [Xie et. al]
+    A randomly wired DNN that uses the Watts-Strogatz process to generate
+    random DNN architectures. Please refer to [Xie et. al]
 
     Args:
         n_vertice (int): the number of random modules within this network
         input_shape (tuple): the shape of the input of this network
         n_classes (int): the number of output classes of this network
-        candidates (list): a list of random_modules which are randomly instantiated as vertices
+        candidates (list): a list of random_modules which are randomly
+                            instantiated as vertices
         min_channels (int): the minimum channel count of a vertice
         max_channels (int): the maximum channel count of a vertice
         k (int): the connectivity parameter of the Watts-Strogatz process
-        p (float): the re-wiring probability parameter of the Watts-Strogatz process
+        p (float): the re-wiring probability parameter of the
+                Watts-Strogatz process
         name (string): the name of the network
 
     References:
-        - Xie, Saining, et al. "Exploring randomly wired neural networks for image recognition."
-          Proceedings of the IEEE International Conference on Computer Vision. 2019.
+        - Xie, Saining, et al. "Exploring randomly wired neural networks
+             for image recognition." Proceedings of the IEEE International
+             Conference on Computer Vision. 2019.
     """
 
     def __init__(self, n_vertices=20, input_shape=(3, 32, 32),
@@ -460,6 +464,23 @@ class TrainNet(Model, smo.Graph):
     def input_shapes(self):
         return [self[0].shape]
 
+    @property
+    def modules_to_profile(self):
+        r"""Returns a list with the modules that will be profiled when the
+        Profiler functions are called. All other modules in the network will
+        not be profiled
+        """
+        return [smo.ReLU,
+                smo.BatchNormalization,
+                smo.Join,
+                smo.Merging,
+                smo.Collapse,
+                smo.Conv,
+                smo.MaxPool,
+                smo.AvgPool,
+                smo.GlobalAvgPool,
+                ]
+
     def get_arch_modules(self):
         ans = []
         for name, module in self.get_modules():
@@ -495,13 +516,6 @@ class TrainNet(Model, smo.Graph):
                 param[key] = val
         return param
 
-    def get_latency(self, estimator, active_only=True):
-        latencies = {}
-        for mi in self.get_net_modules(active_only=active_only):
-            if type(mi) in self.modules_to_profile:
-                latencies[mi.name] = estimator.predict(mi)
-        return latencies
-
     def __call__(self, input):
         self.reset_value()
         self[0]._value = input
@@ -527,9 +541,14 @@ class TrainNet(Model, smo.Graph):
                 str_summary += str(mi._eval_prob.d) + "\n"
         return str_summary
 
-    def save(self, output_path):
+    def save_graph(self, path):
+        """
+            save whole network/graph (in a PDF file)
+            Args:
+                path
+        """
         gvg = self.get_gv_graph()
-        gvg.render(output_path+'/graph')
+        gvg.render(path + '/graph')
 
 
 if __name__ == '__main__':

@@ -16,19 +16,15 @@ from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
-from nnabla.utils.save import save
 import numpy as np
 
-from ...classification import misc
-from ...classification.base import ClassificationModel as Model
-from .... import module as mo
 from ....module import static as smo
 from ....module.parameter import Parameter
 
 
-class SepConv(misc.SepConv, smo.Module):
-    r"""
-    A static separable convolution
+class SepConv(smo.Graph):
+    """
+    A static separable convolution (DepthWise conv + PointWise conv)
 
     Args:
         parents (list): a list of static modules that
@@ -44,48 +40,53 @@ class SepConv(misc.SepConv, smo.Module):
             (width) two-dimensional kernel, specify (3,5).
         pad (:obj:`tuple` of :obj:`int`, optional): Padding sizes for
             dimensions. Defaults to None.
-        stride (:obj:`tuple` of :obj:`int`, optional): Stride sizes for
-            dimensions. Defaults to None.
         dilation (:obj:`tuple` of :obj:`int`, optional): Dilation sizes for
             dimensions. Defaults to None.
-        group (int, optional): Number of groups of channels. This makes
-            connections across channels more sparse by grouping connections
-            along map direction. Defaults to 1.
-        w_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
-            Initializer for weight. By default, it is initialized with
-            :obj:`nnabla.initializer.UniformInitializer` within the range
-            determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
-        b_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
-            Initializer for bias. By default, it is initialized with zeros if
-            `with_bias` is `True`.
-        base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
-            treated as the sample dimensions. Defaults to 1.
-        fix_parameters (bool, optional): When set to `True`, the weights and
-            biases will not be updated. Defaults to `False`.
-        rng (numpy.random.RandomState, optional): Random generator for
-            Initializer.  Defaults to None.
         with_bias (bool, optional): Specify whether to include the bias term.
             Defaults to `True`.
-        channel_last(bool, optional): If True, the last dimension is
-            considered as channel dimension, a.k.a NHWC order. Defaults to
-            `False`.
-    """
 
-    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
-        misc.SepConv.__init__(self, *args, **kwargs)
-        smo.Module.__init__(self,
-                            parents=parents,
-                            name=name,
-                            eival_prob=eval_prob)
-        if len(self._parents) > 1:
-            raise RuntimeError
+    """
+    def __init__(self, parents,
+                 in_channels, out_channels,
+                 kernel, pad, dilation, with_bias,
+                 name='', eval_prob=None):
+
+        smo.Graph.__init__(self,
+                           parents=parents,
+                           name=name,
+                           eval_prob=eval_prob,
+                           )
+
+        # add DepthWiseConvolution
+        dw_conv = smo.DwConv(name='{}/dwconv'.format(self.name),
+                             parents=self.parents,
+                             eval_prob=eval_prob,
+                             in_channels=in_channels,
+                             kernel=kernel,
+                             pad=pad,
+                             dilation=dilation,
+                             with_bias=with_bias,
+                             )
+        self.append(dw_conv)
+
+        # add PointWisewConvolution
+        conv = smo.Conv(name='{}/pwconv'.format(self.name),
+                        parents=[dw_conv],
+                        eval_prob=eval_prob,
+                        in_channels=in_channels,
+                        out_channels=out_channels,
+                        kernel=(1, 1),
+                        pad=None,
+                        group=1,
+                        with_bias=False,
+                        )
+        self.append(conv)
 
 
 class SepConvBN(smo.Graph):
     """
-    A static separable convolution that applies batchnorm and relu at the end.
+    Two static separable convolutions followed by batchnorm
+    and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -143,7 +144,8 @@ class SepConvBN(smo.Graph):
 
 class SepConv3x3(SepConvBN):
     """
-    A static separable convolution of shape 3x3 that applies batchnorm and relu at the end.
+    A static separable convolution of shape 3x3 that applies batchnorm
+    and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -160,13 +162,14 @@ class SepConv3x3(SepConvBN):
                            out_channels=channels,
                            kernel=(3, 3),
                            dilation=None,
-                           name=name,
+                           name='{}_SepConv3x3'.format(name),
                            eval_prob=eval_prob)
 
 
 class SepConv5x5(SepConvBN):
     """
-    A static separable convolution of shape 5x5 that applies batchnorm and relu at the end.
+    A static separable convolution of shape 5x5 that applies
+    batchnorm and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -183,13 +186,14 @@ class SepConv5x5(SepConvBN):
                            out_channels=channels,
                            kernel=(5, 5),
                            dilation=None,
-                           name=name,
+                           name='{}_SepConv5x5'.format(name),
                            eval_prob=eval_prob)
 
 
 class DilSepConv3x3(SepConvBN):
     """
-    A static dilated separable convolution of shape 3x3 that applies batchnorm and relu at the end.
+    A static dilated separable convolution of shape 3x3 that applies batchnorm
+    and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -206,13 +210,14 @@ class DilSepConv3x3(SepConvBN):
                            out_channels=channels,
                            kernel=(3, 3),
                            dilation=(2, 2),
-                           name=name,
+                           name='{}_DilSepConv3x3'.format(name),
                            eval_prob=eval_prob)
 
 
 class DilSepConv5x5(SepConvBN):
     """
-    A static dilated separable convolution of shape 5x5 that applies batchnorm and relu at the end.
+    A static dilated separable convolution of shape 5x5 that applies batchnorm
+    and relu at the end.
 
     Args:
         parents (list): a list of static modules that
@@ -229,62 +234,94 @@ class DilSepConv5x5(SepConvBN):
                            out_channels=channels,
                            kernel=(5, 5),
                            dilation=(2, 2),
-                           name=name,
+                           name='{}_DilSepConv5x5'.format(name),
                            eval_prob=eval_prob)
 
 
-class MaxPool3x3(smo.MaxPool):
+class MaxPool3x3(smo.Graph):
     """
-    A static max pooling of size 3x3
-
+    A static max pooling of size 3x3 followed by batch normalization and ReLU
     Args:
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
+        channels (int): the number of features
     """
+    def __init__(self, parents,
+                 channels,
+                 name='', eval_prob=None):
+        smo.Graph.__init__(self,
+                           parents=parents,
+                           name=name,
+                           eval_prob=eval_prob,
+                           )
 
-    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
-        smo.MaxPool.__init__(self,
-                             parents=parents,
-                             kernel=(3, 3),
-                             stride=(1, 1),
-                             pad=(1, 1),
-                             name=name,
-                             eval_prob=eval_prob)
-        self.bn = mo.BatchNormalization(n_features=self.parents[0].shape[1],
-                                        n_dims=4)
-        self.relu = mo.ReLU()
+        pool = smo.MaxPool(name='{}_MaxPool3x3/maxpool'.format(name),
+                           parents=parents,
+                           eval_prob=eval_prob,
+                           kernel=(3, 3),
+                           stride=(1, 1),
+                           pad=(1, 1),
+                           )
+        self.append(pool)
 
-    def call(self, *inputs):
-        return self.relu(self.bn(smo.MaxPool.call(self,
-                                                  *inputs)))
+        bn = smo.BatchNormalization(name='{}_MaxPool3x3/bn'.format(name),
+                                    parents=[pool],
+                                    eval_prob=eval_prob,
+                                    n_features=channels,
+                                    n_dims=4,
+                                    )
+        self.append(bn)
+
+        relu = smo.ReLU(name='{}_MaxPool3x3/relu'.format(name),
+                        parents=[bn],
+                        eval_prob=eval_prob
+                        )
+        self.append(relu)
 
 
-class AveragePool3x3(smo.AvgPool):
+class AveragePool3x3(smo.Graph):
     """
-    A static avg pooling of size 3x3
-
+    A static average pooling of size 3x3 followed by
+    batch normalization and ReLU
     Args:
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
+        channels (int): the number of features
     """
+    def __init__(self, parents,
+                 channels,
+                 name='', eval_prob=None):
 
-    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
-        smo.AvgPool.__init__(self,
-                             parents=parents,
-                             kernel=(3, 3),
-                             stride=(1, 1),
-                             pad=(1, 1),
-                             name=name,
-                             eval_prob=eval_prob)
-        self.bn = mo.BatchNormalization(
-            n_features=self.parents[0].shape[1], n_dims=4)
-        self.relu = mo.ReLU()
+        smo.Graph.__init__(self,
+                           parents=parents,
+                           name=name,
+                           eval_prob=eval_prob,
+                           )
 
-    def call(self, *inputs):
-        return self.relu(self.bn(smo.AvgPool.call(self,
-                                                  *inputs)))
+        pool = smo.AvgPool(name='{}_AveragePool3x3/avgpool'.format(name),
+                           parents=parents,
+                           eval_prob=eval_prob,
+                           kernel=(3, 3),
+                           stride=(1, 1),
+                           pad=(1, 1),
+                           )
+        self.append(pool)
+
+        bn = smo.BatchNormalization(name='{}_AveragePool3x3/bn'.format(name),
+                                    parents=[pool],
+                                    eval_prob=eval_prob,
+                                    n_features=channels,
+                                    n_dims=4,
+                                    )
+        self.append(bn)
+
+        relu = smo.ReLU(name='{}_AveragePool3x3/relu'.format(name),
+                        parents=[bn],
+                        eval_prob=eval_prob
+                        )
+        self.append(relu)
 
 
 ZOPH_CANDIDATES = [SepConv3x3,
@@ -305,13 +342,18 @@ class ZophBlock(smo.Graph):
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
-        candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        candidates (list): the candidate modules instantiated
+                           within this block (e.g. ZOPH_CANDIDATES)
         channels (int): the number of output channels of this block
-        join_parameters (nnabla variable, optional): the architecture parameters used to join the outputs
-            of the candidate modules. join_parameters must have the same number of elements as we have candidates.
+        join_parameters (nnabla variable, optional): the architecture
+                        parameters used to join the outputs
+                        of the candidate modules.
+                        join_parameters must have the same number
+                        of elements as we have candidates.
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        - Bender, Gabriel. "Understanding and simplifying one-shot
+         architecture search." (2019).
     """
 
     def __init__(self, parents, candidates,
@@ -342,14 +384,6 @@ class ZophBlock(smo.Graph):
                               kernel=(1, 1),
                               eval_prob=F.sum(join_prob[:-1]))
         self.append(input_conv)
-        self.append(smo.BatchNormalization(name='{}/input_conv_bn'.format(
-                                           self.name),
-                                           parents=[self[-1]],
-                                           n_dims=4,
-                                           n_features=self._channels))
-
-        self.append(smo.ReLU(name='{}/input_conv/relu'.format(self.name),
-                             parents=[self[-1]]))
 
         for i, ci in enumerate(self._candidates):
             self.append(ci(name='{}/candidate_{}'.format(self.name, i),
@@ -357,28 +391,32 @@ class ZophBlock(smo.Graph):
                            channels=self._channels,
                            eval_prob=join_prob[i]))
         self.append(smo.Join(name='{}/join'.format(self.name),
-                             parents=self[4:],
+                             parents=self[2:],
                              join_parameters=self._join_parameters))
 
 
 class ZophCell(smo.Graph):
     """
-    A zoph cell that consists of multiple zoph blocks, as defined in [Bender et. al]
+    A zoph cell that consists of multiple zoph blocks,
+    as defined in [Bender et. al]
 
     Args:
         parents (list): a list of static modules that
             are parents to this module
         name (string, optional): the name of the module
-        candidates (list): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        candidates (list): the candidate modules instantiated within
+                          this block (e.g. ZOPH_CANDIDATES)
         channels (int): the number of output channels of this block
-        join_parameters (list of nnabla variable, optional): lift of the architecture
+        join_parameters (list of nnabla variable, optional):
+            lift of the architecture
             parameters used to join the outputs
-            of the candidate modules. each element in join_parameters must have
+            of the candidate modules.Each element in join_parameters must have
             the same number of elements as we have candidates.
             The length of this list must be n_modules.
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        - Bender, Gabriel. "Understanding and simplifying one-shot
+         architecture search." (2019).
     """
 
     def __init__(self, parents, candidates, channels, name='',
@@ -409,7 +447,7 @@ class ZophCell(smo.Graph):
                                                parents=[self[-1]],
                                                n_dims=4,
                                                n_features=self._channels))
-            self.append(smo.ReLU(name='{}/input_conv_{}/relu'.format(
+            self.append(smo.ReLU(name='{}/input_conv_{}_relu'.format(
                                  self.name, i),
                                  parents=[self[-1]]))
             projected_inputs.append(self[-1])
@@ -447,7 +485,7 @@ class ZophCell(smo.Graph):
                                 parents=cell_modules, mode='concat'))
 
 
-class SearchNet(Model, smo.Graph):
+class SearchNet(smo.Graph):
     """
     A search space as defined in [Bender et. al]
 
@@ -458,13 +496,17 @@ class SearchNet(Model, smo.Graph):
         stem_channels (int): the number of channels for the stem convolutions
         cells (list): the type of the cells used within this search space
         cell_depth (list): the number of modules within each cell
-        reducing (list): specifies for each cell if it reduces the feature map dimensions through pooling
-        join_parameters (list): the join_parameters used in each cell and block.
-        candidates (list, optional): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        reducing (list): specifies for each cell if it reduces the feature
+                         map dimensions through pooling
+        join_parameters (list): the join_parameters used in each
+                         cell and block.
+        candidates (list, optional): the candidate modules instantiated
+                         within this block (e.g. ZOPH_CANDIDATES)
         mode (string): the mode which the join modules within this network use
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        - Bender, Gabriel. "Understanding and simplifying one-shot
+         architecture search." (2019).
     """
 
     def __init__(self, name='', input_shape=(3, 32, 32),
@@ -474,6 +516,7 @@ class SearchNet(Model, smo.Graph):
                  reducing=[False, True, True],
                  join_parameters=[[None]*7]*3,
                  candidates=ZOPH_CANDIDATES, mode='sample'):
+
         smo.Graph.__init__(self, parents=[], name=name)
         self._n_classes = n_classes
         self._stem_channels = stem_channels
@@ -567,22 +610,21 @@ class SearchNet(Model, smo.Graph):
 
     @property
     def modules_to_profile(self):
-        return [smo.Identity,
-                smo.Zero,
-                smo.Conv,
-                smo.Join,
+        r"""Returns a list with the modules that will be profiled when the
+        Profiler functions are called. All other modules in the network will
+        not be profiled
+        """
+        return [smo.Conv,
+                smo.DwConv,
+                smo.MaxPool,
+                smo.AvgPool,
+                smo.GlobalAvgPool,
                 smo.ReLU,
                 smo.BatchNormalization,
+                smo.Join,
                 smo.Merging,
-                SepConv3x3,
-                SepConv5x5,
-                DilSepConv3x3,
-                DilSepConv5x5,
-                MaxPool3x3,
-                AveragePool3x3,
-                smo.MaxPool,
-                smo.GlobalAvgPool,
-                smo.Collapse]
+                smo.Collapse,
+                ]
 
     @property
     def input_shapes(self):
@@ -623,13 +665,6 @@ class SearchNet(Model, smo.Graph):
                 param[key] = val
         return param
 
-    def get_latency(self, estimator, active_only=True):
-        latencies = {}
-        for mi in self.get_net_modules(active_only=active_only):
-            if type(mi) in self.modules_to_profile:
-                latencies[mi.name] = estimator.predict(mi)
-        return latencies
-
     def __call__(self, input):
         self.reset_value()
         self._input._value = input
@@ -655,36 +690,20 @@ class SearchNet(Model, smo.Graph):
                 str_summary += str(mi._eval_prob.d) + "\n"
         return str_summary
 
-    def save(self, output_path):
+    def save_graph(self, path):
+        """
+            save whole network/graph (in a PDF file)
+            Args:
+                path
+        """
         gvg = self.get_gv_graph()
-        gvg.render(output_path+'/graph')
-
-    def save_modules_nnp(self, path, active_only=False):
-        mods = self.get_net_modules(active_only=active_only)
-
-        for mi in mods:
-            if type(mi) in self.modules_to_profile:
-                print(type(mi))
-                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
-
-                out = mi.call(*inp)
-                filename = path + mi.name + '.nnp'
-                d = {str(i): inpi for i, inpi in enumerate(inp)}
-                contents = {'networks': [{'name': mi.name,
-                                          'batch_size': 1,
-                                          'outputs': {'out': out},
-                                          'names': d}],
-                            'executors': [{'name': 'runtime',
-                                           'network': mi.name,
-                                           'data': ['inp'],
-                                           'output': ['out']}]}
-
-                save(filename, contents)
+        gvg.render(path + '/graph')
 
 
 class TrainNet(SearchNet):
     """
-    A search space as defined in [Bender et. al]. Its the same as SearchNet, just that mode is fixed to 'max'.
+    A search space as defined in [Bender et. al]. Its the same as SearchNet,
+    just that mode is fixed to 'max'.
 
     Args:
         name (string, optional): the name of the module
@@ -693,13 +712,16 @@ class TrainNet(SearchNet):
         stem_channels (int): the number of channels for the stem convolutions
         cells (list): the type of the cells used within this search space
         cell_depth (list): the number of modules within each cell
-        reducing (list): specifies for each cell if it reduces the feature map dimensions through pooling
-        join_parameters (list): the join_parameters used in each cell and block.
-        candidates (list, optional): the candidate modules instantiated within this block (e.g. ZOPH_CANDIDATES)
+        reducing (list): specifies for each cell if it reduces the feature map
+                         dimensions through pooling
+        join_parameters (list): the join_parameters used in each cell and block
+        candidates (list, optional): the candidate modules instantiated within
+                         this block (e.g. ZOPH_CANDIDATES)
         mode (string): the mode which the join modules within this network use
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot architecture search." (2019).
+        - Bender, Gabriel. "Understanding and simplifying one-shot
+        architecture search." (2019).
     """
 
     def __init__(self, name, input_shape=(3, 32, 32),

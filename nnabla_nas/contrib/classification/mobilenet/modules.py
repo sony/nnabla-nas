@@ -18,33 +18,34 @@ from .... import module as Mo
 
 CANDIDATES = OrderedDict([
     ('MB1 3x3',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=1, kernel=(3, 3))),
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=1, kernel=(3, 3), name=n)),
     ('MB3 3x3',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=3, kernel=(3, 3))),
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=3, kernel=(3, 3), name=n)),
     ('MB6 3x3',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=6, kernel=(3, 3))),
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=6, kernel=(3, 3), name=n)),
     ('MB1 5x5',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=1, kernel=(5, 5))),
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=1, kernel=(5, 5), name=n)),
     ('MB3 5x5',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=3, kernel=(5, 5))),
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=3, kernel=(5, 5), name=n)),
     ('MB6 5x5',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=6, kernel=(5, 5))),
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=6, kernel=(5, 5), name=n)),
     ('MB1 7x7',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=1, kernel=(7, 7))),
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=1, kernel=(7, 7), name=n)),
     ('MB3 7x7',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=3, kernel=(7, 7))),
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=3, kernel=(7, 7), name=n)),
     ('MB6 7x7',
-        lambda inc, outc, s: InvertedResidual(inc, outc, s,
-                                              expand_ratio=6, kernel=(7, 7))),
-    ('skip_connect', lambda inc, outc, s: Mo.Identity())
+        lambda inc, outc, s, n: InvertedResidual(
+            inc, outc, s, expand_ratio=6, kernel=(7, 7), name=n)),
+    ('skip_connect',
+        lambda inc, outc, s, n: Mo.Identity(name=n))
 ])
 
 
@@ -65,19 +66,21 @@ class ConvBNReLU(Mo.Sequential):
     """
 
     def __init__(self, in_channels, out_channels, kernel=(3, 3),
-                 stride=(1, 1), group=1):
+                 stride=(1, 1), group=1, name=''):
         self._in_channels = in_channels
         self._out_channels = out_channels
         self._kernel = kernel
         self._stride = stride
         self._pad = ((kernel[0] - 1)//2, (kernel[1] - 1)//2)
+        self._name = name
 
         super(ConvBNReLU, self).__init__(
             Mo.Conv(in_channels, out_channels, self._kernel,
                     stride=self._stride, pad=self._pad, group=group,
-                    with_bias=False),
-            Mo.BatchNormalization(n_features=out_channels, n_dims=4),
-            Mo.ReLU6()
+                    with_bias=False, name='{}/conv'.format(self.name)),
+            Mo.BatchNormalization(n_features=out_channels, n_dims=4,
+                                  name='{}/bn'.format(self.name)),
+            Mo.ReLU6(name='{}/relu6'.format(self.name))
         )
 
     def extra_repr(self):
@@ -106,7 +109,8 @@ class InvertedResidual(Mo.Module):
     """
 
     def __init__(self, in_channels, out_channels, stride, kernel=(3, 3),
-                 expand_ratio=1):
+                 expand_ratio=1, name=''):
+
         assert stride in [1, 2]
 
         self._stride = stride
@@ -114,28 +118,35 @@ class InvertedResidual(Mo.Module):
         self._out_channels = out_channels
         self._kernel = kernel
         self._expand_ratio = expand_ratio
+        self._name = name
 
         hidden_dim = int(round(in_channels * expand_ratio))
         self._use_res_connect = (self._stride == 1 and
                                  in_channels == out_channels)
+        if self._use_res_connect:
+            self._add_res = Mo.Add2(name='{}/add2'.format(self.name))
 
         layers = []
         if expand_ratio != 1:
-            layers.append(ConvBNReLU(in_channels, hidden_dim, (1, 1)))
+            layers.append(ConvBNReLU(in_channels, hidden_dim, (1, 1),
+                                     name='{}/ConvBNReLU_0'.format(self.name)))
 
         layers.extend([
             ConvBNReLU(hidden_dim, hidden_dim, kernel=kernel,
-                       stride=(stride, stride), group=hidden_dim),
+                       stride=(stride, stride), group=hidden_dim,
+                       name='{}/ConvBNReLU_1'.format(self.name)),
             Mo.Conv(hidden_dim, out_channels, kernel=(1, 1), stride=(1, 1),
-                    with_bias=False),
-            Mo.BatchNormalization(n_features=out_channels, n_dims=4)
+                    with_bias=False, name='{}/conv'.format(self.name)),
+            Mo.BatchNormalization(n_features=out_channels, n_dims=4,
+                                  name='{}/bn'.format(self.name))
         ])
 
         self._conv = Mo.Sequential(*layers)
 
     def call(self, x):
         if self._use_res_connect:
-            return x + self._conv(x)
+            # return x + self._conv(x)
+            return self._add_res(x, self._conv(x))
         return self._conv(x)
 
     def extra_repr(self):
@@ -148,16 +159,17 @@ class InvertedResidual(Mo.Module):
 
 class ChoiceBlock(Mo.Module):
     def __init__(self, in_channels, out_channels, stride,
-                 ops, mode='sample'):
+                 ops, mode='sample', name=''):
         self._in_channels = in_channels
         self._out_channels = out_channels
         self._stride = stride
         self._mode = mode
 
         self._mixed = Mo.MixedOp(
-            operators=[CANDIDATES[k](in_channels, out_channels, stride)
+            operators=[CANDIDATES[k](in_channels, out_channels,
+                                     stride, name)
                        for k in ops],
-            mode=mode
+            mode=mode, name=name
         )
 
     def call(self, input):

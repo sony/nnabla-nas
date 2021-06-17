@@ -23,6 +23,7 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 
+# import nnabla_nas.module as mo
 from ... import module as mo
 
 from graphviz import Digraph
@@ -77,7 +78,7 @@ class Module(mo.Module):
         for pi in parents:
             pi.add_child(self)
         self._children = []
-        self._name = name
+
         self._value = None
         self._eval_probs = None
         self._shape = -1
@@ -86,7 +87,7 @@ class Module(mo.Module):
             self._eval_prob = nn.Variable.from_numpy_array(np.array(1.0))
         else:
             self._eval_prob = eval_prob
-        mo.Module.__init__(self)
+        mo.Module.__init__(self, name=name)
 
     def add_child(self, child):
         r"""
@@ -275,7 +276,7 @@ class Input(Module):
 
     def _recursive_call(self):
         r"""
-        Input module do not call anny parents.
+        Input module do not call any parents.
         """
         self.need_grad = True
         return self.call(None)
@@ -310,6 +311,7 @@ class Identity(mo.Identity, Module):
     """
 
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
+        mo.Identity.__init__(self, name=name)
         Module.__init__(self, parents, name, eval_prob=eval_prob)
         if len(self._parents) > 1:
             raise RuntimeError
@@ -330,17 +332,24 @@ class Zero(mo.Zero, Module):
     """
 
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
-        mo.Zero.__init__(self, *args, **kwargs)
+        mo.Zero.__init__(self, name=name)
         Module.__init__(self, parents, name, eval_prob=eval_prob)
-        self._value = nn.Variable.from_numpy_array(
-            np.zeros(self._parents[0].shape))
         if len(self._parents) > 1:
             raise RuntimeError
-
-    def call(self, *inputs):
         self._value = nn.Variable.from_numpy_array(
             np.zeros(self._parents[0].shape))
-        return self._value
+
+    def call(self, *inputs):
+        # we overload the Zero implementation from the dynamic modules.
+        # The reason for this is the following: in the static modules,
+        # we need to create a Variable with zeros and of the size of
+        # the parent. Then we just multiply the scalar 0.0 with that variable,
+        # with the only purpose that a NNabla graph is created for this
+        # F.mul_scalar() operation, which is later visible in the exported
+        # NNabla graph (.nnp) and also in the converted ONNX file (.onnx)
+        self._value = nn.Variable.from_numpy_array(
+            np.zeros(self._parents[0].shape))
+        return F.mul_scalar(self._value, 0.0, inplace=True)
 
     def _shape_function(self):
         return self._parents[0].shape
@@ -677,6 +686,7 @@ class Collapse(Module):
 
     def __init__(self, parents, name=''):
         Module.__init__(self, parents, name=name)
+        self._scope_name = f'<collapse at {hex(id(self))}>'
         if len(self._parents) > 1:
             raise RuntimeError
 
@@ -706,6 +716,7 @@ class Join(Module):
 
     def __init__(self, parents, join_parameters, name='',
                  mode='linear', *args, **kwargs):
+        self._scope_name = f'<join at {hex(id(self))}>'
         if len(parents) < 2:
             raise Exception("Join vertice {} must have at "
                             "least 2 inputs, but has {}.".format(

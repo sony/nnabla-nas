@@ -17,6 +17,9 @@ import numpy as np
 
 from .search import Searcher
 
+from nnabla_nas.utils.estimator.latency import LatencyEstimator
+from nnabla_nas.utils.estimator.latency import LatencyGraphEstimator
+
 
 class ProxylessNasSearcher(Searcher):
     r""" ProxylessNAS: Direct Neural Architecture Search on Target Task and
@@ -84,7 +87,19 @@ class ProxylessNasSearcher(Searcher):
 
             # adding constraints
             for k, v in self.optimizer.get('regularizer', {}).items():
-                value = v.get_estimation(self.model)
+
+                if isinstance(v, LatencyGraphEstimator):
+                    #  when using LatencyGraphEstimator (by graph)
+                    inp = [nn.Variable((1,)+si[1:]) for si in
+                           self.model.input_shapes]
+                    out = self.model.call(*inp)
+                    value = v.get_estimation(out)
+                elif isinstance(v, LatencyEstimator):
+                    #  when using LatencyEstimator (by module)
+                    value = v.get_estimation(self.model)
+                else:
+                    raise NotImplementedError
+
                 reward *= (min(1.0, v._bound / value))**v._weight
                 self.monitor.update(k, value, 1)
             rewards.append(reward)
@@ -97,7 +112,8 @@ class ProxylessNasSearcher(Searcher):
                 m.g += (r - self._reward.data)*grads[i][j]/n_iter
 
         # update global reward
-        self._reward.data = beta*sum(rewards)/n_iter + (1 - beta)*self._reward.data
+        self._reward.data = beta*sum(rewards)/n_iter + \
+            (1 - beta)*self._reward.data
 
         if self.comm.n_procs > 1:
             self.comm.all_reduce(

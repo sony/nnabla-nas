@@ -55,11 +55,14 @@ class Model(Mo.Module):
         r"""Return a loss computed from a list of outputs and a list of targets.
 
         Args:
-            outputs (list of nn.Variable): A list of output variables computed from the model.
-            targets (list of nn.Variable): A list of target variables loaded from the data.
-            loss_weights (list of float, optional): A list specifying scalar coefficients to weight the loss
-                contributions of different model outputs. It is expected to have a 1:1 mapping to model outputs.
-                Defaults to None.
+            outputs (list of nn.Variable): A list of output variables
+                 computed from the model.
+            targets (list of nn.Variable): A list of target variables
+                loaded from the data.
+            loss_weights (list of float, optional): A list specifying scalar
+                coefficients to weight the loss  contributions of different
+                model outputs. It is expected to have a 1:1 mapping to model
+                outputs. Defaults to None.
 
         Returns:
             nn.Variable: A scalar NNabla Variable represents the loss.
@@ -72,11 +75,14 @@ class Model(Mo.Module):
     def metrics(self, outputs, targets):
         r"""Return a dictionary of metrics to monitor during training.
 
-        It is expected to have a 1:1 mapping between the model outputs and targets.
+        It is expected to have a 1:1 mapping between the model outputs
+        and targets.
 
         Args:
-            outputs (list of nn.Variable): A list of output variables (nn.Variable) computed from the model.
-            targets (list of nn.Variable): A list of target variables (nn.Variable) loaded from the data.
+            outputs (list of nn.Variable): A list of output variables
+                                         (nn.Variable) computed from the model.
+            targets (list of nn.Variable): A list of target variables
+                                         (nn.Variable) loaded from the data.
 
         Returns:
             dict: A dictionary containing all metrics to monitor, e.g.,

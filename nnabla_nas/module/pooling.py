@@ -30,9 +30,13 @@ class MaxPool(Module):
             dimension. Defaults to ``(0,) * len(kernel)``.
         channel_last(bool): If True, the last dimension is considered as
             channel dimension, a.k.a NHWC order. Defaults to ``False``.
+        name (string): the name of this module
     """
 
-    def __init__(self, kernel, stride=None, pad=None, channel_last=False):
+    def __init__(self, kernel, stride=None, pad=None, channel_last=False,
+                 name=''):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<maxpool at {hex(id(self))}>'
         self._kernel = kernel
         self._stride = stride
         self._pad = pad
@@ -63,9 +67,13 @@ class AvgPool(Module):
             dimension. Defaults to ``(0,) * len(kernel)``.
         channel_last(bool): If True, the last dimension is considered as
             channel dimension, a.k.a NHWC order. Defaults to ``False``.
+        name (string): the name of this module
     """
 
-    def __init__(self, kernel, stride=None, pad=None, channel_last=False):
+    def __init__(self, kernel, stride=None, pad=None, channel_last=False,
+                 name=''):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<avgpool at {hex(id(self))}>'
         self._kernel = kernel
         self._stride = stride
         self._pad = pad
@@ -87,7 +95,12 @@ class AvgPool(Module):
 class GlobalAvgPool(Module):
     r"""Global average pooling layer.
     It pools an averaged value from the whole image.
+    Args:
+        name (string): the name of this module
     """
+    def __init__(self, name=''):
+        self._name = name
+        self._scope_name = f'<globalavgpool at {hex(id(self))}>'
 
     def call(self, input):
         return F.global_average_pooling(input)

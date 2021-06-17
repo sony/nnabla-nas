@@ -14,6 +14,7 @@
 
 import nnabla as nn
 import numpy as np
+from nnabla.parameter import set_parameter
 
 
 class Parameter(nn.Variable):
@@ -34,7 +35,15 @@ class Parameter(nn.Variable):
             initialize parameters from numpy array data. Defaults to None.
     """
 
-    def __new__(cls, shape, need_grad=True, initializer=None):
+    def __init__(self, *args, **kwargs):
+        super(Parameter, self).__init__()
+        if 'scope' in kwargs.keys():
+            with nn.parameter_scope(kwargs['scope']):
+                set_parameter(self.__repr__(), self)
+        else:
+            set_parameter(self.__repr__(), self)
+
+    def __new__(cls, shape, need_grad=True, initializer=None, scope=''):
         assert shape is not None
         obj = super().__new__(cls, shape, need_grad)
         if initializer is None:

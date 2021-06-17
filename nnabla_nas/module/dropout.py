@@ -28,9 +28,12 @@ class Dropout(Module):
     Args:
         drop_prob (:obj:`int`, optional): The probability of an element to be
             zeroed. Defaults to 0.5.
+        name (string): the name of this module
     """
 
-    def __init__(self, drop_prob=0.5):
+    def __init__(self, drop_prob=0.5, name=''):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<dropout at {hex(id(self))}>'
         self._drop_prob = drop_prob
 
     def call(self, input):

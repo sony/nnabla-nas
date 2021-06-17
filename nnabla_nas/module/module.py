@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from collections import OrderedDict
-
 import nnabla as nn
-
+from nnabla.utils.save import save
 from .parameter import Parameter
 
 
@@ -25,6 +25,18 @@ class Module(object):
     Your models should also subclass this class. Modules can also contain
     other Modules, allowing to nest them in a tree structure.
     """
+    def __init__(self, name=''):
+        self._name = name
+
+    @property
+    def name(self):
+        r"""
+        The name of the module.
+
+        Returns:
+            string: the name of the module
+        """
+        return self._name
 
     @property
     def modules(self):
@@ -206,6 +218,354 @@ class Module(object):
             nn.load_parameters(path)
             params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
+
+    @property
+    def modules_to_profile(self):
+        r"""Returns a list with the modules that will be profiled when the
+        Profiler/Estimator functions are called. All other modules in the
+        network will not be profiled.
+        """
+        raise NotImplementedError
+
+    def get_latency(self, estimator, active_only=True):
+        """
+        Function to use to calc latency
+        This function needs to work based on the graph
+        Parameters:
+            estimator: a graph-based estimator
+            active_only: get latency of active modules only
+        Returns:
+            latencies: list of all latencies of each module
+            accum_lat: total sum of latencies of all modules
+        """
+        accum_lat = 0
+        latencies = {}
+        for mi in self.get_net_modules(active_only=active_only):
+            if type(mi) in self.modules_to_profile:
+                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                out = mi.call(*inp)
+                latencies[mi.name] = estimator.predict(out)
+                accum_lat += latencies[mi.name]
+        return latencies, accum_lat
+
+    def get_latency_by_mod(self, estimator, active_only=True):
+        """
+        *** Note: This function is deprecated. Use get_latency() ***
+        Function to use to calc latency
+        This function needs to work based on the module
+        Parameters:
+            estimator: a module-based estimator
+            active_only: get latency of active modules only
+        Returns:
+            latencies: list of all latencies of each module
+            accum_lat: total sum of latencies of all modules
+        """
+        accum_lat = 0
+        latencies = {}
+        for mi in self.get_net_modules(active_only=active_only):
+            if type(mi) in self.modules_to_profile:
+                latencies[mi.name] = estimator.predict(mi)
+                accum_lat += latencies[mi.name]
+        return latencies, accum_lat
+
+    def save_net_nnp(self, path, inp, out, calc_latency=False,
+                     func_real_latency=None, func_accum_latency=None):
+        """
+            Saves whole net as one nnp
+            Calc whole net (real) latency (using e.g.Nnabla's [Profiler])
+            Calculate also layer-based latency
+            The modules are discovered using the nnabla graph of the whole net
+            The latency is then calculated based on each individual module's
+            nnabla graph (e.g. [LatencyGraphEstimator])
+
+            Args:
+                path
+                inp: input of the created network
+                out: output of the created network
+                calc_latency: flag for calc latency
+                func_real_latency: function to use to calc actual latency
+                func_accum_latency: function to use to calc accum. latency,
+                        this is, dissecting the network layer by layer
+                        using the graph of the network, calculate the
+                        latency for each layer and add up all these results.
+        """
+        batch_size = inp.shape[0]
+
+        name = self.name
+
+        filename = path + name + '.nnp'
+        pathname = os.path.dirname(filename)
+        upper_pathname = os.path.dirname(pathname)
+        if not os.path.exists(upper_pathname):
+            os.mkdir(upper_pathname)
+        if not os.path.exists(pathname):
+            os.mkdir(pathname)
+
+        dict = {'0': inp}
+        keys = ['0']
+
+        name_for_nnp = name if (name != '') else 'empty'
+        contents = {'networks': [{'name': name_for_nnp,
+                                  'batch_size': batch_size,
+                                  'outputs': {'out': out},
+                                  'names': dict}],
+                    'executors': [{'name': 'runtime',
+                                   'network': name_for_nnp,
+                                   'data': keys,
+                                   'output': ['out']}]}
+
+        save(filename, contents, variable_batch_size=False)
+
+        if calc_latency:
+            acc_latency = func_accum_latency.get_estimation(out)
+            filename = path + name + '.acclat'
+            with open(filename, 'w') as f:
+                print(acc_latency.__str__(), file=f)
+
+            func_real_latency.run()
+            real_latency = float(func_real_latency.result['forward_all'])
+            filename = path + name + '.realat'
+            with open(filename, 'w') as f:
+                print(real_latency.__str__(), file=f)
+            return real_latency, acc_latency
+        else:
+            return 0.0, 0.0
+
+    def save_modules_nnp(self, path, active_only=False,
+                         calc_latency=False,
+                         func_latency=None
+                         ):
+        """
+            Saves all modules of the network as individual nnp files,
+            using folder structure given by name convention.
+            The modules are extracted going over the module list, not
+            over the graph structure.
+            The latency is then calculated based on each individual module's
+            nnabla graph (e.g. [LatencyGraphEstimator])
+            Args:
+                path
+                active_only: if True, only active modules are saved
+                calc_latency: flag for calc latency
+                func_latency: function to use to calc latency of
+                              each of the extracted modules
+                              This function needs to work based on the graph
+        """
+        accum_lat = 0.0
+        mods = self.get_net_modules(active_only=active_only)
+        for mi in mods:
+            if type(mi) in self.modules_to_profile:
+                if len(mi.input_shapes) == 0:
+                    continue
+                pass
+
+                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                out = mi.call(*inp)
+
+                filename = path + mi.name + '.nnp'
+                pathname = os.path.dirname(filename)
+                upper_pathname = os.path.dirname(pathname)
+                if not os.path.exists(upper_pathname):
+                    os.mkdir(upper_pathname)
+                if not os.path.exists(pathname):
+                    os.mkdir(pathname)
+
+                d_dict = {str(i): inpi for i, inpi in enumerate(inp)}
+                d_keys = [str(i) for i, inpi in enumerate(inp)]
+
+                name_for_nnp = mi.name if (mi.name != '') else 'empty'
+                contents = {'networks': [{'name': name_for_nnp,
+                                          'batch_size': 1,
+                                          'outputs': {'out': out},
+                                          'names': d_dict}],
+                            'executors': [{'name': 'runtime',
+                                           'network': name_for_nnp,
+                                           'data': d_keys,
+                                           'output': ['out']}]}
+
+                if hasattr(mi, '_scope_name'):
+                    with nn.parameter_scope(mi._scope_name):
+                        save(filename, contents, variable_batch_size=False)
+                else:
+                    save(filename, contents, variable_batch_size=False)
+
+                if calc_latency:
+                    latency = func_latency.get_estimation(out)
+                    filename = path + mi.name + '.acclat'
+                    with open(filename, 'w') as f:
+                        print(latency.__str__(), file=f)
+                    accum_lat += latency
+        return accum_lat
+
+    def save_modules_nnp_by_mod(self, path, active_only=False,
+                                calc_latency=False,
+                                func_latency=None,
+                                ):
+        """
+            *** Note: This function is deprecated. Use save_modules_nnp() ***
+            Saves all modules of the network as individual nnp files,
+            using folder structure given by name convention.
+            The modules are extracted going over the module list, not
+            over the graph structure.
+            The latency is then calculated using the module themselves
+            (e.g. [LatencyEstimator])
+            Args:
+                path
+                active_only: if True, only active modules are saved
+                calc_latency: flag for calc latency
+                func_latency: function to use to calc latency of
+                              each of the extracted modules
+                              This function needs to work based on the modules
+        """
+        accum_lat = 0.0
+        mods = self.get_net_modules(active_only=active_only)
+        for mi in mods:
+            if type(mi) in self.modules_to_profile:
+                if len(mi.input_shapes) == 0:
+                    continue
+                pass
+
+                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                out = mi.call(*inp)
+
+                filename = path + mi.name + '.nnp'
+                pathname = os.path.dirname(filename)
+                upper_pathname = os.path.dirname(pathname)
+                if not os.path.exists(upper_pathname):
+                    os.mkdir(upper_pathname)
+                if not os.path.exists(pathname):
+                    os.mkdir(pathname)
+
+                d_dict = {str(i): inpi for i, inpi in enumerate(inp)}
+                d_keys = [str(i) for i, inpi in enumerate(inp)]
+
+                name_for_nnp = mi.name if (mi.name != '') else 'empty'
+                contents = {'networks': [{'name': name_for_nnp,
+                                          'batch_size': 1,
+                                          'outputs': {'out': out},
+                                          'names': d_dict}],
+                            'executors': [{'name': 'runtime',
+                                           'network': name_for_nnp,
+                                           'data': d_keys,
+                                           'output': ['out']}]}
+
+                if hasattr(mi, '_scope_name'):
+                    with nn.parameter_scope(mi._scope_name):
+                        save(filename, contents, variable_batch_size=False)
+                else:
+                    save(filename, contents, variable_batch_size=False)
+
+                if calc_latency:
+                    latency = func_latency.get_estimation(mi)
+                    filename = path + mi.name + '.acclat'
+                    with open(filename, 'w') as f:
+                        print(latency.__str__(), file=f)
+                    accum_lat += latency
+        return accum_lat
+
+    def calc_latency_all_modules(self, path, graph, func_latency=None):
+        """
+            Calculate the latency for each of the modules in a graph.
+            The modules are extracted using the graph structure information.
+            The latency is then calculated based on each individual module's
+            nnabla graph.
+            It also saves the accumulated latency of all modules.
+
+            Args:
+                path
+                graph:
+                func_latency: function to use to calc latency of
+                              each of the modules
+                              This function needs to work based on the graph
+        """
+        import nnabla.function as Function
+        from nnabla_nas.utils.estimator.latency import Profiler
+        from nnabla.context import get_current_context
+        from nnabla.logger import logger
+
+        func_latency._visitor.reset()
+        graph.visit(func_latency._visitor)
+        total_latency = 0.0
+        idx = 0
+        for func in func_latency._visitor._functions:
+            args = [func.info.type_name] + \
+                   [str(inp.shape) for inp in func.inputs] + \
+                   [str(func.info.args)]
+            key = '-'.join(args)
+
+            ff = getattr(Function, func.info.type_name)(get_current_context(),
+                                                        **func.info.args)
+
+            if key not in func_latency.memo:
+                try:  # run profiler
+                    nnabla_vars = [nn.Variable(inp.shape,
+                                   need_grad=inp.need_grad)
+                                   for inp in func.inputs]
+                    runner = Profiler(
+                        ff(*nnabla_vars),
+                        device_id=func_latency._device_id,
+                        ext_name=func_latency._ext_name,
+                        n_run=func_latency._n_run,
+                        outlier=func_latency._outlier,
+                        max_measure_execution_time=func_latency._max_measure_execution_time,  # noqa: E501
+                        time_scale=func_latency._time_scale,
+                        n_warmup=func_latency._n_warmup
+                    )
+                    runner.run()
+                    latency = float(runner.result['forward_all'])
+
+                except Exception as err:
+                    latency = 0.0
+                    logger.warning(f'Latency calculation failed: {key}')
+                    logger.warning(str(err))
+
+                func_latency.memo[key] = latency
+            else:
+                latency = func_latency.memo[key]
+
+            total_latency += latency
+
+            # save latency of this layer (name: id_XXX_{key}.acclat)
+            filename = path + '/id_' + str(idx) + '_' + key + '.acclat'
+            pathname = os.path.dirname(filename)
+            upper_pathname = os.path.dirname(pathname)
+            if not os.path.exists(upper_pathname):
+                os.mkdir(upper_pathname)
+            if not os.path.exists(pathname):
+                os.mkdir(pathname)
+            idx += 1
+            with open(filename, 'w') as f:
+                print(latency.__str__(), file=f)
+
+        # save accum latency of all layers
+        filename = path + '.acclat'
+        with open(filename, 'w') as f:
+            print(total_latency.__str__(), file=f)
+
+        return total_latency
+
+    def convert_npp_to_onnx(self, path, opset='opset_11'):
+        """
+            Finds all nnp files in the given path and its
+            subfolders and converts them to ONNX
+            For this to run smoothly, nnabla_cli must be
+            installed and added to your python path.
+            Args:
+                path
+                opset
+
+        The actual bash shell command used is:
+        > find <DIR> -name '*.nnp' -exec echo echo {} \|  # noqa: E501,W605
+            awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh  # noqa: E501,W605
+        which, for each file found with find, outputs the following:
+        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'  # noqa: E501,W605
+        which, for each file, generates the final conversion command:
+        > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.nnp.onnx
+
+        """
+        os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'              # noqa: E501,W605
+                  ' awk -F \\. \\\'{print \\\"nnabla_cli convert -b 1 -d ' + opset +   # noqa: E501,W605
+                  ' \\\"\$0\\\" \\\"\$1\\\"\.\\\"\$2\\\"\.onnx\\\"}\\\' \; | sh | sh'  # noqa: E501,W605
+                  )
 
     def extra_format(self):
         r"""Set the submodule representation format.
