@@ -26,43 +26,109 @@ from nnabla.logger import logger
 from nnabla.utils.profiler import GraphProfiler, convert_time_scale
 from sklearn.neural_network import MLPRegressor
 from tqdm import tqdm
+import nnabla.function as F
+from nnabla.context import get_current_context
 
 from ... import contrib
 from .estimator import Estimator
+from collections import namedtuple
+
+
+def _zero_variables(variables):
+    for v in variables:
+        v.data.zero()
+        v.grad.zero()
+
+
+ProfileStat = namedtuple("ProfileStat", ["parameter_scope", "inputs_shape",
+                                         "args_info", "function_name",
+                                         "mean_time", "n_run"])
 
 
 class Profiler(GraphProfiler):
-    """NNabla GraphProfiler
+    """NNabla GraphProfiler.
+    Overloads the implementations of _time_profiling() which includes
+    _zero_variables() in order to initialize the data fields of all variables,
+    also those without parents and thus avoid errors when calculating latency
+    of static modules.
+    _measure_execution_time() is also overloaded to be able to use "n_warmup"
+    and "outlier" variables, see Arguments
 
     Args:
-        graph (:class:`nnabla.Variable`): Instance of `nnabla.Variable` class. Profiler find all
-            functions which compose network graph from root `nnabla.Variable` to this
-            `nnabla.Variable`.
+        graph (:class:`nnabla.Variable`): Instance of `nnabla.Variable` class.
+             Profiler find all functions which compose network graph from root
+             `nnabla.Variable` to this `nnabla.Variable`.
         device_id (str): gpu device id.
         ext_name (str): Extension name. e.g. 'cpu', 'cuda', 'cudnn' etc.
-        solver (:class:`nnabla.solvers.Solver`): Instance of `nnabla.solvers.Solver` for optimizing
-            the parameters of the computation graph. If None, the training process is ignored.
+        solver (:class:`nnabla.solvers.Solver`): Instance of
+            `nnabla.solvers.Solver` for optimizing the parameters of the
+            computation graph. If None, the training process is ignored.
             Default value is None.
-        n_run (int): This argument specifies how many times the each functions` execution time
-            are measured. Default value is 100.
-        max_measure_execution_time (float): Maximum time of executing measurement for each functions.
-            This argument has higher priority than ``n_run``. When the measurement time for each
-            functions get bigger than this argument, this class stops measuring and goes to next
-            function, unless the total times of measurement are less than n_run. Default value is 1 [sec.
-        time_scale (str): Time scale to display. ['m', 'u', 'n'] (which stands for 'mili', 'micro'
-            and 'nano')
-        n_warmup (int, optional): The number of iterations for warming up. Defaults to 10.
-        outlier (float, optional): The portion of outliers which will be remove from the statistical
-            results. Defaults to 0.0.
+        n_run (int): This argument specifies how many times the each functions`
+            execution time are measured. Default value is 100.
+        max_measure_execution_time (float): Maximum time of executing
+            measurement for each functions. This argument has higher priority
+            than ``n_run``. When the measurement time for each functions get
+            bigger than this argument, this class stops measuring and goes to
+            nextfunction, unless the total times of measurement are less than
+            n_run. Default value is 1 sec.
+        time_scale (str): Time scale to display. ['m', 'u', 'n'] (which stands
+            for 'mili', 'micro'and 'nano')
+        n_warmup (int, optional): The number of iterations for warming up.
+             Defaults to 10.
+        outlier (float, optional): The portion of outliers which will be remove
+            from the statistical results. Defaults to 0.0.
     """
 
     def __init__(self, graph, device_id, ext_name, solver=None, n_run=100,
                  max_measure_execution_time=1, time_scale="m",
                  n_warmup=10, outlier=0.0):
-        super().__init__(graph=graph, device_id=device_id, ext_name=ext_name, solver=solver,
-                         n_run=n_run, max_measure_execution_time=max_measure_execution_time)
+
+        super().__init__(graph=graph, device_id=device_id, ext_name=ext_name,
+                         solver=solver, n_run=n_run,
+                         max_measure_execution_time=max_measure_execution_time
+                         )
         self.n_warmup = n_warmup
         self.outlier = outlier
+
+    def _time_profiling(self, f, target_process):
+        if target_process == "forward":
+            process = f.forward
+        elif target_process == "backward":
+            process = f.backward
+        else:
+            raise NotImplementedError(
+                "target process must be [forward, backward]")
+        # Zero-ing to avoid invalid memory access in some layers
+        # such as softmax cross entropy.
+        _zero_variables(f.inputs)
+        _zero_variables(f.outputs)
+        mean_time, measured_count = self._measure_execution_time(
+            process, f.inputs, f.outputs)
+        # Releasing array memory to avoid the increasing memory usage
+        # (`NdArray.zero()` releases any device memory internally.)
+        _zero_variables(f.inputs)
+        _zero_variables(f.outputs)
+
+        parameter_scope = None
+        if len(f.inputs) > 1:
+            if f.inputs[1] in self.name2val.keys():
+                parameter_scope = os.path.dirname(self.name2val[f.inputs[1]])
+
+        inputs_shape = [x.shape for x in f.inputs]
+
+        function_name = f.name
+
+        args_info = f.info.args.items()
+
+        self.result[target_process].append(ProfileStat(
+            parameter_scope=parameter_scope,
+            inputs_shape=inputs_shape,
+            args_info=args_info,
+            function_name=function_name,
+            mean_time=mean_time,
+            n_run=measured_count)
+            )
 
     def _measure_execution_time(self, execution, *execution_args):
         runtime = []
@@ -73,35 +139,65 @@ class Profiler(GraphProfiler):
             self.ext_module.synchronize(device_id=self.device_id)
             stop = time.perf_counter()
             if i >= self.n_warmup:
+                if stop - start > self.max_measure_execution_time:
+                    print('WARNING!! -  huge calculation, not used!')
+                    break
                 runtime.append(stop - start)
 
         excluded = int(self.outlier * self.n_run)
-        runtime = np.sort(runtime)
+        runtime_sorted = np.sort(runtime)
+
+        runtime = runtime_sorted
         if excluded:
             runtime = runtime[excluded:-excluded]
 
-        mean_time = convert_time_scale(np.mean(runtime), format=self.time_scale)
+        if any(np.isnan(runtime)):
+            nb_nan = len(runtime[np.isnan(runtime)])
+            runtime = runtime[~np.isnan(runtime)]
+            print('WARNING -- Found and removed ', nb_nan,
+                  'NaN measurements in one layer')
+
+        mean_time = convert_time_scale(np.mean(runtime),
+                                       format=self.time_scale)
         mean_time = "{:.8f}".format(mean_time)
 
-        std_time = convert_time_scale(np.std(runtime), format=self.time_scale)
+        std_time = convert_time_scale(np.std(runtime),
+                                      format=self.time_scale)
         std_time = "{:.8f}".format(std_time)
 
         return mean_time, std_time
 
 
 class LatencyEstimator(Estimator):
-    """Latency estimator.
+    """Latency estimator module-based
+       Estimates the latency for each module contained inside,
+       adds them all up.
+
 
     Args:
         device_id (int): gpu device id.
         ext_name (str): Extension name. e.g. 'cpu', 'cuda', 'cudnn' etc.
         n_run (int): This argument specifies how many times the each functions
-            execution time are measured. Default value is 10.
+            execution time are measured. Default value is 100.
         weight (float, optional): Weight used in the reinforce algorithm.
         bound (float, optional): Maximum bound used in the reinforce algorithm.
+        max_measure_execution_time (float): Maximum time of executing
+            measurement for each functions. This argument has higher priority
+            than ``n_run``. When the measurement time for each functions get
+            bigger than this argument, this class stops measuring and goes to
+            nextfunction, unless the total times of measurement are less than
+            n_run. Default value is 100 sec.
+        time_scale (str): Time scale to display. ['m', 'u', 'n'] (which stands
+            for 'mili', 'micro'and 'nano')
+        n_warmup (int, optional): The number of iterations for warming up.
+             Defaults to 10.
+        outlier (float, optional): The portion of outliers which will be remove
+            from the statistical results. Defaults to 0.0.
     """
 
-    def __init__(self, device_id=None, ext_name=None, n_run=10, weight=0.1, bound=5):
+    def __init__(self, device_id=None, ext_name=None, n_run=100,
+                 weight=0.1, bound=5, max_measure_execution_time=100,
+                 time_scale="m", n_warmup=10, outlier=0.0):
         ctx = nn.context.get_current_context()
         if device_id is None:
             device_id = int(ctx.device_id)
@@ -112,8 +208,14 @@ class LatencyEstimator(Estimator):
         self._n_run = n_run
         self._weight = weight
         self._bound = bound
+        self._max_measure_execution_time = max_measure_execution_time
+        self._time_scale = time_scale
+        self._n_warmup = n_warmup
+        self._outlier = outlier
 
     def predict(self, module):
+        """Returns the estimation of a single module"""
+
         idm = str(module)
         if idm not in self.memo:
             self.memo[idm] = dict()
@@ -127,10 +229,15 @@ class LatencyEstimator(Estimator):
                 # run profiler
                 nnabla_vars = [nn.Variable((1,) + s[1:])
                                for s in module.input_shapes]
-                runner = GraphProfiler(module.call(*nnabla_vars),
-                                       device_id=self._device_id,
-                                       ext_name=self._ext_name,
-                                       n_run=self._n_run)
+                runner = Profiler(module.call(*nnabla_vars),
+                                  device_id=self._device_id,
+                                  ext_name=self._ext_name,
+                                  n_run=self._n_run,
+                                  outlier=self._outlier,
+                                  max_measure_execution_time=self._max_measure_execution_time,  # noqa: E501
+                                  time_scale=self._time_scale,
+                                  n_warmup=self._n_warmup
+                                  )
                 runner.run()
                 latency = float(runner.result['forward_all'])
             except Exception as err:
@@ -142,6 +249,125 @@ class LatencyEstimator(Estimator):
             module.apply(training=state)  # recover training state
         return mem[key]
 
+    def get_estimation(self, module):
+        """Returns the estimation of the whole module,
+           i.e., it goes inside the children recursively."""
+
+        # ## ORIGINAL CODE
+        # return sum(self.predict(m) for _, m in module.get_modules()
+        #          if len(m.modules) == 0 and m.need_grad)
+
+        # ## Human-readable and debuggable code ###
+        final = 0
+        for _, m in module.get_modules():
+            if len(m.modules) == 0 and m.need_grad:
+                tmp = self.predict(m)
+                final += tmp
+        return final
+
+
+class _EstimatorVisitor():
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self._functions = list()
+
+    def __call__(self, func):
+        self._functions.append(func)
+
+
+class LatencyGraphEstimator(Estimator):
+    """Latency estimator graph-based.
+       Estimates the latency for each function in a graph and
+       adds them all up.
+
+    Args:
+        device_id (int): gpu device id.
+        ext_name (str): Extension name. e.g. 'cpu', 'cuda', 'cudnn' etc.
+        n_run (int): This argument specifies how many times the each functions
+            execution time are measured. Default value is 100.
+        weight (float, optional): Weight used in the reinforce algorithm.
+        bound (float, optional): Maximum bound used in the reinforce algorithm.
+        max_measure_execution_time (float): Maximum time of executing
+            measurement for each functions. This argument has higher priority
+            than ``n_run``. When the measurement time for each functions get
+            bigger than this argument, this class stops measuring and goes to
+            nextfunction, unless the total times of measurement are less than
+            n_run. Default value is 100 sec.
+        time_scale (str): Time scale to display. ['m', 'u', 'n'] (which stands
+            for 'mili', 'micro'and 'nano')
+        n_warmup (int, optional): The number of iterations for warming up.
+             Defaults to 10.
+        outlier (float, optional): The portion of outliers which will be remove
+            from the statistical results. Defaults to 0.0.
+    """
+
+    def __init__(self, device_id=None, ext_name=None, n_run=100,
+                 weight=0.1, bound=5, max_measure_execution_time=100,
+                 time_scale="m", n_warmup=10, outlier=0.0):
+
+        ctx = nn.context.get_current_context()
+        if device_id is None:
+            device_id = int(ctx.device_id)
+        if ext_name is None:
+            ext_name = ctx.backend[0].split(':')[0]
+        self._device_id = device_id
+        self._ext_name = ext_name
+        self._n_run = n_run
+        self._weight = weight
+        self._bound = bound
+        self._max_measure_execution_time = max_measure_execution_time
+        self._time_scale = time_scale
+        self._n_warmup = n_warmup
+        self._outlier = outlier
+        self._visitor = _EstimatorVisitor()
+
+    def predict(self, graph):
+        self._visitor.reset()
+        graph.visit(self._visitor)
+        flops = 0
+        for func in self._visitor._functions:
+
+            args = [func.info.type_name] + \
+                   [str(inp.shape) for inp in func.inputs] + \
+                   [str(func.info.args)]
+            key = '-'.join(args)
+
+            ff = getattr(F, func.info.type_name)(get_current_context(),
+                                                 **func.info.args)
+
+            if key not in self.memo:
+                try:  # run profiler
+                    nnabla_vars = [
+                        nn.Variable(inp.shape, need_grad=inp.need_grad)
+                        for inp in func.inputs
+                        ]
+                    runner = Profiler(
+                        ff(*nnabla_vars),
+                        device_id=self._device_id,
+                        ext_name=self._ext_name,
+                        n_run=self._n_run,
+                        outlier=self._outlier,
+                        max_measure_execution_time=self._max_measure_execution_time,  # noqa: E501
+                        time_scale=self._time_scale,
+                        n_warmup=self._n_warmup
+                    )
+                    runner.run()
+                    latency = float(runner.result['forward_all'])
+
+                except Exception as err:
+                    latency = 0
+                    logger.warning(f'Latency calculation failed: {key}')
+                    logger.warning(str(err))
+                self.memo[key] = latency
+            flops += self.memo[key]
+        return flops
+
+    def get_estimation(self, graph):
+        """Wrapper to get the latency for a graph."""
+        return self.predict(graph)
+
 
 class LatencyPredictor(Estimator):
     """An offline latency predictor.
@@ -152,7 +378,8 @@ class LatencyPredictor(Estimator):
             Defaults to (100, 100, 100,).
     """
 
-    def __init__(self, data_file, hidden_layer_sizes=(100, 100, 100,), **kargs):
+    def __init__(self, data_file,
+                 hidden_layer_sizes=(100, 100, 100,), **kargs):
         logger.info('Training the LatencyPredictor!')
         self._predictor = MLPRegressor(
             hidden_layer_sizes=hidden_layer_sizes,
@@ -162,7 +389,8 @@ class LatencyPredictor(Estimator):
         )
         data = np.genfromtxt(data_file, delimiter=',')
         self._predictor.fit(data[:, :-1], data[:, -1])
-        logger.info('LatencyPredictor with loss={:.5f}'.format(self._predictor.loss_))
+        logger.info('LatencyPredictor with loss={:.5f}'
+                    .format(self._predictor.loss_))
         self._dim = data.shape[1] - 1
 
     def arch_repr(self, model):

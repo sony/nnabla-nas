@@ -22,9 +22,12 @@ class Lambda(Module):
 
     Args:
         func (nnabla.functions): A NNabla funcion.
+        name (string): the name of this module
     """
 
-    def __init__(self, func):
+    def __init__(self, func, name=''):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<{func.__name__} at {hex(id(self))}>'
         self._func = func
 
     def call(self, *args, **kargs):

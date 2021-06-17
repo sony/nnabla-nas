@@ -21,10 +21,11 @@ from nnabla_nas.module import static as smo
 def test_maxpool3x3_module():
     shape = (10, 3, 32, 32)
     input = smo.Input(nn.Variable(shape))
+    n_channels = 15
 
-    pool = zoph.MaxPool3x3(parents=[input])
+    pool = zoph.MaxPool3x3(parents=[input], channels=n_channels)
 
-    assert pool.shape == (10, 3, 32, 32)
+    assert pool.input_shapes[0] == (10, 3, 32, 32)
 
 
 if __name__ == '__main__':

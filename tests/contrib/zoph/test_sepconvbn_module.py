@@ -25,16 +25,22 @@ def test_sepconvbn_module():
     conv = zoph.SepConvBN(parents=[input],
                           out_channels=64,
                           kernel=(3, 3),
-                          dilation=(1, 1))
+                          dilation=(1, 1),
+                          )
 
     assert conv.shape == (10, 64, 32, 32)
     mod_names = [mi.name for _, mi in conv.get_modules() if
                  isinstance(mi, smo.Module)]
     ex_mod_names = ['',
                     '/SepConv_1',
+                    '/SepConv_1/dwconv',
+                    '/SepConv_1/pwconv',
                     '/SepConv_2',
+                    '/SepConv_2/dwconv',
+                    '/SepConv_2/pwconv',
                     '/bn',
                     '/relu']
+
     for mni, emni in zip(mod_names, ex_mod_names):
         assert mni == emni
 

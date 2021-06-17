@@ -40,21 +40,26 @@ class Linear(Module):
             initialized with zeros if `with_bias` is `True`.
         rng (numpy.random.RandomState): Random generator for Initializer.
         with_bias (bool): Specify whether to include the bias term.
+        name (string): the name of this module
     """
 
     def __init__(self, in_features, out_features, base_axis=1, w_init=None,
-                 b_init=None, rng=None, bias=True):
+                 b_init=None, rng=None, bias=True, name=''):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<linear at {hex(id(self))}>'
 
         if w_init is None:
             w_init = UniformInitializer(
                 calc_uniform_lim_glorot(in_features, out_features), rng=rng)
-        self._W = Parameter((in_features, out_features), initializer=w_init)
+        self._W = Parameter((in_features, out_features), initializer=w_init,
+                            scope=self._scope_name)
         self._b = None
 
         if bias:
             if b_init is None:
                 b_init = ConstantInitializer()
-            self._b = Parameter((out_features, ), initializer=b_init)
+            self._b = Parameter((out_features, ), initializer=b_init,
+                                scope=self._scope_name)
 
         self._base_axis = base_axis
         self._in_features = in_features

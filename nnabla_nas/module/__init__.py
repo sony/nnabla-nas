@@ -33,6 +33,7 @@ from .relu import ReLU6
 from .zero import Zero
 from .operation import Lambda
 from .mixedop import MixedOp
+from .add2 import Add2
 
 __all__ = [
     'Parameter',
@@ -48,7 +49,6 @@ __all__ = [
     'GlobalAvgPool',
     'Conv',
     'DwConv',
-    'SepConv',
     'BatchNormalization',
     'Linear',
     'ReLU',
@@ -56,5 +56,6 @@ __all__ = [
     'LeakyReLU',
     'Dropout',
     'Lambda',
-    'MixedOp'
+    'MixedOp',
+    'Add2',
 ]

@@ -22,15 +22,14 @@ class Estimator(object):
             self._memo = dict()
         return self._memo
 
-    def get_estimation(self, module):
-        """Returns the estimation of the whole module."""
-        return sum(self.predict(m) for _, m in module.get_modules()
-                   if len(m.modules) == 0 and m.need_grad)
-
     def reset(self):
         """Clear cache."""
         self.memo.clear()
 
     def predict(self, module):
-        """Predicts the estimation for a module."""
+        """Predicts the estimation for a given module."""
+        raise NotImplementedError
+
+    def get_estimation(self, module):
+        """Obtains the estimation for a module and its children."""
         raise NotImplementedError

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from .latency import LatencyEstimator
+from .latency import LatencyGraphEstimator
 from .memory import MemoryEstimator
 
-__all__ = ['MemoryEstimator', 'LatencyEstimator']
+__all__ = ['MemoryEstimator', 'LatencyEstimator', 'LatencyGraphEstimator']

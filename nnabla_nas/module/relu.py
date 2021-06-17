@@ -24,10 +24,12 @@ class ReLU(Module):
     Args:
         inplace (bool, optional): can optionally do the operation in-place.
             Default: ``False``.
+        name (string): the name of this module
     """
 
-    def __init__(self, inplace=False):
-        Module.__init__(self)
+    def __init__(self, inplace=False, name=''):
+        self._scope_name = f'<relu at {hex(id(self))}>'
+        Module.__init__(self, name=name)
         self._inplace = inplace
 
     def call(self, input):
@@ -41,11 +43,14 @@ class ReLU6(Module):
     r"""ReLU6 layer.
     Capping ReLU activation to 6 is often observed to learn sparse features
     earlier.
+    Args:
+        name (string): the name of this module
 
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name=''):
+        self._scope_name = f'<relu6 at {hex(id(self))}>'
+        Module.__init__(self, name=name)
 
     def call(self, input):
         return F.relu6(input)
@@ -60,9 +65,12 @@ class LeakyReLU(Module):
             :math:`\alpha` in the definition. Defaults to 0.1.
         inplace (bool, optional): can optionally do the operation in-place.
             Default: ``False``.
+        name (string): the name of this module
     """
 
-    def __init__(self, alpha=0.1, inplace=False):
+    def __init__(self, alpha=0.1, inplace=False, name=''):
+        self._scope_name = f'<leakyrelu at {hex(id(self))}>'
+        Module.__init__(self, name=name)
         self._alpha = alpha
         self._inplace = inplace
 

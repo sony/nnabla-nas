@@ -19,6 +19,9 @@ class Identity(Module):
     r"""Identity layer.
     A placeholder identity operator that is argument-insensitive.
     """
+    def __init__(self, name=''):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<identity at {hex(id(self))}>'
 
     def call(self, input):
         return input

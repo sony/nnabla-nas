@@ -26,7 +26,9 @@ class Zero(Module):
             dimensions. Defaults to (1, 1).
     """
 
-    def __init__(self, stride=(1, 1), *args, **kwargs):
+    def __init__(self, name='', stride=(1, 1)):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<zero at {hex(id(self))}>'
         self._stride = stride
 
     def call(self, input):

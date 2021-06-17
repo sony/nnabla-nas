@@ -26,9 +26,11 @@ class BatchNormalization(Module):
     Args:
         n_features (int): Number of dimentional features.
         n_dims (int): Number of dimensions.
-        axes (:obj:`tuple` of :obj:`int`): Mean and variance for each element in ``axes``
-            are calculated using elements on the rest axes. For example, if an input is 4 dimensions,
-            and ``axes`` is ``[1]``, batch mean is calculated as ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
+        axes (:obj:`tuple` of :obj:`int`): Mean and variance for each
+            element in ``axes`` are calculated using elements on the
+            rest axes. For example, if an input is 4 dimensions,
+            and ``axes`` is ``[1]``, batch mean is calculated as
+             ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
             (using numpy expression as an example).
         decay_rate (float, optional): Decay rate of running mean and
             variance. Defaults to 0.9.
@@ -47,6 +49,7 @@ class BatchNormalization(Module):
                     'beta': ConstantIntializer(0),
                     'gamma': np.ones(gamma_shape) * 2
                     }``.
+        name (string): the name of this module
 
     Returns:
         :class:`~nnabla.Variable`: N-D array.
@@ -58,7 +61,10 @@ class BatchNormalization(Module):
     """
 
     def __init__(self, n_features, n_dims, axes=[1], decay_rate=0.9, eps=1e-5,
-                 output_stat=False, fix_parameters=False, param_init=None):
+                 output_stat=False, fix_parameters=False, param_init=None,
+                 name=''):
+        Module.__init__(self, name=name)
+        self._scope_name = f'<batchnorm at {hex(id(self))}>'
 
         assert len(axes) == 1
 
@@ -78,13 +84,17 @@ class BatchNormalization(Module):
             self._gamma = nn.Variable.from_numpy_array(
                 gamma_init(shape_stat))
         else:
-            self._beta = Parameter(shape_stat, initializer=beta_init)
-            self._gamma = Parameter(shape_stat, initializer=gamma_init)
+            self._beta = Parameter(shape_stat, initializer=beta_init,
+                                   scope=self._scope_name)
+            self._gamma = Parameter(shape_stat, initializer=gamma_init,
+                                    scope=self._scope_name)
 
         self._mean = Parameter(shape_stat, need_grad=False,
-                               initializer=mean_init)
+                               initializer=mean_init,
+                               scope=self._scope_name)
         self._var = Parameter(shape_stat, need_grad=False,
-                              initializer=var_init)
+                              initializer=var_init,
+                              scope=self._scope_name)
         self._axes = axes
         self._decay_rate = decay_rate
         self._eps = eps
