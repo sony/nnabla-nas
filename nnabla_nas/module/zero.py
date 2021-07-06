@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Tuple
 
 import nnabla.functions as F
-
 from .module import Module
 
 
@@ -26,7 +26,7 @@ class Zero(Module):
             dimensions. Defaults to (1, 1).
     """
 
-    def __init__(self, name='', stride=(1, 1)):
+    def __init__(self, stride: Tuple[int, int] = (1, 1), *, name: str = '') -> None:
         Module.__init__(self, name=name)
         self._scope_name = f'<zero at {hex(id(self))}>'
         self._stride = stride
