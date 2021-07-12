@@ -332,7 +332,7 @@ class Zero(mo.Zero, Module):
     """
 
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
-        mo.Zero.__init__(self, name=name)
+        mo.Zero.__init__(self, stride=(1, 1), name=name)
         Module.__init__(self, parents, name, eval_prob=eval_prob)
         if len(self._parents) > 1:
             raise RuntimeError
