@@ -56,7 +56,6 @@ class Runner(ABC):
         self.one_epoch_valid = len(self.dataloader['valid']) // self.bs_valid
         self.comm = hp['comm']
         self.event = hp['event']
-
         # setup placeholder
         self.placeholder = {
             'train': {

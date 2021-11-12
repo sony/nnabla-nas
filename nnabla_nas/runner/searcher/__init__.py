@@ -14,5 +14,7 @@
 
 from .darts import DartsSearcher
 from .pnas import ProxylessNasSearcher
+from .fairnas import FairNasSearcher
 
-__all__ = ['DartsSearcher', 'ProxylessNasSearcher']
+__all__ = ['DartsSearcher', 'ProxylessNasSearcher',
+           'FairNasSearcher']

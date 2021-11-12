@@ -130,7 +130,7 @@ def get_data_iterators(batch_size,
 class DataLoader(BaseDataLoader):
     def __init__(self, batch_size=1, searching=False, training=False,
                  train_path=None, train_file=None, valid_path=None, valid_file=None,
-                 train_portion=1.0, rng=None, communicator=None, type_config=float, *args):
+                 train_portion=1.0, *, augment_valid=True, rng=None, communicator=None, type_config=float):
         r"""Dataloader for ImageNet.
 
         Args:
@@ -147,17 +147,19 @@ class DataLoader(BaseDataLoader):
                 Defaults to None.
             train_portion (float, optional): Portion of data is taken to use as training data. The rest
                 will be used for validation. Defaults to 1.0. This is only considered when searching is `True`.
+            augment_valid (bool, optional): Whether to use data augmentation of the validation set. Has only
+                effect if searching is True. Defaults to True.
             rng (:obj:`numpy.random.RandomState`), optional): Numpy random number generator.
                 Defaults to None.
             communicator (Communicator, optional): The communicator is used to support distributed learning.
                 Defaults to None.
             type_config (type, optional): Configuration type. Defaults to `float`.
         """
-
-        self.rng = rng or random.prng
+        self.rng = rng or random.prng  # np.random.RandomState(313) #
 
         if searching:
-            train_file, valid_file = self._split_data(train_file, train_portion)
+            train_file, valid_file = self._split_data(
+                train_file, train_portion)
             valid_path = train_path
 
         self._data = get_data_iterators(
@@ -165,11 +167,11 @@ class DataLoader(BaseDataLoader):
             dali_num_threads=8,
             train_dir=train_path if training else valid_path,
             file_list=train_file if training else valid_file,
-            dali_nvjpeg_memory_padding=64*(1 << 20),
+            dali_nvjpeg_memory_padding=64 * (1 << 20),
             type_config=type_config,
             channel_last=False,
             comm=communicator,
-            training=searching or training
+            training=training or (searching and augment_valid)
         )
 
     def _split_data(self, file, portion):
@@ -187,20 +189,21 @@ class DataLoader(BaseDataLoader):
         train, valid = train_test_split(list_files, stratify=labels,
                                         train_size=train_size,
                                         random_state=self.rng)
-
-        path = os.path.join('__nnabla_nas__', 'imagenet')
+        path = os.path.join('__nnabla_nas__', 'imagenet_{}'.format(portion))
 
         Path(path).mkdir(parents=True, exist_ok=True)
         train_file = os.path.join(path, 'train.txt')
         valid_file = os.path.join(path, 'val.txt')
 
-        with open(train_file, 'w') as f:
-            for item in train:
-                f.write("%s\n" % item)
+        if not os.path.exists(train_file):
+            with open(train_file, 'w') as f:
+                for item in train:
+                    f.write("%s\n" % item)
 
-        with open(valid_file, 'w') as f:
-            for item in valid:
-                f.write("%s\n" % item)
+        if not os.path.exists(valid_file):
+            with open(valid_file, 'w') as f:
+                for item in valid:
+                    f.write("%s\n" % item)
 
         return train_file, valid_file
 

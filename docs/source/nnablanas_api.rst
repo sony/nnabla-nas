@@ -63,8 +63,13 @@ Merging
    :undoc-members:
    :show-inheritance:
 
-Module
-......
+MixedOp
+.........
+
+.. automodule:: nnabla_nas.module.mixedop
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 .. automodule:: nnabla_nas.module.module
    :members:
@@ -111,15 +116,6 @@ Zero
    :undoc-members:
    :show-inheritance:
 
-MixedOp
-.........
-
-.. automodule:: nnabla_nas.module.mixedop
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 
 nnabla_nas.module.static
 ------------------------
@@ -128,7 +124,6 @@ nnabla_nas.module.static
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 nnabla_nas.runner
 -----------------
@@ -162,6 +157,13 @@ ProxylessNasSearcher
 ....................
 
 .. automodule:: nnabla_nas.runner.searcher.pnas
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+FairNasSearcher
+...............
+.. automodule:: nnabla_nas.runner.searcher.fairnas
    :members:
    :undoc-members:
    :show-inheritance:
@@ -212,7 +214,7 @@ nnabla_nas.contrib
 DARTS
 .....
 
-.. automodule:: nnabla_nas.contrib.darts.network
+.. automodule:: nnabla_nas.contrib.classification.darts
    :members:
    :undoc-members:
    :show-inheritance:
@@ -223,7 +225,7 @@ DARTS
 MobileNet V2
 ............
 
-.. automodule:: nnabla_nas.contrib.mobilenet.network
+.. automodule:: nnabla_nas.contrib.classification.mobilenet.network
    :members:
    :undoc-members:
    :show-inheritance:
@@ -231,7 +233,7 @@ MobileNet V2
 Random Wired
 ............
 
-.. automodule:: nnabla_nas.contrib.random_wired.random_wired
+.. automodule:: nnabla_nas.contrib.classification.random_wired.random_wired
    :members:
    :undoc-members:
    :show-inheritance:
@@ -240,8 +242,15 @@ Random Wired
 Zoph
 ....
 
-.. automodule:: nnabla_nas.contrib.zoph.zoph
+.. automodule:: nnabla_nas.contrib.classification.zoph.zoph
    :members:
    :undoc-members:
    :show-inheritance:
  
+FairNas
+.......
+
+.. automodule:: nnabla_nas.contrib.classification.fairnas
+   :members:
+   :undoc-members:
+   :show-inheritance:

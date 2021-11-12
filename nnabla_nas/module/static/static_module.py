@@ -581,6 +581,44 @@ class ReLU(mo.ReLU, Module):
             raise RuntimeError
 
 
+class ReLU6(mo.ReLU6, Module):
+    r"""
+    The ReLu6 module is the static version of nnabla_nas.modules.ReLU.
+    It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        inplace (bool, optional): can optionally do the operation in-place.
+            Default: ``False``.
+    """
+
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
+        mo.ReLU6.__init__(self, *args, **kwargs)
+        Module.__init__(self, parents, name=name, eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
+
+
+class LeakyReLU(mo.LeakyReLU, Module):
+    r"""
+    The LeakyReLu module is the static version of nnabla_nas.modules.ReLU.
+    It accepts only a single parent.
+
+    Args:
+        parents (list): the parents of this module
+        name (string): the name of this module
+        inplace (bool, optional): can optionally do the operation in-place.
+            Default: ``False``.
+    """
+
+    def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
+        mo.LeakyReLU.__init__(self, *args, **kwargs)
+        Module.__init__(self, parents, name=name, eval_prob=eval_prob)
+        if len(self._parents) > 1:
+            raise RuntimeError
+
+
 class Dropout(mo.Dropout, Module):
     r"""
     The Dropout module is the static version of nnabla_nas.modules.Dropout.

@@ -16,6 +16,7 @@ from collections import OrderedDict
 import json
 import os
 import sys
+import csv
 
 from nnabla import random
 import nnabla.communicators as C
@@ -34,14 +35,14 @@ class ProgressMeter(object):
                 Defaults to None.
     """
 
-    def __init__(self, num_batches, path=None, quiet=False):
+    def __init__(self, num_batches, path=None, quiet=False, filename='log.txt'):
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
         self.meters = OrderedDict()
         self.terminal = sys.stdout
         self.quiet = quiet
         if not self.quiet:
             self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
-            self.file = open(os.path.join(path, 'log.txt'), 'w')
+            self.file = open(os.path.join(path, filename), 'w')
 
     def info(self, message, view=True):
         r"""Shows a message.
@@ -182,6 +183,40 @@ def count_parameters(params):
         int: The total number of parameters.
     """
     return np.sum(np.prod(p.shape) for p in params.values())
+
+
+class SearchLogger(object):
+    def __init__(self):
+        self.data = list()
+        self.monitors = []
+
+    def add_entry(self, arch_id, genotype, meters):
+        entry = OrderedDict()
+        for k, m in meters.items():
+            if isinstance(m, AverageMeter):
+                if k not in self.monitors:
+                    self.monitors.append(k)
+                entry[k] = m.avg
+
+        entry['id'] = arch_id
+        entry['genotype'] = genotype
+        self.data.append(entry)
+
+    def save(self, output_path, mode='a'):
+        search_file = os.path.join(output_path, 'search.csv')
+        if not os.path.exists(search_file):
+            mode = 'w'
+        with open(search_file, mode) as file:
+            writer = csv.writer(file, delimiter=',')
+            cols = ['id', 'genotype'] + self.monitors
+            if mode == 'w':
+                writer.writerow(cols)
+            for entry in self.data:
+                writer.writerow([entry[c] for c in cols])
+        self.clear()
+
+    def clear(self):
+        self.data = list()
 
 
 def create_float_context(ctx):
