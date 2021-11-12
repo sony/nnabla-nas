@@ -25,6 +25,8 @@ from .static_module import MaxPool
 from .static_module import Merging
 from .static_module import Module
 from .static_module import ReLU
+from .static_module import ReLU6
+from .static_module import LeakyReLU
 from .static_module import Zero
 from .static_module import Collapse
 from .static_module import Linear
@@ -42,6 +44,8 @@ __all__ = [
     'AvgPool',
     'GlobalAvgPool',
     'ReLU',
+    'ReLU6',
+    'LeakyReLU',
     'BatchNormalization',
     'Merging',
     'Join',

@@ -31,7 +31,7 @@ jobs:
       with:
         python-version: 3.6
 
-    - name: Instal dependencies
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
@@ -78,10 +78,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Instal dependencies
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install nnabla
 
     - name: Unit test
       run: |

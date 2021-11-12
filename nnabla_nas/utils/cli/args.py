@@ -79,14 +79,24 @@ class Configuration(object):
             print(f"dataset `{name}` is not supported.")
             sys.exit(-1)
         args.update({
-            'searching': self.hparams['search'],
             'communicator': self.hparams['comm']
         })
         return {
-            'train': loader_cls(training=True,
-                                batch_size=self.hparams['mini_batch_train'], ** args),
-            'valid': loader_cls(training=False,
-                                batch_size=self.hparams['mini_batch_valid'], ** args)
+            'train': loader_cls(
+                searching=self.hparams['search'],
+                training=True,
+                batch_size=self.hparams['mini_batch_train'],
+                ** args),
+            'valid': loader_cls(
+                searching=self.hparams['search'],
+                training=False,
+                batch_size=self.hparams['mini_batch_valid'],
+                ** args),
+            'test': loader_cls(
+                searching=False,
+                training=False,
+                batch_size=self.hparams['mini_batch_valid'],
+                ** args)
         }
 
     def get_optimizer(self, conf):
@@ -106,11 +116,17 @@ class Configuration(object):
                     lr_scheduler = None
                     if 'lr_scheduler' in args:
                         class_name = args['lr_scheduler']
-                        lr = args['lr']
-                        bz = self.hparams['batch_size_train'if name != 'valid' else 'batch_size_valid']
+                        try:
+                            lr = args['lr']
+                        except KeyError:
+                            lr = args['alpha']  # for adam
+                        bz = self.hparams['batch_size_train'if name !=
+                                          'valid' else 'batch_size_valid']
                         epoch = self.hparams['epoch'] if name == 'train' else self.hparams['warmup']
-                        max_iter = epoch * len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
-                        lr_scheduler = LRS.__dict__[class_name](init_lr=lr, max_iter=max_iter)
+                        max_iter = epoch * \
+                            len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
+                        lr_scheduler = LRS.__dict__[class_name](
+                            init_lr=lr, max_iter=max_iter)
                     args['lr_scheduler'] = lr_scheduler
                     optimizer[name] = Optimizer(**args)
                 except ModuleNotFoundError:

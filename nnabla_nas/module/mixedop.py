@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import nnabla.functions as F
-from nnabla import random
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
 
@@ -21,6 +20,7 @@ from ..utils import helper
 from .container import ModuleList
 from .module import Module
 from .parameter import Parameter
+import numpy as np
 
 
 class MixedOp(Module):
@@ -50,7 +50,7 @@ class MixedOp(Module):
         self._ops = ModuleList(operators)
         self._alpha = alpha
         if rng is None:
-            rng = random.prng
+            rng = np.random.RandomState(313)
         self._rng = rng
 
         if alpha is None:

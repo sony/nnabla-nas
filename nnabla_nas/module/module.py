@@ -75,6 +75,17 @@ class Module(object):
         self.__dict__['_need_grad'] = mode
 
     @property
+    def is_active(self):
+        r"""Whether the module was called."""
+        if '_is_active' not in self.__dict__:
+            self.__dict__['_is_active'] = True
+        return self._is_active
+
+    @is_active.setter
+    def is_active(self, mode):
+        self.__dict__['_is_active'] = mode
+
+    @property
     def input_shapes(self):
         r"""Return a list of input shapes used during `call` function."""
         if '_input_shapes' not in self.__dict__:

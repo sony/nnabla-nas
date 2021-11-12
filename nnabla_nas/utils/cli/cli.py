@@ -58,11 +58,16 @@ def main():
                         choices=runner.__all__, help='Which algorithm to use.')
     parser.add_argument('--config-file', '-f', type=str,
                         help='The configuration file for the experiment.')
-    parser.add_argument('--output-path', '-o', type=str, help='Path to save the monitoring log files.')
+    parser.add_argument(
+        '--output-path',
+        '-o',
+        type=str,
+        help='Path to save the monitoring log files.')
 
     options = parser.parse_args()
 
-    config = json.load(open(options.config_file)) if options.config_file else dict()
+    config = json.load(open(options.config_file)
+                       ) if options.config_file else dict()
     hparams = config['hparams']
 
     hparams.update({k: v for k, v in vars(options).items() if v is not None})

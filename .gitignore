@@ -1,12 +1,10 @@
 report.ipynb
-# main.py
 docs/source/_build/
 log/
 __nnabla_nas__/
 docs/build
 *.svg
 .vscode
-.mypy_cache
 .pytest_cache
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -144,4 +142,3 @@ dmypy.json
 *.lat
 graph
 graph.pdf
-examples/*

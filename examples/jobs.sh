@@ -112,7 +112,7 @@ python main.py -f examples/classification/random_wired/random_wired_train.json \
 
 
 
-#---------------------------- ImageNet ----------------------------#
+#---------------------- ImageNet (PNAS)----------------------------#
 # search MobileNet network
 mpirun -n 4 python main.py --search \
                -f examples/classification/mobilenet/imagenet_search.json \
@@ -143,3 +143,21 @@ mpirun -n 4 python main.py\
                -a Trainer \
                -o log/classification/mobilenet/imagenet/reference
 #------------------------------------------------------------------#
+
+
+
+#---------------------- FAIR NAS ----------------------------#
+mpirun -n 4 python main.py --search \
+               -f examples/classification/fairnas/fairnas_cifar10_search.json \
+               -a FairNasSearcher \
+               -o log/classification/fairnas/cifar10/search
+
+
+mpirun -n 4 python main.py --search \
+               -f examples/classification/fairnas/fairnas_imagenet_search.json \
+               -a FairNasSearcher \
+               -o log/classification/fairnas/imagenet/search
+
+mpirun -n 4 python main.py -f examples/classification/fairnas/fairnas_imagenet_train.json \
+               -a Trainer \
+               -o log/classification/fairnas/imagenet/retrain/
