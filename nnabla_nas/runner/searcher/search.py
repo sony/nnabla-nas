@@ -23,12 +23,14 @@ class Searcher(Runner):
     def run(self):
         r"""Run the training process."""
         self.callback_on_start()
-        self._start_warmup()
+        if self.cur_epoch == 0:
+            # do not run warmup if start from checkpoint
+            self._start_warmup()
 
-        for cur_epoch in range(self.args['epoch']):
+        for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
-            self.monitor.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}\n')
+            self.monitor.info(f'Running epoch={self.cur_epoch}\tlr={lr:.5f}\n')
 
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
@@ -37,11 +39,10 @@ class Searcher(Runner):
                     self.monitor.display(i)
 
             self.callback_on_epoch_end()
-            self.monitor.write(cur_epoch)
+            self.monitor.write(self.cur_epoch)
 
         self.callback_on_finish()
         self.monitor.close()
-
         return self
 
     def _start_warmup(self):
@@ -70,7 +71,8 @@ class Searcher(Runner):
                     path=os.path.join(self.args['output_path'], 'arch.h5'),
                     params=self.model.get_arch_parameters()
                 )
-
+            # checkpoint
+            self.save_checkpoint()
         self.monitor.info(self.model.summary() + '\n')
 
     def callback_on_finish(self):
@@ -89,4 +91,5 @@ class Searcher(Runner):
 
     def callback_on_start(self):
         r"""Calls this on starting the training."""
-        pass
+        # load checkpoint if available
+        self.load_checkpoint()

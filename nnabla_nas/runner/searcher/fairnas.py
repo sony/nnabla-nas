@@ -53,10 +53,10 @@ class FairNasSearcher(Searcher):
         self._start_warmup()
 
         # Training
-        for cur_epoch in range(self.args['epoch']):
+        for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
-            self.monitor.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}\n')
+            self.monitor.info(f'Running epoch={self.cur_epoch}\tlr={lr:.5f}\n')
             # training loop
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
@@ -70,7 +70,7 @@ class FairNasSearcher(Searcher):
                 self.update_graph('valid')
                 self.valid_on_batch()
             self.callback_on_epoch_end()
-            self.monitor.write(cur_epoch)
+            self.monitor.write(self.cur_epoch)
 
         # Search
         for cur_sample in range(self.search_samples):
@@ -85,6 +85,9 @@ class FairNasSearcher(Searcher):
     def callback_on_start(self):
         params_net = self.model.get_net_parameters(grad_only=True)
         self.optimizer['train'].set_parameters(params_net)
+
+        # load checkpoint if available
+        self.load_checkpoint()
 
         if self.comm.n_procs > 1:
             self._grads_net = [x.grad for x in params_net.values()]
@@ -161,6 +164,9 @@ class FairNasSearcher(Searcher):
                 self.model.save_parameters(
                     path=os.path.join(self.args['output_path'], 'weights.h5')
                 )
+            # checkpoint
+            self.save_checkpoint()
+
         # reset loss and metric
         self.loss.zero()
         for k in self.metrics:

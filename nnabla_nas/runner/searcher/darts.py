@@ -29,6 +29,9 @@ class DartsSearcher(Searcher):
         params_arch = self.model.get_arch_parameters(grad_only=True)
         self.optimizer['valid'].set_parameters(params_arch)
 
+        # load checkpoint if available
+        self.load_checkpoint()
+
         if self.comm.n_procs > 1:
             self._grads_net = [x.grad for x in params_net.values()]
             self._grads_arch = [x.grad for x in params_arch.values()]
