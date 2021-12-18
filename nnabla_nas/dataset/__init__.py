@@ -13,11 +13,13 @@
 # limitations under the License.
 
 from . import cifar10
+from . import csv
 try:
     from . import imagenet
 except ImportError:
     from nnabla.logger import logger
     logger.warning('Could not import nnabla_nas.dataset.imagenet')
-    logger.warning('  If you want to use nnabla_nas.dataset.imagenet, please install nvidia-dali-cuda???.')
+    logger.warning(
+        '  If you want to use nnabla_nas.dataset.imagenet, please install nvidia-dali-cuda???.')
 
-__all__ = ['cifar10', 'imagenet']
+__all__ = ['cifar10', 'imagenet', 'csv']
