@@ -13,5 +13,6 @@
 # limitations under the License.
 
 from .train import Trainer
+from .ofa import OFATrainer
 
-__all__ = ['Trainer']
+__all__ = ['Trainer', 'OFATraner']
