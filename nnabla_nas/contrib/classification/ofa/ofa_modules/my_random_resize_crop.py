@@ -3,7 +3,7 @@
 
 import os
 import random
-import math
+import time
 
 import nnabla.functions as F
 

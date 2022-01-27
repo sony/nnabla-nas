@@ -18,10 +18,9 @@ from collections import OrderedDict
 import numpy as np
 
 import nnabla as nn
-import nnabla.functions as F
 
 from .... import module as Mo
-from .modules import MBConvLayer, ConvLayer, IdentityLayer, set_layer_from_config
+from .modules import MBConvLayer, IdentityLayer, set_layer_from_config
 from .ofa_modules.common_tools import val2list, make_divisible
 from .ofa_modules.pytorch_modules import SEModule
 from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicLinear, DynamicSE

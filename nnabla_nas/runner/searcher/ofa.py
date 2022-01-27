@@ -16,13 +16,11 @@ import os
 import random
 import numpy as np
 import json
-import time
 
 import nnabla as nn
 import nnabla.functions as F
 
 from .search import Searcher
-from ...utils.helper import ProgressMeter
 
 from ...contrib.classification.ofa.networks.mobilenet_v3 import MobileNetV3Large
 from ...contrib.classification.ofa.network import SearchNet
@@ -161,7 +159,9 @@ class OFASearcher(Searcher):
                     except Exception as e:
                         print("error: ", e)
                         pass
-                    if cur_epoch > 0:
+                    if cur_epoch == 0:
+                        previous_best_path = best_params_path
+                    else:
                         if os.path.exists(previous_best_path):
                             os.remove(previous_best_path)
                     best_acc = val_acc_epoch
@@ -302,7 +302,8 @@ class OFASearcher(Searcher):
             subnet_seed = int('%d%.3d%.3d' % (epoch * bz + n_iter, _, 0))
             random.seed(subnet_seed)
 
-            subnet_settings = self.model.sample_active_subnet()
+            # subnet_settings = self.model.sample_active_subnet()
+            self.model.sample_active_subnet()
             p['loss'].forward(clear_no_need_grad=True)
             for k, m in p['metrics'].items():
                 m.forward(clear_buffer=True)
@@ -400,7 +401,8 @@ class OFASearcher(Searcher):
 
             # loss function
             if self.args['kd_ratio'] > 0:
-                p['loss'] = (self.model.loss(p['outputs'], p['targets'], self.args['loss_weights']) + self.args['kd_ratio'] * kd_loss) / accum
+                p['loss'] = (self.model.loss(p['outputs'], p['targets'], self.args['loss_weights'])
+                             + self.args['kd_ratio'] * kd_loss) / accum
             else:
                 p['loss'] = self.model.loss(p['outputs'], p['targets'], self.args['loss_weights']) / accum
         p['loss'].apply(persistent=True)
@@ -411,7 +413,8 @@ class OFASearcher(Searcher):
         for v in p['metrics'].values():
             v.apply(persistent=True)
 
-    def reset_running_statistics(self, setting, net=None, forward_net=None, subset_size=2000, subset_batch_size=200, dataloader=None):
+    def reset_running_statistics(self, setting, net=None, forward_net=None,
+                                 subset_size=2000, subset_batch_size=200, dataloader=None):
         from ...contrib.classification.ofa.ofa_modules.utils import set_running_statistics
 
         if net is None:
@@ -455,7 +458,7 @@ class OFASearcher(Searcher):
             json.dump(checkpoint_info, f)
 
     def load_checkpoint(self, path):
-        checkoint_file_path = os.path.join(path, f'checkpoint.json')
+        checkoint_file_path = os.path.join(path, 'checkpoint.json')
         print(f"checkoint_file_path : {checkoint_file_path}")
         current_epoch = 0
         if os.path.exists(checkoint_file_path):

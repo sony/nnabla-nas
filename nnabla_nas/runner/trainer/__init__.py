@@ -15,4 +15,4 @@
 from .train import Trainer
 from .ofa import OFATrainer
 
-__all__ = ['Trainer', 'OFATraner']
+__all__ = ['Trainer', 'OFATrainer']

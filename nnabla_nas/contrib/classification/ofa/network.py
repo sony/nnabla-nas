@@ -11,22 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections import Counter, OrderedDict
-import copy
+from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
-import numpy as np
-import os
 import random
 
-from ..base import ClassificationModel as Model
 from .modules import ResidualBlock, ConvLayer, IdentityLayer, LinearLayer, MBConvLayer
 from .dynamic_modules import DynamicMBConvLayer
-from .ofa_modules.my_modules import MyGlobalAvgPool2d
 from .ofa_modules.common_tools import val2list, make_divisible
-from .ofa_modules.common_tools import label_smoothing_loss, cross_entropy_loss_with_label_smoothing
-from .... import module as Mo
 from .networks.mobilenet_v3 import MobileNetV3
 
 
@@ -305,12 +298,9 @@ class SearchNet(MobileNetV3):
 
         super().save_parameters(path, params=params, grad_only=grad_only)
 
-        base_path = path[0:path.rindex("/")]
-        weight_str = path[path.rindex("/") + 1:].split(".")[0]
-        cur_epoch = weight_str.split("_")
-
-        # This needs to be fixed. The self._num_blocks is variable now
-        # plot_resnet(self, os.path.join(base_path, f'arch_{cur_epoch}'))
+        # base_path = path[0:path.rindex("/")]
+        # weight_str = path[path.rindex("/") + 1:].split(".")[0]
+        # cur_epoch = weight_str.split("_")
 
 
 class TrainNet(SearchNet):

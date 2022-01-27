@@ -1,10 +1,7 @@
-from collections import Counter, OrderedDict
-import copy
+from collections import OrderedDict
 
 import nnabla as nn
-import nnabla.functions as F
 
-from ...base import ClassificationModel as Model
 from ..modules import ResidualBlock, ResNetBottleneckBlock, ConvLayer, LinearLayer, IdentityLayer
 from ..ofa_modules.my_modules import MyGlobalAvgPool2d, MyNetwork
 from ..ofa_modules.common_tools import make_divisible

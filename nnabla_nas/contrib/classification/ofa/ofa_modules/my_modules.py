@@ -1,9 +1,6 @@
 import math
 from collections import OrderedDict
 
-import numpy as np
-import numpy.random as random
-
 import nnabla as nn
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer, UniformInitializer
@@ -96,7 +93,7 @@ class MyConv2d(Mo.Conv):
 
     def call(self, input):
         if self.WS_EPS is None:
-            return super(Myconv2d, self).forward()
+            return super(MyConv2d, self).forward()
         else:
             return F.convolution(input, F.weight_standardozation(self._W), self._b, self._base_axis,
                                  self._pad, self._stride, self._dilation,

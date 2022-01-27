@@ -11,21 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections import Counter, OrderedDict
-
-import nnabla as nn
-import nnabla.functions as F
-import numpy as np
-import os
 import random
 
-from ..base import ClassificationModel as Model
 from .modules import ResidualBlock, IdentityLayer
 from .dynamic_modules import DynamicConvLayer, DynamicResNetBottleneckBlock, DynamicLinearLayer
-from .ofa_modules.my_modules import MyGlobalAvgPool2d
 from .ofa_modules.common_tools import val2list, make_divisible
-from .ofa_modules.common_tools import label_smoothing_loss, cross_entropy_loss_with_label_smoothing
-from .... import module as Mo
 from .networks.resnets import ResNets
 
 
@@ -88,7 +78,8 @@ class SearchNetOFAResNets(ResNets):
         input_stem = [
             DynamicConvLayer(val2list(3), mid_input_channel, (3, 3), stride=(2, 2), use_bn=True, act_func='relu'),
             ResidualBlock(
-                DynamicConvLayer(mid_input_channel, mid_input_channel, (3, 3), stride=(1, 1), use_bn=True, act_func='relu'),
+                DynamicConvLayer(
+                    mid_input_channel, mid_input_channel, (3, 3), stride=(1, 1), use_bn=True, act_func='relu'),
                 IdentityLayer(mid_input_channel, mid_input_channel)
             ),
             DynamicConvLayer(mid_input_channel, input_channel, (3, 3), stride=(1, 1), use_bn=True, act_func='relu'),
@@ -272,7 +263,7 @@ class SearchNetOFAResNets(ResNets):
            nn.load_parameters(path)
            params = nn.get_parameters(grad_only=False)
         self.set_ofa_parameters(params, raise_if_missing=raise_if_missing)"""
-        super(SearchNetOFAMobileNetV3, self).load_ofa_parameters(path, raise_if_missing)
+        super(SearchNetOFAResNets, self).load_ofa_parameters(path, raise_if_missing)
 
     """def set_ofa_parameters(self, params, raise_if_missing=False):
         for prefix, module in self.get_modules():
@@ -300,9 +291,9 @@ class SearchNetOFAResNets(ResNets):
 
         super().save_parameters(path, params=params, grad_only=grad_only)
 
-        base_path = path[0:path.rindex("/")]
-        weight_str = path[path.rindex("/") + 1:].split(".")[0]
-        cur_epoch = weight_str.split("_")
+        # base_path = path[0:path.rindex("/")]
+        # weight_str = path[path.rindex("/") + 1:].split(".")[0]
+        # cur_epoch = weight_str.split("_")
 
 
 class TrainNetOFAResNets(SearchNetOFAResNets):

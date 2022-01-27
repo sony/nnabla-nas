@@ -15,11 +15,9 @@
 import os
 
 import nnabla as nn
-import nnabla.functions as F
 import numpy as np
 from tqdm import trange
 
-from ...utils import helper
 from ..runner import Runner
 
 from ...runner.searcher import OFASearcher
