@@ -22,11 +22,9 @@ from nnabla_ext.cuda.experimental import dali_iterator
 import nvidia.dali.ops as ops
 from nvidia.dali.pipeline import Pipeline
 import nvidia.dali.types as types
-from sklearn.model_selection import train_test_split
 import sys
 import traceback
 
-import math
 from .dataloader import BaseDataLoader
 from ..contrib.classification.ofa.ofa_modules.my_random_resize_crop import MyResize
 from ..utils.data.transforms import Compose
@@ -34,11 +32,13 @@ from ..utils.data.transforms import Compose
 _pixel_mean = [255 * x for x in (0.485, 0.456, 0.406)]
 _pixel_std = [255 * x for x in (0.229, 0.224, 0.225)]
 
+
 def int_div_ceil(a, b):
     '''
     returns int(ceil(a / b))
     '''
     return (a + b - 1) // b
+
 
 class TrainPipeline(Pipeline):
     def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
@@ -67,9 +67,9 @@ class TrainPipeline(Pipeline):
                                             std=_pixel_std,
                                             pad_output=pad_output)
         self.coin = ops.CoinFlip(probability=0.5)
-        self.brightness = ops.Uniform(range=(1 - 32./255., 1 + 32./255))
+        self.brightness = ops.Uniform(range=(1 - 32. / 255., 1 + 32. / 255))
         self.contrast = ops.Uniform(range=(0, 1))
-        self.saturation = ops.Uniform(range=(0.5, 1+0.5))
+        self.saturation = ops.Uniform(range=(0.5, 1 + 0.5))
         self.hue = ops.Uniform(range=(0, 1))
 
     def define_graph(self):
@@ -77,13 +77,14 @@ class TrainPipeline(Pipeline):
         images = self.decode(jpegs)
         images = self.rrc(images)
         images = self.colortwist(
-            images, 
-            brightness=self.brightness(), 
-            contrast=self.contrast(), 
+            images,
+            brightness=self.brightness(),
+            contrast=self.contrast(),
             saturation=self.saturation(),
             hue=self.hue())
         images = self.cmnp(images, mirror=self.coin())
         return images, labels.gpu()
+
 
 class ValPipeline(Pipeline):
     def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
@@ -144,7 +145,7 @@ def get_data_iterators(batch_size,
 
     try:
         data = dali_iterator.DaliIterator(train_pipe)
-        #data.size = train_pipe.epoch_size("Reader") // comm.n_procs
+        # data.size = train_pipe.epoch_size("Reader") // comm.n_procs
         data.size = int_div_ceil(train_pipe.epoch_size("Reader"), comm.n_procs)
     except Exception as e:
         print(f"Exception: {str(e)}")
@@ -153,8 +154,9 @@ def get_data_iterators(batch_size,
 
     return data
 
+
 class DataLoader(BaseDataLoader):
-    def __init__(self, batch_size=1, searching=False, valid_size=10000, training=False, 
+    def __init__(self, batch_size=1, searching=False, valid_size=10000, training=False,
                  train_path=None, train_file=None, valid_path=None, valid_file=None,
                  train_portion=1.0, rng=None, communicator=None, type_config=float, *args):
         r"""Dataloader for ImageNet.
@@ -188,21 +190,20 @@ class DataLoader(BaseDataLoader):
         valid_file = os.environ[valid_file]
 
         if searching:
-            #train_file, valid_file = self._split_data(train_file, train_portion)
             train_file, valid_file = self._random_sample_valid_set(train_file, valid_size)
             valid_path = train_path
-        
+
         self._data = get_data_iterators(
             batch_size=batch_size,
             dali_num_threads=8,
             train_dir=train_path if training else valid_path,
             file_list=train_file if training else valid_file,
-            dali_nvjpeg_memory_padding=64*(1 << 20),
+            dali_nvjpeg_memory_padding=64 * (1 << 20),
             type_config=type_config,
             channel_last=False,
             comm=communicator,
             training=training
-            #training=searching or training
+            # training=searching or training
         )
         # for subset sampling
         self.type_config = type_config
@@ -232,7 +233,7 @@ class DataLoader(BaseDataLoader):
         Path(path).mkdir(parents=True, exist_ok=True)
         train_file = os.path.join(path, 'train.txt')
         valid_file = os.path.join(path, 'val.txt')
-        
+
         with open(train_file, 'w') as f:
             for i, item in enumerate(train):
                 if i == len(train) - 1:
@@ -269,7 +270,7 @@ class DataLoader(BaseDataLoader):
 
         Path(path).mkdir(parents=True, exist_ok=True)
         subset_file = os.path.join(path, 'subset.txt')
-        
+
         with open(subset_file, 'w') as f:
             for i, item in enumerate(subset_list_files):
                 if i == len(subset_list_files) - 1:
@@ -288,7 +289,7 @@ class DataLoader(BaseDataLoader):
         Args:
             key (str, optional): Type of transform. Defaults to 'train'.
         """
-        #assert key in ('train', 'valid')
+        # assert key in ('train', 'valid')
         """if key == 'train':
             transforms = [
                 MyRandomResizedCrop(),
@@ -302,13 +303,13 @@ class DataLoader(BaseDataLoader):
                 Normalize(_pixel_mean, _pixel_std, 1),
             ]"""
         transforms = [MyResize()]
-        
+
         return Compose(transforms)
 
     def next(self):
         x, y = self._data.next()
         return {"inputs": [x], "targets": [y]}
-    
+
     def build_sub_train_loader(self, n_images, batch_size):
         # used for resetting BN running statistics
         path = os.path.join('__nnabla_nas__', 'imagenet')
@@ -316,17 +317,15 @@ class DataLoader(BaseDataLoader):
         sub_train_path = train_path if os.path.exists(train_path) else self.train_path
 
         train_subset_file = self._get_subset_file_list(sub_train_path, n_images)
-        #train_subset_file = self._get_subset_file_list(self.train_file, n_images)
         dataloader = get_data_iterators(
             batch_size=batch_size,
             dali_num_threads=8,
             train_dir=self.train_path,
             file_list=train_subset_file,
-            dali_nvjpeg_memory_padding=64*(1 << 20),
+            dali_nvjpeg_memory_padding=64 * (1 << 20),
             type_config=self.type_config,
             channel_last=False,
             comm=self.communicator,
             training=True
         )
         return dataloader
-

@@ -25,6 +25,7 @@ from nnabla_nas.utils import estimator as EST
 from nnabla_nas.utils import helper
 from nnabla_nas.utils.learning_rate_scheduler import CosineSchedulerWarmup
 
+
 class Configuration(object):
     r"""A Configuration class base.
 
@@ -120,9 +121,8 @@ class Configuration(object):
                             lr = args['lr']
                         except KeyError:
                             lr = args['alpha']  # for adam
-                        bz = self.hparams['batch_size_train'if name !=
-                                          'valid' else 'batch_size_valid']
-                        #epoch = self.hparams['epoch'] if name == 'train' else self.hparams['warmup']
+                        bz = self.hparams['batch_size_train'if name != 'valid' else 'batch_size_valid']
+                        # epoch = self.hparams['epoch'] if name == 'train' else self.hparams['warmup']
                         epoch = self.hparams['epoch'] if 'train' in name else self.hparams['warmup']
                         max_iter = epoch * \
                             len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
