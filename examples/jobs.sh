@@ -161,3 +161,39 @@ mpirun -n 4 python main.py --search \
 mpirun -n 4 python main.py -f examples/classification/fairnas/fairnas_imagenet_train.json \
                -a Trainer \
                -o log/classification/fairnas/imagenet/retrain/
+
+#---------------------- OFA ----------------------------#
+mpirun -n 4 python main.py \
+               -f examples/classification/ofa/ofa_imagenet_search_fullnet.json \
+               -a OFASearcher \
+               -o log/classification/ofa/imagenet/search/K7_E6_D4/
+
+mpirun -n 4 python main.py --search \
+               -f examples/classification/ofa/ofa_imagenet_search_kernel.json \
+               -a OFASearcher \
+               -o log/classification/ofa/imagenet/search/K357_E6_D4/
+
+mpirun -n 4 python main.py --search \
+               -f examples/classification/ofa/ofa_imagenet_search_depth_phase1.json \
+               -a OFASearcher \
+               -o log/classification/ofa/imagenet/search/K357_E6_D34/
+
+mpirun -n 4 python main.py --search \
+               -f examples/classification/ofa/ofa_imagenet_search_depth_phase2.json \
+               -a OFASearcher \
+               -o log/classification/ofa/imagenet/search/K357_E6_D234/
+
+mpirun -n 4 python main.py --search \
+               -f examples/classification/ofa/ofa_imagenet_search_expand_phase1.json \
+               -a OFASearcher \
+               -o log/classification/ofa/imagenet/search/K357_E46_D234/
+
+mpirun -n 4 python main.py --search \
+               -f examples/classification/ofa/ofa_imagenet_search_expand_phase2.json \
+               -a OFASearcher \
+               -o log/classification/ofa/imagenet/search/K357_E346_D234/
+
+mpirun -n 4 python main.py \
+               -f examples/classification/ofa/ofa_imagenet_train_subnet.json \
+               -a OFATrainer \
+               -o log/classification/ofa/imagenet/train_subnet/

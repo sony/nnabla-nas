@@ -1,0 +1,60 @@
+{
+    "dataloader": {
+        "imagenet_ofa": {
+            "train_path": "IMAGENET_TRAINING_DIR",
+            "train_file": "IMAGENET_TRAINING_LABEL",
+            "valid_path": "IMAGENET_TEST_DIR",
+            "valid_file": "IMAGENET_TEST_LABEL"
+        }
+    },
+    "network": {
+        "ofa": {
+        "num_classes": 1000,
+        "bn_param": [0.9, 1e-5],
+        "dropout": 0.1,
+        "ks_list": [3, 5, 7],
+        "depth_list": [4],
+        "expand_ratio_list": [6]
+        }
+    },
+    "optimizer": {
+        "train": {
+            "weight_decay": 3e-5,
+            "lr_scheduler": "CosineSchedulerWarmup",
+            "name": "Nesterov",
+            "lr": 0.96,
+            "momentum": 0.9
+            },
+        "train_no_decay": {
+            "weight_decay": 0,
+            "lr_scheduler": "CosineSchedulerWarmup",
+            "name": "Nesterov",
+            "lr": 0.96,
+            "momentum": 0.9
+            }
+    },
+    "hparams": {
+        "task": "kernel", 
+        "teacher_path": "nnabla-nas/examples/classification/ofa/sample_params/R_K7_E6_D4_acc0.75968.h5",
+        "pretrained_path": "nnabla-nas/examples/classification/ofa/sample_params/R_K7_E6_D4_acc0.75968.h5",
+        "num_classes": 1000, 
+        "input_shapes": [
+            [3, 224, 224]
+        ],
+        "target_shapes": [
+            [1]
+        ],
+        "no_decay_keys": "bn#bias",
+        "kd_ratio": 1,
+        "epoch": 125,
+        "cosine_warmup_epoch": 5,
+        "warmup_lr": 0.003,
+        "dynamic_batch_size": 1,
+        "batch_size_train": 256,
+        "batch_size_valid": 200,
+        "mini_batch_train": 32,
+        "mini_batch_valid": 200,
+        "print_frequency": 100,
+        "validation_frequency": 1
+    }
+}
