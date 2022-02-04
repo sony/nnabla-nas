@@ -19,6 +19,7 @@ import json
 
 import nnabla as nn
 import nnabla.functions as F
+from nnabla_ext.cuda import clear_memory_cache
 
 from .search import Searcher
 
@@ -129,6 +130,7 @@ class OFASearcher(Searcher):
                     train_keys = [m.name for m in self.monitor.meters.values()
                                   if 'train' in m.name]
                     self.monitor.display(i, key=train_keys)
+                clear_memory_cache()
             if cur_epoch % self.args["validation_frequency"] == 0:
                 MyResize.IS_TRAINING = False
                 val_err_list = []

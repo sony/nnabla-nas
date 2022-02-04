@@ -184,7 +184,7 @@ class DynamicMBConvLayer(Mo.Module):
 
     def re_organize_middle_weights(self, expand_ratio_stage=0):
         importance = np.sum(np.abs(self.point_linear.conv.conv._W.d), axis=(0, 2, 3))
-        if expand_ratio_stage > 0:  # totally not sure about this operation
+        if expand_ratio_stage > 0:  # ranking channels
             sorted_expand_list = copy.deepcopy(self._expand_ratio_list)
             sorted_expand_list.sort(reverse=True)
             target_width_list = [
@@ -193,7 +193,7 @@ class DynamicMBConvLayer(Mo.Module):
             ]
             right = len(importance)
             base = - len(target_width_list) * 1e5
-            for i in range(expand_ratio_stage + 1):  # not sure
+            for i in range(expand_ratio_stage + 1):
                 left = target_width_list[i]
                 if right > left:  # not in the original code
                     importance[left:right] += base
