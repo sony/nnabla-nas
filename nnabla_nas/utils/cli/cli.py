@@ -58,11 +58,10 @@ def main():
                         choices=runner.__all__, help='Which algorithm to use.')
     parser.add_argument('--config-file', '-f', type=str,
                         help='The configuration file for the experiment.')
-    parser.add_argument(
-        '--output-path',
-        '-o',
-        type=str,
-        help='Path to save the monitoring log files.')
+    parser.add_argument('--output-path', '-o', type=str,
+                        help='Path to save the monitoring log files.')
+    parser.add_argument('--save-nnp', action='store_true',
+                        help='Store network and parameter with nnp format.')
 
     options = parser.parse_args()
 

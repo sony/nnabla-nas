@@ -133,8 +133,14 @@ class Trainer(Runner):
             if better:
                 for k in self.metrics:
                     self._best_metric[k] = self.metrics[k].data[0]
-                path = os.path.join(self.args['output_path'], 'weights.h5')
-                self.model.save_parameters(path)
+                if self.args['save_nnp']:
+                    self.model.save_net_nnp(
+                        self.args['output_path'],
+                        self.placeholder['valid']['inputs'][0],
+                        self.placeholder['valid']['outputs'][0])
+                else:
+                    path = os.path.join(self.args['output_path'], 'weights.h5')
+                    self.model.save_parameters(path)
 
         # reset loss and metric
         self.loss.zero()

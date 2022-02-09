@@ -302,28 +302,22 @@ class Module(object):
         """
         batch_size = inp.shape[0]
 
-        name = self.name
+        name = self.name if (hasattr(self, 'name')
+                             and self.name) else 'results'
 
-        filename = path + name + '.nnp'
-        pathname = os.path.dirname(filename)
-        upper_pathname = os.path.dirname(pathname)
-        if not os.path.exists(upper_pathname):
-            os.mkdir(upper_pathname)
-        if not os.path.exists(pathname):
-            os.mkdir(pathname)
+        filename = os.path.join(path, name + '.nnp')
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
 
-        dict = {'0': inp}
-        keys = ['0']
-
-        name_for_nnp = name if (name != '') else 'empty'
+        name_for_nnp = self.name if (
+            hasattr(self, 'name') and self.name) else 'empty'
         contents = {'networks': [{'name': name_for_nnp,
                                   'batch_size': batch_size,
-                                  'outputs': {'out': out},
-                                  'names': dict}],
+                                  'outputs': {'y': out},
+                                  'names': {'x': inp}}],
                     'executors': [{'name': 'runtime',
                                    'network': name_for_nnp,
-                                   'data': keys,
-                                   'output': ['out']}]}
+                                   'data': ['x'],
+                                   'output': ['y']}]}
 
         save(filename, contents, variable_batch_size=False)
 
