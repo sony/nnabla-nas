@@ -19,11 +19,63 @@ import random
 
 import nnabla.logger as logger
 
+from ..base import ClassificationModel as Model
 from .... import module as Mo
-from .modules import MyNetwork, ResidualBlock, ConvLayer, LinearLayer, MBConvLayer
-from .modules import candidates2subnetlist, genotype2subnetlist
+from .modules import ResidualBlock, ConvLayer, LinearLayer, MBConvLayer
+from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
 from .elastic_modules import DynamicMBConvLayer
-from .ofa_utils.common_tools import val2list, make_divisible
+from .ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
+
+
+class MyNetwork(Model):
+    CHANNEL_DIVISIBLE = 8
+
+    def set_bn_param(self, decay_rate, eps, **kwargs):
+        r"""Sets decay_rate and eps to batchnormalization layers.
+
+        Args:
+            decay_rate (float): Deccay rate of running mean and variance.
+            eps (float):Tiny value to avoid zero division by std.
+        """
+        set_bn_param(self, decay_rate, eps, **kwargs)
+
+    def get_bn_param(self):
+        r"""Return dict of batchnormalization params.
+
+        Returns:
+            dict: A dictionary containing decay_rate and eps of batchnormalization
+        """
+        return get_bn_param(self)
+
+    def loss(self, outputs, targets, loss_weights=None):
+        r"""Return loss computed from a list of outputs and list of targets.
+
+        Args:
+            outputs (list of nn.Variable):
+                A list of output variables computed from the model.
+            targets (list of nn.Variable):
+                A list of target variables loaded from the data.
+            loss_weights (list of float, optional):
+                A list specifying scalar coefficients to weight the loss
+                contributions of different model outputs.
+                It is expected to have a 1:1 mapping to model outputs.
+                Defaults to None.
+        Returns:
+            nn.Variable: A scalar NNabla Variable represents the loss.
+        """
+        return cross_entropy_loss_with_label_smoothing(outputs[0], targets[0])
+
+    def get_net_parameters(self, grad_only=False):
+        r"""Returns an `OrderedDict` containing architecture parameters.
+
+        Args:
+            grad_only (bool, optional): If sets to `True`, then only parameters
+                with `need_grad=True` are returned. Defaults to False.
+        Returns:
+            OrderedDict: A dictionary containing parameters.
+        """
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items()])
 
 
 class SearchNet(MyNetwork):

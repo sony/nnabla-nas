@@ -113,9 +113,9 @@ class DynamicMBConvLayer(Mo.Module):
             active input channels.
         out_channel_list (list of int): Candidates for the number of
             output channels.
-        kernel_size_list (list of int): Candidates for the kernel size.
+        kernel_size_list (list of int or int): Candidates for the kernel size.
             Defaults to 3.
-        expand_ratio_list (list of int): Candidates for the expand
+        expand_ratio_list (list of int or int): Candidates for the expand
             ratio. Defaults to 6.
         stride (tuple of int, optional): Stride sizes for dimensions.
             Defaults to (1, 1).
@@ -199,14 +199,14 @@ class DynamicMBConvLayer(Mo.Module):
                 make_divisible(round(max(self._in_channel_list) * expand))
                 for expand in sorted_expand_list
             ]
-            larger_target = len(importance)
+            larger_stage = len(importance)
             base = - len(target_width_list) * 1e5
             for i in range(expand_ratio_stage + 1):
-                smaller_target = target_width_list[i]
-                if larger_target > smaller_target:  # not in the original code
-                    importance[smaller_target:larger_target] += base
+                smaller_stage = target_width_list[i]
+                if larger_stage > smaller_stage:  # not in the original code
+                    importance[smaller_stage:larger_stage] += base
                     base += 1e5
-                    larger_target = smaller_target
+                    larger_stage = smaller_stage
 
         sorted_idx = np.argsort(-importance)
         self.point_linear.conv.conv._W.d = np.stack(

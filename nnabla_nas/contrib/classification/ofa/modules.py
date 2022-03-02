@@ -15,10 +15,8 @@
 from collections import OrderedDict
 
 from .... import module as Mo
-from ..base import ClassificationModel as Model
 from .ofa_modules.static_op import SEModule
 from .ofa_utils.common_tools import get_same_padding, min_divisible_value
-from .ofa_utils.common_tools import cross_entropy_loss_with_label_smoothing
 
 
 CANDIDATES = {
@@ -105,57 +103,6 @@ def get_bn_param(net):
                 'decay_rate': m._decay_rate,
                 'eps': m._eps
             }
-
-
-class MyNetwork(Model):
-    CHANNEL_DIVISIBLE = 8
-
-    def set_bn_param(self, decay_rate, eps, **kwargs):
-        r"""Sets decay_rate and eps to batchnormalization layers.
-
-        Args:
-            decay_rate (float): Deccay rate of running mean and variance.
-            eps (float):Tiny value to avoid zero division by std.
-        """
-        set_bn_param(self, decay_rate, eps, **kwargs)
-
-    def get_bn_param(self):
-        r"""Return dict of batchnormalization params.
-
-        Returns:
-            dict: A dictionary containing decay_rate and eps of batchnormalization
-        """
-        return get_bn_param(self)
-
-    def loss(self, outputs, targets, loss_weights=None):
-        r"""Return loss computed from a list of outputs and list of targets.
-
-        Args:
-            outputs (list of nn.Variable):
-                A list of output variables computed from the model.
-            targets (list of nn.Variable):
-                A list of target variables loaded from the data.
-            loss_weights (list of float, optional):
-                A list specifying scalar coefficients to weight the loss
-                contributions of different model outputs.
-                It is expected to have a 1:1 mapping to model outputs.
-                Defaults to None.
-        Returns:
-            nn.Variable: A scalar NNabla Variable represents the loss.
-        """
-        return cross_entropy_loss_with_label_smoothing(outputs[0], targets[0])
-
-    def get_net_parameters(self, grad_only=False):
-        r"""Returns an `OrderedDict` containing architecture parameters.
-
-        Args:
-            grad_only (bool, optional): If sets to `True`, then only parameters
-                with `need_grad=True` are returned. Defaults to False.
-        Returns:
-            OrderedDict: A dictionary containing parameters.
-        """
-        p = self.get_parameters(grad_only)
-        return OrderedDict([(k, v) for k, v in p.items()])
 
 
 class ResidualBlock(Mo.Module):
