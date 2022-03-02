@@ -1,20 +1,24 @@
 {
     "dataloader": {
         "imagenet_ofa": {
-            "train_path": "IMAGENET_TRAINING_DIR",
-            "train_file": "IMAGENET_TRAINING_LABEL",
-            "valid_path": "IMAGENET_TEST_DIR",
-            "valid_file": "IMAGENET_TEST_LABEL"
+            "train_path": "/data/imagenet/train",
+            "train_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/train_label",
+            "valid_path": "/data/imagenet/val",
+            "valid_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/val_label"
         }
     },
     "network": {
         "ofa": {
         "num_classes": 1000,
         "bn_param": [0.9, 1e-5],
-        "dropout": 0.1,
-        "ks_list": [3, 5, 7],
-        "depth_list": [2, 3, 4],
-        "expand_ratio_list": [3, 4, 6]
+        "drop_rate": 0.1,
+        "op_candidates": [
+            "MB3 3x3", "MB3 5x5", "MB3 7x7", 
+            "MB4 3x3", "MB4 5x5", "MB4 7x7", 
+            "MB6 3x3", "MB6 5x5", "MB6 7x7"
+        ],
+        "genotype": [5, 2, 9, 9, 6, 4, 2, 1, 7, 7, 8, 9, 8, 3, 9, 9, 8, 4, 3, 1],
+        "weights": "log/classification/ofa/imagenet/search/K357_E346_D234/weights.h5"
         }
     },
     "optimizer": {
@@ -22,38 +26,34 @@
             "weight_decay": 3e-5,
             "lr_scheduler": "CosineSchedulerWarmup",
             "name": "Nesterov",
-            "lr": 0.02,
+            "lr": 0.005,
             "momentum": 0.9
             },
         "train_no_decay": {
             "weight_decay": 0,
             "lr_scheduler": "CosineSchedulerWarmup",
             "name": "Nesterov",
-            "lr": 0.02,
+            "lr": 0.005,
             "momentum": 0.9
             }
     },
     "hparams": {
-        "pretrained_path": "nnabla-nas/examples/classification/ofa/sample_params/R_K357_E346_D234_acc0.76299.h5",
         "input_shapes": [
              [3, 224, 224]
         ],
         "target_shapes": [
             [1]
         ],
-        "subnet_ks": [5, 5, 7, 7, 5, 3, 5, 7, 3, 3, 3, 5, 7, 5, 5, 7, 7, 5, 5, 7],
-        "subnet_e": [4, 4, 4, 3, 3, 3, 6, 6, 6, 4, 6, 6, 4, 3, 4, 6, 3, 4, 6, 3],
-        "subnet_d": [3, 3, 2, 3, 4],
-        "img_size": 160,
-        "no_decay_keys": "bn#bias",
-        "kd_ratio": 0,
+        "img_size": 224,
+        "no_decay_keys": "bn#_b",
+        "lambda_kd": 0,
         "epoch": 2,
         "cosine_warmup_epoch": 0,
         "warmup_lr": 0.0025,
         "batch_size_train": 128,
-        "batch_size_valid": 100,
+        "batch_size_valid": 200,
         "mini_batch_train": 32,
-        "mini_batch_valid": 100,
+        "mini_batch_valid": 200,
         "print_frequency": 100,
         "validation_frequency": 1
     }

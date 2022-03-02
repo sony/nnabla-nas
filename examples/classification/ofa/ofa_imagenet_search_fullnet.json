@@ -1,20 +1,22 @@
 {
     "dataloader": {
-        "imagenet_ofa": {
-            "train_path": "IMAGENET_TRAINING_DIR",
-            "train_file": "IMAGENET_TRAINING_LABEL",
-            "valid_path": "IMAGENET_TEST_DIR",
-            "valid_file": "IMAGENET_TEST_LABEL"
+        "imagenet": {
+            "train_portion": 0.99,
+            "augment_valid": "False",
+            "colortwist": "True",
+            "train_path": "/data/imagenet/train",
+            "train_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/train_label",
+            "valid_path": "/data/imagenet/val",
+            "valid_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/val_label"
         }
     },
     "network": {
         "ofa": {
         "num_classes": 1000,
         "bn_param": [0.9, 1e-5],
-        "dropout": 0.1,
-        "ks_list": [7],
-        "depth_list": [4],
-        "expand_ratio_list": [6]
+        "drop_rate": 0.1,
+        "op_candidates": ["MB6 7x7"],
+        "depth_candidates": [4]
         }
     },
     "optimizer": {
@@ -35,6 +37,8 @@
     },
     "hparams": {
         "task": "fullnet", 
+        "train_image_size_list": [128, 160, 192, 224],
+        "valid_image_size_list": [160, 224],
         "input_shapes": [
              [3, 224, 224]
         ],
@@ -42,14 +46,17 @@
             [1]
         ],
         "no_decay_keys": "bn#bias",
-        "kd_ratio": 0,
+        "valid_genotypes": [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ],
+        "lambda_kd": 0,
         "epoch": 185,
         "cosine_warmup_epoch": 5,
         "warmup_lr": 0.08125,
         "batch_size_train": 256,
-        "batch_size_valid": 100,
-        "mini_batch_train": 64,
-        "mini_batch_valid": 100,
+        "batch_size_valid": 200,
+        "mini_batch_train": 32,
+        "mini_batch_valid": 200,
         "print_frequency": 100,
         "validation_frequency": 1
     }

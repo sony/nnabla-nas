@@ -1,4 +1,4 @@
-from .network import SearchNet
+from .network import OFASearchNet as SearchNet
 from .network import TrainNet
 
 

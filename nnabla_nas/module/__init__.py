@@ -19,6 +19,8 @@ from .container import Sequential
 from .convolution import Conv
 from .convolution import DwConv
 from .dropout import Dropout
+from .hsigmoid import Hsigmoid
+from .hsigmoid import Hswish
 from .identity import Identity
 from .linear import Linear
 from .merging import Merging
@@ -55,6 +57,8 @@ __all__ = [
     'ReLU6',
     'LeakyReLU',
     'Dropout',
+    'Hsigmoid',
+    'Hswish',
     'Lambda',
     'MixedOp',
     'Add2',

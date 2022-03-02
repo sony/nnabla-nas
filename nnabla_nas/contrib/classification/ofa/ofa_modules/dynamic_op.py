@@ -32,13 +32,19 @@ import nnabla as nn
 import nnabla.functions as F
 
 from ..... import module as Mo
-from .common_tools import get_same_padding, sub_filter_start_end, make_divisible
-
-from .pytorch_modules import SEModule
-from .my_modules import MyConv2d
+from ..ofa_utils.common_tools import get_same_padding, sub_filter_start_end, make_divisible
+from .static_op import SEModule
 
 
 class DynamicSE(SEModule):
+
+    r"""Squeeze-and-Excitation module with dynamic channel size.
+
+    Args:
+        max_channel (int): The maximum number of input channels.
+
+    """
+
     def __init__(self, max_channel):
         super(DynamicSE, self).__init__(max_channel)
         self._scope_name = f'<dynamicse at {hex(id(self))}>'
@@ -84,6 +90,23 @@ class DynamicSE(SEModule):
 
 
 class DynamicConv2d(Mo.Module):
+
+    r"""Convolution layer with dynamic channel size.
+
+    Args:
+        max_in_channels (int): The maximum number of convolution
+            kernels (which is equal to the number of input channels).
+        max_out_channels (int): The maximum Number of convolution
+            kernels (which is equal to the number of output channels).
+        kernel (tuple of int): Convolution kernel size. For
+            example, to apply convolution on an image with a 3 (height) by 5
+            (width) two-dimensional kernel, specify (3, 5). Defaults to (3, 3)
+        stride (tuple of int, optional): Stride sizes for
+            dimensions. Defaults to (1, 1).
+        dilation (tuple of int, optional): Dilation sizes for
+            dimensions. Defaults to (1, 1).
+    """
+
     def __init__(self, max_in_channels, max_out_channels,
                  kernel=(1, 1), stride=(1, 1), dilation=(1, 1)):
         super(DynamicConv2d, self).__init__()
@@ -111,12 +134,19 @@ class DynamicConv2d(Mo.Module):
         in_channel = input.shape[1]
         filters = self.get_active_filter(out_channel, in_channel)
         padding = get_same_padding(self._kernel)
-        filters = F.weight_standardization(filters) if isinstance(self.conv, MyConv2d) else filters
         return F.convolution(input, filters, None, pad=padding,
                              stride=self._stride, dilation=self._dilation, group=1)
 
 
 class DynamicBatchNorm2d(Mo.Module):
+
+    r"""Batch normalization layer with dynamic channel size.
+
+    Args:
+        max_feature_dim (int): The maximum number of dimentional features.
+        n_dims (int): Number of dimensions.
+    """
+
     SET_RUNNING_STATISTICS = False
     GET_STATIC_BN = True
 
@@ -152,6 +182,20 @@ class DynamicBatchNorm2d(Mo.Module):
 
 
 class DynamicSeparableConv2d(Mo.Module):
+
+    r"""Seperable convolution layer (depthwise) with
+        dynamic kernel and channel size.
+
+    Args:
+        max_in_channels (int): The maximum Number of convolution
+            kernels (which is equal to the number of input channels).
+        kernel_size_list (list of int): Canddidate convolution kernel size.
+        stride (tuple of int, optional): Stride sizes for dimensions.
+            Defaults to (1, 1).
+        dilation (tuple of int, optional): Dilation sizes for dimensions.
+            Defaults to (1, 1).
+    """
+
     KERNEL_TRANSFORM_MODE = 1
 
     def __init__(self, max_in_channels, kernel_size_list, stride=(1, 1), dilation=(1, 1)):
@@ -216,13 +260,21 @@ class DynamicSeparableConv2d(Mo.Module):
 
         filters = self.get_active_filter(in_channel, kernel)
         padding = get_same_padding((kernel, kernel))
-        filters = F.weight_standardization(filters) if isinstance(self.conv, MyConv2d) else filters
         return F.convolution(
             input, filters, None, pad=padding, stride=self._stride,
             dilation=self._dilation, group=in_channel)
 
 
 class DynamicLinear(Mo.Module):
+
+    r"""Linear layer with dynamic channel selection.
+
+    Args:
+        max_in_features (int): The maximum size of each input sample.
+        max_out_features (int): The maximum size of each output sample.
+        bias (bool): Specify whether to include the bias term.
+    """
+
     def __init__(self, max_in_features, max_out_features, bias=True):
         super(DynamicLinear, self).__init__()
 

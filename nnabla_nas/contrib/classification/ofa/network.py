@@ -17,37 +17,62 @@ import nnabla as nn
 import nnabla.functions as F
 import random
 
-from .modules import ResidualBlock, ConvLayer, IdentityLayer, LinearLayer, MBConvLayer
-from .dynamic_modules import DynamicMBConvLayer
-from .ofa_modules.common_tools import val2list, make_divisible
-from .networks.mobilenet_v3 import MobileNetV3
+import nnabla.logger as logger
+
+from .... import module as Mo
+from .modules import MyNetwork, ResidualBlock, ConvLayer, LinearLayer, MBConvLayer
+from .modules import candidates2subnetlist, genotype2subnetlist
+from .elastic_modules import DynamicMBConvLayer
+from .ofa_utils.common_tools import val2list, make_divisible
 
 
-class SearchNet(MobileNetV3):
-    r"""
-    Reference:
-    https://github.com/mit-han-lab/once-for-all/blob/master/ofa/imagenet_classification/elastic_nn/networks/ofa_mbv3.py
+class SearchNet(MyNetwork):
+    r""" MobileNet V3 Search Net
+    This implementation is based on the PyTorch implementation.
+
+    Args:
+        num_classes (int): Number of classes
+        bn_param (tuple, optional): BatchNormalization decay rate and eps.
+        drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.1.
+        base_stage_width (list of int, optional): A list of base stage
+            channel size. Defaults to None.
+        width_mult (float, optional): Multiplier value to base stage channel size.
+            Defaults to 1.0.
+        op_candidates (str or list of str, optional): Operator choices.
+            Defaults to MB6 3x3.
+        depth_candidates (int or list of int, optional): Depth choices.
+            Defaults to 4.
+        weight (str, optional): The path to weight file. Defaults to
+            None.
+
+    References:
+    [1] Cai, Han, et al. "Once-for-all: Train one network and specialize it for
+        efficient deployment." arXiv preprint arXiv:1908.09791 (2019).
     """
 
     def __init__(self,
                  num_classes=1000,
                  bn_param=(0.9, 1e-5),
-                 dropout=0.1,
+                 drop_rate=0.1,
                  base_stage_width=None,
                  width_mult=1.0,
-                 ks_list=3,
-                 expand_ratio_list=6,
-                 depth_list=4
+                 op_candidates="MB6 3x3",
+                 depth_candidates=4,
+                 weights=None
                  ):
-
         self._num_classes = num_classes
         self._bn_param = bn_param
-        self._dropout = dropout
-
+        self._drop_rate = drop_rate
         self._width_mult = width_mult
+        self._op_candidates = op_candidates
+        self._depth_candidates = depth_candidates
+        self._weights = weights
+
+        op_candidates = val2list(op_candidates, 1)
+        ks_list, expand_ratio_list = candidates2subnetlist(op_candidates)
         self._ks_list = val2list(ks_list, 1)
         self._expand_ratio_list = val2list(expand_ratio_list, 1)
-        self._depth_list = val2list(depth_list)
+        self._depth_list = val2list(depth_candidates)
 
         # sort
         self._ks_list.sort()
@@ -70,7 +95,7 @@ class SearchNet(MobileNetV3):
 
         input_channel, first_block_dim = width_list[0], width_list[1]
         # first conv layer
-        first_conv = ConvLayer(
+        self.first_conv = ConvLayer(
             3, input_channel, kernel=(3, 3), stride=(2, 2), act_func='h_swish')
         first_block_conv = MBConvLayer(
             input_channel, first_block_dim, kernel=(3, 3), stride=(stride_stages[0], stride_stages[0]),
@@ -78,7 +103,7 @@ class SearchNet(MobileNetV3):
         )
         first_block = ResidualBlock(
             first_block_conv,
-            IdentityLayer(first_block_dim, first_block_dim) if input_channel == first_block_dim else None,
+            Mo.Identity()
         )
 
         # inverted residual blocks
@@ -99,28 +124,25 @@ class SearchNet(MobileNetV3):
                 mobile_inverted_conv = DynamicMBConvLayer(
                     in_channel_list=val2list(feature_dim),
                     out_channel_list=val2list(output_channel),
-                    kernel_size_list=ks_list, expand_ratio_list=expand_ratio_list,
+                    kernel_size_list=self._ks_list, expand_ratio_list=self._expand_ratio_list,
                     stride=stride, act_func=act_func, use_se=use_se,
                 )
                 if stride == (1, 1) and feature_dim == output_channel:
-                    shortcut = IdentityLayer(feature_dim, feature_dim)
+                    shortcut = Mo.Identity()
                 else:
                     shortcut = None
                 blocks.append(ResidualBlock(mobile_inverted_conv, shortcut))
                 feature_dim = output_channel
 
+        self.blocks = Mo.ModuleList(blocks)
         # final expand layer, feature mix layer & classifier
-        final_expand_layer = ConvLayer(
+        self.final_expand_layer = ConvLayer(
             feature_dim, final_expand_width, kernel=(1, 1), act_func='h_swish'
         )
-        feature_mix_layer = ConvLayer(
-            final_expand_width, last_channel, kernel=(1, 1),
-            with_bias=False, use_bn=False, act_func='h_swish'
+        self.feature_mix_layer = ConvLayer(
+            final_expand_width, last_channel, kernel=(1, 1), with_bias=False, use_bn=False, act_func='h_swish'
         )
-        classifier = LinearLayer(last_channel, num_classes, dropout=dropout)
-
-        super(SearchNet, self).__init__(
-            first_conv, blocks, final_expand_layer, feature_mix_layer, classifier)
+        self.classifier = LinearLayer(last_channel, num_classes, drop_rate=drop_rate)
 
         # set bn param
         self.set_bn_param(decay_rate=bn_param[0], eps=bn_param[1])
@@ -128,7 +150,14 @@ class SearchNet(MobileNetV3):
         # runtime depth
         self.runtime_depth = [len(block_idx) for block_idx in self.block_group_info]
 
+        if weights is not None:
+            self.load_parameters(weights)
+
     def call(self, x):
+        # sample or not
+        if self.training:
+            self.sample_active_subnet()
+
         x = self.first_conv(x)
         x = self.blocks[0](x)
         # blocks
@@ -143,21 +172,11 @@ class SearchNet(MobileNetV3):
         x = F.reshape(x, shape=(x.shape[0], -1))
         return self.classifier(x)
 
-    @property
-    def module_str(self):
-        _str = self.first_conv.module_str + '\n'
-        _str += self.blocks[0].module_str + '\n'
-
-        for stage_id, block_idx in enumerate(self.block_group_info):
-            depth = self.runtime_depth[stage_id]
-            active_idx = block_idx[:depth]
-            for idx in active_idx:
-                _str += self.blocks[idx].module_str + '\n'
-
-        _str += self.final_expand_layer.module_str + '\n'
-        _str += self.feature_mix_layer.module_str + '\n'
-        _str += self.classifier.module_str + '\n'
-        return _str
+    def set_valid_arch(self, genotype):
+        assert(len(genotype) == 20)
+        ks_list, expand_ratio_list, depth_list =\
+            genotype2subnetlist(self._op_candidates, genotype)
+        self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
     @property
     def grouped_block_index(self):
@@ -218,45 +237,13 @@ class SearchNet(MobileNetV3):
             'd': depth_setting
         }
 
-    def get_active_subnet(self, preserve_weight=True):
-        first_conv = self.first_conv
-        blocks = [self.blocks[0]]
-
-        final_expand_layer = self.final_expand_layer
-        feature_mix_layer = self.feature_mix_layer
-        classifier = self.classifier
-
-        input_channel = blocks[0].conv._out_channels
-        # blocks
-        for stage_id, block_idx in enumerate(self.block_group_info):
-            depth = self.runtime_depth[stage_id]
-            active_idx = block_idx[:depth]
-            stage_blocks = []
-            for idx in active_idx:
-                stage_blocks.append(ResidualBlock(
-                    self.blocks[idx].conv.get_active_subnet(input_channel, preserve_weight),
-                    self.blocks[idx].shortcut
-                ))
-                input_channel = stage_blocks[-1].conv._out_channels
-            blocks += stage_blocks
-
-        _subnet = MobileNetV3(first_conv, blocks, final_expand_layer, feature_mix_layer, classifier)
-        _subnet.set_bn_param(**self.get_bn_param())
-
-        return _subnet
-
-    def re_organize_middle_weights(self, expand_ratio_stage=0):
-        print("re_organize_middle_weights")
-        for block in self.blocks[1:]:
-            block.conv.re_organize_middle_weights(expand_ratio_stage)
-
-    def load_ofa_parameters(self, path, raise_if_missing=False):
+    def load_parameters(self, path, raise_if_missing=False):
         with nn.parameter_scope('', OrderedDict()):
             nn.load_parameters(path)
             params = nn.get_parameters(grad_only=False)
-        self.set_ofa_parameters(params, raise_if_missing=raise_if_missing)
+        self.set_parameters(params, raise_if_missing=raise_if_missing)
 
-    def set_ofa_parameters(self, params, raise_if_missing=False):
+    def set_parameters(self, params, raise_if_missing=False):
         for prefix, module in self.get_modules():
             for name, p in module.parameters.items():
                 key = prefix + ('/' if prefix else '') + name
@@ -265,47 +252,120 @@ class SearchNet(MobileNetV3):
                 else:
                     new_key = key
                 if new_key in params:
-                    pass
-                elif '/bn/bn/' in new_key:
-                    new_key = new_key.replace('/bn/bn/', '/bn/')
-                elif '/conv/conv/_W' in new_key:
-                    new_key = new_key.replace('/conv/conv/_W', '/conv/_W')
-                elif '/linear/linear/' in new_key:
-                    new_key = new_key.replace('/linear/linear/', '/linear/')
-                ##############################################################################
-                elif '/linear/' in new_key:
-                    new_key = new_key.replace('/linear/', '/linear/linear/')
-                elif 'bn/' in new_key:
-                    new_key = new_key.replace('bn/', 'bn/bn/')
-                elif 'conv/_W' in new_key:
-                    new_key = new_key.replace('conv/_W', 'conv/conv/_W')
+                    p.d = params[new_key].d.copy()
+                    nn.logger.info(f'`{new_key}` loaded.')
                 else:
+                    nn.logger.info(f'`{new_key}` does not exist.')
                     if raise_if_missing:
                         raise ValueError(
                             f'A child module {name} cannot be found in '
                             '{this}. This error is raised because '
                             '`raise_if_missing` is specified '
                             'as True. Please turn off if you allow it.')
-                p.d = params[new_key].d.copy()
-                nn.logger.info(f'`{new_key}` loaded.')
 
     def extra_repr(self):
         return (f'num_classes={self._num_classes}, '
+                f'drop_rate={self._drop_rate}, '
                 f'width_mult={self._width_mult}, '
-                f'dropout={self._dropout}')
+                f'ks_list={self._ks_list}, '
+                f'expand_ratio_list={self._expand_ratio_list}, '
+                f'depth_list={self._depth_list}')
 
     def save_parameters(self, path=None, params=None, grad_only=False):
-
         super().save_parameters(path, params=params, grad_only=grad_only)
 
-        # base_path = path[0:path.rindex("/")]
-        # weight_str = path[path.rindex("/") + 1:].split(".")[0]
-        # cur_epoch = weight_str.split("_")
+
+class OFASearchNet(SearchNet):
+    def __init__(self,
+                 num_classes=1000,
+                 bn_param=(0.9, 1e-5),
+                 drop_rate=0.1,
+                 base_stage_width=None,
+                 width_mult=1.0,
+                 op_candidates="MB6 3x3",
+                 depth_candidates=4,
+                 weights=None
+                 ):
+        super(OFASearchNet, self).__init__(
+            num_classes=num_classes, bn_param=bn_param, drop_rate=drop_rate,
+            base_stage_width=base_stage_width, width_mult=width_mult,
+            op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
+        if weights is not None:
+            self.re_organize_middle_weights()
+
+    def re_organize_middle_weights(self, expand_ratio_stage=0):
+        logger.info("Sorting channels according to the importance...")
+        for block in self.blocks[1:]:
+            block.conv.re_organize_middle_weights(expand_ratio_stage)
 
 
 class TrainNet(SearchNet):
-    def __init__(self, num_classes=1000, bn_param=(0.9, 1e-5), dropout=0.1, base_stage_width=None,
-                 width_mult=1, ks_list=3, expand_ratio_list=6, depth_list=4,):
+    r""" MobileNet V3 Train Net.
+    Args:
+        num_classes (int): Number of classes
+        bn_param (tuple, optional): BatchNormalization decay rate and eps.
+        drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.1.
+        base_stage_width (list of int, optional): A list of base stage
+            channel size. Defaults to None.
+        width_mult (float, optional): Multiplier value to base stage channel size.
+            Defaults to 1.0.
+        op_candidates (str or list of str, optional): Operator choices.
+            Defaults to MB6 3x3.
+        depth_candidates (int or list of int, optional): Depth choices.
+            Defaults to 4.
+        weight (str, optional): The path to weight file. Defaults to None.
+        genotype (list of int, optional): A list to operators, Defaults to None.
+    """
+
+    def __init__(self, num_classes=1000, bn_param=(0.9, 1e-5), drop_rate=0.1,
+                 base_stage_width=None, width_mult=1,
+                 op_candidates=None, depth_candidates=None, genotype=None, weights=None):
+
+        if op_candidates is None:
+            op_candidates = [
+                "MB3 3x3", "MB3 5x5", "MB3 7x7",
+                "MB4 3x3", "MB4 5x5", "MB4 7x7",
+                "MB6 3x3", "MB6 5x5", "MB6 7x7",
+            ]
+        if depth_candidates is None:
+            depth_candidates = [2, 3, 4]
+
         super(TrainNet, self).__init__(
-            num_classes, bn_param, dropout, width_mult=width_mult,
-            ks_list=ks_list, expand_ratio_list=expand_ratio_list, depth_list=depth_list)
+            num_classes, bn_param, drop_rate, width_mult=width_mult,
+            op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
+
+        if genotype is not None:
+            assert(len(genotype) == 20)
+            ks_list, expand_ratio_list, depth_list = genotype2subnetlist(op_candidates, genotype)
+            self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
+
+            preserve_weight = True if weights is not None else False
+
+            blocks = [self.blocks[0]]
+            input_channel = blocks[0].conv._out_channels
+            for stage_id, block_idx in enumerate(self.block_group_info):
+                depth = self.runtime_depth[stage_id]
+                active_idx = block_idx[:depth]
+                stage_blocks = []
+                for idx in active_idx:
+                    stage_blocks.append(ResidualBlock(
+                        self.blocks[idx].conv.get_active_subnet(input_channel, preserve_weight),
+                        self.blocks[idx].shortcut
+                    ))
+                    input_channel = stage_blocks[-1].conv._out_channels
+                blocks += stage_blocks
+
+            self.blocks = Mo.ModuleList(blocks)
+            self.final_expand_layer = self.final_expand_layer
+            self.feature_mix_layer = self.feature_mix_layer
+            self.classifier = self.classifier
+
+    def call(self, x):
+        x = self.first_conv(x)
+        for idx in range(len(self.blocks)):
+            x = self.blocks[idx](x)
+        x = self.final_expand_layer(x)
+        x = F.mean(x, axis=(2, 3), keepdims=True)
+        x = self.feature_mix_layer(x)
+        x = F.reshape(x, shape=(x.shape[0], -1))
+        return self.classifier(x)

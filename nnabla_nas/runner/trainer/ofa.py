@@ -21,10 +21,8 @@ from tqdm import trange
 from ..runner import Runner
 
 from ...runner.searcher import OFASearcher
-from ...contrib.classification.ofa.ofa_modules.my_modules import init_models
-from ...contrib.classification.ofa.ofa_modules.my_random_resize_crop import MyResize
-from ...contrib.classification.ofa.ofa_modules.dynamic_op import DynamicBatchNorm2d
-from ...contrib.classification.ofa.network import SearchNet
+from ...contrib.classification.ofa.ofa_utils.utils import init_models
+from ...contrib.classification.ofa.ofa_utils.my_random_resize_crop import MyResize
 
 
 class OFATrainer(Runner):
@@ -33,25 +31,19 @@ class OFATrainer(Runner):
     def callback_on_start(self):
         r"""Builds the graphs and assigns parameters to the optimizers."""
 
-        init_models(self.model, model_init='he_fout')
+        if self.model._weights is None:
+            init_models(self.model, model_init='he_fout')
 
-        DynamicBatchNorm2d.GET_STATIC_BN = False
-        self.subset_train_dataloader = None
-        self.forward_model = SearchNet(
-            self.model._num_classes, self.model._bn_param, dropout=0,
-            ks_list=self.model._ks_list, expand_ratio_list=self.model._expand_ratio_list,
-            depth_list=self.model._depth_list)
-
-        self.update_graph_ofa('train')
+        self.update_graph('train')
         keys = self.args['no_decay_keys'].split('#')
         net_params = [
-            self.model.get_net_parameters(keys, mode='exclude', grad_only=True),  # parameters with weight decay
-            self.model.get_net_parameters(keys, mode='include', grad_only=True),  # parameters without weight decay
+            self.get_net_parameters_with_keys(keys, mode='exclude', grad_only=True),  # parameters with weight decay
+            self.get_net_parameters_with_keys(keys, mode='include', grad_only=True),  # parameters without weight decay
         ]
         self.optimizer['train'].set_parameters(net_params[0])
         self.optimizer['train_no_decay'].set_parameters(net_params[1])
 
-        self.update_graph_ofa('valid')
+        self.update_graph('valid')
         self._best_metric = {k: np.inf for k in self.placeholder['valid']['metrics']}
 
         # loss and metric
@@ -65,10 +57,6 @@ class OFATrainer(Runner):
             self._grads_no_decay_net = [x.grad for x in net_params[1].values()]
             self.event.default_stream_synchronize()
 
-        if self.args['pretrained_path']:
-            print('set parameter: ', self.args['pretrained_path'])
-            self.model.load_parameters(self.args['pretrained_path'])
-
     def run(self):
         """Run the training process."""
         self.callback_on_start()
@@ -76,18 +64,11 @@ class OFATrainer(Runner):
         MyResize.ACTIVE_SIZE = self.args['img_size']
         MyResize.IS_TRAINING = False
 
-        # you can either randomly choose or manually set a subnetwork
-        # setting = self.model.sample_active_subnet()
-        setting = {'ks': self.args['subnet_ks'], 'd': self.args['subnet_d'], 'e': self.args['subnet_e']}
-        self.model.set_active_subnet(**setting)
-        self.reset_running_statistics(setting)
-        subnet = self.model.get_active_subnet(preserve_weight=True)
-        self.model = subnet
-        DynamicBatchNorm2d.GET_STATIC_BN = True
+        self.reset_running_statistics()
 
         # check for current model
         for i in trange(self.one_epoch_valid, disable=self.comm.rank > 0):
-            self.update_graph_ofa('valid')
+            self.update_graph('valid')
             self.valid_on_batch()
         self.callback_on_epoch_end()
 
@@ -102,7 +83,7 @@ class OFATrainer(Runner):
                     self.monitor.display(i, [k for k in self.monitor.meters if 'train' in k])
 
             for i in trange(self.one_epoch_valid, disable=self.comm.rank > 0):
-                self.update_graph_ofa('valid')
+                self.update_graph('valid')
                 self.valid_on_batch()
 
             self.callback_on_epoch_end()
@@ -123,7 +104,7 @@ class OFATrainer(Runner):
         if self.comm.n_procs > 1:
             self.event.default_stream_synchronize()
 
-        self.update_graph_ofa(key)
+        self.update_graph(key)
         for _ in range(self.accum_train):
             self._load_data(p, self.dataloader['train'].next())
             p['loss'].forward(clear_no_need_grad=True)
@@ -163,11 +144,14 @@ class OFATrainer(Runner):
         if self.comm.n_procs > 1:
             self.event.add_default_stream_event()
 
-    def update_graph_ofa(self, key):
-        OFASearcher.update_graph_ofa(self, key)
+    def get_net_parameters_with_keys(self, keys, mode='include', grad_only=False):
+        return OFASearcher.get_net_parameters_with_keys(self, keys, mode, grad_only)
 
-    def reset_running_statistics(self, setting):
-        OFASearcher.reset_running_statistics(self, setting)
+    def update_graph(self, key):
+        OFASearcher.update_graph(self, key)
+
+    def reset_running_statistics(self):
+        OFASearcher.reset_running_statistics(self)
 
     def callback_on_epoch_end(self):
         r"""Calculates the metric and saves the best parameters."""

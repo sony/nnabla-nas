@@ -16,11 +16,10 @@ from . import cifar10
 from . import csv
 try:
     from . import imagenet
-    from . import imagenet_ofa
 except ImportError:
     from nnabla.logger import logger
     logger.warning('Could not import nnabla_nas.dataset.imagenet')
     logger.warning(
         '  If you want to use nnabla_nas.dataset.imagenet, please install nvidia-dali-cuda???.')
 
-__all__ = ['cifar10', 'imagenet', 'csv', 'imagenet_ofa']
+__all__ = ['cifar10', 'imagenet', 'csv']
