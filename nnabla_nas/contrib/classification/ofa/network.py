@@ -24,6 +24,7 @@ from .... import module as Mo
 from .modules import ResidualBlock, ConvLayer, LinearLayer, MBConvLayer
 from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
 from .elastic_modules import DynamicMBConvLayer
+from .ofa_modules.dynamic_op import DynamicBatchNorm2d
 from .ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
 
 
@@ -76,6 +77,17 @@ class MyNetwork(Model):
         """
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items()])
+
+    def get_arch_parameters(self, grad_only=False):
+        r"""Returns an `OrderedDict` containing architecture parameters.
+        Args:
+            grad_only (bool, optional): If sets to `True`, then only parameters
+                with `need_grad=True` are returned. Defaults to False.
+        Returns:
+            OrderedDict: A dictionary containing parameters.
+        """
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
 
 
 class SearchNet(MyNetwork):
@@ -201,6 +213,11 @@ class SearchNet(MyNetwork):
 
         # runtime depth
         self.runtime_depth = [len(block_idx) for block_idx in self.block_group_info]
+
+        if len(self._expand_ratio_list) == 1:
+            DynamicBatchNorm2d.GET_STATIC_BN = True
+        else:
+            DynamicBatchNorm2d.GET_STATIC_BN = False
 
         if weights is not None:
             self.load_parameters(weights)

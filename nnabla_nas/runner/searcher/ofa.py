@@ -28,7 +28,6 @@ from .search import Searcher
 from ...contrib.classification.ofa.ofa_utils.common_tools import cross_entropy_loss_with_soft_target
 from ...contrib.classification.ofa.ofa_utils.utils import init_models
 from ...contrib.classification.ofa.ofa_utils.my_random_resize_crop import MyResize
-from ...contrib.classification.ofa.ofa_modules.dynamic_op import DynamicBatchNorm2d
 
 
 class OFASearcher(Searcher):
@@ -46,14 +45,14 @@ class OFASearcher(Searcher):
         self.accum_test = self.bs_valid // self.mbs_valid
         self.one_epoch_test = len(self.dataloader['test']) // self.bs_test
 
-        if self.model._weights is None:
+        if self.args['task'] == 'fullnet':
             init_models(self.model, model_init='he_fout')
 
         self.image_size_list = self.args['train_image_size_list']
         MyResize.IMAGE_SIZE_LIST = self.image_size_list
         MyResize.CONTINUOUS = True
 
-        if self.args['lambda_kd'] > 0:
+        if self.args['lambda_kd'] > 0:  # knowledge distillation
             name, attributes = list(self.args['teacher_network'].items())[0]
             self.teacher_model = contrib.__dict__[name].TrainNet(**attributes)
 
@@ -70,7 +69,7 @@ class OFASearcher(Searcher):
         self.callback_on_start()
 
         # Test for init parameters
-        if self.args['task'] not in ['fullnet']:
+        if self.args['task'] == 'fullnet':
             MyResize.IS_TRAINING = False
             for genotype in self.args['valid_genotypes']:
                 for img_size in self.args['valid_image_size_list']:
@@ -90,8 +89,7 @@ class OFASearcher(Searcher):
                         self.metrics[k].zero()
 
         # training
-        current_epoch = 0
-        for cur_epoch in range(current_epoch, self.args['epoch']):
+        for cur_epoch in range(self.args['epoch']):
             self.monitor.reset()
             MyResize.IS_TRAINING = True
 
@@ -130,12 +128,6 @@ class OFASearcher(Searcher):
         return self
 
     def callback_on_start(self):
-        # dynamic BN
-        if self.args['task'] in ['expand', 'width_mult']:
-            DynamicBatchNorm2d.GET_STATIC_BN = False
-        else:
-            DynamicBatchNorm2d.GET_STATIC_BN = True
-
         keys = self.args['no_decay_keys'].split('#')
         net_params = [
             self.get_net_parameters_with_keys(keys, mode='exclude', grad_only=True),  # parameters with weight decay

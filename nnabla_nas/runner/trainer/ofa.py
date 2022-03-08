@@ -21,7 +21,6 @@ from tqdm import trange
 from ..runner import Runner
 
 from ...runner.searcher import OFASearcher
-from ...contrib.classification.ofa.ofa_utils.utils import init_models
 from ...contrib.classification.ofa.ofa_utils.my_random_resize_crop import MyResize
 
 
@@ -30,9 +29,6 @@ class OFATrainer(Runner):
 
     def callback_on_start(self):
         r"""Builds the graphs and assigns parameters to the optimizers."""
-
-        if self.model._weights is None:
-            init_models(self.model, model_init='he_fout')
 
         self.update_graph('train')
         keys = self.args['no_decay_keys'].split('#')

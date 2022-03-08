@@ -37,7 +37,7 @@
             }
     },
     "hparams": {
-        "task": "depth", 
+        "task": "depth",
         "train_image_size_list": [128, 160, 192, 224],
         "valid_image_size_list": [160, 224],
         "valid_genotypes": [

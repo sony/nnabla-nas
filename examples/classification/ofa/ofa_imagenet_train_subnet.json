@@ -1,6 +1,9 @@
 {
     "dataloader": {
-        "imagenet_ofa": {
+        "imagenet": {
+            "train_portion": 0.99,
+            "augment_valid": "False",
+            "colortwist": "True",
             "train_path": "/data/imagenet/train",
             "train_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/train_label",
             "valid_path": "/data/imagenet/val",

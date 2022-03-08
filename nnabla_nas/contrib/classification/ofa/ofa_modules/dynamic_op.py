@@ -159,7 +159,7 @@ class DynamicBatchNorm2d(Mo.Module):
         self.bn = Mo.BatchNormalization(self._max_feature_dim, n_dims)
 
     @staticmethod
-    def bn_forward(x, bn: Mo.BatchNormalization, feature_dim, training):
+    def bn_forward(x, bn: Mo.BatchNormalization, max_feature_dim, feature_dim, training):
         if DynamicBatchNorm2d.GET_STATIC_BN or DynamicBatchNorm2d.SET_RUNNING_STATISTICS:
             return bn(x)
         else:
@@ -177,7 +177,7 @@ class DynamicBatchNorm2d(Mo.Module):
 
     def call(self, input):
         feature_dim = input.shape[1]
-        y = self.bn_forward(input, self.bn, feature_dim, self.training)
+        y = self.bn_forward(input, self.bn, self._max_feature_dim, feature_dim, self.training)
         return y
 
 
