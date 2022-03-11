@@ -196,7 +196,7 @@ class DynamicSeparableConv2d(Mo.Module):
             Defaults to (1, 1).
     """
 
-    KERNEL_TRANSFORM_MODE = 1
+    KERNEL_TRANSFORM_MODE = True
 
     def __init__(self, max_in_channels, kernel_size_list, stride=(1, 1), dilation=(1, 1)):
         super(DynamicSeparableConv2d, self).__init__()
@@ -215,7 +215,7 @@ class DynamicSeparableConv2d(Mo.Module):
         self._ks_set = list(set(self._kernel_size_list))
         self._ks_set.sort()
         if self.KERNEL_TRANSFORM_MODE is not None:
-            # resister scaling params
+            # register scaling params
             scale_params = {}
             for i in range(len(self._ks_set) - 1):
                 ks_small = self._ks_set[i]

@@ -348,10 +348,3 @@ def build_activation(act_func, inplace=False):
         return None
     else:
         raise ValueError('do not support: %s' % act_func)
-
-
-"""def adjust_bn_according_to_idx(bn, idx):
-    bn._beta.d = np.stack([bn._beta.d[:, i, :, :] for i in idx], axis=1)
-    bn._gamma.d = np.stack([bn._gamma.d[:, i, :, :] for i in idx], axis=1)
-    bn._mean.d = np.stack([bn._mean.d[:, i, :, :] for i in idx], axis=1)
-    bn._var.d = np.stack([bn._var.d[:, i, :, :] for i in idx], axis=1)"""

@@ -82,8 +82,7 @@ class TrainPipelineColorTwist(Pipeline):
         self.colortwist = ops.ColorTwist(device="gpu")
         self.cmnp = ops.CropMirrorNormalize(device="gpu",
                                             output_dtype=types.FLOAT16
-                                            if dtype == "half"
-                                            else types.FLOAT,
+                                            if dtype == "half" else types.FLOAT,
                                             output_layout=types.NHWC
                                             if channel_last else types.NCHW,
                                             crop=(224, 224),

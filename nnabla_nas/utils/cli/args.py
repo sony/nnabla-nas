@@ -136,8 +136,7 @@ class Configuration(object):
                             lr_scheduler = CosineSchedulerWarmup(
                                 base_lr=lr, max_iter=max_iter, warmup_iter=warmup_iter, warmup_lr=warmup_lr)
                         else:
-                            lr_scheduler = LRS.__dict__[class_name](
-                                init_lr=lr, max_iter=max_iter)
+                            lr_scheduler = LRS.__dict__[class_name](init_lr=lr, max_iter=max_iter)
                     args['lr_scheduler'] = lr_scheduler
                     optimizer[name] = Optimizer(**args)
                 except ModuleNotFoundError:
