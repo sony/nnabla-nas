@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import nnabla as nn
 import nnabla.functions as F
 import numpy as np
+from ... import module as Mo
 
 
 class Normalize(object):
@@ -31,10 +31,10 @@ class Normalize(object):
     """
 
     def __init__(self, mean, std, scale):
-        self._mean = nn.Variable.from_numpy_array(
-            np.reshape(mean, (1, 3, 1, 1)))
-        self._std = nn.Variable.from_numpy_array(
-            np.reshape(std, (1, 3, 1, 1)))
+        self._mean = Mo.Parameter(
+            (1, 3, 1, 1), need_grad=False, initializer=np.reshape(mean, (1, 3, 1, 1)))
+        self._std = Mo.Parameter(
+            (1, 3, 1, 1), need_grad=False, initializer=np.reshape(std, (1, 3, 1, 1)))
         self._scale = scale
 
     def __call__(self, input):

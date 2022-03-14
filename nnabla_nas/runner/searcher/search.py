@@ -60,19 +60,32 @@ class Searcher(Runner):
     def callback_on_epoch_end(self):
         r"""Calls this after one epoch."""
         if self.comm.rank == 0:
-            self.model.save_parameters(
-                path=os.path.join(self.args['output_path'], 'arch.h5'),
-                params=self.model.get_arch_parameters()
-            )
+            if self.args['save_nnp']:
+                self.model.save_net_nnp(
+                    self.args['output_path'],
+                    self.placeholder['valid']['inputs'][0],
+                    self.placeholder['valid']['outputs'][0])
+            else:
+                self.model.save_parameters(
+                    path=os.path.join(self.args['output_path'], 'arch.h5'),
+                    params=self.model.get_arch_parameters()
+                )
+
         self.monitor.info(self.model.summary() + '\n')
 
     def callback_on_finish(self):
         r"""Calls this on finishing the training."""
         if self.comm.rank == 0:
-            self.model.save_parameters(
-                path=os.path.join(self.args['output_path'], 'weights.h5'),
-                params=self.model.get_net_parameters()
-            )
+            if self.args['save_nnp']:
+                self.model.save_net_nnp(
+                    self.args['output_path'],
+                    self.placeholder['valid']['inputs'][0],
+                    self.placeholder['valid']['outputs'][0])
+            else:
+                self.model.save_parameters(
+                    path=os.path.join(self.args['output_path'], 'weights.h5'),
+                    params=self.model.get_net_parameters()
+                )
 
     def callback_on_start(self):
         r"""Calls this on starting the training."""

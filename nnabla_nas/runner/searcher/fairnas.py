@@ -152,9 +152,15 @@ class FairNasSearcher(Searcher):
             for k in self.metrics:
                 self.monitor.update(f'{k}/valid', self.metrics[k].data[0], 1)
                 self.monitor.info(f'{k}/valid {self.metrics[k].data[0]:.4f}\n')
-            self.model.save_parameters(
-                path=os.path.join(self.args['output_path'], 'weights.h5')
-            )
+            if self.args['save_nnp']:
+                self.model.save_net_nnp(
+                    self.args['output_path'],
+                    self.placeholder['valid']['inputs'][0],
+                    self.placeholder['valid']['outputs'][0])
+            else:
+                self.model.save_parameters(
+                    path=os.path.join(self.args['output_path'], 'weights.h5')
+                )
         # reset loss and metric
         self.loss.zero()
         for k in self.metrics:
