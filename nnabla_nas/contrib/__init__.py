@@ -18,6 +18,7 @@ from .classification import pnas
 from .classification import random_wired
 from .classification import zoph
 from .classification import fairnas
+from .classification import ofa
 
 
-__all__ = ['darts', 'pnas', 'zoph', 'mobilenet', 'random_wired', 'fairnas']
+__all__ = ['darts', 'pnas', 'zoph', 'mobilenet', 'random_wired', 'fairnas', 'ofa']

@@ -15,7 +15,9 @@
 from .searcher import DartsSearcher
 from .searcher import ProxylessNasSearcher
 from .searcher import FairNasSearcher
+from .searcher import OFASearcher
 from .trainer import Trainer
+from .trainer import OFATrainer
 
 __all__ = ['DartsSearcher', 'ProxylessNasSearcher',
-           'FairNasSearcher', 'Trainer']
+           'FairNasSearcher', 'OFASearcher', 'Trainer', 'OFATrainer']

@@ -23,6 +23,7 @@ from nnabla_nas import dataset
 from nnabla_nas.optimizer import Optimizer
 from nnabla_nas.utils import estimator as EST
 from nnabla_nas.utils import helper
+from nnabla_nas.utils.learning_rate_scheduler import CosineSchedulerWarmup
 
 
 class Configuration(object):
@@ -120,13 +121,22 @@ class Configuration(object):
                             lr = args['lr']
                         except KeyError:
                             lr = args['alpha']  # for adam
-                        bz = self.hparams['batch_size_train'if name !=
-                                          'valid' else 'batch_size_valid']
-                        epoch = self.hparams['epoch'] if name == 'train' else self.hparams['warmup']
+                        bz = self.hparams['batch_size_train'if name != 'valid' else 'batch_size_valid']
+                        # epoch = self.hparams['epoch'] if name == 'train' else self.hparams['warmup']
+                        epoch = self.hparams['epoch'] if 'train' in name else self.hparams['warmup']
                         max_iter = epoch * \
                             len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
-                        lr_scheduler = LRS.__dict__[class_name](
-                            init_lr=lr, max_iter=max_iter)
+                        if class_name == "CosineSchedulerWarmup":
+                            batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
+                            warmup_iter = self.hparams['cosine_warmup_epoch'] * batch_iters
+                            if self.hparams['warmup_lr'] < 0:
+                                warmup_lr = args['lr']
+                            else:
+                                warmup_lr = self.hparams['warmup_lr']
+                            lr_scheduler = CosineSchedulerWarmup(
+                                base_lr=lr, max_iter=max_iter, warmup_iter=warmup_iter, warmup_lr=warmup_lr)
+                        else:
+                            lr_scheduler = LRS.__dict__[class_name](init_lr=lr, max_iter=max_iter)
                     args['lr_scheduler'] = lr_scheduler
                     optimizer[name] = Optimizer(**args)
                 except ModuleNotFoundError:

@@ -64,6 +64,52 @@ class TrainPipeline(Pipeline):
         return images, labels.gpu()
 
 
+class TrainPipelineColorTwist(Pipeline):
+    def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
+                 nvjpeg_padding, prefetch_queue=3, seed=1, num_shards=1,
+                 channel_last=True, dtype="half", pad_output=False):
+        super(TrainPipelineColorTwist, self).__init__(
+            batch_size, num_threads, shard_id, seed=seed,
+            prefetch_queue_depth=prefetch_queue)
+        self.input = ops.FileReader(file_root=image_dir, file_list=file_list,
+                                    random_shuffle=True, num_shards=num_shards,
+                                    shard_id=shard_id)
+        self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB,
+                                       device_memory_padding=nvjpeg_padding,
+                                       host_memory_padding=nvjpeg_padding)
+
+        self.rrc = ops.RandomResizedCrop(device="gpu", size=(224, 224))
+        self.colortwist = ops.ColorTwist(device="gpu")
+        self.cmnp = ops.CropMirrorNormalize(device="gpu",
+                                            output_dtype=types.FLOAT16
+                                            if dtype == "half" else types.FLOAT,
+                                            output_layout=types.NHWC
+                                            if channel_last else types.NCHW,
+                                            crop=(224, 224),
+                                            image_type=types.RGB,
+                                            mean=_pixel_mean,
+                                            std=_pixel_std,
+                                            pad_output=pad_output)
+        self.brightness = ops.Uniform(range=(1 - 32. / 255., 1 + 32. / 255))
+        self.contrast = ops.Uniform(range=(0, 1))
+        self.saturation = ops.Uniform(range=(0.5, 1 + 0.5))
+        self.hue = ops.Uniform(range=(0, 1))
+        self.coin = ops.CoinFlip(probability=0.5)
+
+    def define_graph(self):
+        jpegs, labels = self.input(name="Reader")
+        images = self.decode(jpegs)
+        images = self.rrc(images)
+        images = self.colortwist(
+            images,
+            brightness=self.brightness(),
+            contrast=self.contrast(),
+            saturation=self.saturation(),
+            hue=self.hue())
+        images = self.cmnp(images, mirror=self.coin())
+        return images, labels.gpu()
+
+
 class ValPipeline(Pipeline):
     def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
                  nvjpeg_padding, seed=1, num_shards=1, channel_last=True,
@@ -104,13 +150,15 @@ def get_data_iterators(batch_size,
                        type_config,
                        channel_last,
                        comm,
-                       training=True):
+                       training=True,
+                       colortwist=False):
     r'''Creates and returns DALI data iterators
 
     The datasets are partitioned in distributed training
     mode according to comm rank and number of processes.
     '''
-    cls_name = TrainPipeline if training else ValPipeline
+    cls_name = TrainPipelineColorTwist if (training and colortwist) else\
+        TrainPipeline if training else ValPipeline
     # Pipelines and Iterators for training
     train_pipe = cls_name(batch_size, dali_num_threads, comm.rank,
                           train_dir,
@@ -130,7 +178,8 @@ def get_data_iterators(batch_size,
 class DataLoader(BaseDataLoader):
     def __init__(self, batch_size=1, searching=False, training=False,
                  train_path=None, train_file=None, valid_path=None, valid_file=None,
-                 train_portion=1.0, *, augment_valid=True, rng=None, communicator=None, type_config=float):
+                 train_portion=1.0, *, augment_valid=True, colortwist=False,
+                 rng=None, communicator=None, type_config=float):
         r"""Dataloader for ImageNet.
 
         Args:
@@ -171,7 +220,8 @@ class DataLoader(BaseDataLoader):
             type_config=type_config,
             channel_last=False,
             comm=communicator,
-            training=training or (searching and augment_valid)
+            training=training or (searching and augment_valid),
+            colortwist=colortwist
         )
 
     def _split_data(self, file, portion):
