@@ -312,12 +312,12 @@ class Module(object):
             hasattr(self, 'name') and self.name) else 'empty'
         contents = {'networks': [{'name': name_for_nnp,
                                   'batch_size': batch_size,
-                                  'outputs': {'y': out},
+                                  'outputs': {"y'": out},
                                   'names': {'x': inp}}],
                     'executors': [{'name': 'runtime',
                                    'network': name_for_nnp,
                                    'data': ['x'],
-                                   'output': ['y']}]}
+                                   'output': ["y'"]}]}
 
         save(filename, contents, variable_batch_size=False)
 

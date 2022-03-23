@@ -166,6 +166,8 @@ class FairNasSearcher(Searcher):
                 )
             # checkpoint
             self.save_checkpoint()
+            if self.args['no_visualize']:  # action:store_false
+                self.model.visualize(self.args['output_path'])
 
         # reset loss and metric
         self.loss.zero()

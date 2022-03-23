@@ -73,6 +73,9 @@ class Searcher(Runner):
                 )
             # checkpoint
             self.save_checkpoint()
+            if self.args['no_visualize']:  # action:store_false
+                self.model.visualize(self.args['output_path'])
+
         self.monitor.info(self.model.summary() + '\n')
 
     def callback_on_finish(self):
@@ -88,6 +91,8 @@ class Searcher(Runner):
                     path=os.path.join(self.args['output_path'], 'weights.h5'),
                     params=self.model.get_net_parameters()
                 )
+            if self.args['no_visualize']:  # action:store_false
+                self.model.visualize(self.args['output_path'])
 
     def callback_on_start(self):
         r"""Calls this on starting the training."""

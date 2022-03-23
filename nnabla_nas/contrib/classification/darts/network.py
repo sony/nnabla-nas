@@ -15,7 +15,6 @@
 from collections import Counter
 from collections import OrderedDict
 import json
-import os
 
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
@@ -25,7 +24,7 @@ from . import modules as darts
 from .... import module as Mo
 from ..base import ClassificationModel as Model
 from ..misc import AuxiliaryHeadCIFAR
-from .helper import save_dart_arch
+from .helper import save_dart_arch, visualize_dart_arch
 
 
 class SearchNet(Model):
@@ -176,8 +175,21 @@ class SearchNet(Model):
         super().save_parameters(path, params=params, grad_only=grad_only)
         if self._shared:
             # save the architectures
-            output_path = os.path.dirname(path)
-            save_dart_arch(self, output_path)
+            save_dart_arch(self, path)
+
+    def save_net_nnp(self, path, inp, out, calc_latency=False,
+                     func_real_latency=None, func_accum_latency=None):
+        super().save_net_nnp(path, inp, out, calc_latency=False,
+                             func_real_latency=func_real_latency,
+                             func_accum_latency=func_accum_latency)
+        if self._shared:
+            # save the architectures
+            save_dart_arch(self, path)
+
+    def visualize(self, path):
+        if self._shared:
+            # save the architectures
+            visualize_dart_arch(path)
 
     def loss(self, outputs, targets, loss_weights=None):
         loss = F.mean(F.softmax_cross_entropy(outputs[0], targets[0]))

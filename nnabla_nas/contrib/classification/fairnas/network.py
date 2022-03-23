@@ -8,7 +8,7 @@ from .... import module as Mo
 from ..base import ClassificationModel as Model
 from .modules import ChoiceBlock
 from ..mobilenet.modules import ConvBNReLU, CANDIDATES
-from ..mobilenet.helper import plot_mobilenet
+from ..mobilenet.helper import visualize_mobilenet_arch
 from ..mobilenet.network import _make_divisible, label_smoothing_loss
 
 
@@ -146,12 +146,10 @@ class SearchNet(Model):
                 f'candidates={self._candidates}, '
                 f'skip_connect={self._skip_connect}')
 
-    def save_parameters(self, path=None, params=None, grad_only=False):
-        super().save_parameters(path, params=params, grad_only=grad_only)
+    def visualize(self, path):
         # save the architectures
         if isinstance(self._features[2]._mixed, Mo.MixedOp):
-            output_path = os.path.dirname(path)
-            plot_mobilenet(self, os.path.join(output_path, 'arch'))
+            visualize_mobilenet_arch(self, os.path.join(path, 'arch'))
 
     def loss(self, outputs, targets, loss_weights=None):
         assert len(outputs) == 1 and len(targets) == 1

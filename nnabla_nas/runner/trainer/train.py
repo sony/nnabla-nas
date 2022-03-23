@@ -151,6 +151,8 @@ class Trainer(Runner):
                     self.model.save_parameters(path)
                 # checkpoint
                 self.save_checkpoint({'best_metric': self._best_metric})
+                if self.args['no_visualize']:  # action:store_false
+                    self.model.visualize(self.args['output_path'])
 
         # reset loss and metric
         self.loss.zero()

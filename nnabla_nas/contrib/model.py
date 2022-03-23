@@ -95,3 +95,11 @@ class Model(Mo.Module):
             NotImplementedError: [description]
         """
         raise NotImplementedError
+
+    def visualize(self, path):
+        r"""Save visualized graph to a file.
+
+        Args:
+            path (str): Path to directory to save.
+        """
+        return

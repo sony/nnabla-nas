@@ -26,8 +26,6 @@ import numpy as np
 # import nnabla_nas.module as mo
 from ... import module as mo
 
-from graphviz import Digraph
-
 
 def _get_abs_string_index(obj, idx):
     """Get the absolute index for the list of modules"""
@@ -904,6 +902,7 @@ class Graph(mo.ModuleList, Module):
             color_map (dict): the mapping of class instance to
                 vertice color used to visualize the graph.
         """
+        from graphviz import Digraph
         graph = Digraph(name=self.name)
         # 1. get all the static modules in the graph
         if active_only:
