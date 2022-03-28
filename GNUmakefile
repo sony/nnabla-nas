@@ -24,5 +24,5 @@ nnabla-nas-wheel:
 
 .PHONY:bwd-nnabla-nas-wheel
 bwd-nnabla-nas-wheel:nnabla-nas-build-env
-	docker run -v $$(pwd):$$(pwd) -w $$(pwd) $(NNABLA_NAS_BUILD_ENV_DOCKER_IMAGE_NAME) make nnabla-nas-wheel
+	docker run -v $$(pwd):$$(pwd) -w $$(pwd) -u $$(id -u):$$(id -g) $(NNABLA_NAS_BUILD_ENV_DOCKER_IMAGE_NAME) make nnabla-nas-wheel
 
