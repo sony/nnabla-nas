@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from collections import OrderedDict
 
 import nnabla.solvers as S
@@ -48,11 +50,13 @@ class Optimizer(object):
             self._states = OrderedDict()
 
         self._solver = S.__dict__[name](**kargs)
+        self._solver_name = name
         self._weight_decay = weight_decay
         self._grad_clip = grad_clip
         self._retain_state = retain_state
         self._lr_scheduler = lr_scheduler
         self._iter = 0  # current iter
+        self.cur_epoch = 0  # current epoch
 
     def set_parameters(self, params, **kargs):
         r"""Set parameters by dictionary of keys and parameter Variables."""
@@ -105,3 +109,35 @@ class Optimizer(object):
         self._iter = 0
         if self._retain_state:
             self._states.clear()
+
+    def save_checkpoint(self, path, optimizer_name=None):
+        r"""Save the current states of the optimizer."""
+        if optimizer_name is None:
+            optimizer_name = self._solver_name
+        if self._retain_state:
+            state = self._states.update(self._solver.get_states())
+        else:
+            state = self._solver.get_states()
+
+        checkpoint_info = dict()
+
+        # save solver states
+        states_path = os.path.join(path, 'optim_' + optimizer_name + '.h5')
+        self._solver.save_states(states_path)
+        checkpoint_info["states_path"] = states_path
+
+        # get registered parameters' name.
+        params_names = [k for k in self._solver.get_parameters().keys()]
+        checkpoint_info["params_names"] = params_names
+
+        # get the number of solver update.
+        num_update = getattr(state[params_names[0]], "t")
+        checkpoint_info["num_update"] = num_update
+        checkpoint_info["current_iter"] = self._iter
+
+        return checkpoint_info
+
+    def load_checkpoint(self, checkpoint_info):
+        r"""Load the last states of the optimizer."""
+        self._iter = int(checkpoint_info['current_iter'])
+        self._solver.load_states(checkpoint_info["states_path"])

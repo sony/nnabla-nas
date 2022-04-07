@@ -30,8 +30,16 @@ class Trainer(Runner):
         self.update_graph('train')
         params = self.model.get_parameters(grad_only=True)
         self.optimizer['train'].set_parameters(params)
+
+        # load checkpoint if available
+        checkpoint_info = self.load_checkpoint()
         self.update_graph('valid')
+
         self._best_metric = {k: np.inf for k in self.placeholder['valid']['metrics']}
+        # get loaded best_metric
+        if checkpoint_info:
+            b_m = checkpoint_info['best_metric']
+            self._best_metric = {k: b_m[k] for k in self.placeholder['valid']['metrics']}
 
         # loss and metric
         self.loss = nn.NdArray.from_numpy_array(np.zeros((1,)))
@@ -52,10 +60,10 @@ class Trainer(Runner):
         """Run the training process."""
         self.callback_on_start()
 
-        for cur_epoch in range(self.args['epoch']):
+        for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
-            self.monitor.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}\n')
+            self.monitor.info(f'Running epoch={self.cur_epoch}\tlr={lr:.5f}\n')
 
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
@@ -66,7 +74,7 @@ class Trainer(Runner):
                 self.valid_on_batch()
 
             self.callback_on_epoch_end()
-            self.monitor.write(cur_epoch)
+            self.monitor.write(self.cur_epoch)
 
         self.callback_on_finish()
         self.monitor.close()
@@ -141,6 +149,8 @@ class Trainer(Runner):
                 else:
                     path = os.path.join(self.args['output_path'], 'weights.h5')
                     self.model.save_parameters(path)
+                # checkpoint
+                self.save_checkpoint({'best_metric': self._best_metric})
 
         # reset loss and metric
         self.loss.zero()

@@ -36,19 +36,29 @@ class ProgressMeter(object):
     """
 
     def __init__(self, num_batches, path=None, quiet=False, filename='log.txt'):
+
+        # changing file name if file already exists
+        filename = os.path.join(path, filename)
+        if os.path.isfile(filename):
+            name, ext = os.path.splitext(filename)
+            i = 1
+            while os.path.isfile("{}.{}{}".format(name, i, ext)):
+                i += 1
+            # new file incremental name like "log.0.txt"
+            filename = "{}.{}{}".format(name, i, ext)
         self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
         self.meters = OrderedDict()
         self.terminal = sys.stdout
         self.quiet = quiet
         if not self.quiet:
             self.tb = SummaryWriter(os.path.join(path, 'tensorboard'))
-            self.file = open(os.path.join(path, filename), 'w')
+            self.file = open(filename, 'w')
 
     def info(self, message, view=True):
         r"""Shows a message.
 
         Args:
-            message (str): The message.
+            message (str): T3he message.
             view (bool, optional): If shows to terminal. Defaults to True.
         """
         if view and not self.quiet:

@@ -25,10 +25,11 @@ class ProxylessNasSearcher(Searcher):
     r""" ProxylessNAS: Direct Neural Architecture Search on Target Task and
     Hardware.
     """
-
     def callback_on_start(self):
         r"""Gets the architecture parameters."""
         self._reward = nn.NdArray.from_numpy_array(np.zeros((1,)))
+        # load checkpoint if available
+        self.load_checkpoint()
 
     def train_on_batch(self, key='train'):
         r"""Update the model parameters."""

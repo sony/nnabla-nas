@@ -14,6 +14,8 @@
 
 from abc import ABC
 from abc import abstractmethod
+import json
+from pathlib import Path
 
 import nnabla as nn
 
@@ -56,6 +58,8 @@ class Runner(ABC):
         self.one_epoch_valid = len(self.dataloader['valid']) // self.bs_valid
         self.comm = hp['comm']
         self.event = hp['event']
+        self.cur_epoch = 0
+
         # setup placeholder
         self.placeholder = {
             'train': {
@@ -115,6 +119,50 @@ class Runner(ABC):
                     inp.data = x
                 else:
                     inp.d = x
+
+    def save_checkpoint(self, checkpoint_info={}):
+        r"""Save the current states of the runner."""
+        path = Path(self.args['output_path']) / 'checkpoint'
+        path.mkdir(parents=True, exist_ok=True)
+
+        checkpoint_info['epoch'] = self.cur_epoch
+
+        # save optimizers state
+        checkpoint_info['optimizers'] = dict()
+        for name, optimizer in self.optimizer.items():
+            checkpoint_info['optimizers'][name] = optimizer.save_checkpoint(str(path), name)
+
+        # save parameters
+        self.model.save_parameters(str(path / 'weights.h5'))
+        checkpoint_info['params_path'] = str(path / 'weights.h5')
+
+        with path.joinpath('checkpoint.json').open('w') as f:
+            json.dump(checkpoint_info, f)
+
+        self.monitor.info(f"Checkpoint saved: {str(path)}\n")
+
+    def load_checkpoint(self):
+        path = Path(self.args['output_path']) / 'checkpoint' / 'checkpoint.json'
+        if path.is_file():
+            # path = os.path.join(path, 'checkpoint.json')
+            with path.open('r') as f:
+                checkpoint_info = json.load(f)
+
+            self.cur_epoch = checkpoint_info['epoch'] + 1
+            # load optimizers
+            for name, optim_info in checkpoint_info['optimizers'].items():
+                p = self.model.get_parameters()
+                # make sure that optimizer parameters match
+                params_names = checkpoint_info['optimizers'][name]['params_names']
+                params = {k: p[k] for k in params_names}
+                self.optimizer[name].set_parameters(params)
+                self.optimizer[name].load_checkpoint(optim_info)
+
+            # load parameters
+            self.model.load_parameters(checkpoint_info['params_path'])
+            self.monitor.info(f"Checkpoint loaded: {str(path)}\n")
+            return checkpoint_info
+        return None
 
     @abstractmethod
     def train_on_batch(self, key='train'):

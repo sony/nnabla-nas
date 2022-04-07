@@ -43,6 +43,14 @@ class Configuration(object):
         Path(path).mkdir(parents=True, exist_ok=True)
         if self.hparams['comm'].rank == 0:
             file = os.path.join(path, 'config.json')
+            if os.path.isfile(file):
+                file = os.path.join(path, 'config')
+                i = 1
+                while os.path.isfile("{}.{}.json".format(file, i)):
+                    i += 1
+                # new file incremental name like "config.1.json"
+                file = "{}.{}.json".format(file, i)
+
             logger.info(f'Saving the configurations to {file}')
             helper.write_to_json_file(conf, file)
 
