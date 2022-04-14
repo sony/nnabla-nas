@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import graphviz
 import imageio
 
 default_style = {
@@ -40,7 +39,8 @@ def get_width(label):
     return '2'
 
 
-def plot_mobilenet(model, filename):
+def visualize_mobilenet_arch(model, filename):
+    import graphviz
     r"""Plot the architecture of MobileNet V2
 
     Args:

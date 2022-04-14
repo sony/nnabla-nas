@@ -15,7 +15,6 @@
 import json
 import os
 
-from graphviz import Digraph
 import imageio
 from nnabla.logger import logger
 import numpy as np
@@ -26,6 +25,7 @@ from .modules import CANDIDATES
 
 
 def plot(choice, prob, filename):
+    from graphviz import Digraph
     g = Digraph(format='png',
                 edge_attr=dict(fontsize='14', fontname="times"),
                 node_attr=dict(style='filled', shape='rect', align='center',
@@ -109,4 +109,13 @@ def save_dart_arch(model, output_path):
     arch_file = os.path.join(output_path, 'arch.json')
     logger.info('Saving arch to {}'.format(arch_file))
     write_to_json_file(memo, arch_file)
+
+
+def visualize_dart_arch(output_path):
+    r"""Saves visualized DARTS architecture.
+
+    Args:
+        output_path (str): Where to save the architecture.
+    """
+    arch_file = os.path.join(output_path, 'arch.json')
     visualize(arch_file, output_path)

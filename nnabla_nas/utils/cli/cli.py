@@ -62,6 +62,8 @@ def main():
                         help='Path to save the monitoring log files.')
     parser.add_argument('--save-nnp', action='store_true',
                         help='Store network and parameter with nnp format.')
+    parser.add_argument('--no-visualize', action='store_false',
+                        help='Disable visualization with graphviz.')
 
     options = parser.parse_args()
 

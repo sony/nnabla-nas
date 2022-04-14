@@ -21,7 +21,7 @@ import numpy as np
 
 from .... import module as Mo
 from ..base import ClassificationModel as Model
-from .helper import plot_mobilenet
+from .helper import visualize_mobilenet_arch
 from .modules import CANDIDATES
 from .modules import ChoiceBlock
 from .modules import ConvBNReLU
@@ -234,12 +234,10 @@ class SearchNet(Model):
         self._arch_idx = arch_idx
         return txt + ''.join(stats)
 
-    def save_parameters(self, path=None, params=None, grad_only=False):
-        super().save_parameters(path, params=params, grad_only=grad_only)
+    def visualize(self, path):
         # save the architectures
         if isinstance(self._features[2]._mixed, Mo.MixedOp):
-            output_path = os.path.dirname(path)
-            plot_mobilenet(self, os.path.join(output_path, 'arch'))
+            visualize_mobilenet_arch(self, os.path.join(path, 'arch'))
 
     def loss(self, outputs, targets, loss_weights=None):
         assert len(outputs) == 1 and len(targets) == 1
