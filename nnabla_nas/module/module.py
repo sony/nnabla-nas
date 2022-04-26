@@ -280,7 +280,8 @@ class Module(object):
         return latencies, accum_lat
 
     def save_net_nnp(self, path, inp, out, calc_latency=False,
-                     func_real_latency=None, func_accum_latency=None):
+                     func_real_latency=None, func_accum_latency=None,
+                     save_params=None):
         """
             Saves whole net as one nnp
             Calc whole net (real) latency (using e.g.Nnabla's [Profiler])
@@ -318,6 +319,8 @@ class Module(object):
                                    'network': name_for_nnp,
                                    'data': ['x'],
                                    'output': ["y'"]}]}
+        if save_params and 'no_image_normalization' in save_params:
+            contents['executors'][0]['no_image_normalization'] = save_params['no_image_normalization']
 
         save(filename, contents, variable_batch_size=False)
 

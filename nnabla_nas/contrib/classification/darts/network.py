@@ -178,10 +178,12 @@ class SearchNet(Model):
             save_dart_arch(self, path)
 
     def save_net_nnp(self, path, inp, out, calc_latency=False,
-                     func_real_latency=None, func_accum_latency=None):
+                     func_real_latency=None, func_accum_latency=None,
+                     save_params=None):
         super().save_net_nnp(path, inp, out, calc_latency=False,
                              func_real_latency=func_real_latency,
-                             func_accum_latency=func_accum_latency)
+                             func_accum_latency=func_accum_latency,
+                             save_params=save_params)
         if self._shared:
             # save the architectures
             save_dart_arch(self, path)
