@@ -33,28 +33,26 @@ class Merging(Module):
     """
 
     def __init__(self, mode, axis=1, name=''):
-        Module.__init__(self, name=name)
-        self._scope_name = f'<merging at {hex(id(self))}>'
-
         if mode not in ('concat', 'add', 'mul'):
             raise KeyError(f'{mode} is not supported.')
+
+        Module.__init__(self, name=name)
+        self._scope_name = f'<merging at {hex(id(self))}>'
         self._mode = mode
         self._axis = axis
 
-    def call(self, *input):
-        if self._mode == 'concat' and len(input) > 1:
-            return F.concatenate(*input, axis=self._axis)
+    def call(self, *inputs):
+        if len(inputs) < 2:
+            return inputs[0]
 
-        out = input[0]
+        if self._mode == 'concat':
+            return F.concatenate(*inputs, axis=self._axis)
+
         if self._mode == 'add':
-            for i in range(1, len(input)):
-                out = F.add2(out, input[i])
+            return F.add_n(*inputs)
 
         if self._mode == 'mul':
-            for i in range(1, len(input)):
-                out = F.mul2(out, input[i])
-
-        return out
+            return F.mul_n(*inputs)
 
     def extra_repr(self):
         return f'mode={self._mode}, axis={self._axis}'
