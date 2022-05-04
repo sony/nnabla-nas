@@ -99,7 +99,7 @@ class GlobalAvgPool(Module):
         name (string): the name of this module
     """
     def __init__(self, name=''):
-        self._name = name
+        Module.__init__(self, name=name)
         self._scope_name = f'<globalavgpool at {hex(id(self))}>'
 
     def call(self, input):

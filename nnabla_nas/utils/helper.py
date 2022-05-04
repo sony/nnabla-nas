@@ -151,25 +151,6 @@ class AverageMeter(object):
         return fmtstr.format(**self.__dict__)
 
 
-def sample(pvals, mode='sample', rng=None):
-    r"""Returns random int according the sampling `mode` (e.g., `max`, `full`,
-        or `sample`).
-
-    Args:
-        pvals (np.array): The probability values.
-        mode (str, optional): The sampling `mode`. Defaults to 'sample'.
-        rng (numpy.random.RandomState): Random generator for random choice.
-
-    Returns:
-        [type]: [description]
-    """
-    if mode == 'max':
-        return np.argmax(pvals)
-    if rng is None:
-        rng = random.prng
-    return rng.choice(len(pvals), p=pvals, replace=False)
-
-
 def write_to_json_file(content, file_path):
     r"""Saves a dictionary to a json file.
 

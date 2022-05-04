@@ -27,6 +27,11 @@ class Module(object):
     """
     def __init__(self, name=''):
         self._name = name
+        if os.environ.get('NNABLA_NAS_MIXEDOP_FAST_MODE') is not None:
+            self._call_create = self.call
+            self.call = self._call_cached
+            self._train_output = None
+            self._infer_output = None
 
     @property
     def name(self):
@@ -613,10 +618,20 @@ class Module(object):
         main_str += sub_str + ('\n' if sub_str else '') + ')'
         return main_str
 
-    def __call__(self, *args, **kargs):
+    def __call__(self, *args, **kwargs):
         self.input_shapes = [x.shape for x in args]
-        return self.call(*args, **kargs)
+        return self.call(*args, **kwargs)
 
-    def call(self, *args, **kargs):
+    def call(self, *args, **kwargs):
         r"""Implement the call of module. Inputs should only be Variables."""
         raise NotImplementedError
+
+    def _call_cached(self, *args, **kwargs):
+        if self.training:
+            if self._train_output is None:
+                self._train_output = self._call_create(*args, **kwargs)
+            return self._train_output
+        else:
+            if self._infer_output is None:
+                self._infer_output = self._call_create(*args, **kwargs)
+            return self._infer_output
