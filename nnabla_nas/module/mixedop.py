@@ -16,12 +16,10 @@ import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 from scipy.special import softmax
 
-from ..utils import helper
 from .container import ModuleList
 from .module import Module
 from .parameter import Parameter
 import numpy as np
-import os
 
 
 class MixedOp(Module):
@@ -109,7 +107,7 @@ class MixedOp(Module):
 
         if self._mode == 'full':
             if output is None:
-                output = self._call_create(*args, **kwargs)
+                output = self._call_create(input)
 
         elif self._mode == 'max':
             if output is None:

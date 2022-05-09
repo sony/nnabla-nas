@@ -18,7 +18,6 @@ import os
 import sys
 import csv
 
-from nnabla import random
 import nnabla.communicators as C
 from nnabla.ext_utils import get_extension_context
 import numpy as np

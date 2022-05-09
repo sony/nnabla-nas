@@ -1,5 +1,3 @@
-import numpy as np
-from nnabla.initializer import ConstantInitializer
 from .... import module as Mo
 from ..mobilenet.modules import CANDIDATES
 
