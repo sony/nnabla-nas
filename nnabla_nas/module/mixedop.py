@@ -57,6 +57,7 @@ class MixedOp(Module):
 
         self._scope_name = f'<mixedop at {hex(id(self))}>'
         self._ops = ModuleList(operators)
+        self._active = None
         self._alpha = alpha
         self._mode = mode
         self._rng = rng
@@ -65,6 +66,41 @@ class MixedOp(Module):
             n = len(operators)
             self._fair_choices = rng.choice(n, size=n, replace=False)
             self._fair_pointer = 0
+
+    @property
+    def active_index(self):
+        return self._active
+
+    @active_index.setter
+    def active_index(self, index):
+        for i, op in enumerate(self._ops):
+            op.apply(is_active=bool(i == index))
+            op.apply(need_grad=bool(i == index))
+        self._active = index
+
+    def _choose_maximum(self):
+        probs = softmax(self._alpha.d, axis=0)
+        index = np.argmax(probs.flatten())
+        probs[index] -= 1
+        self._alpha.g = probs
+        return index
+
+    def _choose_weighted(self):
+        probs = softmax(self._alpha.d, axis=0)
+        pvals = probs.flatten()
+        index = self._rng.choice(len(pvals), p=pvals, replace=False)
+        probs[index] -= 1
+        self._alpha.g = probs
+        return index
+
+    def _choose_fair(self):
+        if self._fair_pointer == len(self._fair_choices):
+            n = len(self._ops)
+            self._fair_choices = self._rng.choice(n, size=n, replace=False)
+            self._fair_pointer = 0
+        index = self._fair_choices[self._fair_pointer]
+        self._fair_pointer += 1
+        return index
 
     def _call_cached(self, input):
         # This method gets called when NNABLA_NAS_MIXEDOP_FAST_MODE is set.
@@ -75,39 +111,25 @@ class MixedOp(Module):
             if output is None:
                 output = self._call_create(*args, **kwargs)
 
-        elif self._mode in ('max', 'sample'):
-            probs = softmax(self._alpha.d, axis=0)
-            pvals = probs.flatten()
-            index = (np.argmax(pvals) if self._mode == 'max' else
-                     self._rng.choice(len(pvals), p=pvals, replace=False))
-            probs[index] -= 1
-            self._alpha.g = probs
-
-            input_mask = [op.apply(need_grad=bool(i == index)).need_grad
-                          for i, op in enumerate(self._ops)]
-
+        elif self._mode == 'max':
             if output is None:
                 output = F.add_n(*[op(input) for op in self._ops])
+            self.active_index = self._choose_maximum()
+            input_mask = [op.is_active for op in self._ops]
+            output.parent.set_active_input_mask(input_mask)
 
-            self._active = index
+        elif self._mode == 'sample':
+            if output is None:
+                output = F.add_n(*[op(input) for op in self._ops])
+            self.active_index = self._choose_weighted()
+            input_mask = [op.is_active for op in self._ops]
             output.parent.set_active_input_mask(input_mask)
 
         elif self._mode == 'fair':
-            if self._fair_pointer == len(self._fair_choices):
-                n = len(self._ops)
-                self._fair_choices = self._rng.choice(n, size=n, replace=False)
-                self._fair_pointer = 0
-            index = self._fair_choices[self._fair_pointer]
-            self._fair_pointer += 1
-
-            input_mask = [op.apply(is_active=bool(i == index)).is_active
-                          for i, op in enumerate(self._ops)]
-
             if output is None:
-                outputs = [op(input) for op in self._ops]
-                output = F.add_n(*outputs)
-
-            self._active = index
+                output = F.add_n(*[op(input) for op in self._ops])
+            self.active_index = self._choose_fair()
+            input_mask = [op.is_active for op in self._ops]
             output.parent.set_active_input_mask(input_mask)
 
         if self.training:
@@ -123,33 +145,17 @@ class MixedOp(Module):
             h = F.mul2(h, F.softmax(self._alpha, axis=0))
             return F.sum(h, axis=0)
 
-        if self._mode in ('max', 'sample'):
-            probs = softmax(self._alpha.d, axis=0)
-            pvals = probs.flatten()
-            index = (np.argmax(pvals) if self._mode == 'max' else
-                     self._rng.choice(len(pvals), p=pvals, replace=False))
-            probs[index] -= 1
-            self._alpha.g = probs
+        if self._mode == 'max':
+            self.active_index = self._choose_maximum()
+            return self._ops[self.active_index](input)
 
-            for i, op in enumerate(self._ops):
-                op.apply(need_grad=bool(i == index))
-
-            self._active = index
-            return self._ops[index](input)
+        if self._mode == 'sample':
+            self.active_index = self._choose_weighted()
+            return self._ops[self.active_index](input)
 
         if self._mode == 'fair':
-            if self._fair_pointer == len(self._fair_choices):
-                n = len(self._ops)
-                self._fair_choices = self._rng.choice(n, size=n, replace=False)
-                self._fair_pointer = 0
-            index = self._fair_choices[self._fair_pointer]
-            self._fair_pointer += 1
-
-            for i, op in enumerate(self._ops):
-                op.apply(is_active=bool(i == index))
-
-            self._active = index
-            return self._ops[index](input)
+            self.active_index = self._choose_fair()
+            return self._ops[self.active_index](input)
 
     def extra_repr(self):
         return f'num_ops={len(self._ops)}, mode={self._mode}'
