@@ -145,7 +145,8 @@ class Trainer(Runner):
                     self.model.save_net_nnp(
                         self.args['output_path'],
                         self.placeholder['valid']['inputs'][0],
-                        self.placeholder['valid']['outputs'][0])
+                        self.placeholder['valid']['outputs'][0],
+                        save_params=self.args.get('save_params'))
                 else:
                     path = os.path.join(self.args['output_path'], 'weights.h5')
                     self.model.save_parameters(path)
