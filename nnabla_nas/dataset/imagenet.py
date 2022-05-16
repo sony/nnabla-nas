@@ -149,8 +149,6 @@ def get_data_iterators(batch_size,
     data = dali_iterator.DaliIterator(pipe)
     data.size = pipe.epoch_size("Reader") // comm.n_procs
 
-    breakpoint()
-
     return data
 
 
