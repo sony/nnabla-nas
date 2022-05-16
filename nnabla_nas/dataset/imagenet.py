@@ -206,6 +206,11 @@ class DataLoader(BaseDataLoader):
         """
         self.rng = rng or random.prng  # np.random.RandomState(313) #
 
+        train_path = os.environ[train_path]
+        valid_path = os.environ[valid_path]
+        train_file = os.environ[train_file]
+        valid_file = os.environ[valid_file]
+
         if searching:
             train_file, valid_file = self._split_data(
                 train_file, train_portion)
