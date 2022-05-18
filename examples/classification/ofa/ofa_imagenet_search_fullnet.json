@@ -4,10 +4,10 @@
             "train_portion": 0.99,
             "augment_valid": "False",
             "colortwist": "True",
-            "train_path": "IMAGENET_TRAINING_DIR",
-            "train_file": "IMAGENET_TRAINING_LABEL",
-            "valid_path": "IMAGENET_TEST_DIR",
-            "valid_file": "IMAGENET_TEST_LABEL"
+            "train_path": "/disk1/data/ILSVRC-2012/img_train/",
+            "train_file": "/disk1/data/ILSVRC-2012/train.txt",
+            "valid_path": "/disk1/data/ILSVRC-2012/img_val",
+            "valid_file": "/disk1/data/ILSVRC-2012/val.txt"
         }
     },
     "network": {
