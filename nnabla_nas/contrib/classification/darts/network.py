@@ -15,6 +15,7 @@
 from collections import Counter
 from collections import OrderedDict
 import json
+import os
 
 import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
@@ -175,7 +176,8 @@ class SearchNet(Model):
         super().save_parameters(path, params=params, grad_only=grad_only)
         if self._shared:
             # save the architectures
-            save_dart_arch(self, path)
+            output_path = os.path.dirname(path)
+            save_dart_arch(self, output_path)
 
     def save_net_nnp(self, path, inp, out, calc_latency=False,
                      func_real_latency=None, func_accum_latency=None):
