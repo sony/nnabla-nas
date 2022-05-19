@@ -9,4 +9,5 @@ Tutorials
     tutorials/new_searchers
     tutorials/logging_and_visualization
     tutorials/examples    
+    tutorials/ofa_tutorial
 
