@@ -178,6 +178,42 @@ class RandomCrop(object):
         )
 
 
+class RandomResizedCrop(object):
+    r"""Crop a random portion of image and resize it.
+
+    Args:
+        shape (tuple of `int`): The output image shape.
+        scale (tuple of `float`): lower and upper scale ratio when randomly
+            scaling the image.
+        ratio (`float`): The aspect ratio range when randomly deforming
+            the image. For example, to deform aspect ratio of image from
+            1:1.3 to 1.3:1, specify "1.3". To not apply random deforming,
+            specify "1.0".
+        interpolation (str): Interpolation mode chosen from
+            ('linear'|'nearest'). The default is 'linear'.
+    """
+
+    def __init__(self, shape, scale=None, ratio=None, interpolation='linear'):
+        self._shape = shape
+        self._scale = scale
+        self._ratio = ratio
+        self._interpolation = interpolation
+
+    def __call__(self, input):
+        return F.image_augmentation(
+            input, shape=self._shape,
+            min_scale=self._scale[0], max_scale=self._scale[1],
+            aspect_ratio=self._ratio)
+
+    def __str__(self):
+        return self.__class__.__name__ + (
+            f'(shape={self._shape}, '
+            f'scale={self._scale}, '
+            f'ratio={self._ratio}, '
+            f'interpolation={self.interpolation})'
+        )
+
+
 class RandomHorizontalFlip(object):
     r"""Horizontally flip the given Image randomly with a probability 0.5."""
 
