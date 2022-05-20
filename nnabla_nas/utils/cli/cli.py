@@ -106,6 +106,7 @@ def main():
     runner.__dict__[hparams['algorithm']](
         model,
         optimizer=conf.optimizer,
+        regularizer=conf.regularizer,
         dataloader=conf.dataloader,
         args=conf.hparams
     ).run()
