@@ -316,8 +316,7 @@ class Dynamic_XceptionLayer(Mo.Module):
             ratio. Defaults to 6.
         stride (tuple of int, optional): Stride sizes for dimensions.
             Defaults to (1, 1).
-        last_block (bool): Indicates whether the block is last 
-
+        last_block (bool): Indicates whether the block is last
     """
 
     def __init__(self, in_channel_list, out_channel_list,

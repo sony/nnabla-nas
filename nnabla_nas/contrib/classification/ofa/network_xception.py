@@ -167,21 +167,12 @@ class SearchNet(MyNetwork):
         # first conv layer
         self.first_conv = ConvLayer(
             3, input_channel, kernel=(3, 3), stride=(2, 2), use_bn=True, act_func='relu')
-        # first_block_conv = MBConvLayer(
-        #     input_channel, first_block_dim, kernel=(3, 3), stride=(stride_stages[0], stride_stages[0]),
-        #     expand_ratio=1, act_func=act_stages[0], use_se=se_stages[0],
-        # )
-        # first_block = ResidualBlock(
-        #     first_block_conv,
-        #     Mo.Identity()
-        # )
 
         # Second conv layer
         self.second_conv = ConvLayer(input_channel, second_conv_channel, kernel=(3, 3), stride=(1, 1), dilation=(1, 1),
-                                    use_bn=True, act_func=None)
+                                        use_bn=True, act_func=None)
 
         # entry flow blocks
-        # definition pending, dynamic_xception_block
         self.block_group_info = []
         blocks = []
         _block_index = 0
@@ -194,17 +185,16 @@ class SearchNet(MyNetwork):
             for i in range(0, n_block):
                 stride = (s, s)
 
-                if i==2 or i==n_block-1:    
-                    last_block=True
+                if i==2 or i==n_block-1:
+                    last_block = True
                 else:
-                    last_block=False
+                    last_block = False
 
                 entry_block = Dynamic_XceptionLayer(in_channel_list=val2list(feature_dim), 
-                                                out_channel_list=val2list(output_channel),
-                                                kernel_size_list=self._ks_list, 
-                                                expand_ratio_list=self._expand_ratio_list,
-                                                stride=stride, last_block=last_block, atrous_rate=1, 
-                                                returns_hidden_at=-1)
+                                                    out_channel_list=val2list(output_channel),
+                                                    kernel_size_list=self._ks_list,
+                                                    expand_ratio_list=self._expand_ratio_list,
+                                                    stride=stride, last_block=last_block)
                 # adding the xception residual blocks
                 if last_block:
                     shortcut = None
@@ -219,21 +209,21 @@ class SearchNet(MyNetwork):
         self.blocks = Mo.ModuleList(blocks)
         expand_1_width = make_divisible(base_stage_width[-3] * self._width_mult)
         expand_2_width = make_divisible(base_stage_width[-2] * self._width_mult)
-        final_channel = make_divisible(base_stage_width[-1] * self._width_mult)
+        last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
 
         # 3 expand separable conv layers at the end
         # Use standard convolution with group=channels for depthwise convolution
         self.expand_layer_1 = ConvLayer(
-            feature_dim, expand_1_width, kernel=(3, 3), with_bias=False, use_bn=True, group = expand_1_width,
+            feature_dim, expand_1_width, kernel=(3, 3), with_bias=False, use_bn=True, group=expand_1_width,
             act_func='relu')
 
         self.expand_layer_2 = ConvLayer(
-            expand_1_width, expand_2_width, kernel=(3, 3), with_bias=False, use_bn=True, group = expand_2_width,
+            expand_1_width, expand_2_width, kernel=(3, 3), with_bias=False, use_bn=True, group=expand_2_width,
             act_func='relu')
         
         # final expand layer, feature mix layer & classifier
         self.expand_layer_3 = ConvLayer(
-            expand_2_width, last_channel, kernel=(3, 3), with_bias=False, use_bn=True, group = last_channel,
+            expand_2_width, last_channel, kernel=(3, 3), with_bias=False, use_bn=True, group=last_channel,
             act_func='relu')
 
         self.classifier = LinearLayer(last_channel, num_classes, drop_rate=drop_rate)
