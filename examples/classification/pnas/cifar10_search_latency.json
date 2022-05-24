@@ -36,12 +36,12 @@
             "lr_scheduler": "CosineScheduler",
             "name": "Momentum",
             "lr": 0.025
-        },
-        "regularizer": {
-            "LatencyEstimator": {
-                "weight": 0.1,
-                "bound": 5.0
-            }
+        }
+    },
+    "regularizer": {
+        "LatencyEstimator": {
+            "weight": 0.1,
+            "bound": 5.0
         }
     },
     "hparams": {
