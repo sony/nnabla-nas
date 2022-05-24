@@ -299,3 +299,144 @@ class DynamicMBConvLayer(Mo.Module):
             'act_func': self._act_func,
             'use_se': self._use_se,
         }
+
+
+class Dynamic_XceptionLayer(Mo.Module):
+
+    r"""The Xception block layers with depthwise separable convolution.
+
+    Args:
+        in_channel_list (list of int): Candidates for the number of
+            active input channels.
+        out_channel_list (list of int): Candidates for the number of
+            output channels.
+        kernel_size_list (list of int or int): Candidates for the kernel size.
+            Defaults to 3.
+        expand_ratio_list (list of int or int): Candidates for the expand
+            ratio. Defaults to 6.
+        stride (tuple of int, optional): Stride sizes for dimensions.
+            Defaults to (1, 1).
+        last_block (bool): Indicates whether the block is last 
+
+    """
+
+    def __init__(self, in_channel_list, out_channel_list,
+                 kernel_size_list=3, expand_ratio_list=6, stride=(1, 1), last_block=False):
+
+        self._in_channel_list = in_channel_list
+        self._out_channel_list = out_channel_list
+        self._kernel_size_list = val2list(kernel_size_list)
+        self._expand_ratio_list = val2list(expand_ratio_list)
+        self._stride = stride
+        self._last_block = last_block
+
+
+        # build modules
+        max_middle_channel = make_divisible(
+            round(max(self._in_channel_list) * max(self._expand_ratio_list)))
+
+        depth_conv_list = [
+            ('conv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
+            ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
+            ('act', build_activation('relu')),
+            ('conv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
+            ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
+            ('act', build_activation('relu'))
+        ]
+        self.depth_conv = Mo.Sequential(OrderedDict(depth_conv_list))
+
+
+        self.point_linear = Mo.Sequential(OrderedDict([
+            ('conv', DynamicConv2d(max_middle_channel, max(self._out_channel_list))),
+            ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4)),
+            ('act', build_activation('relu'))
+        ]))
+
+        self.active_kernel_size = max(self._kernel_size_list)
+        self.active_expand_ratio = max(self._expand_ratio_list)
+        self.active_out_channel = max(self._out_channel_list)
+
+    def call(self, x):
+        in_channel = x.shape[1]
+
+        self.depth_conv.conv.active_kernel_size = self.active_kernel_size
+        self.point_linear.conv.active_out_channel = self.active_out_channel
+
+        x = self.depth_conv(x)
+        x = self.point_linear(x)
+        return x
+
+    def extra_repr(self):
+        return (f'in_channel_list={self._in_feature_list}, '
+                f'out_channel_list={self._out_channel_list}, '
+                f'kernel_size_list={self._kernel_size_list}, '
+                f'expand_ratio_list={self._expand_ratio_list}, '
+                f'stride={self._strride}, '
+                f'last_block={self._last_block} ')
+
+    def re_organize_middle_weights(self, expand_ratio_stage=0):
+        importance = np.sum(np.abs(self.point_linear.conv.conv._W.d), axis=(0, 2, 3))
+        if expand_ratio_stage > 0:  # ranking channels
+            sorted_expand_list = copy.deepcopy(self._expand_ratio_list)
+            sorted_expand_list.sort(reverse=True)
+            target_width_list = [
+                make_divisible(round(max(self._in_channel_list) * expand))
+                for expand in sorted_expand_list
+            ]
+            larger_stage = len(importance)
+            base = - len(target_width_list) * 1e5
+            for i in range(expand_ratio_stage + 1):
+                smaller_stage = target_width_list[i]
+                if larger_stage > smaller_stage:  # not in the original code
+                    importance[smaller_stage:larger_stage] += base
+                    base += 1e5
+                    larger_stage = smaller_stage
+
+        sorted_idx = np.argsort(-importance)
+        self.point_linear.conv.conv._W.d = np.stack(
+            [self.point_linear.conv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self.depth_conv.bn.bn, sorted_idx)
+        self.depth_conv.conv.conv._W.d = np.stack(
+            [self.depth_conv.conv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+
+    @property
+    def in_channels(self):
+        return max(self._in_channel_list)
+
+    @property
+    def out_channels(self):
+        return max(self._out_channel_list)
+
+    def active_middle_channel(self, in_channel):
+        return make_divisible(round(in_channel * self.active_expand_ratio))
+
+    def get_active_subnet(self, in_channel, preserve_weight=True):
+        nn.set_auto_forward(True)
+        # build the new layer
+        sub_layer = set_layer_from_config(self.get_active_subnet_config(in_channel))
+        if not preserve_weight:
+            return sub_layer
+
+        middle_channel = self.active_middle_channel(in_channel)
+
+        active_filter = self.depth_conv.conv.get_active_filter(middle_channel, self.active_kernel_size)
+        sub_layer.depth_conv.conv._W.d = active_filter.d
+        copy_bn(sub_layer.depth_conv.bn, self.depth_conv.bn.bn)
+
+        sub_layer.point_linear.conv._W.d =\
+            self.point_linear.conv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
+        copy_bn(sub_layer.point_linear.bn, self.point_linear.bn.bn)
+        nn.set_auto_forward(False)
+
+        return sub_layer
+
+    def get_active_subnet_config(self, in_channel):
+        return {
+            'name': MBConvLayer.__name__,
+            'in_channels': in_channel,
+            'out_channels': self.active_out_channel,
+            'kernel': (self.active_kernel_size, self.active_kernel_size),
+            'stride': self._stride,
+            'expand_ratio': self.active_expand_ratio,
+            'mid_channels': self.active_middle_channel(in_channel),
+        }
