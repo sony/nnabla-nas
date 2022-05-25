@@ -18,6 +18,11 @@ from .... import module as Mo
 from .ofa_modules.static_op import SEModule
 from .ofa_utils.common_tools import get_same_padding, min_divisible_value
 
+import nnabla as nn
+import nnabla.functions as F
+import nnabla.parametric_functions as PF
+from nnabla.initializer import ConstantInitializer
+
 
 CANDIDATES = {
     'XP3 3x3': {'ks': 3, 'expand_ratio': 3},
@@ -104,6 +109,53 @@ def get_bn_param(net):
                 'decay_rate': m._decay_rate,
                 'eps': m._eps
             }
+
+
+def force_tuple2(value):
+    if value is None:
+        return value
+    if hasattr(value, '__len__'):
+        assert len(value) == 2
+        return value
+    return (value,) * 2
+
+
+def pf_bn(x, z=None, eps=1e-5, with_relu=True, training=True):
+    bn_opts = dict(batch_stat=training,
+                eps=eps, fix_parameters=not training)
+    if z is None:
+        if with_relu:
+            return PF.fused_batch_normalization(x, None, **bn_opts)
+        return PF.batch_normalization(x, **bn_opts)
+    if with_relu:
+        return PF.fused_batch_normalization(x, z, **bn_opts)
+    h = PF.batch_normalization(x, **bn_opts)
+    return F.add2(z, h, inplace=True)
+
+def pf_depthwise_convolution(x, stride=None, dilation=None, training=True):
+        kernel = (3, 3)
+        stride = force_tuple2(stride)
+        dilation = force_tuple2(dilation)
+        pad = dilation
+        ch_axis = 1
+        num_c = x.shape[ch_axis]
+        # Use standard convolution with group=channels for depthwise convolution
+        h = PF.convolution(x, num_c, kernel, stride=stride, pad=pad, dilation=dilation, group=num_c,
+                        with_bias=False, fix_parameters=not training)
+        return h
+
+
+def separable_conv_with_bn(x, f, stride=False, atrous_rate=1, act_dw=False, act_pw=False, eps=1e-03, training=True):
+    with nn.parameter_scope("depthwise"):
+        s = 2 if stride else 1
+        h = pf_depthwise_convolution(x, stride=s, dilation=atrous_rate, training=training)
+        h = pf_bn(h, None, eps=eps, with_relu=act_dw, training=training)
+
+    with nn.parameter_scope("pointwise"):
+        h = PF.convolution(h, f, (1, 1), with_bias=False,
+                        fix_parameters=not training)
+        h = pf_bn(h, None, eps=eps, with_relu=act_pw, training=training)
+    return h
 
 
 class ResidualBlock(Mo.Module):
@@ -409,6 +461,218 @@ class LinearLayer(Mo.Sequential):
                 f'bias={self._bias}, '
                 f'drop_rate={self._drop_rate}, '
                 f'name={self._name} ')
+
+
+
+class FusedBatchNormalization(Mo.Module):
+    def __init__(self, n_features, n_dims, z=None, axes=[1], decay_rate=0.9, eps=1e-5,
+                 nonlinearity='relu', output_stat=False, fix_parameters=False, param_init=None,
+                 name=''):
+        Mo.Module.__init__(self, name=name)
+        self._scope_name = f'<fusedbatchnorm at {hex(id(self))}>'
+
+        assert len(axes) == 1
+
+        shape_stat = [1 for _ in range(n_dims)]
+        shape_stat[axes[0]] = n_features
+
+        if param_init is None:
+            param_init = {}
+        beta_init = param_init.get('beta', ConstantInitializer(0))
+        gamma_init = param_init.get('gamma', ConstantInitializer(1))
+        mean_init = param_init.get('mean', ConstantInitializer(0))
+        var_init = param_init.get('var', ConstantInitializer(1))
+
+        if fix_parameters:
+            self._beta = nn.Variable.from_numpy_array(
+                beta_init(shape_stat))
+            self._gamma = nn.Variable.from_numpy_array(
+                gamma_init(shape_stat))
+        else:
+            self._beta = Mo.Parameter(shape_stat, initializer=beta_init,
+                                   scope=self._scope_name)
+            self._gamma = Mo.Parameter(shape_stat, initializer=gamma_init,
+                                    scope=self._scope_name)
+
+        self._mean = Mo.Parameter(shape_stat, need_grad=False,
+                               initializer=mean_init,
+                               scope=self._scope_name)
+        self._var = Mo.Parameter(shape_stat, need_grad=False,
+                              initializer=var_init,
+                              scope=self._scope_name)
+        self._z = z
+        self._axes = axes
+        self._decay_rate = decay_rate
+        self._eps = eps
+        self._n_features = n_features
+        self._fix_parameters = fix_parameters
+        self._output_stat = output_stat
+        self._nonlinearity = nonlinearity
+        
+        # for set running statistivs
+        # self.set_running_statistics = False
+        # self.mean_est = AverageMeter(self._scope_name)
+        # self.var_est = AverageMeter(self._scope_name)
+
+    def call(self, input):
+        return F.fused_batch_normalization(input, self._beta, self._gamma,
+                                        self._mean, self._var, self._z, self._axes,
+                                        self._decay_rate, self._eps,
+                                        self.training, self._nonlinearity, self._output_stat)
+
+    def extra_repr(self):
+        return (f'n_features={self._n_features}, '
+                f'fix_parameters={self._fix_parameters}, '
+                f'eps={self._eps}, '
+                f'decay_rate={self._decay_rate}')
+
+    @staticmethod
+    def build_from_config(config):
+        return FusedBatchNormalization(**config)
+
+
+class SeparableConvBn(Mo.Sequential):
+    def __init__(self, in_channels, out_channels, depth, kernel=(3, 3),
+                 stride=(1, 1), dilation=(1, 1), with_bias=False,
+                 act_func='relu'):
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+        self._kernel = kernel
+        self._stride = stride
+        self._dilation = dilation
+        self._with_bias = with_bias
+        self._act_func = act_func
+        self._depth = depth
+
+        module_dict = OrderedDict()
+        # group=self._out_channels to make it depthwise convolution
+        module_dict['dep_conv'] = Mo.Conv(self._in_channels, self._out_channels, 
+                                        kernel=(3,3), stride=force_tuple2(stride),
+                                        pad=force_tuple2(dilation), dilation=force_tuple2(dilation),
+                                        group=self._out_channels, with_bias=self._with_bias)
+        module_dict['fbn1'] = FusedBatchNormalization(self._out_channels, 4)
+        module_dict['point_conv'] = Mo.Conv(self._out_channels, self._depth, kernel=(1,1), with_bias=False)
+        module_dict['fbn2'] = FusedBatchNormalization(self._depth, 4)
+
+        super(SeparableConvBn, self).__init__(module_dict)
+
+    @staticmethod
+    def build_from_config(config):
+        return SeparableConvBn(**config)
+
+    def extra_repr(self):
+        return (f'in_channels={self._in_channels}, '
+                f'out_channels={self._out_channels}, '
+                f'kernel={self._kernel}, '
+                f'stride={self._stride}, '
+                f'dilation={self._dilation}, '
+                f'with_bias={self._with_bias}, '
+                f'act_func={self._act_func} ')
+
+class ASPP(Mo.Module):
+    def __init__(self, output_stride=16, atrous_rates=[6, 12, 18], depth=256, name=''):
+        super().__init__(name=name)
+
+        self._output_stride = output_stride
+        self._atrous_factor = 16 / self._output_stride
+        self._atrous_rates = [self._atrous_factor * rate for rate in atrous_rates]
+        self._depth = depth
+
+    def call(self, input):
+        with nn.parameter_scope("aspp0"):
+            atrous_conv0 = PF.convolution(
+                input, self._depth, (1, 1), with_bias=False, fix_parameters=not self.training)
+            atrous_conv0 = pf_bn(atrous_conv0, training=self.training)
+  
+        atrous_conv = []
+        for i in range(3):
+            with nn.parameter_scope("aspp"+str(i+1)):
+                ac = separable_conv_with_bn(input, self._depth, stride=False,
+                                                     atrous_rate=self._atrous_rates[i],
+                                                     act_dw=True, act_pw=True, eps=1e-05, training=self.training)
+                atrous_conv.append(ac)
+
+        with nn.parameter_scope("image_pooling"):
+            poolsize = (input.shape[2], input.shape[3])
+            h = F.average_pooling(input, poolsize)
+
+            h = PF.convolution(h, self._depth, (1, 1), with_bias=False,
+                            fix_parameters=not self.training)
+            h = pf_bn(h, training=self.training)
+            h = F.interpolate(h, output_size=poolsize, mode='linear')
+
+        with nn.parameter_scope("concat_projection"):
+            h5 = F.concatenate(
+                *([h, atrous_conv0] + atrous_conv), axis=1)
+        
+        return h5
+    
+    @staticmethod
+    def build_from_config(config):
+        return ASPP(**config)
+
+# The set of layers than come after ASPP to reduce the number of channels
+# and add a fused batch normalisation
+class ConcatProjection(Mo.Module):
+    def __init__(self, name=''):
+        super().__init__(name=name)
+    
+    def call(self, input):
+        with nn.parameter_scope("concat_projection"):
+            encoder_output = PF.convolution(input, 256, (1, 1), with_bias=False, fix_parameters=not self.training)
+            encoder_output = pf_bn(encoder_output, with_relu=True, training=self.training)        
+        
+        return encoder_output
+
+    @staticmethod
+    def build_from_config(config):
+        return ConcatProjection(**config)
+
+
+# A standard upsampling decoder from the deeplabv3+ code
+class Decoder(Mo.Module):
+    def __init__(self, num_classes, image_shape, name=''):
+        self._num_classes = num_classes
+        self._image_shape = image_shape
+        super().__init__(name=name)
+    
+    def decoder(self, x, upsampled, num_classes, outsize_hw, output_stride=16):
+        assert output_stride in [4, 8, 16]
+        ch_axis = 1
+
+        # Project low-level features
+        with nn.parameter_scope("feature_projection0"):
+            h = PF.convolution(x, 48, (1, 1), with_bias=False, fix_parameters=not self.training)
+            # BN + ReLU
+            h = pf_bn(h, training=self.training)
+
+        h = F.concatenate(upsampled, h, axis=ch_axis)
+
+        for i in range(2):
+            with nn.parameter_scope("decoder_conv" + str(i)):
+                h = separable_conv_with_bn(h, 256, act_dw=True, act_pw=True, eps=1e-05, training=self.training)
+
+        with nn.parameter_scope("logits/affine"):
+            h = PF.convolution(h, num_classes, (1, 1), with_bias=True, fix_parameters=not self.training)
+
+        h = F.interpolate(h, output_size=outsize_hw, mode='linear')
+
+        return h
+
+    def call(self, input, low_level_feature):
+        # Get the low level feature from the backbone
+        # input is the output of the encoder (including ASPP and ConcatProjection)
+        with nn.parameter_scope("decoder"):
+            upsample_outsize = (low_level_feature.shape[2], low_level_feature.shape[3])
+            upsampled = F.interpolate(input, output_size=upsample_outsize, mode='linear')
+
+            outsize_hw = (self._image_shape[2], self._image_shape[3])
+            h = self.decoder(low_level_feature, upsampled, self._num_classes, outsize_hw)
+        return h
+
+    @staticmethod
+    def build_from_config(config):
+        return Decoder(**config)    
 
 
 def build_activation(act_func, inplace=False):
