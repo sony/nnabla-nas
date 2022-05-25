@@ -20,15 +20,15 @@ from .ofa_utils.common_tools import get_same_padding, min_divisible_value
 
 
 CANDIDATES = {
-    'MB3 3x3': {'ks': 3, 'expand_ratio': 3},
-    'MB3 5x5': {'ks': 5, 'expand_ratio': 3},
-    'MB3 7x7': {'ks': 7, 'expand_ratio': 3},
-    'MB4 3x3': {'ks': 3, 'expand_ratio': 4},
-    'MB4 5x5': {'ks': 5, 'expand_ratio': 4},
-    'MB4 7x7': {'ks': 7, 'expand_ratio': 4},
-    'MB6 3x3': {'ks': 3, 'expand_ratio': 6},
-    'MB6 5x5': {'ks': 5, 'expand_ratio': 6},
-    'MB6 7x7': {'ks': 7, 'expand_ratio': 6},
+    'XP3 3x3': {'ks': 3, 'expand_ratio': 3},
+    'XP3 5x5': {'ks': 5, 'expand_ratio': 3},
+    'XP3 7x7': {'ks': 7, 'expand_ratio': 3},
+    'XP4 3x3': {'ks': 3, 'expand_ratio': 4},
+    'XP4 5x5': {'ks': 5, 'expand_ratio': 4},
+    'XP4 7x7': {'ks': 7, 'expand_ratio': 4},
+    'XP6 3x3': {'ks': 3, 'expand_ratio': 6},
+    'XP6 5x5': {'ks': 5, 'expand_ratio': 6},
+    'XP6 7x7': {'ks': 7, 'expand_ratio': 6},
     'skip_connect': {'ks': None, 'expand_ratio': None},
 }
 
@@ -79,6 +79,7 @@ def set_layer_from_config(layer_config):
         ConvLayer.__name__: ConvLayer,
         LinearLayer.__name__: LinearLayer,
         MBConvLayer.__name__: MBConvLayer,
+        XceptionLayer.__name__: XceptionLayer,
         'MBInvertedConvLayer': MBConvLayer,
         ##########################################################
         ResidualBlock.__name__: ResidualBlock,
@@ -300,6 +301,79 @@ class MBConvLayer(Mo.Module):
                 f'use_se={self._use_se}, '
                 f'group={self._group} ')
 
+class XceptionLayer(Mo.Module):
+
+    r"""The inverted layer with optional squeeze-and-excitation.
+
+    Args:
+        in_channels (int): Number of convolution kernels (which is
+            equal to the number of input channels).
+        out_channels (int): Number of convolution kernels (which is
+            equal to the number of output channels). For example, to apply
+            convolution on an input with 16 types of filters, specify 16.
+        kernel (tuple of int): Convolution kernel size. For
+            example, to apply convolution on an image with a 3 (height) by 5
+            (width) two-dimensional kernel, specify (3, 5). Defaults to (3, 3)
+        stride (tuple of int, optional): Stride sizes for dimensions.
+            Defaults to (1, 1).
+        expand_ratio (int): The expand ratio.
+        mid_channels (int): The number of features. Defaults to None.
+        group (int, optional): Number of groups of channels.
+            Defaults to 1.
+    """
+
+    def __init__(self, in_channels, out_channels,
+                 kernel=(3, 3), stride=(1, 1), expand_ratio=6, mid_channels=None,
+                 last_block=False, group=None):
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+        self._kernel = kernel
+        self._stride = stride
+        self._expand_ratio = expand_ratio
+        self._mid_channels = mid_channels
+        self._group = group
+
+        if self._mid_channels is None:
+            feature_dim = round(self._in_channels * self._expand_ratio)
+        else:
+            feature_dim = self._mid_channels
+
+        pad = get_same_padding(self._kernel)
+        group = feature_dim if self._group is None else min_divisible_value(feature_dim, self._group)
+        depth_conv_modules = [
+            ('conv', Mo.Conv(
+                feature_dim, feature_dim, kernel, pad=pad, stride=stride, group=group, with_bias=False)),
+            ('bn', Mo.BatchNormalization(feature_dim, 4)),
+            ('act', build_activation(self._act_func, inplace=True)),
+            ('conv', Mo.Conv(
+                feature_dim, feature_dim, kernel, pad=pad, stride=stride, group=group, with_bias=False)),
+            ('bn', Mo.BatchNormalization(feature_dim, 4)),
+            ('act', build_activation(self._act_func, inplace=True)),
+        ]
+        self.depth_conv = Mo.Sequential(OrderedDict(depth_conv_modules))
+
+        self.point_linear = Mo.Sequential(OrderedDict([
+            ('conv', Mo.Conv(feature_dim, out_channels, (1, 1), pad=(0, 0), stride=(1, 1), with_bias=False)),
+            ('bn', Mo.BatchNormalization(out_channels, 4))
+        ]))
+
+    def call(self, x):
+        x = self.depth_conv(x)
+        x = self.point_linear(x)
+        return x
+
+    @staticmethod
+    def build_from_config(config):
+        return XceptionLayer(**config)
+
+    def extra_repr(self):
+        return (f'in_channels={self._in_channels}, '
+                f'out_channels={self._out_channels}, '
+                f'kernel={self._kernel}, '
+                f'stride={self._stride}, '
+                f'expand_ratio={self._expand_ratio}, '
+                f'mid_channels={self._mid_channels}, '
+                f'group={self._group} ')
 
 class LinearLayer(Mo.Sequential):
 

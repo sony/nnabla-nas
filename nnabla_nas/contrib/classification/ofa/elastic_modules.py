@@ -20,7 +20,7 @@ import numpy as np
 import nnabla as nn
 
 from .... import module as Mo
-from .modules import MBConvLayer, set_layer_from_config
+from .modules import MBConvLayer, set_layer_from_config, XceptionLayer
 from .ofa_utils.common_tools import val2list, make_divisible
 from .ofa_modules.static_op import SEModule
 from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
@@ -328,8 +328,6 @@ class Dynamic_XceptionLayer(Mo.Module):
         self._expand_ratio_list = val2list(expand_ratio_list)
         self._stride = stride
         self._last_block = last_block
-
-
         # build modules
         max_middle_channel = make_divisible(
             round(max(self._in_channel_list) * max(self._expand_ratio_list)))
@@ -344,11 +342,9 @@ class Dynamic_XceptionLayer(Mo.Module):
         ]
         self.depth_conv = Mo.Sequential(OrderedDict(depth_conv_list))
 
-
         self.point_linear = Mo.Sequential(OrderedDict([
             ('conv', DynamicConv2d(max_middle_channel, max(self._out_channel_list))),
-            ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4)),
-            ('act', build_activation('relu'))
+            ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4)), ('act', build_activation('relu'))
         ]))
 
         self.active_kernel_size = max(self._kernel_size_list)
@@ -431,7 +427,7 @@ class Dynamic_XceptionLayer(Mo.Module):
 
     def get_active_subnet_config(self, in_channel):
         return {
-            'name': MBConvLayer.__name__,
+            'name': XceptionLayer.__name__,
             'in_channels': in_channel,
             'out_channels': self.active_out_channel,
             'kernel': (self.active_kernel_size, self.active_kernel_size),

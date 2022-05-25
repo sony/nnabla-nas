@@ -123,7 +123,7 @@ class SearchNet(MyNetwork):
                  op_candidates="MB6 3x3",
                  depth_candidates=4,
                  weights=None,
-                 output_stride=8):
+                 output_stride=16):
         self._num_classes = num_classes
         self._bn_param = bn_param
         self._drop_rate = drop_rate
@@ -170,7 +170,7 @@ class SearchNet(MyNetwork):
 
         # Second conv layer
         self.second_conv = ConvLayer(input_channel, second_conv_channel, kernel=(3, 3), stride=(1, 1), dilation=(1, 1),
-                                        use_bn=True, act_func=None)
+                                    use_bn=True, act_func=None)
 
         # entry flow blocks
         self.block_group_info = []
@@ -181,16 +181,16 @@ class SearchNet(MyNetwork):
             self.block_group_info.append([_block_index + i for i in range(n_block)])
             _block_index += n_block
             output_channel = width
-            last_block=False
+            last_block = False
             for i in range(0, n_block):
                 stride = (s, s)
 
-                if i==2 or i==n_block-1:
+                if i == 2 or i == n_block-1:
                     last_block = True
                 else:
                     last_block = False
 
-                entry_block = Dynamic_XceptionLayer(in_channel_list=val2list(feature_dim), 
+                entry_block = Dynamic_XceptionLayer(in_channel_list=val2list(feature_dim),
                                                     out_channel_list=val2list(output_channel),
                                                     kernel_size_list=self._ks_list,
                                                     expand_ratio_list=self._expand_ratio_list,
@@ -220,7 +220,6 @@ class SearchNet(MyNetwork):
         self.expand_layer_2 = ConvLayer(
             expand_1_width, expand_2_width, kernel=(3, 3), with_bias=False, use_bn=True, group=expand_2_width,
             act_func='relu')
-        
         # final expand layer, feature mix layer & classifier
         self.expand_layer_3 = ConvLayer(
             expand_2_width, last_channel, kernel=(3, 3), with_bias=False, use_bn=True, group=last_channel,
@@ -374,7 +373,7 @@ class OFASearchNet(SearchNet):
                  drop_rate=0.1,
                  base_stage_width=None,
                  width_mult=1.0,
-                 op_candidates="MB6 3x3",
+                 op_candidates="XP6 3x3",
                  depth_candidates=4,
                  weights=None
                  ):
@@ -411,13 +410,13 @@ class TrainNet(SearchNet):
 
     def __init__(self, num_classes=1000, bn_param=(0.9, 1e-5), drop_rate=0.1,
                  base_stage_width=None, width_mult=1,
-                 op_candidates=None, depth_candidates=None, genotype=None, weights=None):
+                 op_candidates=None, depth_candidates=None, genotype=None, weights=None, output_stride=16):
 
         if op_candidates is None:
             op_candidates = [
-                "MB3 3x3", "MB3 5x5", "MB3 7x7",
-                "MB4 3x3", "MB4 5x5", "MB4 7x7",
-                "MB6 3x3", "MB6 5x5", "MB6 7x7",
+                "XP3 3x3", "XP3 5x5", "XP3 7x7",
+                "XP4 3x3", "XP4 5x5", "XP4 7x7",
+                "XP6 3x3", "XP6 5x5", "XP6 7x7",
             ]
         if depth_candidates is None:
             depth_candidates = [2, 3, 4]
