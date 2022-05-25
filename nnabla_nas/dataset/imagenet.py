@@ -17,100 +17,100 @@ from pathlib import Path
 
 from nnabla import random
 from nnabla_ext.cuda.experimental import dali_iterator
-import nvidia.dali.types as types
 from sklearn.model_selection import train_test_split
 
 from .dataloader import BaseDataLoader
 
-from nvidia.dali import pipeline_def, Pipeline
+from nvidia.dali import pipeline_def
 import nvidia.dali.fn as fn
 import nvidia.dali.types as types
 
 
-
 _pixel_mean = [255 * x for x in (0.485, 0.456, 0.406)]
-_pixel_std = [255 * x for x in (0.229, 0.224, 0.225)]   
+_pixel_std = [255 * x for x in (0.229, 0.224, 0.225)]
+
 
 @pipeline_def
 def train_pipeline(image_dir, file_list, shard_id, nvjpeg_padding, num_shards=1,
-                 channel_last=True, dtype="half", pad_output=False):
+                   channel_last=True, dtype="half", pad_output=False):
     jpegs, labels = fn.readers.file(file_root=image_dir, file_list=file_list,
                                     random_shuffle=True, num_shards=num_shards,
                                     shard_id=shard_id, name="Reader")
     images = fn.decoders.image(jpegs, device="mixed", output_type=types.RGB,
-                                       device_memory_padding=nvjpeg_padding,
-                                       host_memory_padding=nvjpeg_padding)
-    
+                               device_memory_padding=nvjpeg_padding,
+                               host_memory_padding=nvjpeg_padding)
+
     images = fn.random_resized_crop(images, device="gpu", size=(224, 224))
 
     images = fn.crop_mirror_normalize(images, device="gpu",
-                                            dtype=types.FLOAT16
-                                            if dtype == "half"
-                                            else types.FLOAT,
-                                            output_layout=types.NHWC
-                                            if channel_last else types.NCHW,
-                                            crop=(224, 224),
-                                            mean=_pixel_mean,
-                                            std=_pixel_std,
-                                            pad_output=pad_output,
-                                            mirror=fn.coin_flip(probability=0.5))
+                                      dtype=types.FLOAT16
+                                      if dtype == "half"
+                                      else types.FLOAT,
+                                      output_layout=types.NHWC
+                                      if channel_last else types.NCHW,
+                                      crop=(224, 224),
+                                      mean=_pixel_mean,
+                                      std=_pixel_std,
+                                      pad_output=pad_output,
+                                      mirror=fn.coin_flip(probability=0.5))
     return images, labels.gpu()
 
 
 @pipeline_def
 def train_pipeline_color_twist(image_dir, file_list, shard_id, nvjpeg_padding, num_shards=1,
-                                channel_last=True, dtype="half", pad_output=False):
+                               channel_last=True, dtype="half", pad_output=False):
     jpegs, labels = fn.readers.file(file_root=image_dir, file_list=file_list,
                                     random_shuffle=True, num_shards=num_shards,
                                     shard_id=shard_id, name="Reader")
     images = fn.decoders.image(jpegs, device="mixed", output_type=types.RGB,
-                                       device_memory_padding=nvjpeg_padding,
-                                       host_memory_padding=nvjpeg_padding)
-    
+                               device_memory_padding=nvjpeg_padding,
+                               host_memory_padding=nvjpeg_padding)
+
     images = fn.random_resized_crop(images, device="gpu", size=(224, 224))
 
     images = fn.color_twist(images, device="gpu",
-                            brightness=fn.random.uniform(range=(1 - 32. / 255., 1 + 32. / 255)),
-                            contrast=fn.random.uniform(range=(0,1)),
+                            brightness=fn.random.uniform(
+                                range=(1 - 32. / 255., 1 + 32. / 255)),
+                            contrast=fn.random.uniform(range=(0, 1)),
                             saturation=fn.random.uniform(range=(0.5, 1 + 0.5)),
                             hue=fn.random.uniform(range=(0, 1))
                             )
 
-
     images = fn.crop_mirror_normalize(images, device="gpu",
-                                            dtype=types.FLOAT16
-                                            if dtype == "half"
-                                            else types.FLOAT,
-                                            output_layout=types.NHWC
-                                            if channel_last else types.NCHW,
-                                            crop=(224, 224),
-                                            mean=_pixel_mean,
-                                            std=_pixel_std,
-                                            pad_output=pad_output,
-                                            mirror=fn.random.coin_flip(probability=0.5))
+                                      dtype=types.FLOAT16
+                                      if dtype == "half"
+                                      else types.FLOAT,
+                                      output_layout=types.NHWC
+                                      if channel_last else types.NCHW,
+                                      crop=(224, 224),
+                                      mean=_pixel_mean,
+                                      std=_pixel_std,
+                                      pad_output=pad_output,
+                                      mirror=fn.random.coin_flip(probability=0.5))
     return images, labels.gpu()
+
 
 @pipeline_def
 def val_pipeline(image_dir, file_list, shard_id, nvjpeg_padding, num_shards=1,
-                    channel_last=True, dtype="half", pad_output=False):
+                 channel_last=True, dtype="half", pad_output=False):
     jpegs, labels = fn.readers.file(file_root=image_dir, file_list=file_list,
                                     random_shuffle=True, num_shards=num_shards,
                                     shard_id=shard_id, name="Reader")
     images = fn.decoders.image(jpegs, device="mixed", output_type=types.RGB,
-                                       device_memory_padding=nvjpeg_padding,
-                                       host_memory_padding=nvjpeg_padding)
-    
+                               device_memory_padding=nvjpeg_padding,
+                               host_memory_padding=nvjpeg_padding)
+
     images = fn.resize(images, device="gpu", resize_shorter=256)
 
     images = fn.crop_mirror_normalize(images, device="gpu",
-                                        dtype=types.FLOAT16 if
-                                        dtype == "half" else types.FLOAT,
-                                        output_layout=types.NHWC
-                                        if channel_last else types.NCHW,
-                                        crop=(224, 224),
-                                        mean=_pixel_mean,
-                                        std=_pixel_std,
-                                        pad_output=pad_output)
+                                      dtype=types.FLOAT16 if
+                                      dtype == "half" else types.FLOAT,
+                                      output_layout=types.NHWC
+                                      if channel_last else types.NCHW,
+                                      crop=(224, 224),
+                                      mean=_pixel_mean,
+                                      std=_pixel_std,
+                                      pad_output=pad_output)
     return images, labels.gpu()
 
 
@@ -133,16 +133,16 @@ def get_data_iterators(batch_size,
         train_pipeline if training else val_pipeline
     # Pipelines and Iterators for training
     pipe = pipe_name(image_dir=train_dir,
-                    file_list=file_list,
-                    shard_id=comm.rank,
-                    nvjpeg_padding=dali_nvjpeg_memory_padding,
-                    num_shards=comm.n_procs,
-                    channel_last=channel_last,
-                    dtype=type_config,
-                    batch_size=batch_size, 
-                    num_threads=dali_num_threads, 
-                    seed=comm.rank + 1,
-                    device_id=comm.rank)
+                     file_list=file_list,
+                     shard_id=comm.rank,
+                     nvjpeg_padding=dali_nvjpeg_memory_padding,
+                     num_shards=comm.n_procs,
+                     channel_last=channel_last,
+                     dtype=type_config,
+                     batch_size=batch_size,
+                     num_threads=dali_num_threads,
+                     seed=comm.rank + 1,
+                     device_id=comm.rank)
 
     data = dali_iterator.DaliIterator(pipe)
     data.size = pipe.epoch_size("Reader") // comm.n_procs
