@@ -9,7 +9,7 @@ def torch_initializer(inmaps, kernel):
 
 def he_initializer(ochan, kernel, rng):
     return NormalInitializer(
-        sigma=np.sqrt(2 / (kernel * kernel * ochan)),
+        sigma=np.sqrt(2 / (np.prod(kernel) * ochan)),
         rng=rng
     )
 
