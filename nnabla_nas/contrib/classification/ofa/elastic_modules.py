@@ -333,12 +333,18 @@ class Dynamic_XceptionLayer(Mo.Module):
             round(max(self._in_channel_list) * max(self._expand_ratio_list)))
 
         depth_conv_list = [
-            ('conv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
+            ('conv', DynamicSeparableConv2d(max(self._in_channel_list), self._kernel_size_list, self._stride)),
+            ('bn', DynamicBatchNorm2d(max(self._in_channel_list), 4)),
+            ('act', build_activation('relu')),
+            ('conv', DynamicConv2d(max(self._in_channel_list), max_middle_channel)),
             ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
             ('act', build_activation('relu')),
             ('conv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
             ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
-            ('act', build_activation('relu'))
+            ('act', build_activation('relu')),
+            ('conv', DynamicConv2d(max_middle_channel, max_middle_channel)),
+            ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
+            ('act', build_activation('relu')),
         ]
         self.depth_conv = Mo.Sequential(OrderedDict(depth_conv_list))
 

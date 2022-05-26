@@ -4,10 +4,10 @@
             "train_portion": 0.99,
             "augment_valid": "False",
             "colortwist": "True",
-            "train_path": "/data/datasets/imagenet/train",
-            "train_file": "/home/Atharva.Diwan/datasets/imagenet/train_label",
-            "valid_path": "/data/datasets/imagenet/train",
-            "valid_file": "/home/Atharva.Diwan/datasets/imagenet/train_label/val_label"
+            "train_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train",
+            "train_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train_label",
+            "valid_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train",
+            "valid_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val_label"
         }
     },
     "network": {

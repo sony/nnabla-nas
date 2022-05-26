@@ -261,6 +261,70 @@ class ConvLayer(Mo.Sequential):
                 f'act_func={self._act_func}, '
                 f'name={self._name}')
 
+class DwConvLayer(Mo.Sequential):
+
+    r""" Depthwise Convolution-BatchNormalization(optional)-Activation layer.
+
+    Args:
+        in_channels (int): Number of convolution kernels (which is
+            equal to the number of input channels).
+        kernel (tuple of int, optional): Convolution kernel size. For
+            example, to apply convolution on an image with a 3 (height) by 5
+            (width) two-dimensional kernel, specify (3, 5). Defaults to (3, 3)
+        stride (tuple of int, optional): Stride sizes for
+            dimensions. Defaults to (1, 1).
+        dilation (tuple of int, optional): Dilation sizes for
+            dimensions. Defaults to (1, 1).
+        group (int, optional): Number of groups of channels.
+            Defaults to 1.
+        with_bias (bool, optional): If True, bias for Convolution is added.
+            Defaults to False.
+        use_bn (bool, optional): If True, BatchNormalization layer is added.
+            Defaults to True.
+        act_func (str, optional) Type of activation. Defaults to 'relu'.
+    """
+
+    def __init__(self, in_channels, kernel=(3, 3),
+                 stride=(1, 1), dilation=(1, 1), with_bias=False,
+                 use_bn=True, act_func='relu'):
+        self._in_channels = in_channels
+        self._kernel = kernel
+        self._stride = stride
+        self._dilation = dilation
+        self._with_bias = with_bias
+        self._use_bn = use_bn
+        self._act_func = act_func
+
+        padding = get_same_padding(self._kernel)
+        if isinstance(padding, int):
+            padding *= self._dilation
+        else:
+            new_padding = (padding[0] * self._dilation[0], padding[1] * self._dilation[1])
+            padding = tuple(new_padding)
+
+        module_dict = OrderedDict()
+        module_dict['conv'] = Mo.DwConv(self._in_channels, self._kernel,
+                                      pad=padding, stride=self._stride, dilation=self._dilation,
+                                      with_bias=self._with_bias)
+        if self._use_bn:
+            module_dict['bn'] = Mo.BatchNormalization(self._in_channels, 4)
+        module_dict['act'] = build_activation(act_func)
+
+        super(DwConvLayer, self).__init__(module_dict)
+
+    def build_from_config(config):
+        return DwConvLayer(**config)
+
+    def extra_repr(self):
+        return (f'in_channels={self._in_channels}, '
+                f'out_channels={self._out_channels}, '
+                f'kernel={self._kernel}, '
+                f'stride={self._stride}, '
+                f'dilation={self._dilation}, '
+                f'with_bias={self._with_bias}, '
+                f'use_bn={self._use_bn}, '
+                f'act_func={self._act_func}, '
+                f'name={self._name}')
 
 class MBConvLayer(Mo.Module):
 
@@ -355,7 +419,7 @@ class MBConvLayer(Mo.Module):
 
 class XceptionLayer(Mo.Module):
 
-    r"""The inverted layer with optional squeeze-and-excitation.
+    r"""The Xception block layers with depthwise separable convolution.
 
     Args:
         in_channels (int): Number of convolution kernels (which is
@@ -392,26 +456,46 @@ class XceptionLayer(Mo.Module):
 
         pad = get_same_padding(self._kernel)
         group = feature_dim if self._group is None else min_divisible_value(feature_dim, self._group)
-        depth_conv_modules = [
-            ('conv', Mo.Conv(
-                feature_dim, feature_dim, kernel, pad=pad, stride=stride, group=group, with_bias=False)),
+        depth_conv_module_1 = [
+            ('conv', Mo.DwConv(
+                feature_dim, kernel, pad=pad, stride=stride, with_bias=False)),
             ('bn', Mo.BatchNormalization(feature_dim, 4)),
-            ('act', build_activation(self._act_func, inplace=True)),
-            ('conv', Mo.Conv(
-                feature_dim, feature_dim, kernel, pad=pad, stride=stride, group=group, with_bias=False)),
-            ('bn', Mo.BatchNormalization(feature_dim, 4)),
-            ('act', build_activation(self._act_func, inplace=True)),
-        ]
-        self.depth_conv = Mo.Sequential(OrderedDict(depth_conv_modules))
-
-        self.point_linear = Mo.Sequential(OrderedDict([
+            ('act', build_activation('relu', inplace=True)),
             ('conv', Mo.Conv(feature_dim, out_channels, (1, 1), pad=(0, 0), stride=(1, 1), with_bias=False)),
-            ('bn', Mo.BatchNormalization(out_channels, 4))
-        ]))
+            ('bn', Mo.BatchNormalization(out_channels, 4)),
+            ('act', build_activation('relu', inplace=True))
+        ]
+        self.depth_conv_1 = Mo.Sequential(OrderedDict(depth_conv_module_1))
+
+        depth_conv_module_2 = [
+            ('conv', Mo.DwConv(
+                out_channels, kernel, pad=pad, stride=stride, with_bias=False)),
+            ('bn', Mo.BatchNormalization(out_channels, 4)),
+            ('act', build_activation('relu', inplace=True)),
+            ('conv', Mo.Conv(out_channels, out_channels, (1, 1), pad=(0, 0), stride=(1, 1), with_bias=False)),
+            ('bn', Mo.BatchNormalization(out_channels, 4)),
+            ('act', build_activation('relu', inplace=True))
+        ]
+
+        self.depth_conv_2 = Mo.Sequential(OrderedDict(depth_conv_module_2))
+
+        depth_conv_module_3 = [
+            ('conv', Mo.DwConv(
+                out_channels, kernel, pad=pad, stride=stride, with_bias=False)),
+            ('bn', Mo.BatchNormalization(out_channels, 4)),
+            ('act', build_activation('relu', inplace=True)),
+            ('conv', Mo.Conv(out_channels, out_channels, (1, 1), pad=(0, 0), stride=(1, 1), with_bias=False)),
+            ('bn', Mo.BatchNormalization(out_channels, 4)),
+            ('act', build_activation('relu', inplace=True))
+        ]
+
+        self.depth_conv_3 = Mo.Sequential(OrderedDict(depth_conv_module_3))
 
     def call(self, x):
-        x = self.depth_conv(x)
-        x = self.point_linear(x)
+        x = self.depth_conv_1(x)
+        x = self.depth_conv_2(x)
+        x = self.depth_conv_3(x)
+        
         return x
 
     @staticmethod
