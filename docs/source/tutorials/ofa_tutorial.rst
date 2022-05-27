@@ -2,8 +2,8 @@ Once-for-All tutorial
 ---------------------
 
 Once-for-All (OFA) :cite:`cai2019once` is only trained once, and we can quickly get specialized sub-networks from the OFA network without additional training.
-The OFA search space contains a large number of sub-networks (>10^19) that covers various hardware platforms. 
-To efficiently train the search space, the progressive shrinking algorithm enforces the training order from large sub-networks to small sub-networks in a progressive manner.
+The OFA architecture provides one model but supports a large number of sub-networks (>10^19) that covers various hardware platforms. 
+To efficiently train all the sub-networks, the progressive shrinking algorithm enforces the training order from large sub-networks to small sub-networks in a progressive manner.
 
 We will show how to run ``OFA`` example on ImageNet. 
 
@@ -13,17 +13,16 @@ We will show how to run ``OFA`` example on ImageNet.
 Progressive shrinking algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example, we use MobileNetV3-Large :cite:`howard2019searching` based backbone to build the search space.
-This search space is called a ``SuperNet`` that includes various sub-networks as the candidate architectures.
-The search space includes resolution, kenerl size, depth, and width expansion ratio.
-OFA's progressive shrinking algorithm gradually increases the target search space.
+In this example, we use MobileNetV3-Large :cite:`howard2019searching` based backbone to train the full network.
+The full network includes sub-networks with different resolution, kenerl size, depth, and width expansion ratio.
+OFA's progressive shrinking algorithm gradually increases the target sub-networks.
 
 .. image:: images/progressive_shrinking.png
     :width: 600
     :align: center 
 
 
-In NNablaNAS, progressive shrinking can be performed by running the training with different search space in a progressive manner.
+In NNablaNAS, progressive shrinking can be performed by running the training with different set of sub-networks in a progressive manner.
 
 Here are the running scripts found in ``./jobs.sh``. ::
 
@@ -83,5 +82,16 @@ The only new configuration parameter is::
     "genotype": [5, 2, 9, 9, 6, 4, 2, 1, 7, 7, 8, 9, 8, 3, 9, 9, 8, 4, 3, 1]
 
 ``genotype`` is used to provide the architecture configuration for the sub-network you wish to fine-tune.
+This can be created by using the operater candidate indices. 
+For example, if your operater candidates are as follows::
 
-.. bibliography:: ../bibtex/reference.bib
+    "op_candidates": [
+            "MB3 3x3", "MB3 5x5", "MB3 7x7", 
+            "MB4 3x3", "MB4 5x5", "MB4 7x7", 
+            "MB6 3x3", "MB6 5x5", "MB6 7x7"
+        ],
+
+The above genotype means::
+
+    ["MB4 7x7", "MB3 7x7", skip_connect, skip_connect, "MB6 3x3", ...]
+

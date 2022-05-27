@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import math
-import copy
 import numpy as np
 
 import nnabla as nn
@@ -41,14 +40,14 @@ def init_models(net, model_init='he_fout'):
                 m._W = Mo.Parameter(
                     m._W.shape, initializer=w_init, scope=m._scope_name)
             elif model_init == 'he_fin':
-                he_init = he_initializer(m._in_channels, m._kernel, rng=None)
+                w_init = he_initializer(m._in_channels, m._kernel, rng=None)
                 m._W = Mo.Parameter(
-                    m._W.shape, initializer=he_init, scope=m._scope_name)
+                    m._W.shape, initializer=w_init, scope=m._scope_name)
             elif model_init == 'pytorch':
-                he_init = torch_initializer(
+                w_init = torch_initializer(
                     m._in_channels, m._kernel, rng=None)
                 m._W = Mo.Parameter(
-                    m._W.shape, initializer=he_init, scope=m._scope_name)
+                    m._W.shape, initializer=w_init, scope=m._scope_name)
             else:
                 raise NotImplementedError
             if m._b is not None:
@@ -71,19 +70,6 @@ def init_models(net, model_init='he_fout'):
                 b_init = ConstantInitializer(0)
                 m._b = Mo.Parameter(
                     m._b.shape, initializer=b_init, scope=m._scope_name)
-
-
-def get_bn_params(model):
-    bn_params = {}
-    for name, m in model.get_modules():
-        if isinstance(m, Mo.BatchNormalization):
-            bn_params[name] = {
-                'beta': copy.deepcopy(m._beta.d),
-                'gamma': copy.deepcopy(m._gamma.d),
-                'mean': copy.deepcopy(m._mean.d),
-                'variance': copy.deepcopy(m._var.d),
-            }
-    return bn_params
 
 
 def set_bn_params(model, bn_params):

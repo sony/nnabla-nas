@@ -25,14 +25,14 @@
             "weight_decay": 3e-5,
             "lr_scheduler": "CosineSchedulerWarmup",
             "name": "Nesterov",
-            "lr": 0.96,
+            "lr": 0.24,
             "momentum": 0.9
             },
         "train_no_decay": {
             "weight_decay": 0,
             "lr_scheduler": "CosineSchedulerWarmup",
             "name": "Nesterov",
-            "lr": 0.96,
+            "lr": 0.24,
             "momentum": 0.9
             }
     },
@@ -64,9 +64,9 @@
             }
         },
         "epoch": 125,
-        "cosine_warmup_epoch": 0,
-        "warmup_lr": 0.003,
-        "batch_size_train": 256,
+        "cosine_warmup_epoch": 5,
+        "warmup_lr": 0.03,
+        "batch_size_train": 64,
         "batch_size_valid": 200,
         "mini_batch_train": 32,
         "mini_batch_valid": 200,

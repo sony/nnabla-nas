@@ -186,7 +186,6 @@ Finally, we set the general hyper-parameters for the search::
         "warmup": 100,
         "print_frequency": 25
     }
-}
 
 ``epoch``, ``input_shape`` and ``target_shapes`` are self-explanatory. 
 
@@ -205,4 +204,3 @@ The only new configuration parameter is::
 
 ``genotype`` is used to provide the path to the previously learn architecture (.h5 file).
 
-.. bibliography:: ../bibtex/reference.bib

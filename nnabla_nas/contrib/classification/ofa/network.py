@@ -24,7 +24,7 @@ import nnabla.logger as logger
 from ..base import ClassificationModel as Model
 from .... import module as Mo
 from .modules import ResidualBlock, ConvLayer, LinearLayer, MBConvLayer
-from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
+from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param
 from .elastic_modules import DynamicMBConvLayer
 from .ofa_modules.dynamic_op import DynamicBatchNorm2d
 from .ofa_utils.common_tools import val2list, make_divisible
@@ -43,14 +43,6 @@ class MyNetwork(Model):
             eps (float):Tiny value to avoid zero division by std.
         """
         set_bn_param(self, decay_rate, eps, **kwargs)
-
-    def get_bn_param(self):
-        r"""Return dict of batchnormalization params.
-
-        Returns:
-            dict: A dictionary containing decay_rate and eps of batchnormalization
-        """
-        return get_bn_param(self)
 
     def loss(self, outputs, targets, loss_weights=None):
         r"""Return loss computed from a list of outputs and list of targets.
@@ -189,7 +181,7 @@ class SearchNet(MyNetwork):
         base_stage_width = [16, 16, 24, 40, 80, 112, 160, 960, 1280]
 
         final_expand_width = make_divisible(
-            base_stage_width[-2] * self._width_mult)
+            base_stage_width[-2] * self._width_mult, SearchNet.CHANNEL_DIVISIBLE)
         last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
 
         stride_stages = [1, 2, 2, 2, 1, 2]
@@ -198,7 +190,7 @@ class SearchNet(MyNetwork):
         n_block_list = [1] + [max(self._depth_list)] * 5
         width_list = []
         for base_width in base_stage_width[:-2]:
-            width = make_divisible(base_width * self._width_mult)
+            width = make_divisible(base_width * self._width_mult, SearchNet.CHANNEL_DIVISIBLE)
             width_list.append(width)
 
         input_channel, first_block_dim = width_list[0], width_list[1]
