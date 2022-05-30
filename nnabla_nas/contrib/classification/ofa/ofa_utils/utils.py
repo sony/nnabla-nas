@@ -107,6 +107,7 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
         resize = MyResize()
         transform = dataloader.transform('valid')
         with nn.auto_forward(True):
+            # Note: only support NCHW data format
             x = nn.Variable(shape=(dataloader_batch_size,
                             inp_shape[0], inp_shape[1], inp_shape[2]))
             accum = batch_size // dataloader_batch_size + 1
