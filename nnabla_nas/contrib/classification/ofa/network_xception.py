@@ -21,7 +21,7 @@ import nnabla.logger as logger
 
 from ..base import ClassificationModel as Model
 from .... import module as Mo
-from .modules import ResidualBlock, ConvLayer, LinearLayer, DwConvLayer, XceptionLayer
+from .modules import ResidualBlock, ConvLayer, LinearLayer, DwConvLayer, SeparableConv, XceptionBlock, XceptionLayer
 from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
 from .elastic_modules import Dynamic_XceptionLayer
 from .ofa_modules.dynamic_op import DynamicBatchNorm2d
@@ -119,15 +119,13 @@ class SearchNet(MyNetwork):
                  bn_param=(0.9, 1e-5),
                  drop_rate=0.1,
                  base_stage_width=None,
-                 width_mult=1.0,
                  op_candidates="XP6 3x3",
-                 depth_candidates=4,
+                 depth_candidates=8,
                  weights=None,
                  output_stride=16):
         self._num_classes = num_classes
         self._bn_param = bn_param
         self._drop_rate = drop_rate
-        self._width_mult = width_mult
         self._op_candidates = op_candidates
         self._depth_candidates = depth_candidates
         self._weights = weights
@@ -151,105 +149,42 @@ class SearchNet(MyNetwork):
         expand_1_width = make_divisible(base_stage_width[-3] * self._width_mult)
         expand_2_width = make_divisible(base_stage_width[-2] * self._width_mult)
         last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
-
-        if self._output_stride == 8:
-            entry_block3_stride = 1
-        else:
-            entry_block3_stride = 2
-
-        stride_stages = [2, 1, 2, 2, entry_block3_stride, 1, 1, 1, 1]
-        # act_stages = ['relu', 'relu', 'relu', 'relu', 'relu', 'relu']
-        # se_stages = [False, False, True, False, True, True]
-        n_block_list = [1, 1, 1] + [max(self._depth_list)] * 4
-        width_list = []
-        for base_width in base_stage_width[:-3]:
-            width = make_divisible(base_width * self._width_mult)
-            width_list.append(width)
-
-        input_channel, second_conv_channel = width_list[0], width_list[1]
+        
+        first_conv_channel = base_stage_width[0]
+        sec_conv_channel = base_stage_width[1]
+        mid_block_width = base_stage_width[4]
         # Entry flow
         # first conv layer
         self.first_conv = ConvLayer(
-            3, input_channel, kernel=(3, 3), stride=(2, 2), use_bn=True, act_func='relu')
+            3, first_conv_channel, kernel=(3, 3), stride=(2, 2), use_bn=True, act_func='relu', with_bias=False)
 
         # Second conv layer
-        self.second_conv = ConvLayer(input_channel, second_conv_channel, kernel=(3, 3), stride=(1, 1), dilation=(1, 1),
+        self.second_conv = ConvLayer(first_conv_channel, sec_conv_channel, kernel=(3, 3), stride=(1, 1), dilation=(1, 1),
                                     use_bn=True, act_func=None)
 
         # entry flow blocks
-        blocks = []
-        entry_first_channel = second_conv_channel
-        for i in range(3): 
-            if i == 2:
-                last_block = True
-            else:
-                last_block = False
-            entry_block = XceptionLayer(
-                entry_first_channel, width_list[i+2], kernel=(3, 3), stride=(stride_stages[i+2], stride_stages[i+2]),
-                expand_ratio=1, last_block=last_block
-            )
-            shortcut = None
-            # if last_block:
-            #     shortcut = None
-            # else:
-            #     shortcut = Mo.Sequential(OrderedDict([
-            #         ('conv', Mo.Conv(entry_first_channel, width_list[i+2], (1, 1), stride=(2, 2), with_bias=False)),
-            #         ('bn', Mo.BatchNormalization(width_list[i+2], 4, eps=1e-5))
-            #     ]))
-            blocks.append(ResidualBlock(
-                entry_block,
-                shortcut
-            ))
-            entry_first_channel = width_list[i+2]
+        self.entryblocks = []
+        self.entryblocks.append(XceptionBlock(base_stage_width[1], base_stage_width[2], 2, (2,2), start_with_relu=False))
+        self.entryblocks.append(XceptionBlock(base_stage_width[2], base_stage_width[3], 2, (2,2)))
+        self.entryblocks.append(XceptionBlock(base_stage_width[3], base_stage_width[4], 2, (2,2)))
 
-        # middle flow blocks
-
+        # Middle flow blocks
         self.block_group_info = []
-        _block_index = 3
-        feature_dim = width_list[4] # 728 for all middle flow blocks
-        for n_block, s in zip(n_block_list[3:], stride_stages[5:]):
-            self.block_group_info.append([_block_index + i for i in range(n_block)])
-            _block_index += n_block
-            output_channel = feature_dim
-            for i in range(0, n_block):
-                stride = (s, s)
+        self.middleblocks = []
+        _block_index = 0
+        self.block_group_info.append([_block_index+i for i in range(max(self._depth_list))])
+        for _ in range(max(self._depth_list)):
+            # Todo -> replace these with dynamic blocks
+            self.middleblocks.append(XceptionBlock(mid_block_width, mid_block_width, 3, (1,1)))
 
-                last_block = False
-                middle_block = Dynamic_XceptionLayer(in_channel_list=val2list(feature_dim),
-                                                    out_channel_list=val2list(output_channel),
-                                                    kernel_size_list=self._ks_list,
-                                                    expand_ratio_list=self._expand_ratio_list,
-                                                    stride=stride, last_block=last_block)
-                # adding the xception residual blocks
-                shortcut = Mo.Identity()
-                
-                blocks.append(ResidualBlock(middle_block, shortcut))
-                feature_dim = output_channel
-        self.blocks = Mo.ModuleList(blocks)
+        # Exit flow blocks
+        self.exitblocks = []
+        self.exitblocks.append(XceptionBlock(mid_block_width, expand_1_width, 2, (2,2), grow_first=False))
 
+        self.expand_block1 = SeparableConv(expand_1_width, expand_2_width, (3,3), (1,1), (1,1), use_bn=True, act_fn='relu')
+        self.expand_block2 = SeparableConv(expand_2_width, last_channel, (3,3), (1,1), (1,1), use_bn=True, act_fn='relu')
 
-        # 2 exit blocks at the end
-        # Use standard convolution with group=channels for depthwise convolution
-        # print("*"*20)
-        # print(self.block_group_info)
-        # print("*"*20)
-        self.expand_layer_1 = DwConvLayer(
-            feature_dim, kernel=(3, 3), with_bias=False, use_bn=True, act_func='relu')
-        self.pointwise_1 = ConvLayer(
-            feature_dim, expand_1_width, kernel=(1, 1), use_bn=True, act_func='relu'
-        )
-
-        self.expand_layer_2 = DwConvLayer(
-            expand_1_width, kernel=(3, 3), with_bias=False, use_bn=True, act_func='relu')
-        self.pointwise_2 = ConvLayer(
-            expand_1_width, expand_2_width, kernel=(1, 1), use_bn=True, act_func='relu'
-        )
-        # final expand layer & classifier
-        self.expand_layer_3 = DwConvLayer(
-            expand_2_width, kernel=(3, 3), with_bias=False, use_bn=True, act_func='relu')
-        self.pointwise_3 = ConvLayer(
-            expand_2_width, last_channel, kernel=(1, 1), use_bn=True, act_func='relu'
-        )
+        # use a global average pooling before this FC Layer
         self.classifier = LinearLayer(last_channel, num_classes, drop_rate=drop_rate)
 
         # set bn param
@@ -273,23 +208,20 @@ class SearchNet(MyNetwork):
 
         x = self.first_conv(x)
         x = self.second_conv(x)
-        x = self.blocks[0](x)
-        x = self.blocks[1](x)
-        x = self.blocks[2](x)
+        x = self.entryblocks[0](x)
+        x = self.entryblocks[1](x)
+        x = self.entryblocks[2](x)
         # blocks
+        # just one set of blocks
         for stage_id, block_idx in enumerate(self.block_group_info):
             depth = self.runtime_depth[stage_id]
             active_idx = block_idx[:depth]
             for idx in active_idx:
-                x = self.blocks[idx](x)
-        x = self.expand_layer_1(x)
-        x = self.pointwise_1(x)
-        x = self.expand_layer_2(x)
-        x = self.pointwise_2(x)
-        x = self.expand_layer_3(x)
-        x = self.pointwise_3(x)
-        # x = F.mean(x, axis=(2, 3), keepdims=True)
-        # x = self.feature_mix_layer(x)
+                x = self.middleblocks[idx](x)
+        x = self.exitblocks[0](x)
+        x = self.expand_block1(x)
+        x = self.expand_block2(x)
+        x = F.mean(x, axis=(2, 3), keepdims=True)
         x = F.reshape(x, shape=(x.shape[0], -1))
         return self.classifier(x)
 

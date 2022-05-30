@@ -511,6 +511,83 @@ class XceptionLayer(Mo.Module):
                 f'mid_channels={self._mid_channels}, '
                 f'group={self._group} ')
 
+
+class SeparableConv(Mo.Module):
+    def __init__(self, in_channels, out_channels, kernel=(1,1), stride=(1,1), pad=(0,0), dilation=(1,1), use_bn=True, act_fn=None):
+        super(SeparableConv, self).__init__()
+
+        self.conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation, stride=stride, with_bias=False, groups=in_channels)
+        self.pointwise = Mo.Conv(in_channels, out_channels, (1,1), stride=(1,1), pad=(0,0), dilation=(1,1), group=1, with_bias=False)
+        
+        self.use_bn = use_bn
+        if use_bn:
+            self.bn = Mo.BatchNormalization(out_channels, 4)
+        self.act = build_activation(act_fn)
+
+    def call(self, x):
+        x = self.conv1(x)
+        x = self.pointwise(x)
+
+        if self.use_bn:
+            x = self.bn(x)
+        
+        if self.act is not None:
+            x = self.act(x)
+
+        return x
+    
+    @staticmethod
+    def build_from_config(config):
+        return SeparableConv(**config)
+
+
+class XceptionBlock(Mo.Module):
+    def __init__(self, in_channels, out_channels, reps, strides=(1,1), start_with_relu=True, grow_first=True):
+        super(XceptionBlock, self).__init__()
+        
+        if out_channels != in_channels or strides != 1:
+            self.skip = Mo.Conv(in_channels, out_channels, (1,1), stride=strides, with_bias=False)
+            self.skipbn = Mo.BatchNormalization(out_channels, 4)
+        else:
+            self.skip = None
+        
+        rep = []
+        for i in range(reps):
+            if grow_first:
+                inc = in_channels if i==1 else out_channels
+                outc = out_channels
+            else:
+                inc = in_channels
+                outc = in_channels if i < (reps-1) else out_channels
+            rep.append(Mo.ReLU(inplace=True))
+            rep.append(SeparableConv(inc, outc, (3,3), stride=(1,1), pad=(1,1)))
+        
+        if not start_with_relu:
+            rep = rep[1:]
+        else:
+            rep[0] = Mo.ReLU(inplace=False)
+        
+        if strides != 1:
+            rep.append(Mo.MaxPool((3,3), stride=strides, pad=(1,1)))
+        self.rep = Mo.Sequential(*rep)
+
+    def call(self, inp):
+        x = self.rep(inp)
+
+        if self.skip is not None:
+            skip = self.skip(inp)
+            skip = self.skipbn(skip)
+        else:
+            skip = inp
+        
+        x += skip
+        return x
+
+    @staticmethod
+    def build_from_config(config):
+        return XceptionBlock(**config)
+
+
 class LinearLayer(Mo.Sequential):
 
     r"""Affine, or fully connected layer with dropout.
