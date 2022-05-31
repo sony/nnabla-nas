@@ -20,7 +20,7 @@ import numpy as np
 import nnabla as nn
 
 from .... import module as Mo
-from .modules import MBConvLayer, set_layer_from_config, XceptionLayer
+from .modules import MBConvLayer, XceptionBlock, set_layer_from_config, XceptionLayer
 from .ofa_utils.common_tools import val2list, make_divisible
 from .ofa_modules.static_op import SEModule
 from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
@@ -301,7 +301,7 @@ class DynamicMBConvLayer(Mo.Module):
         }
 
 
-class Dynamic_XceptionLayer(Mo.Module):
+class DynamicXPLayer(Mo.Module):
 
     r"""The Xception block layers with depthwise separable convolution.
 
@@ -320,63 +320,90 @@ class Dynamic_XceptionLayer(Mo.Module):
     """
 
     def __init__(self, in_channel_list, out_channel_list,
-                 kernel_size_list=3, expand_ratio_list=6, stride=(1, 1), last_block=False):
+                 kernel_size_list=3, expand_ratio_list=6, stride=(1, 1)):
 
         self._in_channel_list = in_channel_list
         self._out_channel_list = out_channel_list
         self._kernel_size_list = val2list(kernel_size_list)
         self._expand_ratio_list = val2list(expand_ratio_list)
         self._stride = stride
-        self._last_block = last_block
         # build modules
         max_middle_channel = make_divisible(
             round(max(self._in_channel_list) * max(self._expand_ratio_list)))
 
-        depth_conv_list = [
-            ('conv', DynamicSeparableConv2d(max(self._in_channel_list), self._kernel_size_list, self._stride)),
-            ('bn', DynamicBatchNorm2d(max(self._in_channel_list), 4)),
+        self.depth_conv1 = Mo.Sequential(OrderedDict([
             ('act', build_activation('relu')),
-            ('conv', DynamicConv2d(max(self._in_channel_list), max_middle_channel)),
-            ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
-            ('act', build_activation('relu')),
-            ('conv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
-            ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
-            ('act', build_activation('relu')),
-            ('conv', DynamicConv2d(max_middle_channel, max_middle_channel)),
-            ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
-            ('act', build_activation('relu')),
-        ]
-        self.depth_conv = Mo.Sequential(OrderedDict(depth_conv_list))
-
-        self.point_linear = Mo.Sequential(OrderedDict([
-            ('conv', DynamicConv2d(max_middle_channel, max(self._out_channel_list))),
-            ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4)), ('act', build_activation('relu'))
+            ('dwconv', DynamicSeparableConv2d(max(self._in_channel_list), self._kernel_size_list, self._stride)),
         ]))
+
+        self.point_linear1 = Mo.Sequential(OrderedDict([
+            ('ptconv', DynamicConv2d(max(self._in_channel_list), max_middle_channel)),
+            ('bn', DynamicBatchNorm2d(max_middle_channel, 4))
+        ]))
+
+        self.depth_conv2 = Mo.Sequential(OrderedDict([
+            ('act', build_activation('relu')),
+            ('dwconv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
+        ]))
+
+        self.point_linear2 = Mo.Sequential(OrderedDict([
+            ('ptconv', DynamicConv2d(max_middle_channel, max_middle_channel)),
+            ('bn', DynamicBatchNorm2d(max_middle_channel, 4))
+        ]))
+
+        self.depth_conv3 = Mo.Sequential(OrderedDict([
+            ('act', build_activation('relu')),
+            ('dwconv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
+        ]))
+
+        self.point_linear3 = Mo.Sequential(OrderedDict([
+            ('ptconv', DynamicConv2d(max_middle_channel, max(self._out_channel_list))),
+            ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4))
+        ]))
+
 
         self.active_kernel_size = max(self._kernel_size_list)
         self.active_expand_ratio = max(self._expand_ratio_list)
         self.active_out_channel = max(self._out_channel_list)
 
-    def call(self, x):
-        in_channel = x.shape[1]
+    def call(self, inp):
+        in_channel = inp.shape[1]
 
-        self.depth_conv.conv.active_kernel_size = self.active_kernel_size
-        self.point_linear.conv.active_out_channel = self.active_out_channel
+        self.depth_conv1.dwconv.active_kernel_size = self.active_kernel_size
+        self.point_linear1.ptconv.active_out_channel = \
+            make_divisible(round(in_channel * self.active_expand_ratio))
 
-        x = self.depth_conv(x)
-        x = self.point_linear(x)
+        self.depth_conv2.dwconv.active_kernel_size = self.active_kernel_size
+        self.point_linear2.ptconv.active_out_channel = \
+            make_divisible(round(in_channel * self.active_expand_ratio))
+
+        self.depth_conv3.dwconv.active_kernel_size = self.active_kernel_size
+        self.point_linear3.ptconv.active_out_channel = self.active_out_channel
+
+        x = self.depth_conv1(inp)
+        x = self.point_linear1(x)
+        
+        x = self.depth_conv2(x)
+        x = self.point_linear2(x)
+        
+        x = self.depth_conv3(x)
+        x = self.point_linear3(x)
+
+        # Skip is a simple shortcut ->
+        skip = inp
+        x += skip
         return x
 
     def extra_repr(self):
-        return (f'in_channel_list={self._in_feature_list}, '
+        return (f'in_channel_list={self._in_channel_list}, '
                 f'out_channel_list={self._out_channel_list}, '
                 f'kernel_size_list={self._kernel_size_list}, '
                 f'expand_ratio_list={self._expand_ratio_list}, '
-                f'stride={self._strride}, '
+                f'stride={self._stride}, '
                 f'last_block={self._last_block} ')
 
     def re_organize_middle_weights(self, expand_ratio_stage=0):
-        importance = np.sum(np.abs(self.point_linear.conv.conv._W.d), axis=(0, 2, 3))
+        importance = np.sum(np.abs(self.point_linear3.ptconv.conv._W.d), axis=(0, 2, 3))
         if expand_ratio_stage > 0:  # ranking channels
             sorted_expand_list = copy.deepcopy(self._expand_ratio_list)
             sorted_expand_list.sort(reverse=True)
@@ -394,11 +421,26 @@ class Dynamic_XceptionLayer(Mo.Module):
                     larger_stage = smaller_stage
 
         sorted_idx = np.argsort(-importance)
-        self.point_linear.conv.conv._W.d = np.stack(
-            [self.point_linear.conv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
-        adjust_bn_according_to_idx(self.depth_conv.bn.bn, sorted_idx)
-        self.depth_conv.conv.conv._W.d = np.stack(
-            [self.depth_conv.conv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+        self.point_linear3.ptconv.conv._W.d = np.stack(
+            [self.point_linear3.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self.point_linear3.bn.bn, sorted_idx)
+        
+        self.point_linear2.ptconv.conv._W.d = np.stack(
+            [self.point_linear2.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self.point_linear2.bn.bn, sorted_idx)
+        
+        self.point_linear1.ptconv.conv._W.d = np.stack(
+            [self.point_linear1.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self.point_linear1.bn.bn, sorted_idx)
+
+        self.depth_conv3.dwconv.conv._W.d = np.stack(
+            [self.depth_conv3.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+        
+        self.depth_conv2.dwconv.conv._W.d = np.stack(
+            [self.depth_conv2.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+
+        self.depth_conv1.dwconv.conv._W.d = np.stack(
+            [self.depth_conv1.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
 
     @property
     def in_channels(self):
@@ -433,9 +475,10 @@ class Dynamic_XceptionLayer(Mo.Module):
 
     def get_active_subnet_config(self, in_channel):
         return {
-            'name': XceptionLayer.__name__,
+            'name': XceptionBlock.__name__,
             'in_channels': in_channel,
             'out_channels': self.active_out_channel,
+            'reps': 3,
             'kernel': (self.active_kernel_size, self.active_kernel_size),
             'stride': self._stride,
             'expand_ratio': self.active_expand_ratio,

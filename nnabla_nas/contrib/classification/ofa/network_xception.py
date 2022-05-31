@@ -23,7 +23,7 @@ from ..base import ClassificationModel as Model
 from .... import module as Mo
 from .modules import ResidualBlock, ConvLayer, LinearLayer, DwConvLayer, SeparableConv, XceptionBlock, XceptionLayer
 from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
-from .elastic_modules import Dynamic_XceptionLayer
+from .elastic_modules import DynamicXPLayer, Dynamic_XceptionLayer
 from .ofa_modules.dynamic_op import DynamicBatchNorm2d
 from .ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
 
@@ -121,12 +121,14 @@ class SearchNet(MyNetwork):
                  base_stage_width=None,
                  op_candidates="XP6 3x3",
                  depth_candidates=8,
+                 width_mult=1.0,
                  weights=None,
                  output_stride=16):
         self._num_classes = num_classes
         self._bn_param = bn_param
         self._drop_rate = drop_rate
         self._op_candidates = op_candidates
+        self._width_mult = width_mult
         self._depth_candidates = depth_candidates
         self._weights = weights
         self._output_stride = output_stride
@@ -164,22 +166,28 @@ class SearchNet(MyNetwork):
 
         # entry flow blocks
         self.entryblocks = []
-        self.entryblocks.append(XceptionBlock(base_stage_width[1], base_stage_width[2], 2, (2,2), start_with_relu=False))
-        self.entryblocks.append(XceptionBlock(base_stage_width[2], base_stage_width[3], 2, (2,2)))
-        self.entryblocks.append(XceptionBlock(base_stage_width[3], base_stage_width[4], 2, (2,2)))
+        self.entryblocks.append(XceptionBlock(base_stage_width[1], base_stage_width[2], 2, stride=(2,2), start_with_relu=False))
+        self.entryblocks.append(XceptionBlock(base_stage_width[2], base_stage_width[3], 2, stride=(2,2)))
+        self.entryblocks.append(XceptionBlock(base_stage_width[3], base_stage_width[4], 2, stride=(2,2)))
 
         # Middle flow blocks
         self.block_group_info = []
         self.middleblocks = []
         _block_index = 0
         self.block_group_info.append([_block_index+i for i in range(max(self._depth_list))])
+        # Here only one set of blocks is needed
         for _ in range(max(self._depth_list)):
-            # Todo -> replace these with dynamic blocks
-            self.middleblocks.append(XceptionBlock(mid_block_width, mid_block_width, 3, (1,1)))
+            self.middleblocks.append(DynamicXPLayer(
+                in_channel_list=val2list(mid_block_width), 
+                out_channel_list=val2list(mid_block_width), 
+                kernel_size_list=self._ks_list,
+                expand_ratio_list=self._expand_ratio_list,
+                stride=(1,1)
+            ))
 
         # Exit flow blocks
         self.exitblocks = []
-        self.exitblocks.append(XceptionBlock(mid_block_width, expand_1_width, 2, (2,2), grow_first=False))
+        self.exitblocks.append(XceptionBlock(mid_block_width, expand_1_width, 2, stride=(2,2), grow_first=False))
 
         self.expand_block1 = SeparableConv(expand_1_width, expand_2_width, (3,3), (1,1), (1,1), use_bn=True, act_fn='relu')
         self.expand_block2 = SeparableConv(expand_2_width, last_channel, (3,3), (1,1), (1,1), use_bn=True, act_fn='relu')
@@ -226,9 +234,11 @@ class SearchNet(MyNetwork):
         return self.classifier(x)
 
     def set_valid_arch(self, genotype):
-        assert(len(genotype) == 20)
-        ks_list, expand_ratio_list, depth_list =\
+        # assert(len(genotype) == 8)
+        # Here we can assert that genotypes are not skip_connect
+        ks_list, expand_ratio_list, _ =\
             genotype2subnetlist(self._op_candidates, genotype)
+        depth_list = len(genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
     @property
@@ -236,15 +246,15 @@ class SearchNet(MyNetwork):
         return self.block_group_info
 
     def set_active_subnet(self, ks=None, e=None, d=None, **kwargs):
-        ks = val2list(ks, len(self.blocks) - 3)
-        expand_ratio = val2list(e, len(self.blocks) - 3)
-        depth = val2list(d, len(self.block_group_info))
+        ks = val2list(ks)
+        expand_ratio = val2list(e)
+        depth = val2list(d)
 
-        for block, k, e in zip(self.blocks[3:], ks, expand_ratio):
+        for block, k, e in zip(self.middleblocks, ks, expand_ratio):
             if k is not None:
-                block.conv.active_kernel_size = k
+                block.active_kernel_size = k
             if e is not None:
-                block.conv.active_expand_ratio = e
+                block.active_expand_ratio = e
 
         for i, d in enumerate(depth):
             if d is not None:
@@ -261,7 +271,7 @@ class SearchNet(MyNetwork):
         # sample kernel size
         ks_setting = []
         if not isinstance(ks_candidates[0], list):
-            ks_candidates = [ks_candidates for _ in range(len(self.blocks) - 1)]
+            ks_candidates = [ks_candidates for _ in range(len(self.middleblocks))]
         for k_set in ks_candidates:
             k = random.choice(k_set)
             ks_setting.append(k)
@@ -269,7 +279,7 @@ class SearchNet(MyNetwork):
         # sample expand ratio
         expand_setting = []
         if not isinstance(expand_candidates[0], list):
-            expand_candidates = [expand_candidates for _ in range(len(self.blocks) - 1)]
+            expand_candidates = [expand_candidates for _ in range(len(self.middleblocks))]
         for e_set in expand_candidates:
             e = random.choice(e_set)
             expand_setting.append(e)
@@ -319,7 +329,6 @@ class SearchNet(MyNetwork):
     def extra_repr(self):
         return (f'num_classes={self._num_classes}, '
                 f'drop_rate={self._drop_rate}, '
-                f'width_mult={self._width_mult}, '
                 f'ks_list={self._ks_list}, '
                 f'expand_ratio_list={self._expand_ratio_list}, '
                 f'depth_list={self._depth_list}')
@@ -348,8 +357,8 @@ class OFASearchNet(SearchNet):
 
     def re_organize_middle_weights(self, expand_ratio_stage=0):
         logger.info("Sorting channels according to the importance...")
-        for block in self.blocks[3:]:
-            block.conv.re_organize_middle_weights(expand_ratio_stage)
+        for block in self.middleblocks:
+            block.re_organize_middle_weights(expand_ratio_stage)
 
 
 class TrainNet(SearchNet):
@@ -388,8 +397,9 @@ class TrainNet(SearchNet):
             op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
 
         if genotype is not None:
-            assert(len(genotype) == 20)
-            ks_list, expand_ratio_list, depth_list = genotype2subnetlist(op_candidates, genotype)
+            # assert(len(genotype) == 20)
+            ks_list, expand_ratio_list, _ = genotype2subnetlist(op_candidates, genotype)
+            depth_list = len(genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
             preserve_weight = True if weights is not None else False

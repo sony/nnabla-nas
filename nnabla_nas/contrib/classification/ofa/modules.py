@@ -417,7 +417,7 @@ class MBConvLayer(Mo.Module):
                 f'use_se={self._use_se}, '
                 f'group={self._group} ')
 
-class XceptionLayer(Mo.Module):
+class XPLayer(Mo.Module):
 
     r"""The Xception block layers with depthwise separable convolution.
 
@@ -500,7 +500,7 @@ class XceptionLayer(Mo.Module):
 
     @staticmethod
     def build_from_config(config):
-        return XceptionLayer(**config)
+        return XPLayer(**config)
 
     def extra_repr(self):
         return (f'in_channels={self._in_channels}, '
@@ -542,7 +542,7 @@ class SeparableConv(Mo.Module):
 
 
 class XceptionBlock(Mo.Module):
-    def __init__(self, in_channels, out_channels, reps, strides=(1,1), start_with_relu=True, grow_first=True):
+    def __init__(self, in_channels, out_channels, reps, kernel=(3,3), strides=(1,1), start_with_relu=True, grow_first=True, expand_ratio=None, mid_channels=None):
         super(XceptionBlock, self).__init__()
         
         if out_channels != in_channels or strides != 1:
@@ -552,16 +552,26 @@ class XceptionBlock(Mo.Module):
             self.skip = None
         
         rep = []
-        for i in range(reps):
-            if grow_first:
-                inc = in_channels if i==1 else out_channels
-                outc = out_channels
-            else:
-                inc = in_channels
-                outc = in_channels if i < (reps-1) else out_channels
+        if expand_ratio is None:
+            for i in range(reps):
+                if grow_first:
+                    inc = in_channels if i==1 else out_channels
+                    outc = out_channels
+                else:
+                    inc = in_channels
+                    outc = in_channels if i < (reps-1) else out_channels
+                rep.append(Mo.ReLU(inplace=True))
+                rep.append(SeparableConv(inc, outc, kernel=kernel, stride=(1,1), pad=(1,1)))
+        elif reps==3:
             rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(inc, outc, (3,3), stride=(1,1), pad=(1,1)))
-        
+            rep.append(SeparableConv(in_channels, mid_channels, kernel=kernel, stride=(1,1), pad=(1,1)))
+   
+            rep.append(Mo.ReLU(inplace=True))
+            rep.append(SeparableConv(mid_channels, mid_channels, kernel=kernel, stride=(1,1), pad=(1,1)))
+   
+            rep.append(Mo.ReLU(inplace=True))
+            rep.append(SeparableConv(mid_channels, out_channels, kernel=kernel, stride=(1,1), pad=(1,1)))
+
         if not start_with_relu:
             rep = rep[1:]
         else:
