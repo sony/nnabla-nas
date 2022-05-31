@@ -320,7 +320,7 @@ class OFASearcher(Searcher):
             subset_train_dataloader = self.dataloader['train']
             dataloader_batch_size = self.mbs_train
         if inp_shape is None:
-            inp_shape = self.args['input_shapes'][0]
+            inp_shape = self.args['input_shapes']
         set_running_statistics(net, subset_train_dataloader, dataloader_batch_size,
                                subset_size, subset_batch_size, inp_shape)
 

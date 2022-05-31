@@ -46,6 +46,7 @@
             [1]
         ],
         "no_decay_keys": "bn#_b",
+        "valid_ce_loss": true,
         "valid_genotypes": [
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ],

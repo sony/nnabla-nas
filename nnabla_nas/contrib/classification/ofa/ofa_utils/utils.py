@@ -72,15 +72,6 @@ def init_models(net, model_init='he_fout'):
                     m._b.shape, initializer=b_init, scope=m._scope_name)
 
 
-def set_bn_params(model, bn_params):
-    for name, m in model.get_modules():
-        if isinstance(m, Mo.BatchNormalization):
-            m._beta.d = bn_params[name]['beta']
-            m._gamma.d = bn_params[name]['beta']
-            m._mean.d = bn_params[name]['mean']
-            m._var.d = bn_params[name]['variance']
-
-
 def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, batch_size, inp_shape):
     """Re-calculates batch normalization mean and variance"""
 
@@ -95,28 +86,36 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
             m.mean_est.reset()
             m.var_est.reset()
 
-    def load_data(inp, x):
-        if isinstance(x, nn.NdArray):
-            inp.data = x
-        else:
-            inp.d = x
-        return inp
+    def load_data(placeholder, data):
+        inp_list = []
+        for inp, x in zip(placeholder, data):
+            if isinstance(x, nn.NdArray):
+                inp.data = x
+            else:
+                inp.d = x
+            inp_list.append(inp)
+        return inp_list
 
     with nn.no_grad():
         DynamicBatchNorm2d.SET_RUNNING_STATISTICS = True
         resize = MyResize()
         transform = dataloader.transform('valid')
         with nn.auto_forward(True):
-            x = nn.Variable(shape=(dataloader_batch_size,
-                            inp_shape[0], inp_shape[1], inp_shape[2]))
+            #x = nn.Variable(shape=(dataloader_batch_size,
+            #                inp_shape[0], inp_shape[1], inp_shape[2]))
+            x = [nn.Variable([dataloader_batch_size] + shape) for shape in inp_shape]
             accum = batch_size // dataloader_batch_size + 1
             for i in range(data_size // batch_size):
                 x_accum = []
                 for _ in range(accum):
                     data = dataloader.next()
-                    x_accum.append(load_data(x, data['inputs'][0]))
-                x_accum = F.concatenate(*x_accum, axis=0)
-                model(*[resize(transform(x_accum[:batch_size, :, :, :]))])
+                    x_accum.append(load_data(x, data['inputs']))
+                x_concat = [F.concatenate(*[x_accum[i][j] for i in range(len(x_accum))], axis=0)
+                            for j in range(len(x))]
+                #x_accum = F.concatenate(*x_accum, axis=0)
+                #model(*[resize(transform(x_accum[:batch_size, :, :, :]))])
+                inputs = [resize(transform(x[:batch_size, :, :, :])) for x in x_concat]
+                model(*inputs)
             DynamicBatchNorm2d.SET_RUNNING_STATISTICS = False
 
     for name, m in model.get_modules():
