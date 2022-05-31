@@ -32,8 +32,8 @@ from ...contrib.classification.ofa.ofa_utils.my_random_resize_crop import MyResi
 
 class OFASearcher(Searcher):
     r"""An implementation of OFA."""
-    def __init__(self, model, optimizer, dataloader, args):
-        super().__init__(model, optimizer, dataloader, args)
+    def __init__(self, model, optimizer, regularizer, dataloader, args):
+        super().__init__(model, optimizer, regularizer, dataloader, args)
 
         manual_seed = 0
         nn.seed(manual_seed)
