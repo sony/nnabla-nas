@@ -74,7 +74,7 @@ For example, the network configuration for ``elastic kernel`` stage looks like t
 
 Train Configuration
 ^^^^^^^^^^^^^^^^^^^^
-Once the SuperNet is trained, you can fine-tune sub-networks to further improve their performance.
+Once the model is trained, you can fine-tune sub-networks to further improve their performance.
 Let's have a look at the example ``examples/classification/ofa/ofa_imagenet_train_subnet.json``. 
 Most of the configuration parameters are the same as for the search json file. 
 The only new configuration parameter is::
