@@ -101,8 +101,7 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
         resize = MyResize()
         transform = dataloader.transform('valid')
         with nn.auto_forward(True):
-            #x = nn.Variable(shape=(dataloader_batch_size,
-            #                inp_shape[0], inp_shape[1], inp_shape[2]))
+            # Note: only support NCHW data format
             x = [nn.Variable([dataloader_batch_size] + shape) for shape in inp_shape]
             accum = batch_size // dataloader_batch_size + 1
             for i in range(data_size // batch_size):
@@ -112,8 +111,6 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
                     x_accum.append(load_data(x, data['inputs']))
                 x_concat = [F.concatenate(*[x_accum[i][j] for i in range(len(x_accum))], axis=0)
                             for j in range(len(x))]
-                #x_accum = F.concatenate(*x_accum, axis=0)
-                #model(*[resize(transform(x_accum[:batch_size, :, :, :]))])
                 inputs = [resize(transform(x[:batch_size, :, :, :])) for x in x_concat]
                 model(*inputs)
             DynamicBatchNorm2d.SET_RUNNING_STATISTICS = False
