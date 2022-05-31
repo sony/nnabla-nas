@@ -82,7 +82,7 @@ The only new configuration parameter is::
     "genotype": [5, 2, 9, 9, 6, 4, 2, 1, 7, 7, 8, 9, 8, 3, 9, 9, 8, 4, 3, 1]
 
 ``genotype`` is used to provide the architecture configuration for the sub-network you wish to fine-tune.
-This can be created by using the operater candidate indices. 
+This can be created by using the operater candidate indices(zero-based indexing). Index 9 means skip connection. 
 For example, if your operater candidates are as follows::
 
     "op_candidates": [
