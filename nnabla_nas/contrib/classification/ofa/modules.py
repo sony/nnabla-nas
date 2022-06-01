@@ -38,12 +38,12 @@ CANDIDATES = {
     'XP1 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 1},
     'XP1 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 1},
     'XP1 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 1},
-    'XP2 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 1},
-    'XP2 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 1},
-    'XP2 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 1},
-    'XP3 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 1},
-    'XP3 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 1},
-    'XP3 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 1},
+    'XP1 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 1},
+    'XP1 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 1},
+    'XP1 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 1},
+    'XP1 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 1},
+    'XP1 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 1},
+    'XP1 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 1},
     'skip_connect': {'ks': None, 'depth': None, 'expand_ratio': None},
 }
 

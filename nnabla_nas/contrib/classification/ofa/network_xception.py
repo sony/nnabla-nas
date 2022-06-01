@@ -349,8 +349,8 @@ class OFASearchNet(SearchNet):
                  drop_rate=0.1,
                  base_stage_width=None,
                  width_mult=1.0,
-                 op_candidates="XP6 3x3",
-                 depth_candidates=4,
+                 op_candidates="XP1 7x7 3",
+                 depth_candidates=3,
                  weights=None
                  ):
         super(OFASearchNet, self).__init__(
@@ -390,37 +390,32 @@ class TrainNet(SearchNet):
 
         if op_candidates is None:
             op_candidates = [
-                "XP3 3x3", "XP3 5x5", "XP3 7x7",
-                "XP4 3x3", "XP4 5x5", "XP4 7x7",
-                "XP6 3x3", "XP6 5x5", "XP6 7x7",
+                "XP1 3x3 1", "XP1 5x5 1", "XP1 7x7 1",
+                "XP1 3x3 2", "XP1 5x5 2", "XP1 7x7 2",
+                "XP1 3x3 3", "XP1 5x5 3", "XP1 7x7 3",
             ]
         if depth_candidates is None:
-            depth_candidates = [2, 3, 4]
+            depth_candidates = [1, 2, 3]
 
         super(TrainNet, self).__init__(
             num_classes, bn_param, drop_rate, width_mult=width_mult,
             op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
 
         if genotype is not None:
-            # assert(len(genotype) == 20)
-            ks_list, expand_ratio_list, _ = genotype2subnetlist(op_candidates, genotype)
-            depth_list = len(genotype)
+            assert(len(genotype) == 8)
+            ks_list, expand_ratio_list, depth_list = genotype2subnetlistXP(op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
             preserve_weight = True if weights is not None else False
 
-            blocks = []
+            self.blocks = []
             input_channel = self.entryblocks[-1]._out_channels
-            for stage_id, block_idx in enumerate(self.block_group_info):
-                depth = self.runtime_depth[stage_id]
-                active_idx = block_idx[:depth]
-                stage_blocks = []
-                for idx in active_idx:
-                    stage_blocks.append(self.middleblocks[idx].get_active_subnet(input_channel, preserve_weight))
-                    input_channel = stage_blocks[-1]._out_channels
-                blocks += stage_blocks
-
-            self.blocks = blocks
+            for stage_id, block_idx in enumerate(self.block_group_info): # This loop will just run once
+                for idx in block_idx:
+                    depth = self.runtime_depth[idx]
+                    self.middleblocks[idx]._runtime_depth = depth
+                    self.blocks.append(self.middleblocks[idx].get_active_subnet(input_channel, preserve_weight))
+                    input_channel = self.blocks[-1]._out_channels
 
 
     def call(self, x):
