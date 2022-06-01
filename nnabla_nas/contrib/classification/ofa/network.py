@@ -101,15 +101,11 @@ class MyNetwork(Model):
         for prefix, module in self.get_modules():
             for name, p in module.parameters.items():
                 key = prefix + ('/' if prefix else '') + name
-                if '/mobile_inverted_conv/' in key:
-                    new_key = key.replace('/mobile_inverted_conv/', '/conv/')
+                if key in params and p.shape == params[key].shape:
+                    p.d = params[key].d.copy()
+                    nn.logger.info(f'`{key}` loaded.')
                 else:
-                    new_key = key
-                if new_key in params and p.shape == params[new_key].shape:
-                    p.d = params[new_key].d.copy()
-                    nn.logger.info(f'`{new_key}` loaded.')
-                else:
-                    nn.logger.info(f'`{new_key}` does not exist.')
+                    nn.logger.info(f'`{key}` does not exist.')
                     if raise_if_missing:
                         raise ValueError(
                             f'A child module {name} cannot be found in '
@@ -318,12 +314,9 @@ class SearchNet(MyNetwork):
         if self._compound:
             return self.sample_compound_subnet()
 
-        ks_candidates = self._ks_list if self.__dict__.get('_ks_include_list', None) is None \
-            else self.__dict__['_ks_include_list']
-        expand_candidates = self._expand_ratio_list if self.__dict__.get('_expand_include_list', None) is None \
-            else self.__dict__['_expand_include_list']
-        depth_candidates = self._depth_list if self.__dict__.get('_depth_include_list', None) is None else \
-            self.__dict__['_depth_include_list']
+        ks_candidates = self._ks_list
+        expand_candidates = self._expand_ratio_list
+        depth_candidates = self._depth_list
 
         # sample kernel size
         ks_setting = []
@@ -367,10 +360,8 @@ class SearchNet(MyNetwork):
             expands = list(set(np.clip(expands, low, None)))
             return expands
 
-        ks_candidates = self._ks_list if self.__dict__.get('_ks_include_list', None) is None \
-            else self.__dict__['_ks_include_list']
-        depth_candidates = self._depth_list if self.__dict__.get('_depth_include_list', None) is None else \
-            self.__dict__['_depth_include_list']
+        ks_candidates = self._ks_list
+        depth_candidates = self._depth_list
 
         mapping = {
             2: clip_expands([3, ]),
@@ -416,32 +407,6 @@ class SearchNet(MyNetwork):
             'e': expand_setting,
             'd': depth_setting,
         }
-
-    def load_parameters(self, path, raise_if_missing=False):
-        with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
-            params = nn.get_parameters(grad_only=False)
-        self.set_parameters(params, raise_if_missing=raise_if_missing)
-
-    def set_parameters(self, params, raise_if_missing=False):
-        for prefix, module in self.get_modules():
-            for name, p in module.parameters.items():
-                key = prefix + ('/' if prefix else '') + name
-                if '/mobile_inverted_conv/' in key:
-                    new_key = key.replace('/mobile_inverted_conv/', '/conv/')
-                else:
-                    new_key = key
-                if new_key in params and p.shape == params[new_key].shape:
-                    p.d = params[new_key].d.copy()
-                    nn.logger.info(f'`{new_key}` loaded.')
-                else:
-                    nn.logger.info(f'`{new_key}` does not exist.')
-                    if raise_if_missing:
-                        raise ValueError(
-                            f'A child module {name} cannot be found in '
-                            '{this}. This error is raised because '
-                            '`raise_if_missing` is specified '
-                            'as True. Please turn off if you allow it.')
 
     def extra_repr(self):
         return (f'num_classes={self._num_classes}, '
