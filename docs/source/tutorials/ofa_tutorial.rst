@@ -2,10 +2,10 @@ Once-for-All tutorial
 ---------------------
 
 Once-for-All (OFA) :cite:`cai2019once` is only trained once, and we can quickly get specialized sub-networks from the OFA network without additional training.
-The OFA architecture provides one model but supports a large number of sub-networks (>10^19) that covers various hardware platforms. 
+The OFA architecture provides one model but supports a large number of sub-networks (>10^19) that covers various hardware platforms.
 To efficiently train all the sub-networks, the progressive shrinking algorithm enforces the training order from large sub-networks to small sub-networks in a progressive manner.
 
-We will show how to run ``OFA`` example on ImageNet. 
+We will show how to run ``OFA`` example on ImageNet.
 
 .. note::
     The command line for each example can be found in ./jobs.sh
@@ -19,7 +19,7 @@ OFA's progressive shrinking algorithm gradually increases the target sub-network
 
 .. image:: images/progressive_shrinking.png
     :width: 600
-    :align: center 
+    :align: center
 
 
 In NNablaNAS, progressive shrinking can be performed by running the training with different set of sub-networks in a progressive manner.
@@ -56,10 +56,10 @@ Here are the running scripts found in ``./jobs.sh``. ::
                 -a OFASearcher \
                 -o log/classification/ofa/imagenet/search/K357_E346_D234/
 
-Each stage uses weights trained in the previous stage for initialization. 
+Each stage uses weights trained in the previous stage for initialization.
 
 For example, the network configuration for ``elastic kernel`` stage looks like this::
-   
+
    "network": {
         "ofa": {
             "num_classes": 1000,
@@ -75,19 +75,19 @@ For example, the network configuration for ``elastic kernel`` stage looks like t
 Train Configuration
 ^^^^^^^^^^^^^^^^^^^^
 Once the model is trained, you can fine-tune sub-networks to further improve their performance.
-Let's have a look at the example ``examples/classification/ofa/ofa_imagenet_train_subnet.json``. 
-Most of the configuration parameters are the same as for the search json file. 
+Let's have a look at the example ``examples/classification/ofa/ofa_imagenet_train_subnet.json``.
+Most of the configuration parameters are the same as for the search json file.
 The only new configuration parameter is::
 
     "genotype": [5, 2, 9, 9, 6, 4, 2, 1, 7, 7, 8, 9, 8, 3, 9, 9, 8, 4, 3, 1]
 
 ``genotype`` is used to provide the architecture configuration for the sub-network you wish to fine-tune.
-This can be created by using the operater candidate indices(zero-based indexing). Index 9 means skip connection. 
+This can be created by using the operater candidate indices(zero-based indexing). Index 9 means skip connection.
 For example, if your operater candidates are as follows::
 
     "op_candidates": [
-            "MB3 3x3", "MB3 5x5", "MB3 7x7", 
-            "MB4 3x3", "MB4 5x5", "MB4 7x7", 
+            "MB3 3x3", "MB3 5x5", "MB3 7x7",
+            "MB4 3x3", "MB4 5x5", "MB4 7x7",
             "MB6 3x3", "MB6 5x5", "MB6 7x7"
         ],
 
