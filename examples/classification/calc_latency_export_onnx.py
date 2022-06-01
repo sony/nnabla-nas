@@ -427,7 +427,7 @@ def calc_latency_and_onnx(exp_nr, calc_latency=False, ext_name='cpu',
             # This calculates the latency of each module going
             # the tree of the modules
             mobile_net.save_modules_nnp(
-                            OUTPUT_DIR + 'mn' + str(i),  active_only=True,
+                            OUTPUT_DIR + 'mn' + str(i), active_only=True,
                             calc_latency=calc_latency,
                             func_latency=estim_accum_by_graph
                             )
