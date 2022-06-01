@@ -3,13 +3,13 @@ from nnabla.initializer import NormalInitializer, UniformInitializer
 
 
 def torch_initializer(inmaps, kernel):
-    d = np.sqrt(1. / (np.prod(kernel) * inmaps))
+    d = np.sqrt(1. / (kernel * kernel * inmaps))
     return UniformInitializer((-d, d))
 
 
 def he_initializer(ochan, kernel, rng):
     return NormalInitializer(
-        sigma=np.sqrt(2 / (np.prod(kernel) * ochan)),
+        sigma=np.sqrt(2 / (kernel * kernel * ochan)),
         rng=rng
     )
 

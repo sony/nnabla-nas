@@ -36,11 +36,11 @@ def init_models(net, model_init='he_fout'):
     for _, m in net.get_modules():
         if isinstance(m, Mo.Conv):
             if model_init == 'he_fout':
-                w_init = he_initializer(m._out_channels, m._kernel, rng=None)
+                w_init = he_initializer(m._out_channels, m._kernel[0], rng=None)
                 m._W = Mo.Parameter(
                     m._W.shape, initializer=w_init, scope=m._scope_name)
             elif model_init == 'he_fin':
-                w_init = he_initializer(m._in_channels, m._kernel, rng=None)
+                w_init = he_initializer(m._in_channels, m._kernel[0], rng=None)
                 m._W = Mo.Parameter(
                     m._W.shape, initializer=w_init, scope=m._scope_name)
             elif model_init == 'pytorch':
