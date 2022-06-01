@@ -20,7 +20,7 @@ import numpy as np
 import nnabla as nn
 
 from .... import module as Mo
-from .modules import MBConvLayer, XceptionBlock, set_layer_from_config, XceptionLayer
+from .modules import MBConvLayer, XceptionBlock, set_layer_from_config
 from .ofa_utils.common_tools import val2list, make_divisible
 from .ofa_modules.static_op import SEModule
 from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
@@ -320,13 +320,14 @@ class DynamicXPLayer(Mo.Module):
     """
 
     def __init__(self, in_channel_list, out_channel_list,
-                 kernel_size_list=3, expand_ratio_list=6, stride=(1, 1)):
+                 kernel_size_list=3, expand_ratio_list=6, stride=(1, 1), depth=3):
 
         self._in_channel_list = in_channel_list
         self._out_channel_list = out_channel_list
         self._kernel_size_list = val2list(kernel_size_list)
         self._expand_ratio_list = val2list(expand_ratio_list)
         self._stride = stride
+        self._runtime_depth = depth
         # build modules
         max_middle_channel = make_divisible(
             round(max(self._in_channel_list) * max(self._expand_ratio_list)))
@@ -382,12 +383,14 @@ class DynamicXPLayer(Mo.Module):
 
         x = self.depth_conv1(inp)
         x = self.point_linear1(x)
-        
-        x = self.depth_conv2(x)
-        x = self.point_linear2(x)
-        
-        x = self.depth_conv3(x)
-        x = self.point_linear3(x)
+
+        if self._runtime_depth > 1: # runtime depth
+            x = self.depth_conv2(x)
+            x = self.point_linear2(x)
+
+        if self._runtime_depth > 2: # runtime depth       
+            x = self.depth_conv3(x)
+            x = self.point_linear3(x)
 
         # Skip is a simple shortcut ->
         skip = inp
@@ -399,8 +402,7 @@ class DynamicXPLayer(Mo.Module):
                 f'out_channel_list={self._out_channel_list}, '
                 f'kernel_size_list={self._kernel_size_list}, '
                 f'expand_ratio_list={self._expand_ratio_list}, '
-                f'stride={self._stride}, '
-                f'last_block={self._last_block} ')
+                f'stride={self._stride}, ')
 
     def re_organize_middle_weights(self, expand_ratio_stage=0):
         importance = np.sum(np.abs(self.point_linear3.ptconv.conv._W.d), axis=(0, 2, 3))
@@ -462,13 +464,28 @@ class DynamicXPLayer(Mo.Module):
 
         middle_channel = self.active_middle_channel(in_channel)
 
-        active_filter = self.depth_conv.conv.get_active_filter(middle_channel, self.active_kernel_size)
-        sub_layer.depth_conv.conv._W.d = active_filter.d
-        copy_bn(sub_layer.depth_conv.bn, self.depth_conv.bn.bn)
+        active_filter = self.depth_conv1.dwconv.get_active_filter(in_channel, self.active_kernel_size)
+        sub_layer.depth_conv1.dwconv._W.d = active_filter.d
 
-        sub_layer.point_linear.conv._W.d =\
-            self.point_linear.conv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
-        copy_bn(sub_layer.point_linear.bn, self.point_linear.bn.bn)
+        active_filter = self.depth_conv2.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
+        sub_layer.depth_conv2.dwconv._W.d = active_filter.d
+
+        active_filter = self.depth_conv3.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
+        sub_layer.depth_conv3.dwconv._W.d = active_filter.d
+
+        copy_bn(sub_layer.point_linear1.bn, self.point_linear1.bn.bn)
+        copy_bn(sub_layer.point_linear2.bn, self.point_linear2.bn.bn)
+        copy_bn(sub_layer.point_linear3.bn, self.point_linear3.bn.bn)
+
+        sub_layer.point_linear1.ptconv._W.d =\
+            self.point_linear1.ptconv.conv._W.d[:middle_channel, :in_channel, :, :]
+
+        sub_layer.point_linear2.ptconv._W.d =\
+            self.point_linear2.ptconv.conv._W.d[:middle_channel, :middle_channel, :, :]
+
+        sub_layer.point_linear3.ptconv._W.d =\
+            self.point_linear3.ptconv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
+
         nn.set_auto_forward(False)
 
         return sub_layer

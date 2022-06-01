@@ -21,9 +21,9 @@ import nnabla.logger as logger
 
 from ..base import ClassificationModel as Model
 from .... import module as Mo
-from .modules import ResidualBlock, ConvLayer, LinearLayer, DwConvLayer, SeparableConv, XceptionBlock, XceptionLayer
+from .modules import ResidualBlock, ConvLayer, LinearLayer, DwConvLayer, SeparableConv, XceptionBlock, genotype2subnetlistXP
 from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
-from .elastic_modules import DynamicXPLayer, Dynamic_XceptionLayer
+from .elastic_modules import DynamicXPLayer
 from .ofa_modules.dynamic_op import DynamicBatchNorm2d
 from .ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
 
@@ -120,7 +120,7 @@ class SearchNet(MyNetwork):
                  drop_rate=0.1,
                  base_stage_width=None,
                  op_candidates="XP6 3x3",
-                 depth_candidates=8,
+                 depth_candidates=3,
                  width_mult=1.0,
                  weights=None,
                  output_stride=16):
@@ -155,6 +155,9 @@ class SearchNet(MyNetwork):
         first_conv_channel = base_stage_width[0]
         sec_conv_channel = base_stage_width[1]
         mid_block_width = base_stage_width[4]
+
+        n_block_list = [max(self._depth_list)] * 8 # 8 blocks in Xception Middle Flow
+
         # Entry flow
         # first conv layer
         self.first_conv = ConvLayer(
@@ -176,13 +179,14 @@ class SearchNet(MyNetwork):
         _block_index = 0
         self.block_group_info.append([_block_index+i for i in range(max(self._depth_list))])
         # Here only one set of blocks is needed
-        for _ in range(max(self._depth_list)):
+        for depth in n_block_list: # 8 blocks with each block having 1,2,3 layers of relu+sep_conv
             self.middleblocks.append(DynamicXPLayer(
                 in_channel_list=val2list(mid_block_width), 
                 out_channel_list=val2list(mid_block_width), 
                 kernel_size_list=self._ks_list,
                 expand_ratio_list=self._expand_ratio_list,
-                stride=(1,1)
+                stride=(1,1),
+                depth=depth
             ))
 
         # Exit flow blocks
@@ -199,7 +203,8 @@ class SearchNet(MyNetwork):
         self.set_bn_param(decay_rate=bn_param[0], eps=bn_param[1])
 
         # runtime depth
-        self.runtime_depth = [len(block_idx) for block_idx in self.block_group_info]
+        self.block_depth_info = [depth for depth in n_block_list]
+        self.runtime_depth = [depth for depth in n_block_list]
 
         if len(self._expand_ratio_list) == 1:
             DynamicBatchNorm2d.GET_STATIC_BN = True
@@ -222,23 +227,23 @@ class SearchNet(MyNetwork):
         # blocks
         # just one set of blocks
         for stage_id, block_idx in enumerate(self.block_group_info):
-            depth = self.runtime_depth[stage_id]
-            active_idx = block_idx[:depth]
-            for idx in active_idx:
+            for idx in block_idx:
+                depth = self.runtime_depth[idx]
+                self.middleblocks[idx]._runtime_depth = depth
                 x = self.middleblocks[idx](x)
         x = self.exitblocks[0](x)
         x = self.expand_block1(x)
         x = self.expand_block2(x)
+        # Global Avg Pool
         x = F.mean(x, axis=(2, 3), keepdims=True)
         x = F.reshape(x, shape=(x.shape[0], -1))
         return self.classifier(x)
 
     def set_valid_arch(self, genotype):
-        # assert(len(genotype) == 8)
+        assert(len(genotype) == 8)
         # Here we can assert that genotypes are not skip_connect
-        ks_list, expand_ratio_list, _ =\
-            genotype2subnetlist(self._op_candidates, genotype)
-        depth_list = len(genotype)
+        ks_list, expand_ratio_list, depth_list =\
+            genotype2subnetlistXP(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
     @property
@@ -258,7 +263,7 @@ class SearchNet(MyNetwork):
 
         for i, d in enumerate(depth):
             if d is not None:
-                self.runtime_depth[i] = min(len(self.block_group_info[i]), d)
+                self.runtime_depth[i] = min(self.block_depth_info[i], d)
 
     def sample_active_subnet(self):
         ks_candidates = self._ks_list if self.__dict__.get('_ks_include_list', None) is None \
@@ -404,45 +409,31 @@ class TrainNet(SearchNet):
 
             preserve_weight = True if weights is not None else False
 
-            blocks = [self.blocks[0]]
-            blocks.append(self.blocks[1])
-            blocks.append(self.blocks[2])
-            # first block dim is out channels of third block
-            input_channel = blocks[2].conv._out_channels
+            blocks = []
+            input_channel = self.entryblocks[-1]._out_channels
             for stage_id, block_idx in enumerate(self.block_group_info):
                 depth = self.runtime_depth[stage_id]
                 active_idx = block_idx[:depth]
                 stage_blocks = []
                 for idx in active_idx:
-                    stage_blocks.append(ResidualBlock(
-                        self.blocks[idx].conv.get_active_subnet(input_channel, preserve_weight),
-                        self.blocks[idx].shortcut
-                    ))
-                    input_channel = stage_blocks[-1].conv._out_channels
+                    stage_blocks.append(self.middleblocks[idx].get_active_subnet(input_channel, preserve_weight))
+                    input_channel = stage_blocks[-1]._out_channels
                 blocks += stage_blocks
 
-            self.blocks = Mo.ModuleList(blocks)
-            self.expand_layer_1 = self.expand_layer_1
-            self.pointwise_1 = self.pointwise_1
-            self.expand_layer_2 = self.expand_layer_2
-            self.pointwise_2 = self.pointwise_2
-            self.expand_layer_3 = self.expand_layer_3
-            self.pointwise_3 = self.pointwise_3
-            # self.feature_mix_layer = self.feature_mix_layer
-            self.classifier = self.classifier
+            self.blocks = blocks
+
 
     def call(self, x):
         x = self.first_conv(x)
         x = self.second_conv(x)
+        print("*"*30)
+        print(self.blocks)
+        print("*"*30)
         for idx in range(len(self.blocks)):
             x = self.blocks[idx](x)
-        x = self.expand_layer_1(x)
-        x = self.pointwise_1(x)
-        x = self.expand_layer_2(x)
-        x = self.pointwise_2(x)
-        x = self.expand_layer_3(x)
-        x = self.pointwise_3(x)
-        # x = F.mean(x, axis=(2, 3), keepdims=True)
-        # x = self.feature_mix_layer(x)
+        x = self.exitblocks[0](x)
+        x = self.expand_block1(x)
+        x = self.expand_block2(x)
+        x = F.mean(x, axis=(2, 3), keepdims=True)
         x = F.reshape(x, shape=(x.shape[0], -1))
         return self.classifier(x)

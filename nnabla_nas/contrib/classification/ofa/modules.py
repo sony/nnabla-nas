@@ -25,16 +25,26 @@ from nnabla.initializer import ConstantInitializer
 
 
 CANDIDATES = {
-    'XP3 3x3': {'ks': 3, 'expand_ratio': 3},
-    'XP3 5x5': {'ks': 5, 'expand_ratio': 3},
-    'XP3 7x7': {'ks': 7, 'expand_ratio': 3},
-    'XP4 3x3': {'ks': 3, 'expand_ratio': 4},
-    'XP4 5x5': {'ks': 5, 'expand_ratio': 4},
-    'XP4 7x7': {'ks': 7, 'expand_ratio': 4},
-    'XP6 3x3': {'ks': 3, 'expand_ratio': 6},
-    'XP6 5x5': {'ks': 5, 'expand_ratio': 6},
-    'XP6 7x7': {'ks': 7, 'expand_ratio': 6},
-    'skip_connect': {'ks': None, 'expand_ratio': None},
+    # 'XP1 3x3': {'ks': 3, 'expand_ratio': 1},
+    # 'XP1 5x5': {'ks': 5, 'expand_ratio': 1},
+    # 'XP1 7x7': {'ks': 7, 'expand_ratio': 1},
+    # 'XP2 3x3': {'ks': 3, 'expand_ratio': 2},
+    # 'XP2 5x5': {'ks': 5, 'expand_ratio': 2},
+    # 'XP2 7x7': {'ks': 7, 'expand_ratio': 2},
+    # 'XP3 3x3': {'ks': 3, 'expand_ratio': 3},
+    # 'XP3 5x5': {'ks': 5, 'expand_ratio': 3},
+    # 'XP3 7x7': {'ks': 7, 'expand_ratio': 3},
+    # we'll need 27 options
+    'XP1 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 1},
+    'XP1 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 1},
+    'XP1 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 1},
+    'XP2 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 1},
+    'XP2 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 1},
+    'XP2 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 1},
+    'XP3 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 1},
+    'XP3 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 1},
+    'XP3 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 1},
+    'skip_connect': {'ks': None, 'depth': None, 'expand_ratio': None},
 }
 
 
@@ -75,6 +85,16 @@ def genotype2subnetlist(op_candidates, genotype):
     assert([d > 1 for d in depth_list])
     return ks_list, expand_ratio_list, depth_list
 
+def genotype2subnetlistXP(op_candidates, genotype):
+    op_candidates.append('skip_connect')
+    subnet_list = [op_candidates[i] for i in genotype]
+    ks_list = [CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
+               else 3 for subnet in subnet_list]
+    expand_ratio_list = [CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
+                         else 4 for subnet in subnet_list]
+    depth_list = [CANDIDATES[subnet]['depth'] if subnet != 'skip_connect' else 3 for subnet in subnet_list]
+    assert([d >= 1 for d in depth_list])
+    return ks_list, expand_ratio_list, depth_list
 
 def set_layer_from_config(layer_config):
     if layer_config is None:
@@ -84,7 +104,7 @@ def set_layer_from_config(layer_config):
         ConvLayer.__name__: ConvLayer,
         LinearLayer.__name__: LinearLayer,
         MBConvLayer.__name__: MBConvLayer,
-        XceptionLayer.__name__: XceptionLayer,
+        XceptionBlock.__name__: XceptionBlock,
         'MBInvertedConvLayer': MBConvLayer,
         ##########################################################
         ResidualBlock.__name__: ResidualBlock,
@@ -516,7 +536,7 @@ class SeparableConv(Mo.Module):
     def __init__(self, in_channels, out_channels, kernel=(1,1), stride=(1,1), pad=(0,0), dilation=(1,1), use_bn=True, act_fn=None):
         super(SeparableConv, self).__init__()
 
-        self.conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation, stride=stride, with_bias=False, groups=in_channels)
+        self.conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation, stride=stride, with_bias=False, group=in_channels)
         self.pointwise = Mo.Conv(in_channels, out_channels, (1,1), stride=(1,1), pad=(0,0), dilation=(1,1), group=1, with_bias=False)
         
         self.use_bn = use_bn
@@ -542,11 +562,14 @@ class SeparableConv(Mo.Module):
 
 
 class XceptionBlock(Mo.Module):
-    def __init__(self, in_channels, out_channels, reps, kernel=(3,3), strides=(1,1), start_with_relu=True, grow_first=True, expand_ratio=None, mid_channels=None):
+    def __init__(self, in_channels, out_channels, reps, kernel=(3,3), stride=(1,1), start_with_relu=True, grow_first=True, expand_ratio=None, mid_channels=None):
         super(XceptionBlock, self).__init__()
         
-        if out_channels != in_channels or strides != 1:
-            self.skip = Mo.Conv(in_channels, out_channels, (1,1), stride=strides, with_bias=False)
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+        
+        if out_channels != in_channels or stride != 1:
+            self.skip = Mo.Conv(in_channels, out_channels, (1,1), stride=stride, with_bias=False)
             self.skipbn = Mo.BatchNormalization(out_channels, 4)
         else:
             self.skip = None
@@ -577,8 +600,8 @@ class XceptionBlock(Mo.Module):
         else:
             rep[0] = Mo.ReLU(inplace=False)
         
-        if strides != 1:
-            rep.append(Mo.MaxPool((3,3), stride=strides, pad=(1,1)))
+        if stride != 1:
+            rep.append(Mo.MaxPool((3,3), stride=stride, pad=(1,1)))
         self.rep = Mo.Sequential(*rep)
 
     def call(self, inp):
