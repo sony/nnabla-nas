@@ -197,3 +197,14 @@ mpirun -n 4 python main.py \
                -f examples/classification/ofa/ofa_imagenet_train_subnet.json \
                -a OFATrainer \
                -o log/classification/ofa/imagenet/train_subnet/
+
+#---------------------- CompOFA ----------------------------#
+mpirun -n 4 python main.py --search \
+               -f examples/classification/ofa/ofa_imagenet_search_comp_phase1.json \
+               -a OFASearcher \
+               -o log/classification/ofa/imagenet/search/K357_E346_D234/phase1/
+
+mpirun -n 4 python main.py --search \
+               -f examples/classification/ofa/ofa_imagenet_search_comp_phase2.json \
+               -a OFASearcher \
+               -o log/classification/ofa/imagenet/search/K357_E346_D234/phase2/

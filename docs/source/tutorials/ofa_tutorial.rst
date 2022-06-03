@@ -71,6 +71,27 @@ For example, the network configuration for ``elastic kernel`` stage looks like t
         }
     },
 
+You can also train CompOFA sub-networks that was produced in :cite:`sahni2021compofa` by setting the ``compound`` flag.
+CompOFA simplifies the OFA model design space while maintaining Pareto optimaly; you can almost half the training time.
+
+The example of network configuration for ``CompOFA`` looks like this::
+
+     "network": {
+        "ofa": {
+            "num_classes": 1000,
+            "bn_param": [0.9, 1e-5],
+            "drop_rate": 0.1,
+            "op_candidates": [
+                "MB3 3x3", "MB3 5x5", "MB3 7x7", 
+                "MB4 3x3", "MB4 5x5", "MB4 7x7", 
+                "MB6 3x3", "MB6 5x5", "MB6 7x7"
+            ],
+            "depth_candidates": [2, 3, 4],
+            "compound": true,
+            "weights": "ofa_sample_params/ofa-mbv3/R_K7_E6_D4_acc0.75968.h5"
+        }
+    },
+
 
 Train Configuration
 ^^^^^^^^^^^^^^^^^^^^

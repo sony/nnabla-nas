@@ -1,0 +1,91 @@
+{
+    "dataloader": {
+        "imagenet": {
+            "train_portion": 0.99,
+            "augment_valid": false,
+            "colortwist": true,
+            "train_path": "/disk1/data/ILSVRC-2012/img_train/",
+            "train_file": "/disk1/data/ILSVRC-2012/train.txt",
+            "valid_path": "/disk1/data/ILSVRC-2012/img_val",
+            "valid_file": "/disk1/data/ILSVRC-2012/val.txt"
+        }
+    },
+    "network": {
+        "ofa": {
+            "num_classes": 1000,
+            "bn_param": [0.9, 1e-5],
+            "drop_rate": 0.1,
+            "op_candidates": [
+                "MB3 3x3", "MB3 5x5", "MB3 7x7", 
+                "MB4 3x3", "MB4 5x5", "MB4 7x7", 
+                "MB6 3x3", "MB6 5x5", "MB6 7x7"
+            ],
+            "depth_candidates": [2, 3, 4],
+            "compound": true,
+            "weights": "log/classification/ofa/imagenet/search/K357_E346_D234/phase1/weights.h5"
+        }
+    },
+    "optimizer": {
+        "train": {
+            "weight_decay": 3e-5,
+            "lr_scheduler": "CosineSchedulerWarmup",
+            "name": "Nesterov",
+            "lr": 0.06,
+            "momentum": 0.9
+            },
+        "train_no_decay": {
+            "weight_decay": 0,
+            "lr_scheduler": "CosineSchedulerWarmup",
+            "name": "Nesterov",
+            "lr": 0.06,
+            "momentum": 0.9
+            }
+    },
+    "hparams": {
+        "task": "expand",
+        "train_image_size_list": [128, 160, 192, 224],
+        "valid_image_size_list": [160, 224],
+        "valid_genotypes": [
+            [0, 0, 9, 9, 0, 0, 9, 9, 0, 0, 9, 9, 0, 0, 9, 9, 0, 0, 9, 9],
+            [2, 2, 9, 9, 2, 2, 9, 9, 2, 2, 9, 9, 2, 2, 9, 9, 2, 2, 9, 9],
+            [3, 3, 9, 9, 3, 3, 9, 9, 3, 3, 9, 9, 3, 3, 9, 9, 3, 3, 9, 9],
+            [5, 5, 9, 9, 5, 5, 9, 9, 5, 5, 9, 9, 5, 5, 9, 9, 5, 5, 9, 9],
+            [6, 6, 9, 9, 6, 6, 9, 9, 6, 6, 9, 9, 6, 6, 9, 9, 6, 6, 9, 9],
+            [8, 8, 9, 9, 8, 8, 9, 9, 8, 8, 9, 9, 8, 8, 9, 9, 8, 8, 9, 9],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+            [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+            [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+            [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+            [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+        ],
+        "input_shapes": [
+            [3, 224, 224]
+        ],
+        "target_shapes": [
+            [1]
+        ],
+        "no_decay_keys": "bn#_b",
+        "valid_ce_loss": true,
+        "lambda_kd": 1,
+        "teacher_network": {
+            "ofa": {
+                "num_classes": 1000,
+                "bn_param": [0.9, 1e-5],
+                "drop_rate": 0,
+                "op_candidates": ["MB6 7x7"],
+                "depth_candidates": [4],
+                "weights": "log/classification/ofa/imagenet/search/K7_E6_D4/weights.h5"
+            }
+        },
+        "epoch": 125,
+        "cosine_warmup_epoch": 5,
+        "warmup_lr": 0.0075,
+        "batch_size_train": 256,
+        "batch_size_valid": 200,
+        "mini_batch_train": 32,
+        "mini_batch_valid": 200,
+        "print_frequency": 100,
+        "validation_frequency": 1
+    }
+}
