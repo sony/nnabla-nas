@@ -76,7 +76,7 @@ class OFASearcher(Searcher):
                     self.monitor.reset()
                     MyResize.ACTIVE_SIZE = img_size
                     self.model.set_valid_arch(genotype)
-                    #self.reset_running_statistics()
+                    # self.reset_running_statistics()
                     for i in range(self.one_epoch_test):
                         self.update_graph('test')
                         self.valid_on_batch(is_test=True)
@@ -112,7 +112,7 @@ class OFASearcher(Searcher):
                         self.monitor.reset()
                         MyResize.ACTIVE_SIZE = img_size
                         self.model.set_valid_arch(genotype)
-                        #self.reset_running_statistics()
+                        # self.reset_running_statistics()
                         for i in range(self.one_epoch_valid):
                             self.update_graph('valid')
                             self.valid_on_batch(is_test=False)
