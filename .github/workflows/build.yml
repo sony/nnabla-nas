@@ -6,16 +6,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Build HTML
-      uses: ammaraskar/sphinx-action@master
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       with:
-        docs-folder: "docs/"
-        build-command: "make html"
+        python-version: '3.9'
 
-    - name: Upload HTML
-      uses: actions/upload-artifact@v2
+    - name: Install dependencies
+      run: |
+        python -VV
+        python -m site
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install -r docs/requirements.txt
+
+    - name: Build documentation
+      env:
+        SPHINXOPTS: -W
+      run: |
+        cd ./docs
+        make html
+
+    - name: Upload HTML files
+      uses: actions/upload-artifact@v3
       with:
         name: nnabla-nas-html
         path: ./docs/build/html

@@ -72,3 +72,11 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_static_path = []
 
 html_logo = "logo/logo.png"
+
+autodoc_mock_imports = [
+    "nnabla_ext.cuda",
+    "more_itertools",
+    "tensorboard",
+    "networkx",
+    "sklearn",
+]
