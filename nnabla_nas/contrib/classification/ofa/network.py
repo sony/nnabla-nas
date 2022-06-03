@@ -236,7 +236,6 @@ class SearchNet(MyNetwork):
         self.final_expand_layer = ConvLayer(
             feature_dim, final_expand_width, kernel=(1, 1), act_func='h_swish'
         )
-        # self.global_avg_pool = MyGlobalAvgPooling()
         self.feature_mix_layer = ConvLayer(
             final_expand_width, last_channel, kernel=(1, 1), with_bias=False, use_bn=False, act_func='h_swish'
         )
