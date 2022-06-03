@@ -4,10 +4,10 @@
             "train_portion": 0.99,
             "augment_valid": "False",
             "colortwist": "True",
-            "train_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train",
-            "train_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train_label",
-            "valid_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val",
-            "valid_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val_label"
+            "train_path": "/data/imagenet/train",
+            "train_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/train_label",
+            "valid_path": "/data/imagenet/val",
+            "valid_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/val_label"
         }
     },
     "network": {
@@ -15,44 +15,56 @@
         "num_classes": 1000,
         "bn_param": [0.9, 1e-5],
         "drop_rate": 0.1,
-        "op_candidates": ["XP6 7x7"],
+        "op_candidates": ["MB6 7x7", "MB6 5x5"],
         "depth_candidates": [4],
-        "output_stride": 16}
+        "weights": "log/classification/ofa/imagenet/search/K7_E6_D4/weights.h5"
+        }
     },
     "optimizer": {
         "train": {
             "weight_decay": 3e-5,
             "lr_scheduler": "CosineSchedulerWarmup",
             "name": "Nesterov",
-            "lr": 2.6,
+            "lr": 0.96,
             "momentum": 0.9
             },
         "train_no_decay": {
             "weight_decay": 0,
             "lr_scheduler": "CosineSchedulerWarmup",
             "name": "Nesterov",
-            "lr": 2.6,
+            "lr": 0.96,
             "momentum": 0.9
             }
     },
     "hparams": {
-        "task": "fullnet",
+        "task": "kernel",
         "train_image_size_list": [128, 160, 192, 224],
         "valid_image_size_list": [160, 224],
+        "valid_genotypes": [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ],
         "input_shapes": [
-             [3, 224, 224]
+            [3, 224, 224]
         ],
         "target_shapes": [
             [1]
         ],
-        "no_decay_keys": "bn#bias",
-        "valid_genotypes": [
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        ],
-        "lambda_kd": 0,
-        "epoch": 185,
+        "no_decay_keys": "bn#_b",
+        "lambda_kd": 1,
+        "teacher_network": {
+            "ofa": {
+            "num_classes": 1000,
+            "bn_param": [0.9, 1e-5],
+            "drop_rate": 0,
+            "op_candidates": ["MB6 7x7"],
+            "depth_candidates": [4],
+            "weights": "log/classification/ofa/imagenet/search/K7_E6_D4/weights.h5"
+            }
+        },
+        "epoch": 125,
         "cosine_warmup_epoch": 5,
-        "warmup_lr": 0.08125,
+        "warmup_lr": 0.003,
         "batch_size_train": 256,
         "batch_size_valid": 200,
         "mini_batch_train": 32,

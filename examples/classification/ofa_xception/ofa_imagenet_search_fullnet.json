@@ -11,13 +11,13 @@
         }
     },
     "network": {
-        "ofa": {
-        "num_classes": 1000,
-        "bn_param": [0.9, 1e-5],
-        "drop_rate": 0.1,
-        "op_candidates": ["XP6 7x7"],
-        "depth_candidates": [4],
-        "output_stride": 16}
+        "ofa_xception": {
+            "num_classes": 1000,
+            "bn_param": [0.9, 1e-5],
+            "drop_rate": 0.1,
+            "op_candidates": ["XP1 7x7 3"],
+            "depth_candidates": [3]
+        }
     },
     "optimizer": {
         "train": {
@@ -47,16 +47,16 @@
         ],
         "no_decay_keys": "bn#bias",
         "valid_genotypes": [
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            [0, 0, 0, 0, 0, 0, 0, 0]
         ],
         "lambda_kd": 0,
-        "epoch": 185,
+        "epoch": 20,
         "cosine_warmup_epoch": 5,
         "warmup_lr": 0.08125,
-        "batch_size_train": 256,
-        "batch_size_valid": 200,
+        "batch_size_train": 32,
+        "batch_size_valid": 64,
         "mini_batch_train": 32,
-        "mini_batch_valid": 200,
+        "mini_batch_valid": 64,
         "print_frequency": 100,
         "validation_frequency": 1
     }

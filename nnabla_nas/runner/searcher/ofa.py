@@ -78,6 +78,10 @@ class OFASearcher(Searcher):
                     self.model.set_valid_arch(genotype)
                     #self.reset_running_statistics()
                     for i in range(self.one_epoch_test):
+                        print("#"*30)
+                        print("validation test")
+                        print(i)
+                        print("#"*30)
                         self.update_graph('test')
                         self.valid_on_batch(is_test=True)
                         clear_memory_cache()

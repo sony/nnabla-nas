@@ -206,6 +206,9 @@ class SearchNet(MyNetwork):
         self.block_depth_info = [depth for depth in n_block_list]
         self.runtime_depth = [depth for depth in n_block_list]
 
+        # print("#"*30)
+        # print(self._expand_ratio_list)
+        # print("#"*30)
         if len(self._expand_ratio_list) == 1:
             DynamicBatchNorm2d.GET_STATIC_BN = True
         else:
@@ -408,24 +411,25 @@ class TrainNet(SearchNet):
 
             preserve_weight = True if weights is not None else False
 
-            self.blocks = []
+            blocks = []
             input_channel = self.entryblocks[-1]._out_channels
             for stage_id, block_idx in enumerate(self.block_group_info): # This loop will just run once
                 for idx in block_idx:
                     depth = self.runtime_depth[idx]
                     self.middleblocks[idx]._runtime_depth = depth
-                    self.blocks.append(self.middleblocks[idx].get_active_subnet(input_channel, preserve_weight))
-                    input_channel = self.blocks[-1]._out_channels
+                    blocks.append(self.middleblocks[idx].get_active_subnet(input_channel, preserve_weight))
+                    input_channel = blocks[-1]._out_channels
 
+            self.middleblocks = Mo.ModuleList(blocks)
 
     def call(self, x):
         x = self.first_conv(x)
         x = self.second_conv(x)
-        print("*"*30)
-        print(self.blocks)
-        print("*"*30)
-        for idx in range(len(self.blocks)):
-            x = self.blocks[idx](x)
+        x = self.entryblocks[0](x)
+        x = self.entryblocks[1](x)
+        x = self.entryblocks[2](x)
+        for idx in range(len(self.middleblocks)):
+            x = self.middleblocks[idx](x)
         x = self.exitblocks[0](x)
         x = self.expand_block1(x)
         x = self.expand_block2(x)
