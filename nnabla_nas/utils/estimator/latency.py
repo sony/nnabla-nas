@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 import csv
-import json
 import time
 import os
 from pathlib import Path
@@ -29,7 +27,6 @@ from tqdm import tqdm
 import nnabla.function as F
 from nnabla.context import get_current_context
 
-from ... import contrib
 from .estimator import Estimator
 from collections import namedtuple
 
@@ -465,6 +462,10 @@ def generate_dataset(args, model, shape):
 
 
 if __name__ == "__main__":
+    from ... import contrib
+    import argparse
+    import json
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--context', '-c', type=str, default='cudnn')
     parser.add_argument('--device-id', '-d', type=str, default='1')

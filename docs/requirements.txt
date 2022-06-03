@@ -1,5 +1,4 @@
-matplotlib
-Sphinx
-javasphinx
+sphinx
 sphinx_rtd_theme
-sphinxcontrib-bibtex==1.0.0
+sphinxcontrib-bibtex
+nnabla
