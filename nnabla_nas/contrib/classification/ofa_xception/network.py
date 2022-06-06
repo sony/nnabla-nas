@@ -132,8 +132,6 @@ class SearchNet(MyNetwork):
         self._depth_candidates = depth_candidates
         self._weights = weights
         self._output_stride = output_stride
-        # self._test=test
-        # self._channel_last=channel_last
 
         op_candidates = val2list(op_candidates, 1)
         ks_list, expand_ratio_list = candidates2subnetlist(op_candidates)

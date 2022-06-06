@@ -197,3 +197,14 @@ mpirun -n 4 python main.py \
                -f examples/classification/ofa/ofa_imagenet_train_subnet.json \
                -a OFATrainer \
                -o log/classification/ofa/imagenet/train_subnet/
+
+#---------------------- OFA_XCEPTION ----------------------------#
+mpirun -n 4 python main.py \
+               -f examples/classification/ofa_xception/ofa_imagenet_search_fullnet.json \
+               -a OFASearcher \
+               -o log/classification/ofa_xception/imagenet/search/K7_E6_D4/
+
+mpirun -n 4 python main.py --search \
+               -f examples/classification/ofa_xception/ofa_imagenet_search_kernel.json \
+               -a OFASearcher \
+               -o log/classification/ofa_xception/imagenet/search/K357_E6_D4/

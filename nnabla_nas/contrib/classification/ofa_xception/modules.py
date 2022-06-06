@@ -15,7 +15,6 @@
 from collections import OrderedDict
 
 from .... import module as Mo
-from .ofa_modules.static_op import SEModule
 from .ofa_utils.common_tools import get_same_padding, min_divisible_value
 
 import nnabla as nn

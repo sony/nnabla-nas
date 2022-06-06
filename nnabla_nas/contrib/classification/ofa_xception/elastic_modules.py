@@ -20,10 +20,9 @@ import numpy as np
 import nnabla as nn
 
 from .... import module as Mo
-from .modules import MBConvLayer, XceptionBlock, set_layer_from_config
+from .modules import XceptionBlock, set_layer_from_config
 from .ofa_utils.common_tools import val2list, make_divisible
-from .ofa_modules.static_op import SEModule
-from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
+from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d
 from .modules import build_activation
 
 
