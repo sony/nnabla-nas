@@ -52,31 +52,32 @@ def candidates2subnetlist(candidates):
     return ks_list, expand_list
 
 
-def genotype2subnetlist(op_candidates, genotype):
-    op_candidates.append('skip_connect')
-    subnet_list = [op_candidates[i] for i in genotype]
-    ks_list = [CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
-               else 3 for subnet in subnet_list]
-    expand_ratio_list = [CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
-                         else 4 for subnet in subnet_list]
-    depth_list = []
-    d = 0
-    for i, subnet in enumerate(subnet_list):
-        if subnet == 'skip_connect':
-            if d > 1:
-                depth_list.append(d)
-                d = 0
-        elif d == 4:
-            depth_list.append(d)
-            d = 1
-        elif i == len(subnet_list) - 1:
-            depth_list.append(d + 1)
-        else:
-            d += 1
-    assert([d > 1 for d in depth_list])
-    return ks_list, expand_ratio_list, depth_list
+# def genotype2subnetlist(op_candidates, genotype):
+#     op_candidates.append('skip_connect')
+#     subnet_list = [op_candidates[i] for i in genotype]
+#     ks_list = [CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
+#                else 3 for subnet in subnet_list]
+#     expand_ratio_list = [CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
+#                          else 4 for subnet in subnet_list]
+#     depth_list = []
+#     d = 0
+#     for i, subnet in enumerate(subnet_list):
+#         if subnet == 'skip_connect':
+#             if d > 1:
+#                 depth_list.append(d)
+#                 d = 0
+#         elif d == 4:
+#             depth_list.append(d)
+#             d = 1
+#         elif i == len(subnet_list) - 1:
+#             depth_list.append(d + 1)
+#         else:
+#             d += 1
+#     assert([d > 1 for d in depth_list])
+#     return ks_list, expand_ratio_list, depth_list
 
-def genotype2subnetlistXP(op_candidates, genotype):
+
+def genotype2subnetlist(op_candidates, genotype):
     op_candidates.append('skip_connect')
     subnet_list = [op_candidates[i] for i in genotype]
     ks_list = [CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
@@ -87,6 +88,7 @@ def genotype2subnetlistXP(op_candidates, genotype):
     assert([d >= 1 for d in depth_list])
     return ks_list, expand_ratio_list, depth_list
 
+
 def set_layer_from_config(layer_config):
     if layer_config is None:
         return None
@@ -94,9 +96,7 @@ def set_layer_from_config(layer_config):
     name2layer = {
         ConvLayer.__name__: ConvLayer,
         LinearLayer.__name__: LinearLayer,
-        MBConvLayer.__name__: MBConvLayer,
         XceptionBlock.__name__: XceptionBlock,
-        'MBInvertedConvLayer': MBConvLayer,
         ##########################################################
         ResidualBlock.__name__: ResidualBlock,
     }
@@ -129,44 +129,6 @@ def force_tuple2(value):
         assert len(value) == 2
         return value
     return (value,) * 2
-
-
-def pf_bn(x, z=None, eps=1e-5, with_relu=True, training=True):
-    bn_opts = dict(batch_stat=training,
-                eps=eps, fix_parameters=not training)
-    if z is None:
-        if with_relu:
-            return PF.fused_batch_normalization(x, None, **bn_opts)
-        return PF.batch_normalization(x, **bn_opts)
-    if with_relu:
-        return PF.fused_batch_normalization(x, z, **bn_opts)
-    h = PF.batch_normalization(x, **bn_opts)
-    return F.add2(z, h, inplace=True)
-
-def pf_depthwise_convolution(x, stride=None, dilation=None, training=True):
-        kernel = (3, 3)
-        stride = force_tuple2(stride)
-        dilation = force_tuple2(dilation)
-        pad = dilation
-        ch_axis = 1
-        num_c = x.shape[ch_axis]
-        # Use standard convolution with group=channels for depthwise convolution
-        h = PF.convolution(x, num_c, kernel, stride=stride, pad=pad, dilation=dilation, group=num_c,
-                        with_bias=False, fix_parameters=not training)
-        return h
-
-
-def separable_conv_with_bn(x, f, stride=False, atrous_rate=1, act_dw=False, act_pw=False, eps=1e-03, training=True):
-    with nn.parameter_scope("depthwise"):
-        s = 2 if stride else 1
-        h = pf_depthwise_convolution(x, stride=s, dilation=atrous_rate, training=training)
-        h = pf_bn(h, None, eps=eps, with_relu=act_dw, training=training)
-
-    with nn.parameter_scope("pointwise"):
-        h = PF.convolution(h, f, (1, 1), with_bias=False,
-                        fix_parameters=not training)
-        h = pf_bn(h, None, eps=eps, with_relu=act_pw, training=training)
-    return h
 
 
 class ResidualBlock(Mo.Module):
@@ -272,6 +234,7 @@ class ConvLayer(Mo.Sequential):
                 f'act_func={self._act_func}, '
                 f'name={self._name}')
 
+
 class DwConvLayer(Mo.Sequential):
 
     r""" Depthwise Convolution-BatchNormalization(optional)-Activation layer.
@@ -328,7 +291,6 @@ class DwConvLayer(Mo.Sequential):
 
     def extra_repr(self):
         return (f'in_channels={self._in_channels}, '
-                f'out_channels={self._out_channels}, '
                 f'kernel={self._kernel}, '
                 f'stride={self._stride}, '
                 f'dilation={self._dilation}, '
@@ -467,7 +429,6 @@ class LinearLayer(Mo.Sequential):
                 f'bias={self._bias}, '
                 f'drop_rate={self._drop_rate}, '
                 f'name={self._name} ')
-
 
 
 class FusedBatchNormalization(Mo.Module):

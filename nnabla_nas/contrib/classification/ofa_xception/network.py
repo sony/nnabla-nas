@@ -21,7 +21,7 @@ import nnabla.logger as logger
 
 from ..base import ClassificationModel as Model
 from .... import module as Mo
-from .modules import ResidualBlock, ConvLayer, LinearLayer, DwConvLayer, SeparableConv, XceptionBlock, genotype2subnetlistXP
+from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock, genotype2subnetlist
 from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
 from .elastic_modules import DynamicXPLayer
 from .ofa_modules.dynamic_op import DynamicBatchNorm2d
@@ -91,7 +91,7 @@ class MyNetwork(Model):
 
 
 class SearchNet(MyNetwork):
-    r""" Xception65 Search Net
+    r""" Xception41 Search Net
     This implementation is based on the PyTorch implementation.
 
     Args:
@@ -119,7 +119,7 @@ class SearchNet(MyNetwork):
                  bn_param=(0.9, 1e-5),
                  drop_rate=0.1,
                  base_stage_width=None,
-                 op_candidates="XP6 3x3",
+                 op_candidates="XP1 7x7 3",
                  depth_candidates=3,
                  width_mult=1.0,
                  weights=None,
@@ -246,7 +246,7 @@ class SearchNet(MyNetwork):
         assert(len(genotype) == 8)
         # Here we can assert that genotypes are not skip_connect
         ks_list, expand_ratio_list, depth_list =\
-            genotype2subnetlistXP(self._op_candidates, genotype)
+            genotype2subnetlist(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
     @property
@@ -406,7 +406,7 @@ class TrainNet(SearchNet):
 
         if genotype is not None:
             assert(len(genotype) == 8)
-            ks_list, expand_ratio_list, depth_list = genotype2subnetlistXP(op_candidates, genotype)
+            ks_list, expand_ratio_list, depth_list = genotype2subnetlist(op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
             preserve_weight = True if weights is not None else False
