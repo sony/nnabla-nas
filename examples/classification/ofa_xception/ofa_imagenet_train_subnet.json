@@ -4,24 +4,30 @@
             "train_portion": 0.99,
             "augment_valid": "False",
             "colortwist": "True",
-            "train_path": "/data/imagenet/train",
-            "train_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/train_label",
-            "valid_path": "/data/imagenet/val",
-            "valid_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/val_label"
+            "train_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train",
+            "train_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train_label",
+            "valid_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val",
+            "valid_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val_label"
         }
     },
     "network": {
-        "ofa": {
-        "num_classes": 1000,
-        "bn_param": [0.9, 1e-5],
-        "drop_rate": 0.1,
-        "op_candidates": [
-            "MB3 3x3", "MB3 5x5", "MB3 7x7", 
-            "MB4 3x3", "MB4 5x5", "MB4 7x7", 
-            "MB6 3x3", "MB6 5x5", "MB6 7x7"
-        ],
-        "genotype": [5, 2, 9, 9, 6, 4, 2, 1, 7, 7, 8, 9, 8, 3, 9, 9, 8, 4, 3, 1],
-        "weights": "log/classification/ofa/imagenet/search/K357_E346_D234/weights.h5"
+        "ofa_xception": {
+            "num_classes": 1000,
+            "bn_param": [0.9, 1e-5],
+            "drop_rate": 0.1,
+            "op_candidates": [
+                    "XP1 3x3 1",    "XP1 3X3 2",    "XP1 3X3 3", 
+                    "XP0.8 3x3 1",  "XP0.8 3X3 2",  "XP0.8 3X3 3", 
+                    "XP0.6 3x3 1",  "XP0.6 3X3 2",  "XP0.6 3X3 3",
+                    "XP1 5x5 1",    "XP1 5x5 2",    "XP1 5x5 3", 
+                    "XP0.8 5x5 1",  "XP0.8 5x5 2",  "XP0.8 5x5 3", 
+                    "XP0.6 5x5 1",  "XP0.6 5x5 2",  "XP0.6 5x5 3",
+                    "XP1 7x7 1",    "XP1 7x7 2",    "XP1 7x7 3", 
+                    "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3", 
+                    "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
+            ],
+            "genotype": [19, 2, 20, 5, 8, 10, 26, 23],
+            "weights": "log/classification/ofa_xception/imagenet/search/K357_E346_D234/weights.h5"
         }
     },
     "optimizer": {
@@ -53,10 +59,10 @@
         "epoch": 2,
         "cosine_warmup_epoch": 0,
         "warmup_lr": 0.0025,
-        "batch_size_train": 128,
-        "batch_size_valid": 200,
+        "batch_size_train": 32,
+        "batch_size_valid": 64,
         "mini_batch_train": 32,
-        "mini_batch_valid": 200,
+        "mini_batch_valid": 64,
         "print_frequency": 100,
         "validation_frequency": 1
     }

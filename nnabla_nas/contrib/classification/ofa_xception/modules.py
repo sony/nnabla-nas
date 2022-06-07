@@ -28,12 +28,33 @@ CANDIDATES = {
     'XP1 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 1},
     'XP1 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 1},
     'XP1 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 1},
+    'XP0.8 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 0.8},
+    'XP0.8 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 0.8},
+    'XP0.8 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 0.8},
+    'XP0.6 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 0.6},
+    'XP0.6 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 0.6},
+    'XP0.6 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 0.6},
+    
     'XP1 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 1},
     'XP1 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 1},
     'XP1 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 1},
+    'XP0.8 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 0.8},
+    'XP0.8 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 0.8},
+    'XP0.8 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 0.8},
+    'XP0.6 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 0.6},
+    'XP0.6 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 0.6},
+    'XP0.6 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 0.6},
+
     'XP1 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 1},
     'XP1 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 1},
     'XP1 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 1},
+    'XP0.8 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 0.8},
+    'XP0.8 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 0.8},
+    'XP0.8 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 0.8},
+    'XP0.6 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 0.6},
+    'XP0.6 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 0.6},
+    'XP0.6 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 0.6},
+    
     'skip_connect': {'ks': None, 'depth': None, 'expand_ratio': None},
 }
 
@@ -49,32 +70,7 @@ def candidates2subnetlist(candidates):
         if e not in expand_list:
             expand_list.append(e)
     return ks_list, expand_list
-
-
-# def genotype2subnetlist(op_candidates, genotype):
-#     op_candidates.append('skip_connect')
-#     subnet_list = [op_candidates[i] for i in genotype]
-#     ks_list = [CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
-#                else 3 for subnet in subnet_list]
-#     expand_ratio_list = [CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
-#                          else 4 for subnet in subnet_list]
-#     depth_list = []
-#     d = 0
-#     for i, subnet in enumerate(subnet_list):
-#         if subnet == 'skip_connect':
-#             if d > 1:
-#                 depth_list.append(d)
-#                 d = 0
-#         elif d == 4:
-#             depth_list.append(d)
-#             d = 1
-#         elif i == len(subnet_list) - 1:
-#             depth_list.append(d + 1)
-#         else:
-#             d += 1
-#     assert([d > 1 for d in depth_list])
-#     return ks_list, expand_ratio_list, depth_list
-
+    
 
 def genotype2subnetlist(op_candidates, genotype):
     op_candidates.append('skip_connect')

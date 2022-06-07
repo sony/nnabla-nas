@@ -4,23 +4,30 @@
             "train_portion": 0.99,
             "augment_valid": "False",
             "colortwist": "True",
-            "train_path": "/data/imagenet/train",
-            "train_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/train_label",
-            "valid_path": "/data/imagenet/val",
-            "valid_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/val_label"
+            "train_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train",
+            "train_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train_label",
+            "valid_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val",
+            "valid_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val_label"
         }
     },
     "network": {
-        "ofa": {
-        "num_classes": 1000,
-        "bn_param": [0.9, 1e-5],
-        "drop_rate": 0.1,
-        "op_candidates": [
-            "MB4 3x3", "MB4 5x5", "MB4 7x7", 
-            "MB6 3x3", "MB6 5x5", "MB6 7x7"
-        ],
-        "depth_candidates": [2, 3, 4],
-        "weights": "log/classification/ofa/imagenet/search/K357_E6_D234/weights.h5"
+        "ofa_xception": {
+            "num_classes": 1000,
+            "bn_param": [0.9, 1e-5],
+            "drop_rate": 0.1,
+            "op_candidates": [
+                "XP1 3x3 1",    "XP1 3X3 2",    "XP1 3X3 3", 
+                "XP0.8 3x3 1",  "XP0.8 3X3 2",  "XP0.8 3X3 3", 
+                "XP0.6 3x3 1",  "XP0.6 3X3 2",  "XP0.6 3X3 3",
+                "XP1 5x5 1",    "XP1 5x5 2",    "XP1 5x5 3", 
+                "XP0.8 5x5 1",  "XP0.8 5x5 2",  "XP0.8 5x5 3", 
+                "XP0.6 5x5 1",  "XP0.6 5x5 2",  "XP0.6 5x5 3",
+                "XP1 7x7 1",    "XP1 7x7 2",    "XP1 7x7 3", 
+                "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3", 
+                "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
+            ],
+            "depth_candidates": [1, 2 ,3],
+            "weights": "log/classification/ofa_xception/imagenet/search/K357_E6_D234/weights.h5"
         }
     },
     "optimizer": {
@@ -44,14 +51,14 @@
         "train_image_size_list": [128, 160, 192, 224],
         "valid_image_size_list": [160, 224],
         "valid_genotypes": [
-            [0, 0, 6, 6, 0, 0, 6, 6, 0, 0, 6, 6, 0, 0, 6, 6, 0, 0, 6, 6],
-            [2, 2, 6, 6, 2, 2, 6, 6, 2, 2, 6, 6, 2, 2, 6, 6, 2, 2, 6, 6],
-            [3, 3, 6, 6, 3, 3, 6, 6, 3, 3, 6, 6, 3, 3, 6, 6, 3, 3, 6, 6],
-            [5, 5, 6, 6, 5, 5, 6, 6, 5, 5, 6, 6, 5, 5, 6, 6, 5, 5, 6, 6],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-            [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-            [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+            [20, 20, 5, 5, 1, 4, 5, 18],
+            [2, 2, 5, 5, 2, 2, 0, 20],
+            [3, 3, 5, 9, 3, 3, 5, 5],
+            [5, 5, 19, 9, 5, 5, 4, 4],
+            [0, 0, 0, 0, 0, 10, 11, 12],
+            [2, 2, 2, 2, 2, 9, 2, 2],
+            [3, 3, 3, 3, 14, 3, 3, 3],
+            [5, 5, 5, 12, 5, 5, 5, 5]
         ],
         "input_shapes": [
             [3, 224, 224]
@@ -62,22 +69,22 @@
         "no_decay_keys": "bn#_b",
         "lambda_kd": 1,
         "teacher_network": {
-            "ofa": {
-            "num_classes": 1000,
-            "bn_param": [0.9, 1e-5],
-            "drop_rate": 0,
-            "op_candidates": ["MB6 7x7"],
-            "depth_candidates": [4],
-            "weights": "log/classification/ofa/imagenet/search/K7_E6_D4/weights.h5"
+            "ofa_xception": {
+                "num_classes": 1000,
+                "bn_param": [0.9, 1e-5],
+                "drop_rate": 0,
+                "op_candidates": ["XP1 7x7 3"],
+                "depth_candidates": [3],
+                "weights": "log/classification/ofa_xception/imagenet/search/K7_E6_D4/weights.h5"
             }
         },
         "epoch": 25,
         "cosine_warmup_epoch": 0,
         "warmup_lr": 0.0025,
-        "batch_size_train": 256,
-        "batch_size_valid": 200,
+        "batch_size_train": 32,
+        "batch_size_valid": 64,
         "mini_batch_train": 16,
-        "mini_batch_valid": 200,
+        "mini_batch_valid": 32,
         "print_frequency": 100,
         "validation_frequency": 1
     }
