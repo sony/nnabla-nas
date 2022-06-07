@@ -44,9 +44,9 @@ class CityscapesSegmentation:
 
         self.void_classes = [0, 1, 2, 3, 4, 5, 6, 9, 10, 14, 15, 16, 18, 29, 30, -1]
         self.valid_classes = [7, 8, 11, 12, 13, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33]
-        self.class_names = ['unlabelled', 'road', 'sidewalk', 'building', 'wall', 'fence', \
-                            'pole', 'traffic_light', 'traffic_sign', 'vegetation', 'terrain', \
-                            'sky', 'person', 'rider', 'car', 'truck', 'bus', 'train', \
+        self.class_names = ['unlabelled', 'road', 'sidewalk', 'building', 'wall', 'fence',
+                            'pole', 'traffic_light', 'traffic_sign', 'vegetation', 'terrain',
+                            'sky', 'person', 'rider', 'car', 'truck', 'bus', 'train',
                             'motorcycle', 'bicycle']
 
         self.ignore_index = 255
@@ -69,8 +69,8 @@ class CityscapesSegmentation:
         for img_root_path in self.files[self.split]:
             img_path = img_root_path.rstrip()
             lbl_path = os.path.join(self.annotations_base,
-                                img_path.split(os.sep)[-2],
-                                os.path.basename(img_path)[:-15] + 'gtFine_labelIds.png')
+                                    img_path.split(os.sep)[-2],
+                                    os.path.basename(img_path)[:-15] + 'gtFine_labelIds.png')
             _img = Image.open(img_path).convert('RGB')
             _tmp = np.array(Image.open(lbl_path), dtype=np.uint8)
             _tmp = self.encode_segmap(_tmp)
@@ -78,12 +78,12 @@ class CityscapesSegmentation:
 
             images.append(np.array(_img))
             labels.append(np.array(_target))
-        
+
         img_size = _img.shape[1]
         size = len(self.files[self.split])
         images = np.concatenate(images).reshape(size, 3, img_size, img_size)
         labels = np.concatenate(labels).reshape(size, 1, img_size, img_size)
-        
+
         return (images, labels)
         # sample = {'image': _img, 'label': _target}
 
@@ -222,7 +222,7 @@ def get_data(split="train", comm, rng):
 
     num = n // comm.n_procs
 
-    selected_idx = index[num*comm.rank:num*(comm.rank + 1)]
+    selected_idx = index[num * comm.rank:num * (comm.rank + 1)]
 
     return images[selected_idx], labels[selected_idx]
 
@@ -282,7 +282,7 @@ class DataLoader(BaseDataLoader):
 
         mean = (0.485, 0.456, 0.406)
         std = (0.229, 0.224, 0.225)
-        scale = 1./255.0
+        scale = 1. / 255.0
         pad_width = (4, 4, 4, 4)
 
         if key == 'train':
