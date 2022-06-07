@@ -21,8 +21,8 @@ import nnabla as nn
 
 from .... import module as Mo
 from .modules import XceptionBlock, set_layer_from_config
-from .ofa_utils.common_tools import val2list, make_divisible
-from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d
+from ..ofa.ofa_utils.common_tools import val2list, make_divisible
+from ..ofa.ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d
 from .modules import build_activation
 
 

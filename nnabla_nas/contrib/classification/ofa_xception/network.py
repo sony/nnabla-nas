@@ -24,8 +24,8 @@ from .... import module as Mo
 from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock, genotype2subnetlist
 from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
 from .elastic_modules import DynamicXPLayer
-from .ofa_modules.dynamic_op import DynamicBatchNorm2d
-from .ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
+from ..ofa.ofa_modules.dynamic_op import DynamicBatchNorm2d
+from ..ofa.ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
 
 
 class MyNetwork(Model):
