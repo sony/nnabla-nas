@@ -204,9 +204,6 @@ class SearchNet(MyNetwork):
         self.block_depth_info = [depth for depth in n_block_list]
         self.runtime_depth = [depth for depth in n_block_list]
 
-        # print("#"*30)
-        # print(self._expand_ratio_list)
-        # print("#"*30)
         if len(self._expand_ratio_list) == 1:
             DynamicBatchNorm2d.GET_STATIC_BN = True
         else:
@@ -217,6 +214,11 @@ class SearchNet(MyNetwork):
 
     def call(self, x):
         # sample or not
+        if len(self._expand_ratio_list) == 1:
+            DynamicBatchNorm2d.GET_STATIC_BN = True
+        else:
+            DynamicBatchNorm2d.GET_STATIC_BN = False
+
         if self.training:
             self.sample_active_subnet()
 
@@ -391,9 +393,15 @@ class TrainNet(SearchNet):
 
         if op_candidates is None:
             op_candidates = [
-                "XP1 3x3 1", "XP1 5x5 1", "XP1 7x7 1",
-                "XP1 3x3 2", "XP1 5x5 2", "XP1 7x7 2",
-                "XP1 3x3 3", "XP1 5x5 3", "XP1 7x7 3",
+                "XP1 3x3 1",    "XP1 3x3 2",    "XP1 3x3 3", 
+                "XP0.8 3x3 1",  "XP0.8 3x3 2",  "XP0.8 3x3 3", 
+                "XP0.6 3x3 1",  "XP0.6 3x3 2",  "XP0.6 3x3 3",
+                "XP1 5x5 1",    "XP1 5x5 2",    "XP1 5x5 3", 
+                "XP0.8 5x5 1",  "XP0.8 5x5 2",  "XP0.8 5x5 3", 
+                "XP0.6 5x5 1",  "XP0.6 5x5 2",  "XP0.6 5x5 3",
+                "XP1 7x7 1",    "XP1 7x7 2",    "XP1 7x7 3", 
+                "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3", 
+                "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
             ]
         if depth_candidates is None:
             depth_candidates = [1, 2, 3]

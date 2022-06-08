@@ -183,11 +183,10 @@ class DynamicXPLayer(Mo.Module):
         self.depth_conv3.dwconv.active_kernel_size = self.active_kernel_size
         self.point_linear3.ptconv.active_out_channel = self.active_out_channel
 
-        # print("#"*30)
-        # print(in_channel)
-        # print(self.point_linear1.ptconv.active_out_channel)
-        # print(make_divisible(round(max(self._in_channel_list) * max(self._expand_ratio_list))))
-        # print("#"*30)
+        if self._runtime_depth == 1:
+            self.point_linear1.ptconv.active_out_channel = self.active_out_channel
+        elif self._runtime_depth == 2:
+            self.point_linear2.ptconv.active_out_channel = self.active_out_channel
 
         x = self.depth_conv1(inp)
         x = self.point_linear1(x)
