@@ -32,18 +32,21 @@ class Runner(ABC):
         model (`nnabla_nas.contrib.model.Model`): The search model used to
             search the architecture.
         optimizer (dict): This stores optimizers for both `train` and `valid`
-            graphs.
+            graphs. Must only store instances of `Optinmizer`
+        regularizer (dict): This stores regularizers such as the latency and memory
+            estimators
         dataloader (dict): This stores dataloaders for both `train` and `valid`
             graphs.
         args (Configuration): This stores all hyperparmeters used during
             training.
     """
 
-    def __init__(self, model, optimizer, dataloader, args):
+    def __init__(self, model, optimizer, regularizer, dataloader, args):
 
         self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer
+        self.regularizer = regularizer
         self.args = args
 
         # aditional argurments
