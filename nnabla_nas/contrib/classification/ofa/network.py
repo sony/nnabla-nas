@@ -250,8 +250,13 @@ class SearchNet(MyNetwork):
                               for block_idx in self.block_group_info]
         self.backbone_channel_num = final_expand_width
 
-        if len(self._expand_ratio_list) > 1:  # not for kd net
-            DynamicBatchNorm2d.GET_STATIC_BN = False
+        # set static/dynamic bn
+        for _, m in self.get_modules():
+            if isinstance(m, DynamicBatchNorm2d):
+                if len(self._expand_ratio_list) > 1:
+                    m.get_static_bn = False
+                else:
+                    m.get_static_bn = True
 
         if weights is not None:
             self.load_parameters(weights)
