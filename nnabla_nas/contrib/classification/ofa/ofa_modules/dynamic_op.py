@@ -75,15 +75,19 @@ class DynamicSE(SEModule):
         num_mid = make_divisible(in_channel // self.reduction)
         y = F.mean(input, axis=(2, 3), keepdims=True)
         # reduce
-        reduce_filter = self.get_active_reduce_weight(num_mid, in_channel, group=group)
+        reduce_filter = self.get_active_reduce_weight(
+            num_mid, in_channel, group=group)
         reduce_bias = self.get_active_reduce_bias(num_mid)
-        y = F.convolution(y, reduce_filter, reduce_bias, pad=(0, 0), stride=(1, 1), dilation=(1, 1), group=1)
+        y = F.convolution(y, reduce_filter, reduce_bias, pad=(
+            0, 0), stride=(1, 1), dilation=(1, 1), group=1)
         # relu
         y = self.fc.relu(y)
         # expand
-        expand_filter = self.get_active_expand_weight(num_mid, in_channel, group=group)
+        expand_filter = self.get_active_expand_weight(
+            num_mid, in_channel, group=group)
         expand_bias = self.get_active_expand_bias(in_channel, group=group)
-        y = F.convolution(y, expand_filter, expand_bias, pad=(0, 0), stride=(1, 1), dilation=(1, 1), group=1)
+        y = F.convolution(y, expand_filter, expand_bias, pad=(
+            0, 0), stride=(1, 1), dilation=(1, 1), group=1)
         # hard sigmoid
         y = self.fc.h_sigmoid(y)
         return input * y
@@ -147,8 +151,6 @@ class DynamicBatchNorm2d(Mo.Module):
         n_dims (int): Number of dimensions.
     """
 
-    SET_RUNNING_STATISTICS = False
-
     def __init__(self, max_feature_dim, n_dims):
         super(DynamicBatchNorm2d, self).__init__()
 
@@ -157,13 +159,16 @@ class DynamicBatchNorm2d(Mo.Module):
         self._max_feature_dim = max_feature_dim
         self.bn = Mo.BatchNormalization(self._max_feature_dim, n_dims)
         self.use_static_bn = True
+        self.set_running_statistics = False
 
     @staticmethod
-    def bn_forward(x, bn: Mo.BatchNormalization, max_feature_dim, feature_dim, training, use_static_bn):
-        if use_static_bn or DynamicBatchNorm2d.SET_RUNNING_STATISTICS:
+    def bn_forward(x, bn: Mo.BatchNormalization, max_feature_dim, feature_dim, training,
+                   use_static_bn, set_running_statistics):
+        if use_static_bn or set_running_statistics:
             return bn(x)
         else:
-            sbeta, sgamma = bn._beta[:, :feature_dim, :, :], bn._gamma[:, :feature_dim, :, :]
+            sbeta, sgamma = bn._beta[:, :feature_dim,
+                                     :, :], bn._gamma[:, :feature_dim, :, :]
             smean = nn.Variable(sbeta.shape)
             svar = nn.Variable(sbeta.shape)
             smean.data = bn._mean.data[:, :feature_dim, :, :]
@@ -171,13 +176,17 @@ class DynamicBatchNorm2d(Mo.Module):
             y = F.batch_normalization(
                 x, sbeta, sgamma, smean, svar, batch_stat=training,)
             if training:
-                bn._mean = F.concatenate(smean, bn._mean[:, feature_dim:, :, :], axis=1)
-                bn._var = F.concatenate(svar, bn._var[:, feature_dim:, :, :], axis=1)
+                bn._mean = F.concatenate(
+                    smean, bn._mean[:, feature_dim:, :, :], axis=1)
+                bn._var = F.concatenate(
+                    svar, bn._var[:, feature_dim:, :, :], axis=1)
             return y
 
     def call(self, input):
         feature_dim = input.shape[1]
-        y = self.bn_forward(input, self.bn, self._max_feature_dim, feature_dim, self.training, self.use_static_bn)
+        y = self.bn_forward(
+            input, self.bn, self._max_feature_dim, feature_dim, self.training,
+            self.use_static_bn, self.set_running_statistics)
         return y
 
 
@@ -222,7 +231,8 @@ class DynamicSeparableConv2d(Mo.Module):
                 ks_larger = self._ks_set[i + 1]
                 param_name = '%dto%d' % (ks_larger, ks_small)
                 param_array = np.eye(ks_small ** 2)
-                scale_param = Mo.Parameter(param_array.shape, initializer=param_array, need_grad=True)
+                scale_param = Mo.Parameter(
+                    param_array.shape, initializer=param_array, need_grad=True)
                 scale_params['%s_matrix' % param_name] = scale_param
             for name, param in scale_params.items():
                 self.parameters[name] = param
@@ -235,7 +245,8 @@ class DynamicSeparableConv2d(Mo.Module):
         start, end = sub_filter_start_end(max_kernel_size, kernel_size)
         filters = self.conv._W[:out_channel, :in_channel, start:end, start:end]
         if self.KERNEL_TRANSFORM_MODE is not None and kernel_size < max_kernel_size:
-            start_filter = self.conv._W[:out_channel, :in_channel, :, :]  # start with max kernel
+            # start with max kernel
+            start_filter = self.conv._W[:out_channel, :in_channel, :, :]
             for i in range(len(self._ks_set) - 1, 0, -1):
                 src_ks = self._ks_set[i]
                 if src_ks <= kernel_size:
@@ -243,11 +254,16 @@ class DynamicSeparableConv2d(Mo.Module):
                 target_ks = self._ks_set[i - 1]
                 start, end = sub_filter_start_end(src_ks, target_ks)
                 _input_filter = start_filter[:, :, start:end, start:end]
-                _input_filter = F.reshape(_input_filter, (_input_filter.shape[0], _input_filter.shape[1], -1))
-                _input_filter = F.reshape(_input_filter, (-1, _input_filter.shape[2]))
-                _input_filter = F.affine(_input_filter, self.parameters['%dto%d_matrix' % (src_ks, target_ks)])
-                _input_filter = F.reshape(_input_filter, (filters.shape[0], filters.shape[1], target_ks ** 2))
-                _input_filter = F.reshape(_input_filter, (filters.shape[0], filters.shape[1], target_ks, target_ks))
+                _input_filter = F.reshape(
+                    _input_filter, (_input_filter.shape[0], _input_filter.shape[1], -1))
+                _input_filter = F.reshape(
+                    _input_filter, (-1, _input_filter.shape[2]))
+                _input_filter = F.affine(
+                    _input_filter, self.parameters['%dto%d_matrix' % (src_ks, target_ks)])
+                _input_filter = F.reshape(
+                    _input_filter, (filters.shape[0], filters.shape[1], target_ks ** 2))
+                _input_filter = F.reshape(
+                    _input_filter, (filters.shape[0], filters.shape[1], target_ks, target_ks))
                 start_filter = _input_filter
             filters = start_filter
 
@@ -283,7 +299,8 @@ class DynamicLinear(Mo.Module):
         self._max_out_features = max_out_features
         self._bias = bias
 
-        self.linear = Mo.Linear(self._max_in_features, self._max_out_features, self._bias)
+        self.linear = Mo.Linear(self._max_in_features,
+                                self._max_out_features, self._bias)
 
         self.active_out_features = self._max_out_features
 
