@@ -5,9 +5,11 @@ mypy
 pytest
 pytest-cov
 h5py
+protobuf<=3.20.1
 tensorboard
 tqdm
 graphviz
 sklearn
 networkx
 mako
+protobuf<=3.20.1
