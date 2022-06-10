@@ -254,9 +254,9 @@ class SearchNet(MyNetwork):
         for _, m in self.get_modules():
             if isinstance(m, DynamicBatchNorm2d):
                 if len(self._expand_ratio_list) > 1:
-                    m.get_static_bn = False
+                    m.use_static_bn = False
                 else:
-                    m.get_static_bn = True
+                    m.use_static_bn = True
 
         if weights is not None:
             self.load_parameters(weights)
