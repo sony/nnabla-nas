@@ -171,6 +171,8 @@ class SearchNet(MyNetwork):
         self.entryblocks.append(XceptionBlock(base_stage_width[2], base_stage_width[3], 2, stride=(2,2)))
         self.entryblocks.append(XceptionBlock(base_stage_width[3], base_stage_width[4], 2, stride=(2,2)))
 
+        self.entryblocks = Mo.ModuleList(self.entryblocks)
+
         # Middle flow blocks
         self.block_group_info = []
         self.middleblocks = []
@@ -186,10 +188,13 @@ class SearchNet(MyNetwork):
                 stride=(1,1),
                 depth=depth
             ))
+        self.middleblocks = Mo.ModuleList(self.middleblocks)
 
         # Exit flow blocks
         self.exitblocks = []
         self.exitblocks.append(XceptionBlock(mid_block_width, expand_1_width, 2, stride=(2,2), grow_first=False))
+        
+        self.exitblocks = Mo.ModuleList(self.exitblocks)
 
         self.expand_block1 = SeparableConv(expand_1_width, expand_2_width, (3,3), (1,1), (1,1), use_bn=True, act_fn='relu')
         self.expand_block2 = SeparableConv(expand_2_width, last_channel, (3,3), (1,1), (1,1), use_bn=True, act_fn='relu')
