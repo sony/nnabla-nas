@@ -93,6 +93,7 @@ class MyNetwork(Model):
 class SearchNet(MyNetwork):
     r""" Xception41 Search Net
     This implementation is based on the PyTorch implementation.
+    https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/xception.py
 
     Args:
         num_classes (int): Number of classes
@@ -103,9 +104,9 @@ class SearchNet(MyNetwork):
         width_mult (float, optional): Multiplier value to base stage channel size.
             Defaults to 1.0.
         op_candidates (str or list of str, optional): Operator choices.
-            Defaults to XP6 3x3.
+            Defaults to XP1 7x7 3.
         depth_candidates (int or list of int, optional): Depth choices.
-            Defaults to 4.
+            Defaults to 3.
         weight (str, optional): The path to weight file. Defaults to
             None.
 
@@ -122,8 +123,7 @@ class SearchNet(MyNetwork):
                  op_candidates="XP1 7x7 3",
                  depth_candidates=3,
                  width_mult=1.0,
-                 weights=None,
-                 output_stride=16):
+                 weights=None):
         self._num_classes = num_classes
         self._bn_param = bn_param
         self._drop_rate = drop_rate
@@ -131,7 +131,6 @@ class SearchNet(MyNetwork):
         self._width_mult = width_mult
         self._depth_candidates = depth_candidates
         self._weights = weights
-        self._output_stride = output_stride
 
         op_candidates = val2list(op_candidates, 1)
         ks_list, expand_ratio_list = candidates2subnetlist(op_candidates)
@@ -150,9 +149,9 @@ class SearchNet(MyNetwork):
         expand_2_width = make_divisible(base_stage_width[-2] * self._width_mult)
         last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
         
-        first_conv_channel = base_stage_width[0]
-        sec_conv_channel = base_stage_width[1]
-        mid_block_width = base_stage_width[4]
+        first_conv_channel = make_divisible(base_stage_width[0] * self._width_mult)
+        sec_conv_channel = make_divisible(base_stage_width[1] * self._width_mult)
+        mid_block_width = make_divisible(base_stage_width[4] * self._width_mult)
 
         n_block_list = [max(self._depth_list)] * 8 # 8 blocks in Xception Middle Flow
 
@@ -179,7 +178,8 @@ class SearchNet(MyNetwork):
         _block_index = 0
         self.block_group_info.append([_block_index+i for i in range(max(self._depth_list))])
         # Here only one set of blocks is needed
-        for depth in n_block_list: # 8 blocks with each block having 1,2,3 layers of relu+sep_conv
+        for depth in n_block_list: 
+            # 8 blocks with each block having 1,2,3 layers of relu+sep_conv
             self.middleblocks.append(DynamicXPLayer(
                 in_channel_list=val2list(mid_block_width), 
                 out_channel_list=val2list(mid_block_width), 
@@ -209,6 +209,7 @@ class SearchNet(MyNetwork):
         self.block_depth_info = [depth for depth in n_block_list]
         self.runtime_depth = [depth for depth in n_block_list]
 
+        # TODO: Change this once BatchNorm2d fix is merged with master
         if len(self._expand_ratio_list) == 1:
             DynamicBatchNorm2d.GET_STATIC_BN = True
         else:
@@ -218,12 +219,13 @@ class SearchNet(MyNetwork):
             self.load_parameters(weights)
 
     def call(self, x):
-        # sample or not
+        # TODO: Remove this once BatchNorm2d fix is merged with master
         if len(self._expand_ratio_list) == 1:
             DynamicBatchNorm2d.GET_STATIC_BN = True
         else:
             DynamicBatchNorm2d.GET_STATIC_BN = False
 
+        # sample or not
         if self.training:
             self.sample_active_subnet()
 
@@ -375,7 +377,7 @@ class OFASearchNet(SearchNet):
 
 
 class TrainNet(SearchNet):
-    r""" Xception Train Net.
+    r""" Xception41 Train Net.
     Args:
         num_classes (int): Number of classes
         bn_param (tuple, optional): BatchNormalization decay rate and eps.
@@ -385,16 +387,16 @@ class TrainNet(SearchNet):
         width_mult (float, optional): Multiplier value to base stage channel size.
             Defaults to 1.0.
         op_candidates (str or list of str, optional): Operator choices.
-            Defaults to XP6 3x3.
+            Defaults to list of all op_candidates.
         depth_candidates (int or list of int, optional): Depth choices.
-            Defaults to 4.
+            Defaults to 3.
         weight (str, optional): The path to weight file. Defaults to None.
         genotype (list of int, optional): A list to operators, Defaults to None.
     """
 
     def __init__(self, num_classes=1000, bn_param=(0.9, 1e-5), drop_rate=0.1,
                  base_stage_width=None, width_mult=1,
-                 op_candidates=None, depth_candidates=None, genotype=None, weights=None, output_stride=16):
+                 op_candidates=None, depth_candidates=None, genotype=None, weights=None):
 
         if op_candidates is None:
             op_candidates = [

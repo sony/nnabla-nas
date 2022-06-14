@@ -130,6 +130,7 @@ class DynamicXPLayer(Mo.Module):
         self._expand_ratio_list = val2list(expand_ratio_list)
         self._stride = stride
         self._runtime_depth = depth
+        
         # build modules
         max_middle_channel = make_divisible(
             round(max(self._in_channel_list) * max(self._expand_ratio_list)))

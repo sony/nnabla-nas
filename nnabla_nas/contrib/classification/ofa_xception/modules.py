@@ -308,12 +308,6 @@ class SeparableConv(Mo.Module):
         self.act = build_activation(act_fn)
 
     def call(self, x):
-
-        # print("#"*30)
-        # print("Sep conv")
-        # print(x.shape[1])
-        # print("#"*30)
-
         x = self.conv1(x)
         x = self.pointwise(x)
 
@@ -470,11 +464,6 @@ class FusedBatchNormalization(Mo.Module):
         self._fix_parameters = fix_parameters
         self._output_stat = output_stat
         self._nonlinearity = nonlinearity
-        
-        # for set running statistivs
-        # self.set_running_statistics = False
-        # self.mean_est = AverageMeter(self._scope_name)
-        # self.var_est = AverageMeter(self._scope_name)
 
     def call(self, input):
         return F.fused_batch_normalization(input, self._beta, self._gamma,
