@@ -87,8 +87,7 @@ class ProxylessNasSearcher(Searcher):
                 self.monitor.update('loss/valid', loss * self.accum_valid, bz)
 
             # adding constraints
-            for k, v in self.optimizer.get('regularizer', {}).items():
-
+            for k, v in self.regularizer.items():
                 if isinstance(v, LatencyGraphEstimator):
                     #  when using LatencyGraphEstimator (by graph)
                     inp = [nn.Variable((1,)+si[1:]) for si in

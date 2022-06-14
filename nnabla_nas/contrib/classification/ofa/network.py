@@ -11,21 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from collections import OrderedDict
+import random
+
+import numpy as np
 
 import nnabla as nn
 import nnabla.functions as F
-import random
-
 import nnabla.logger as logger
 
 from ..base import ClassificationModel as Model
 from .... import module as Mo
 from .modules import ResidualBlock, ConvLayer, LinearLayer, MBConvLayer
-from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
+from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param
 from .elastic_modules import DynamicMBConvLayer
 from .ofa_modules.dynamic_op import DynamicBatchNorm2d
-from .ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
+from .ofa_utils.common_tools import val2list, make_divisible
+from .ofa_utils.common_tools import cross_entropy_loss_with_label_smoothing, cross_entropy_loss_with_soft_target
+from .ofa_utils.utils import init_models
 
 
 class MyNetwork(Model):
@@ -39,14 +43,6 @@ class MyNetwork(Model):
             eps (float):Tiny value to avoid zero division by std.
         """
         set_bn_param(self, decay_rate, eps, **kwargs)
-
-    def get_bn_param(self):
-        r"""Return dict of batchnormalization params.
-
-        Returns:
-            dict: A dictionary containing decay_rate and eps of batchnormalization
-        """
-        return get_bn_param(self)
 
     def loss(self, outputs, targets, loss_weights=None):
         r"""Return loss computed from a list of outputs and list of targets.
@@ -65,6 +61,12 @@ class MyNetwork(Model):
             nn.Variable: A scalar NNabla Variable represents the loss.
         """
         return cross_entropy_loss_with_label_smoothing(outputs[0], targets[0])
+
+    def kd_loss(self, outputs, logits, targets, loss_weights=None):
+        soft_label = F.softmax(logits[0], axis=1)
+        soft_label.apply(persistent=True)
+        kd_loss = cross_entropy_loss_with_soft_target(outputs[0], soft_label)
+        return kd_loss
 
     def get_net_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing architecture parameters.
@@ -88,6 +90,28 @@ class MyNetwork(Model):
         """
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
+
+    def load_parameters(self, path, raise_if_missing=False):
+        with nn.parameter_scope('', OrderedDict()):
+            nn.load_parameters(path)
+            params = nn.get_parameters(grad_only=False)
+        self.set_parameters(params, raise_if_missing=raise_if_missing)
+
+    def set_parameters(self, params, raise_if_missing=False):
+        for prefix, module in self.get_modules():
+            for name, p in module.parameters.items():
+                key = prefix + ('/' if prefix else '') + name
+                if key in params and p.shape == params[key].shape:
+                    p.d = params[key].d.copy()
+                    nn.logger.info(f'`{key}` loaded.')
+                else:
+                    nn.logger.info(f'`{key}` does not exist.')
+                    if raise_if_missing:
+                        raise ValueError(
+                            f'A child module {name} cannot be found in '
+                            '{this}. This error is raised because '
+                            '`raise_if_missing` is specified '
+                            'as True. Please turn off if you allow it.')
 
 
 class SearchNet(MyNetwork):
@@ -122,8 +146,11 @@ class SearchNet(MyNetwork):
                  width_mult=1.0,
                  op_candidates="MB6 3x3",
                  depth_candidates=4,
-                 weights=None
-                 ):
+                 compound=False,
+                 fixed_kernel=False,
+                 weight_init='he_fout',
+                 weights=None):
+
         self._num_classes = num_classes
         self._bn_param = bn_param
         self._drop_rate = drop_rate
@@ -138,6 +165,10 @@ class SearchNet(MyNetwork):
         self._expand_ratio_list = val2list(expand_ratio_list, 1)
         self._depth_list = val2list(depth_candidates)
 
+        # compofa
+        self._compound = compound
+        self._fixed_kernel = fixed_kernel
+
         # sort
         self._ks_list.sort()
         self._expand_ratio_list.sort()
@@ -145,7 +176,8 @@ class SearchNet(MyNetwork):
 
         base_stage_width = [16, 16, 24, 40, 80, 112, 160, 960, 1280]
 
-        final_expand_width = make_divisible(base_stage_width[-2] * self._width_mult)
+        final_expand_width = make_divisible(
+            base_stage_width[-2] * self._width_mult, SearchNet.CHANNEL_DIVISIBLE)
         last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
 
         stride_stages = [1, 2, 2, 2, 1, 2]
@@ -154,7 +186,7 @@ class SearchNet(MyNetwork):
         n_block_list = [1] + [max(self._depth_list)] * 5
         width_list = []
         for base_width in base_stage_width[:-2]:
-            width = make_divisible(base_width * self._width_mult)
+            width = make_divisible(base_width * self._width_mult, SearchNet.CHANNEL_DIVISIBLE)
             width_list.append(width)
 
         input_channel, first_block_dim = width_list[0], width_list[1]
@@ -177,7 +209,8 @@ class SearchNet(MyNetwork):
         feature_dim = first_block_dim
         for width, n_block, s, act_func, use_se in zip(width_list[2:], n_block_list[1:],
                                                        stride_stages[1:], act_stages[1:], se_stages[1:]):
-            self.block_group_info.append([_block_index + i for i in range(n_block)])
+            self.block_group_info.append(
+                [_block_index + i for i in range(n_block)])
             _block_index += n_block
             output_channel = width
             for i in range(n_block):
@@ -206,21 +239,24 @@ class SearchNet(MyNetwork):
         self.feature_mix_layer = ConvLayer(
             final_expand_width, last_channel, kernel=(1, 1), with_bias=False, use_bn=False, act_func='h_swish'
         )
-        self.classifier = LinearLayer(last_channel, num_classes, drop_rate=drop_rate)
+        self.classifier = LinearLayer(
+            last_channel, num_classes, drop_rate=drop_rate)
 
         # set bn param
         self.set_bn_param(decay_rate=bn_param[0], eps=bn_param[1])
 
         # runtime depth
-        self.runtime_depth = [len(block_idx) for block_idx in self.block_group_info]
+        self.runtime_depth = [len(block_idx)
+                              for block_idx in self.block_group_info]
+        self.backbone_channel_num = final_expand_width
 
-        if len(self._expand_ratio_list) == 1:
-            DynamicBatchNorm2d.GET_STATIC_BN = True
-        else:
+        if len(self._expand_ratio_list) > 1:  # not for kd net
             DynamicBatchNorm2d.GET_STATIC_BN = False
 
         if weights is not None:
             self.load_parameters(weights)
+        else:
+            init_models(self, model_init=weight_init)
 
     def call(self, x):
         # sample or not
@@ -236,7 +272,7 @@ class SearchNet(MyNetwork):
             for idx in active_idx:
                 x = self.blocks[idx](x)
         x = self.final_expand_layer(x)
-        x = F.mean(x, axis=(2, 3), keepdims=True)
+        x = F.mean(x, axis=(2, 3), keepdims=True)  # global avg pooling
         x = self.feature_mix_layer(x)
         x = F.reshape(x, shape=(x.shape[0], -1))
         return self.classifier(x)
@@ -252,6 +288,13 @@ class SearchNet(MyNetwork):
         return self.block_group_info
 
     def set_active_subnet(self, ks=None, e=None, d=None, **kwargs):
+        if self._fixed_kernel:
+            assert ks is None, "You tried to set kernel size for a fixed kernel network!"
+            ks = []
+            kernel_stages = [3, 3, 5, 3, 3, 5]
+            for k in kernel_stages[1:]:
+                ks.extend([k] * 4)
+
         ks = val2list(ks, len(self.blocks) - 1)
         expand_ratio = val2list(e, len(self.blocks) - 1)
         depth = val2list(d, len(self.block_group_info))
@@ -267,17 +310,18 @@ class SearchNet(MyNetwork):
                 self.runtime_depth[i] = min(len(self.block_group_info[i]), d)
 
     def sample_active_subnet(self):
-        ks_candidates = self._ks_list if self.__dict__.get('_ks_include_list', None) is None \
-            else self.__dict__['_ks_include_list']
-        expand_candidates = self._expand_ratio_list if self.__dict__.get('_expand_include_list', None) is None \
-            else self.__dict__['_expand_include_list']
-        depth_candidates = self._depth_list if self.__dict__.get('_depth_include_list', None) is None else \
-            self.__dict__['_depth_include_list']
+        if self._compound:
+            return self.sample_compound_subnet()
+
+        ks_candidates = self._ks_list
+        expand_candidates = self._expand_ratio_list
+        depth_candidates = self._depth_list
 
         # sample kernel size
         ks_setting = []
         if not isinstance(ks_candidates[0], list):
-            ks_candidates = [ks_candidates for _ in range(len(self.blocks) - 1)]
+            ks_candidates = [
+                ks_candidates for _ in range(len(self.blocks) - 1)]
         for k_set in ks_candidates:
             k = random.choice(k_set)
             ks_setting.append(k)
@@ -285,7 +329,8 @@ class SearchNet(MyNetwork):
         # sample expand ratio
         expand_setting = []
         if not isinstance(expand_candidates[0], list):
-            expand_candidates = [expand_candidates for _ in range(len(self.blocks) - 1)]
+            expand_candidates = [
+                expand_candidates for _ in range(len(self.blocks) - 1)]
         for e_set in expand_candidates:
             e = random.choice(e_set)
             expand_setting.append(e)
@@ -293,7 +338,8 @@ class SearchNet(MyNetwork):
         # sample depth
         depth_setting = []
         if not isinstance(depth_candidates[0], list):
-            depth_candidates = [depth_candidates for _ in range(len(self.block_group_info))]
+            depth_candidates = [depth_candidates for _ in range(
+                len(self.block_group_info))]
         for d_set in depth_candidates:
             d = random.choice(d_set)
             depth_setting.append(d)
@@ -306,31 +352,60 @@ class SearchNet(MyNetwork):
             'd': depth_setting
         }
 
-    def load_parameters(self, path, raise_if_missing=False):
-        with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
-            params = nn.get_parameters(grad_only=False)
-        self.set_parameters(params, raise_if_missing=raise_if_missing)
+    def sample_compound_subnet(self):
 
-    def set_parameters(self, params, raise_if_missing=False):
-        for prefix, module in self.get_modules():
-            for name, p in module.parameters.items():
-                key = prefix + ('/' if prefix else '') + name
-                if '/mobile_inverted_conv/' in key:
-                    new_key = key.replace('/mobile_inverted_conv/', '/conv/')
-                else:
-                    new_key = key
-                if new_key in params:
-                    p.d = params[new_key].d.copy()
-                    nn.logger.info(f'`{new_key}` loaded.')
-                else:
-                    nn.logger.info(f'`{new_key}` does not exist.')
-                    if raise_if_missing:
-                        raise ValueError(
-                            f'A child module {name} cannot be found in '
-                            '{this}. This error is raised because '
-                            '`raise_if_missing` is specified '
-                            'as True. Please turn off if you allow it.')
+        def clip_expands(expands):
+            low = min(self._expand_ratio_list)
+            expands = list(set(np.clip(expands, low, None)))
+            return expands
+
+        ks_candidates = self._ks_list
+        depth_candidates = self._depth_list
+
+        mapping = {
+            2: clip_expands([3, ]),
+            3: clip_expands([4, ]),
+            4: clip_expands([6, ]),
+        }
+
+        # used in in case of unbalanced distribution to sample proportional w/ cardinality
+        combinations_per_depth = {
+            d: len(mapping[d])**d for d in depth_candidates}
+        sum_combinations = sum(combinations_per_depth.values())
+        depth_sampling_weights = {
+            k: v/sum_combinations for k, v in combinations_per_depth.items()}
+
+        depth_setting = []
+        expand_setting = []
+        for block_idx in self.block_group_info:
+            # for each block, sample a random depth weighted by the number of combinations
+            # for each layer in block, sample from corresponding expand ratio
+            sampled_d = np.random.choice(
+                depth_candidates, p=list(depth_sampling_weights.values()))
+            corresp_e = mapping[sampled_d]
+
+            depth_setting.append(sampled_d)
+            for _ in range(len(block_idx)):
+                expand_setting.append(random.choice(corresp_e))
+
+        if self._fixed_kernel:
+            ks_setting = None
+        else:
+            # sample kernel size
+            ks_setting = []
+            if not isinstance(ks_candidates[0], list):
+                ks_candidates = [
+                    ks_candidates for _ in range(len(self.blocks) - 1)]
+            for k_set in ks_candidates:
+                k = random.choice(k_set)
+                ks_setting.append(k)
+        self.set_active_subnet(ks_setting, expand_setting, depth_setting)
+
+        return {
+            'ks': ks_setting,
+            'e': expand_setting,
+            'd': depth_setting,
+        }
 
     def extra_repr(self):
         return (f'num_classes={self._num_classes}, '
@@ -353,12 +428,18 @@ class OFASearchNet(SearchNet):
                  width_mult=1.0,
                  op_candidates="MB6 3x3",
                  depth_candidates=4,
+                 compound=False,
+                 fixed_kernel=False,
+                 weight_init="he_fout",
                  weights=None
                  ):
         super(OFASearchNet, self).__init__(
             num_classes=num_classes, bn_param=bn_param, drop_rate=drop_rate,
             base_stage_width=base_stage_width, width_mult=width_mult,
-            op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
+            op_candidates=op_candidates, depth_candidates=depth_candidates,
+            compound=compound, fixed_kernel=fixed_kernel,
+            weight_init=weight_init, weights=weights)
+
         if weights is not None:
             self.re_organize_middle_weights()
 
@@ -405,7 +486,8 @@ class TrainNet(SearchNet):
 
         if genotype is not None:
             assert(len(genotype) == 20)
-            ks_list, expand_ratio_list, depth_list = genotype2subnetlist(op_candidates, genotype)
+            ks_list, expand_ratio_list, depth_list = genotype2subnetlist(
+                op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
             preserve_weight = True if weights is not None else False
@@ -418,7 +500,8 @@ class TrainNet(SearchNet):
                 stage_blocks = []
                 for idx in active_idx:
                     stage_blocks.append(ResidualBlock(
-                        self.blocks[idx].conv.get_active_subnet(input_channel, preserve_weight),
+                        self.blocks[idx].conv.get_active_subnet(
+                            input_channel, preserve_weight),
                         self.blocks[idx].shortcut
                     ))
                     input_channel = stage_blocks[-1].conv._out_channels
@@ -437,4 +520,5 @@ class TrainNet(SearchNet):
         x = F.mean(x, axis=(2, 3), keepdims=True)
         x = self.feature_mix_layer(x)
         x = F.reshape(x, shape=(x.shape[0], -1))
-        return self.classifier(x)
+        x = self.classifier(x)
+        return x

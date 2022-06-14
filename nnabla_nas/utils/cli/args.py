@@ -37,6 +37,8 @@ class Configuration(object):
         self.hparams = self.get_hyperparameters(conf['hparams'])
         self.dataloader = self.get_dataloader(conf['dataloader'])
         self.optimizer = self.get_optimizer(conf['optimizer'])
+        # optional configuration
+        self.regularizer = self.get_regularizer(conf.get('regularizer', dict()))
 
         # write the configuration
         path = self.hparams['output_path']
@@ -112,42 +114,43 @@ class Configuration(object):
         r"""Setup optimizer."""
         optimizer = dict()
         for name, args in conf.items():
-            if name == 'regularizer':
-                optimizer[name] = dict()
-                for k, params in args.items():
+            try:
+                lr_scheduler = None
+                if 'lr_scheduler' in args:
+                    class_name = args['lr_scheduler']
                     try:
-                        optimizer[name][k] = EST.__dict__[k](**params)
-                    except ModuleNotFoundError:
-                        print(f"regularizer `{k}` is not supported.")
-                        sys.exit(-1)
-            else:
-                try:
-                    lr_scheduler = None
-                    if 'lr_scheduler' in args:
-                        class_name = args['lr_scheduler']
-                        try:
-                            lr = args['lr']
-                        except KeyError:
-                            lr = args['alpha']  # for adam
-                        bz = self.hparams['batch_size_train'if name != 'valid' else 'batch_size_valid']
-                        # epoch = self.hparams['epoch'] if name == 'train' else self.hparams['warmup']
-                        epoch = self.hparams['epoch'] if 'train' in name else self.hparams['warmup']
-                        max_iter = epoch * \
-                            len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
-                        if class_name == "CosineSchedulerWarmup":
-                            batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
-                            warmup_iter = self.hparams['cosine_warmup_epoch'] * batch_iters
-                            if self.hparams['warmup_lr'] < 0:
-                                warmup_lr = args['lr']
-                            else:
-                                warmup_lr = self.hparams['warmup_lr']
-                            lr_scheduler = CosineSchedulerWarmup(
-                                base_lr=lr, max_iter=max_iter, warmup_iter=warmup_iter, warmup_lr=warmup_lr)
+                        lr = args['lr']
+                    except KeyError:
+                        lr = args['alpha']  # for adam
+                    bz = self.hparams['batch_size_train'if name != 'valid' else 'batch_size_valid']
+                    # epoch = self.hparams['epoch'] if name == 'train' else self.hparams['warmup']
+                    epoch = self.hparams['epoch'] if 'train' in name else self.hparams['warmup']
+                    max_iter = epoch * \
+                        len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
+                    if class_name == "CosineSchedulerWarmup":
+                        batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
+                        warmup_iter = self.hparams['cosine_warmup_epoch'] * batch_iters
+                        if self.hparams['warmup_lr'] < 0:
+                            warmup_lr = args['lr']
                         else:
-                            lr_scheduler = LRS.__dict__[class_name](init_lr=lr, max_iter=max_iter)
-                    args['lr_scheduler'] = lr_scheduler
-                    optimizer[name] = Optimizer(**args)
-                except ModuleNotFoundError:
-                    print(f"optimizer `{name}` is not supported.")
-                    sys.exit(-1)
+                            warmup_lr = self.hparams['warmup_lr']
+                        lr_scheduler = CosineSchedulerWarmup(
+                            base_lr=lr, max_iter=max_iter, warmup_iter=warmup_iter, warmup_lr=warmup_lr)
+                    else:
+                        lr_scheduler = LRS.__dict__[class_name](init_lr=lr, max_iter=max_iter)
+                args['lr_scheduler'] = lr_scheduler
+                optimizer[name] = Optimizer(**args)
+            except ModuleNotFoundError:
+                print(f"optimizer `{name}` is not supported.")
+                sys.exit(-1)
         return optimizer
+
+    def get_regularizer(self, conf):
+        regularizer = dict()
+        for k, params in conf.items():
+            try:
+                regularizer[k] = EST.__dict__[k](**params)
+            except ModuleNotFoundError:
+                print(f"regularizer `{k}` is not supported.")
+                sys.exit(-1)
+        return regularizer

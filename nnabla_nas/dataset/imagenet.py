@@ -17,129 +17,101 @@ from pathlib import Path
 
 from nnabla import random
 from nnabla_ext.cuda.experimental import dali_iterator
-import nvidia.dali.ops as ops
-from nvidia.dali.pipeline import Pipeline
-import nvidia.dali.types as types
 from sklearn.model_selection import train_test_split
 
 from .dataloader import BaseDataLoader
+
+from nvidia.dali import pipeline_def
+import nvidia.dali.fn as fn
+import nvidia.dali.types as types
+
 
 _pixel_mean = [255 * x for x in (0.485, 0.456, 0.406)]
 _pixel_std = [255 * x for x in (0.229, 0.224, 0.225)]
 
 
-class TrainPipeline(Pipeline):
-    def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
-                 nvjpeg_padding, prefetch_queue=3, seed=1, num_shards=1,
-                 channel_last=True, dtype="half", pad_output=False):
-        super(TrainPipeline, self).__init__(
-            batch_size, num_threads, shard_id, seed=seed,
-            prefetch_queue_depth=prefetch_queue)
-        self.input = ops.FileReader(file_root=image_dir, file_list=file_list,
+@pipeline_def
+def train_pipeline(image_dir, file_list, shard_id, nvjpeg_padding, num_shards=1,
+                   channel_last=True, dtype="half", pad_output=False):
+    jpegs, labels = fn.readers.file(file_root=image_dir, file_list=file_list,
                                     random_shuffle=True, num_shards=num_shards,
-                                    shard_id=shard_id)
-        self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB,
-                                       device_memory_padding=nvjpeg_padding,
-                                       host_memory_padding=nvjpeg_padding)
+                                    shard_id=shard_id, name="Reader")
+    images = fn.decoders.image(jpegs, device="mixed", output_type=types.RGB,
+                               device_memory_padding=nvjpeg_padding,
+                               host_memory_padding=nvjpeg_padding)
 
-        self.rrc = ops.RandomResizedCrop(device="gpu", size=(224, 224))
-        self.cmnp = ops.CropMirrorNormalize(device="gpu",
-                                            output_dtype=types.FLOAT16
-                                            if dtype == "half"
-                                            else types.FLOAT,
-                                            output_layout=types.NHWC
-                                            if channel_last else types.NCHW,
-                                            crop=(224, 224),
-                                            image_type=types.RGB,
-                                            mean=_pixel_mean,
-                                            std=_pixel_std,
-                                            pad_output=pad_output)
-        self.coin = ops.CoinFlip(probability=0.5)
+    images = fn.random_resized_crop(images, device="gpu", size=(224, 224))
 
-    def define_graph(self):
-        jpegs, labels = self.input(name="Reader")
-        images = self.decode(jpegs)
-        images = self.rrc(images)
-        images = self.cmnp(images, mirror=self.coin())
-        return images, labels.gpu()
+    images = fn.crop_mirror_normalize(images, device="gpu",
+                                      dtype=types.FLOAT16
+                                      if dtype == "half"
+                                      else types.FLOAT,
+                                      output_layout=types.NHWC
+                                      if channel_last else types.NCHW,
+                                      crop=(224, 224),
+                                      mean=_pixel_mean,
+                                      std=_pixel_std,
+                                      pad_output=pad_output,
+                                      mirror=fn.coin_flip(probability=0.5))
+    return images, labels.gpu()
 
 
-class TrainPipelineColorTwist(Pipeline):
-    def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
-                 nvjpeg_padding, prefetch_queue=3, seed=1, num_shards=1,
-                 channel_last=True, dtype="half", pad_output=False):
-        super(TrainPipelineColorTwist, self).__init__(
-            batch_size, num_threads, shard_id, seed=seed,
-            prefetch_queue_depth=prefetch_queue)
-        self.input = ops.FileReader(file_root=image_dir, file_list=file_list,
+@pipeline_def
+def train_pipeline_color_twist(image_dir, file_list, shard_id, nvjpeg_padding, num_shards=1,
+                               channel_last=True, dtype="half", pad_output=False):
+    jpegs, labels = fn.readers.file(file_root=image_dir, file_list=file_list,
                                     random_shuffle=True, num_shards=num_shards,
-                                    shard_id=shard_id)
-        self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB,
-                                       device_memory_padding=nvjpeg_padding,
-                                       host_memory_padding=nvjpeg_padding)
+                                    shard_id=shard_id, name="Reader")
+    images = fn.decoders.image(jpegs, device="mixed", output_type=types.RGB,
+                               device_memory_padding=nvjpeg_padding,
+                               host_memory_padding=nvjpeg_padding)
 
-        self.rrc = ops.RandomResizedCrop(device="gpu", size=(224, 224))
-        self.colortwist = ops.ColorTwist(device="gpu")
-        self.cmnp = ops.CropMirrorNormalize(device="gpu",
-                                            output_dtype=types.FLOAT16
-                                            if dtype == "half" else types.FLOAT,
-                                            output_layout=types.NHWC
-                                            if channel_last else types.NCHW,
-                                            crop=(224, 224),
-                                            image_type=types.RGB,
-                                            mean=_pixel_mean,
-                                            std=_pixel_std,
-                                            pad_output=pad_output)
-        self.brightness = ops.Uniform(range=(1 - 32. / 255., 1 + 32. / 255))
-        self.contrast = ops.Uniform(range=(0, 1))
-        self.saturation = ops.Uniform(range=(0.5, 1 + 0.5))
-        self.hue = ops.Uniform(range=(0, 1))
-        self.coin = ops.CoinFlip(probability=0.5)
+    images = fn.random_resized_crop(images, device="gpu", size=(224, 224))
 
-    def define_graph(self):
-        jpegs, labels = self.input(name="Reader")
-        images = self.decode(jpegs)
-        images = self.rrc(images)
-        images = self.colortwist(
-            images,
-            brightness=self.brightness(),
-            contrast=self.contrast(),
-            saturation=self.saturation(),
-            hue=self.hue())
-        images = self.cmnp(images, mirror=self.coin())
-        return images, labels.gpu()
+    images = fn.color_twist(images, device="gpu",
+                            brightness=fn.random.uniform(
+                                range=(1 - 32. / 255., 1 + 32. / 255)),
+                            contrast=fn.random.uniform(range=(0, 1)),
+                            saturation=fn.random.uniform(range=(0.5, 1 + 0.5)),
+                            hue=fn.random.uniform(range=(0, 1))
+                            )
+
+    images = fn.crop_mirror_normalize(images, device="gpu",
+                                      dtype=types.FLOAT16
+                                      if dtype == "half"
+                                      else types.FLOAT,
+                                      output_layout=types.NHWC
+                                      if channel_last else types.NCHW,
+                                      crop=(224, 224),
+                                      mean=_pixel_mean,
+                                      std=_pixel_std,
+                                      pad_output=pad_output,
+                                      mirror=fn.random.coin_flip(probability=0.5))
+    return images, labels.gpu()
 
 
-class ValPipeline(Pipeline):
-    def __init__(self, batch_size, num_threads, shard_id, image_dir, file_list,
-                 nvjpeg_padding, seed=1, num_shards=1, channel_last=True,
-                 dtype='half', pad_output=False):
-        super(ValPipeline, self).__init__(
-            batch_size, num_threads, shard_id, seed=seed)
-        self.input = ops.FileReader(file_root=image_dir, file_list=file_list,
-                                    random_shuffle=False,
-                                    num_shards=num_shards, shard_id=shard_id)
-        self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB,
-                                       device_memory_padding=nvjpeg_padding,
-                                       host_memory_padding=nvjpeg_padding)
-        self.res = ops.Resize(device="gpu", resize_shorter=256)
-        self.cmnp = ops.CropMirrorNormalize(device="gpu",
-                                            output_dtype=types.FLOAT16 if
-                                            dtype == "half" else types.FLOAT,
-                                            output_layout=types.NHWC
-                                            if channel_last else types.NCHW,
-                                            crop=(224, 224),
-                                            image_type=types.RGB,
-                                            mean=_pixel_mean,
-                                            std=_pixel_std,
-                                            pad_output=pad_output)
+@pipeline_def
+def val_pipeline(image_dir, file_list, shard_id, nvjpeg_padding, num_shards=1,
+                 channel_last=True, dtype="half", pad_output=False):
+    jpegs, labels = fn.readers.file(file_root=image_dir, file_list=file_list,
+                                    random_shuffle=True, num_shards=num_shards,
+                                    shard_id=shard_id, name="Reader")
+    images = fn.decoders.image(jpegs, device="mixed", output_type=types.RGB,
+                               device_memory_padding=nvjpeg_padding,
+                               host_memory_padding=nvjpeg_padding)
 
-    def define_graph(self):
-        jpegs, labels = self.input(name="Reader")
-        images = self.decode(jpegs)
-        images = self.res(images)
-        images = self.cmnp(images)
-        return images, labels.gpu()
+    images = fn.resize(images, device="gpu", resize_shorter=256)
+
+    images = fn.crop_mirror_normalize(images, device="gpu",
+                                      dtype=types.FLOAT16 if
+                                      dtype == "half" else types.FLOAT,
+                                      output_layout=types.NHWC
+                                      if channel_last else types.NCHW,
+                                      crop=(224, 224),
+                                      mean=_pixel_mean,
+                                      std=_pixel_std,
+                                      pad_output=pad_output)
+    return images, labels.gpu()
 
 
 def get_data_iterators(batch_size,
@@ -157,20 +129,23 @@ def get_data_iterators(batch_size,
     The datasets are partitioned in distributed training
     mode according to comm rank and number of processes.
     '''
-    cls_name = TrainPipelineColorTwist if (training and colortwist) else\
-        TrainPipeline if training else ValPipeline
+    pipe_name = train_pipeline_color_twist if (training and colortwist) else\
+        train_pipeline if training else val_pipeline
     # Pipelines and Iterators for training
-    train_pipe = cls_name(batch_size, dali_num_threads, comm.rank,
-                          train_dir,
-                          file_list,
-                          dali_nvjpeg_memory_padding,
-                          seed=comm.rank + 1,
-                          num_shards=comm.n_procs,
-                          channel_last=channel_last,
-                          dtype=type_config)
+    pipe = pipe_name(image_dir=train_dir,
+                     file_list=file_list,
+                     shard_id=comm.rank,
+                     nvjpeg_padding=dali_nvjpeg_memory_padding,
+                     num_shards=comm.n_procs,
+                     channel_last=channel_last,
+                     dtype=type_config,
+                     batch_size=batch_size,
+                     num_threads=dali_num_threads,
+                     seed=comm.rank + 1,
+                     device_id=comm.rank)
 
-    data = dali_iterator.DaliIterator(train_pipe)
-    data.size = train_pipe.epoch_size("Reader") // comm.n_procs
+    data = dali_iterator.DaliIterator(pipe)
+    data.size = pipe.epoch_size("Reader") // comm.n_procs
 
     return data
 
@@ -179,7 +154,7 @@ class DataLoader(BaseDataLoader):
     def __init__(self, batch_size=1, searching=False, training=False,
                  train_path=None, train_file=None, valid_path=None, valid_file=None,
                  train_portion=1.0, *, augment_valid=True, colortwist=False,
-                 rng=None, communicator=None, type_config=float):
+                 rng=None, communicator=None, type_config=float, channel_last=False):
         r"""Dataloader for ImageNet.
 
         Args:
@@ -203,6 +178,8 @@ class DataLoader(BaseDataLoader):
             communicator (Communicator, optional): The communicator is used to support distributed learning.
                 Defaults to None.
             type_config (type, optional): Configuration type. Defaults to `float`.
+            channel_last(bool, optional): If True, the last dimension is
+                considered as channel dimension, a.k.a NHWC order. Defaults to`False`.
         """
         self.rng = rng or random.prng  # np.random.RandomState(313) #
 
@@ -218,7 +195,7 @@ class DataLoader(BaseDataLoader):
             file_list=train_file if training else valid_file,
             dali_nvjpeg_memory_padding=64 * (1 << 20),
             type_config=type_config,
-            channel_last=False,
+            channel_last=channel_last,
             comm=communicator,
             training=training or (searching and augment_valid),
             colortwist=colortwist

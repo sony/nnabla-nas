@@ -3,7 +3,7 @@ from nnabla.initializer import NormalInitializer, UniformInitializer
 
 
 def torch_initializer(inmaps, kernel):
-    d = np.sqrt(1. / (np.prod(kernel) * inmaps))
+    d = np.sqrt(1. / (kernel * kernel * inmaps))
     return UniformInitializer((-d, d))
 
 

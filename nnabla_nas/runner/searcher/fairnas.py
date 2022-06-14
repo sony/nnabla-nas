@@ -24,8 +24,8 @@ import numpy as np
 class FairNasSearcher(Searcher):
     r"""An implementation of FairNAS."""
 
-    def __init__(self, model, optimizer, dataloader, args):
-        super().__init__(model, optimizer, dataloader, args)
+    def __init__(self, model, optimizer, regularizer, dataloader, args):
+        super().__init__(model, optimizer, regularizer, dataloader, args)
         # Number of models sampled at each batch
         self.m_sampled = args.get('num_sampled_iter', 4)
         # Number of samples for the search

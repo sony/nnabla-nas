@@ -18,6 +18,7 @@ from nnabla.initializer import ConstantInitializer
 
 from .module import Module
 from .parameter import Parameter
+from ..utils.helper import AverageMeter
 
 
 class BatchNormalization(Module):
@@ -102,11 +103,31 @@ class BatchNormalization(Module):
         self._fix_parameters = fix_parameters
         self._output_stat = output_stat
 
+        # for set running statistivs
+        self.set_running_statistics = False
+        self.mean_est = AverageMeter(self._scope_name)
+        self.var_est = AverageMeter(self._scope_name)
+
     def call(self, input):
-        return F.batch_normalization(input, self._beta, self._gamma,
-                                     self._mean, self._var, self._axes,
-                                     self._decay_rate, self._eps,
-                                     self.training, self._output_stat)
+        if self.set_running_statistics:
+            batch_mean = F.mean(input, axis=(0, 2, 3), keepdims=True)
+            batch_var = F.mean(input ** 2, axis=(0, 2, 3),
+                               keepdims=True) - batch_mean ** 2
+
+            self.mean_est.update(batch_mean.d, input.shape[0])
+            self.var_est.update(batch_var.d, input.shape[0])
+
+            _feature_dim = batch_mean.shape[1]
+            return F.batch_normalization(
+                input, self._beta[:, :_feature_dim, :,
+                                  :], self._gamma[:, :_feature_dim, :, :],
+                batch_mean, batch_var, decay_rate=self._decay_rate, eps=self._eps, batch_stat=False
+            )
+        else:
+            return F.batch_normalization(input, self._beta, self._gamma,
+                                         self._mean, self._var, self._axes,
+                                         self._decay_rate, self._eps,
+                                         self.training, self._output_stat)
 
     def extra_repr(self):
         return (f'n_features={self._n_features}, '
