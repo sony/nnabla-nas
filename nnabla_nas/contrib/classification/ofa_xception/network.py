@@ -209,22 +209,18 @@ class SearchNet(MyNetwork):
         self.block_depth_info = [depth for depth in n_block_list]
         self.runtime_depth = [depth for depth in n_block_list]
 
-        # TODO: Change this once BatchNorm2d fix is merged with master
-        if len(self._expand_ratio_list) == 1:
-            DynamicBatchNorm2d.GET_STATIC_BN = True
-        else:
-            DynamicBatchNorm2d.GET_STATIC_BN = False
+        # set static/dynamic bn
+        for _, m in self.get_modules():
+            if isinstance(m, DynamicBatchNorm2d):
+                if len(self._expand_ratio_list) > 1:
+                    m.use_static_bn = False
+                else:
+                    m.use_static_bn = True
 
         if weights is not None:
             self.load_parameters(weights)
 
     def call(self, x):
-        # TODO: Remove this once BatchNorm2d fix is merged with master
-        if len(self._expand_ratio_list) == 1:
-            DynamicBatchNorm2d.GET_STATIC_BN = True
-        else:
-            DynamicBatchNorm2d.GET_STATIC_BN = False
-
         # sample or not
         if self.training:
             self.sample_active_subnet()
