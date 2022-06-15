@@ -4,10 +4,8 @@
             "train_portion": 0.99,
             "augment_valid": "False",
             "colortwist": "True",
-            "train_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train",
-            "train_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/train_label",
-            "valid_path": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val",
-            "valid_file": "/groups/gcc50495/dataset/ilsvrc2012/nnabla/imagenet_dir/val_label"
+            "train_path": "/group/project4/Datasets/ilsvrc2012/train",
+            "valid_path": "/group/project4/Datasets/ilsvrc2012/val"
         }
     },
     "network": {
@@ -21,17 +19,17 @@
     },
     "optimizer": {
         "train": {
-            "weight_decay": 3e-5,
-            "lr_scheduler": "CosineSchedulerWarmup",
-            "name": "Nesterov",
-            "lr": 2.6,
+            "weight_decay": 1e-5,
+            "lr_scheduler": "StepScheduler",
+            "name": "Momentum",
+            "lr": 0.045,
             "momentum": 0.9
             },
         "train_no_decay": {
             "weight_decay": 0,
-            "lr_scheduler": "CosineSchedulerWarmup",
-            "name": "Nesterov",
-            "lr": 2.6,
+            "lr_scheduler": "StepScheduler",
+            "name": "Momentum",
+            "lr": 0.045,
             "momentum": 0.9
             }
     },
@@ -50,12 +48,12 @@
             [0, 0, 0, 0, 0, 0, 0, 0]
         ],
         "lambda_kd": 0,
-        "epoch": 20,
-        "cosine_warmup_epoch": 5,
-        "warmup_lr": 0.08125,
-        "batch_size_train": 32,
+        "epoch": 30,
+        "epoch_steps": 2,
+        "step_decay_rate": 0.94,
+        "batch_size_train": 64,
         "batch_size_valid": 64,
-        "mini_batch_train": 32,
+        "mini_batch_train": 64,
         "mini_batch_valid": 64,
         "print_frequency": 100,
         "validation_frequency": 1

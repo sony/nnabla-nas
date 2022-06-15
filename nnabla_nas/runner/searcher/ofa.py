@@ -121,6 +121,7 @@ class OFASearcher(Searcher):
                     self.loss.zero()
                     for k in self.metrics:
                         self.metrics[k].zero()
+            clear_memory_cache()
         return self
 
     def callback_on_start(self):
