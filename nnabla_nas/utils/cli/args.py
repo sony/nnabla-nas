@@ -139,7 +139,7 @@ class Configuration(object):
                     elif class_name == "StepScheduler":
                         decay_rate = self.hparams["step_decay_rate"]
                         batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
-                        epoch_steps = self.hparams["epoch_steps"] # number of epochs before each decay in lr
+                        epoch_steps = self.hparams["epoch_steps"]  # number of epochs before each decay in lr
                         iter_steps = [ep * batch_iters for ep in range(epoch_steps, epoch+1, epoch_steps)]
                         print(iter_steps)
                         lr_scheduler = LRS.StepScheduler(init_lr=lr, gamma=decay_rate, iter_steps=iter_steps)
