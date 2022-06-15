@@ -85,6 +85,8 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
             m.set_running_statistics = True
             m.mean_est.reset()
             m.var_est.reset()
+        elif isinstance(m, DynamicBatchNorm2d):
+            m.set_running_statistics = True
 
     def load_data(placeholder, data):
         inp_list = []
@@ -97,7 +99,6 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
         return inp_list
 
     with nn.no_grad():
-        DynamicBatchNorm2d.SET_RUNNING_STATISTICS = True
         resize = MyResize()
         transform = dataloader.transform('valid')
         with nn.auto_forward(True):
@@ -113,7 +114,6 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
                             for j in range(len(x))]
                 inputs = [resize(transform(x[:batch_size, :, :, :])) for x in x_concat]
                 model(*inputs)
-            DynamicBatchNorm2d.SET_RUNNING_STATISTICS = False
 
     for name, m in model.get_modules():
         if isinstance(m, Mo.BatchNormalization):
@@ -125,6 +125,8 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
                     (m.var_est.avg, m._var.d[:, feature_dim:, :, :]), axis=1)
                 m._mean.d = new_mean
                 m._var.d = new_var
+            m.set_running_statistics = False
+        elif isinstance(m, DynamicBatchNorm2d):
             m.set_running_statistics = False
 
     logger.info('Batch normalization stats calibaration finished')

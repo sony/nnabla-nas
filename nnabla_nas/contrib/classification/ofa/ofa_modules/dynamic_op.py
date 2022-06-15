@@ -147,9 +147,6 @@ class DynamicBatchNorm2d(Mo.Module):
         n_dims (int): Number of dimensions.
     """
 
-    SET_RUNNING_STATISTICS = False
-    GET_STATIC_BN = True
-
     def __init__(self, max_feature_dim, n_dims):
         super(DynamicBatchNorm2d, self).__init__()
 
@@ -157,10 +154,13 @@ class DynamicBatchNorm2d(Mo.Module):
 
         self._max_feature_dim = max_feature_dim
         self.bn = Mo.BatchNormalization(self._max_feature_dim, n_dims)
+        self.use_static_bn = True
+        self.set_running_statistics = False
 
     @staticmethod
-    def bn_forward(x, bn: Mo.BatchNormalization, max_feature_dim, feature_dim, training):
-        if DynamicBatchNorm2d.GET_STATIC_BN or DynamicBatchNorm2d.SET_RUNNING_STATISTICS:
+    def bn_forward(x, bn: Mo.BatchNormalization, max_feature_dim, feature_dim, training,
+                   use_static_bn, set_running_statistics):
+        if use_static_bn or set_running_statistics:
             return bn(x)
         else:
             sbeta, sgamma = bn._beta[:, :feature_dim, :, :], bn._gamma[:, :feature_dim, :, :]
@@ -168,8 +168,7 @@ class DynamicBatchNorm2d(Mo.Module):
             svar = nn.Variable(sbeta.shape)
             smean.data = bn._mean.data[:, :feature_dim, :, :]
             svar.data = bn._var.data[:, :feature_dim, :, :]
-            y = F.batch_normalization(
-                x, sbeta, sgamma, smean, svar, batch_stat=training,)
+            y = F.batch_normalization(x, sbeta, sgamma, smean, svar, batch_stat=training,)
             if training:
                 bn._mean = F.concatenate(smean, bn._mean[:, feature_dim:, :, :], axis=1)
                 bn._var = F.concatenate(svar, bn._var[:, feature_dim:, :, :], axis=1)
@@ -177,7 +176,9 @@ class DynamicBatchNorm2d(Mo.Module):
 
     def call(self, input):
         feature_dim = input.shape[1]
-        y = self.bn_forward(input, self.bn, self._max_feature_dim, feature_dim, self.training)
+        y = self.bn_forward(
+            input, self.bn, self._max_feature_dim, feature_dim, self.training,
+            self.use_static_bn, self.set_running_statistics)
         return y
 
 
@@ -235,7 +236,8 @@ class DynamicSeparableConv2d(Mo.Module):
         start, end = sub_filter_start_end(max_kernel_size, kernel_size)
         filters = self.conv._W[:out_channel, :in_channel, start:end, start:end]
         if self.KERNEL_TRANSFORM_MODE is not None and kernel_size < max_kernel_size:
-            start_filter = self.conv._W[:out_channel, :in_channel, :, :]  # start with max kernel
+            # start with max kernel
+            start_filter = self.conv._W[:out_channel, :in_channel, :, :]
             for i in range(len(self._ks_set) - 1, 0, -1):
                 src_ks = self._ks_set[i]
                 if src_ks <= kernel_size:
