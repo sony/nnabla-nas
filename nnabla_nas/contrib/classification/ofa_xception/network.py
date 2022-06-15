@@ -21,7 +21,7 @@ import nnabla.logger as logger
 
 from ..base import ClassificationModel as Model
 from .... import module as Mo
-from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock, genotype2subnetlist
+from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock
 from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
 from .elastic_modules import DynamicXPLayer
 from ..ofa.ofa_modules.dynamic_op import DynamicBatchNorm2d
@@ -148,12 +148,12 @@ class SearchNet(MyNetwork):
         expand_1_width = make_divisible(base_stage_width[-3] * self._width_mult)
         expand_2_width = make_divisible(base_stage_width[-2] * self._width_mult)
         last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
-        
+
         first_conv_channel = make_divisible(base_stage_width[0] * self._width_mult)
         sec_conv_channel = make_divisible(base_stage_width[1] * self._width_mult)
         mid_block_width = make_divisible(base_stage_width[4] * self._width_mult)
 
-        n_block_list = [max(self._depth_list)] * 8 # 8 blocks in Xception Middle Flow
+        n_block_list = [max(self._depth_list)] * 8  # 8 blocks in Xception Middle Flow
 
         # Entry flow
         # first conv layer
@@ -161,14 +161,19 @@ class SearchNet(MyNetwork):
             3, first_conv_channel, kernel=(3, 3), stride=(2, 2), use_bn=True, act_func='relu', with_bias=False)
 
         # Second conv layer
-        self.second_conv = ConvLayer(first_conv_channel, sec_conv_channel, kernel=(3, 3), stride=(1, 1), dilation=(1, 1),
-                                    use_bn=True, act_func=None)
+        self.second_conv = ConvLayer(first_conv_channel, sec_conv_channel,
+                                     kernel=(3, 3), stride=(1, 1), dilation=(1, 1), use_bn=True, act_func=None)
 
         # entry flow blocks
         self.entryblocks = []
-        self.entryblocks.append(XceptionBlock(base_stage_width[1], base_stage_width[2], 2, stride=(2,2), start_with_relu=False))
-        self.entryblocks.append(XceptionBlock(base_stage_width[2], base_stage_width[3], 2, stride=(2,2)))
-        self.entryblocks.append(XceptionBlock(base_stage_width[3], base_stage_width[4], 2, stride=(2,2)))
+        self.entryblocks.append(
+            XceptionBlock(
+                base_stage_width[1],
+                base_stage_width[2],
+                2, stride=(2, 2),
+                start_with_relu=False))
+        self.entryblocks.append(XceptionBlock(base_stage_width[2], base_stage_width[3], 2, stride=(2, 2)))
+        self.entryblocks.append(XceptionBlock(base_stage_width[3], base_stage_width[4], 2, stride=(2, 2)))
 
         self.entryblocks = Mo.ModuleList(self.entryblocks)
 
@@ -176,28 +181,30 @@ class SearchNet(MyNetwork):
         self.block_group_info = []
         self.middleblocks = []
         _block_index = 0
-        self.block_group_info.append([_block_index+i for i in range(max(self._depth_list))])
+        self.block_group_info.append([_block_index + i for i in range(max(self._depth_list))])
         # Here only one set of blocks is needed
-        for depth in n_block_list: 
+        for depth in n_block_list:
             # 8 blocks with each block having 1,2,3 layers of relu+sep_conv
             self.middleblocks.append(DynamicXPLayer(
-                in_channel_list=val2list(mid_block_width), 
-                out_channel_list=val2list(mid_block_width), 
+                in_channel_list=val2list(mid_block_width),
+                out_channel_list=val2list(mid_block_width),
                 kernel_size_list=self._ks_list,
                 expand_ratio_list=self._expand_ratio_list,
-                stride=(1,1),
+                stride=(1, 1),
                 depth=depth
             ))
         self.middleblocks = Mo.ModuleList(self.middleblocks)
 
         # Exit flow blocks
         self.exitblocks = []
-        self.exitblocks.append(XceptionBlock(mid_block_width, expand_1_width, 2, stride=(2,2), grow_first=False))
-        
+        self.exitblocks.append(XceptionBlock(mid_block_width, expand_1_width, 2, stride=(2, 2), grow_first=False))
+
         self.exitblocks = Mo.ModuleList(self.exitblocks)
 
-        self.expand_block1 = SeparableConv(expand_1_width, expand_2_width, (3,3), (1,1), (1,1), use_bn=True, act_fn='relu')
-        self.expand_block2 = SeparableConv(expand_2_width, last_channel, (3,3), (1,1), (1,1), use_bn=True, act_fn='relu')
+        self.expand_block1 = SeparableConv(expand_1_width, expand_2_width, (3, 3),
+                                           (1, 1), (1, 1), use_bn=True, act_fn='relu')
+        self.expand_block2 = SeparableConv(expand_2_width, last_channel, (3, 3),
+                                           (1, 1), (1, 1), use_bn=True, act_fn='relu')
 
         # use a global average pooling before this FC Layer
         self.classifier = LinearLayer(last_channel, num_classes, drop_rate=drop_rate)
@@ -422,7 +429,7 @@ class TrainNet(SearchNet):
 
             blocks = []
             input_channel = self.entryblocks[-1]._out_channels
-            for stage_id, block_idx in enumerate(self.block_group_info): # This loop will just run once
+            for stage_id, block_idx in enumerate(self.block_group_info):  # This loop will just run once
                 for idx in block_idx:
                     depth = self.runtime_depth[idx]
                     self.middleblocks[idx]._runtime_depth = depth

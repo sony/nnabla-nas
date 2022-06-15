@@ -19,7 +19,6 @@ from ..ofa.ofa_utils.common_tools import get_same_padding, min_divisible_value
 
 import nnabla as nn
 import nnabla.functions as F
-import nnabla.parametric_functions as PF
 from nnabla.initializer import ConstantInitializer
 
 
@@ -34,7 +33,7 @@ CANDIDATES = {
     'XP0.6 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 0.6},
     'XP0.6 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 0.6},
     'XP0.6 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 0.6},
-    
+
     'XP1 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 1},
     'XP1 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 1},
     'XP1 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 1},
@@ -54,7 +53,7 @@ CANDIDATES = {
     'XP0.6 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 0.6},
     'XP0.6 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 0.6},
     'XP0.6 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 0.6},
-    
+
     'skip_connect': {'ks': None, 'depth': None, 'expand_ratio': None},
 }
 
@@ -70,7 +69,7 @@ def candidates2subnetlist(candidates):
         if e not in expand_list:
             expand_list.append(e)
     return ks_list, expand_list
-    
+
 
 def genotype2subnetlist(op_candidates, genotype):
     op_candidates.append('skip_connect')
@@ -273,8 +272,8 @@ class DwConvLayer(Mo.Sequential):
 
         module_dict = OrderedDict()
         module_dict['conv'] = Mo.DwConv(self._in_channels, self._kernel,
-                                      pad=padding, stride=self._stride, dilation=self._dilation,
-                                      with_bias=self._with_bias)
+                                        pad=padding, stride=self._stride, dilation=self._dilation,
+                                        with_bias=self._with_bias)
         if self._use_bn:
             module_dict['bn'] = Mo.BatchNormalization(self._in_channels, 4)
         module_dict['act'] = build_activation(act_func)
@@ -296,12 +295,23 @@ class DwConvLayer(Mo.Sequential):
 
 
 class SeparableConv(Mo.Module):
-    def __init__(self, in_channels, out_channels, kernel=(1,1), stride=(1,1), pad=(0,0), dilation=(1,1), use_bn=True, act_fn=None):
+    def __init__(
+            self, in_channels, out_channels, kernel=(1, 1),
+            stride=(1, 1),
+            pad=(0, 0),
+            dilation=(1, 1),
+            use_bn=True, act_fn=None):
         super(SeparableConv, self).__init__()
 
-        self.conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation, stride=stride, with_bias=False, group=in_channels)
-        self.pointwise = Mo.Conv(in_channels, out_channels, (1,1), stride=(1,1), pad=(0,0), dilation=(1,1), group=1, with_bias=False)
-        
+        self.conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
+                             stride=stride, with_bias=False, group=in_channels)
+        self.pointwise = Mo.Conv(
+            in_channels, out_channels, (1, 1),
+            stride=(1, 1),
+            pad=(0, 0),
+            dilation=(1, 1),
+            group=1, with_bias=False)
+
         self.use_bn = use_bn
         if use_bn:
             self.bn = Mo.BatchNormalization(out_channels, 4)
@@ -313,58 +323,61 @@ class SeparableConv(Mo.Module):
 
         if self.use_bn:
             x = self.bn(x)
-        
+
         if self.act is not None:
             x = self.act(x)
 
         return x
-    
+
     @staticmethod
     def build_from_config(config):
         return SeparableConv(**config)
 
 
 class XceptionBlock(Mo.Module):
-    def __init__(self, in_channels, out_channels, reps, kernel=(3,3), stride=(1,1), start_with_relu=True, grow_first=True, expand_ratio=None, mid_channels=None):
+    def __init__(
+            self, in_channels, out_channels, reps, kernel=(3, 3),
+            stride=(1, 1),
+            start_with_relu=True, grow_first=True, expand_ratio=None, mid_channels=None):
         super(XceptionBlock, self).__init__()
-        
+
         self._in_channels = in_channels
         self._out_channels = out_channels
 
         if out_channels != in_channels or stride != 1:
-            self.skip = Mo.Conv(in_channels, out_channels, (1,1), stride=stride, with_bias=False)
+            self.skip = Mo.Conv(in_channels, out_channels, (1, 1), stride=stride, with_bias=False)
             self.skipbn = Mo.BatchNormalization(out_channels, 4)
         else:
             self.skip = None
-        
+
         rep = []
         if expand_ratio is None:
             for i in range(reps):
                 if grow_first:
-                    inc = in_channels if i==0 else out_channels
+                    inc = in_channels if i == 0 else out_channels
                     outc = out_channels
                 else:
                     inc = in_channels
-                    outc = in_channels if i < (reps-1) else out_channels
+                    outc = in_channels if i < (reps - 1) else out_channels
                 rep.append(Mo.ReLU(inplace=True))
-                rep.append(SeparableConv(inc, outc, kernel=kernel, stride=(1,1), pad=(1,1)))
-        elif reps==3:
+                rep.append(SeparableConv(inc, outc, kernel=kernel, stride=(1, 1), pad=(1, 1)))
+        elif reps == 3:
             rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(in_channels, mid_channels, kernel=kernel, stride=(1,1), pad=(1,1)))
-   
+            rep.append(SeparableConv(in_channels, mid_channels, kernel=kernel, stride=(1, 1), pad=(1, 1)))
+
             rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(mid_channels, mid_channels, kernel=kernel, stride=(1,1), pad=(1,1)))
-   
+            rep.append(SeparableConv(mid_channels, mid_channels, kernel=kernel, stride=(1, 1), pad=(1, 1)))
+
             rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(mid_channels, out_channels, kernel=kernel, stride=(1,1), pad=(1,1)))
+            rep.append(SeparableConv(mid_channels, out_channels, kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
         if not start_with_relu:
             rep = rep[1:]
         else:
             rep[0] = Mo.ReLU(inplace=False)
-        
+
         if stride != 1:
-            rep.append(Mo.MaxPool((3,3), stride=stride, pad=(1,1)))
+            rep.append(Mo.MaxPool((3, 3), stride=stride, pad=(1, 1)))
         self.rep = Mo.Sequential(*rep)
 
     def call(self, inp):
@@ -375,7 +388,7 @@ class XceptionBlock(Mo.Module):
             skip = self.skipbn(skip)
         else:
             skip = inp
-        
+
         x += skip
         return x
 
@@ -446,16 +459,16 @@ class FusedBatchNormalization(Mo.Module):
                 gamma_init(shape_stat))
         else:
             self._beta = Mo.Parameter(shape_stat, initializer=beta_init,
-                                   scope=self._scope_name)
+                                      scope=self._scope_name)
             self._gamma = Mo.Parameter(shape_stat, initializer=gamma_init,
-                                    scope=self._scope_name)
+                                       scope=self._scope_name)
 
         self._mean = Mo.Parameter(shape_stat, need_grad=False,
-                               initializer=mean_init,
-                               scope=self._scope_name)
+                                  initializer=mean_init,
+                                  scope=self._scope_name)
         self._var = Mo.Parameter(shape_stat, need_grad=False,
-                              initializer=var_init,
-                              scope=self._scope_name)
+                                 initializer=var_init,
+                                 scope=self._scope_name)
         self._z = z
         self._axes = axes
         self._decay_rate = decay_rate
@@ -467,9 +480,9 @@ class FusedBatchNormalization(Mo.Module):
 
     def call(self, input):
         return F.fused_batch_normalization(input, self._beta, self._gamma,
-                                        self._mean, self._var, self._z, self._axes,
-                                        self._decay_rate, self._eps,
-                                        self.training, self._nonlinearity, self._output_stat)
+                                           self._mean, self._var, self._z, self._axes,
+                                           self._decay_rate, self._eps,
+                                           self.training, self._nonlinearity, self._output_stat)
 
     def extra_repr(self):
         return (f'n_features={self._n_features}, '

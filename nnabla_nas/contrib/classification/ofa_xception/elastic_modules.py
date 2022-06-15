@@ -130,7 +130,7 @@ class DynamicXPLayer(Mo.Module):
         self._expand_ratio_list = val2list(expand_ratio_list)
         self._stride = stride
         self._runtime_depth = depth
-        
+
         # build modules
         max_middle_channel = make_divisible(
             round(max(self._in_channel_list) * max(self._expand_ratio_list)))
@@ -165,7 +165,6 @@ class DynamicXPLayer(Mo.Module):
             ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4))
         ]))
 
-
         self.active_kernel_size = max(self._kernel_size_list)
         self.active_expand_ratio = max(self._expand_ratio_list)
         self.active_out_channel = max(self._out_channel_list)
@@ -192,11 +191,11 @@ class DynamicXPLayer(Mo.Module):
         x = self.depth_conv1(inp)
         x = self.point_linear1(x)
 
-        if self._runtime_depth > 1: # runtime depth
+        if self._runtime_depth > 1:  # runtime depth
             x = self.depth_conv2(x)
             x = self.point_linear2(x)
 
-        if self._runtime_depth > 2: # runtime depth       
+        if self._runtime_depth > 2:  # runtime depth
             x = self.depth_conv3(x)
             x = self.point_linear3(x)
 
@@ -234,18 +233,18 @@ class DynamicXPLayer(Mo.Module):
         self.point_linear3.ptconv.conv._W.d = np.stack(
             [self.point_linear3.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
         adjust_bn_according_to_idx(self.point_linear3.bn.bn, sorted_idx)
-        
+
         self.point_linear2.ptconv.conv._W.d = np.stack(
             [self.point_linear2.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
         adjust_bn_according_to_idx(self.point_linear2.bn.bn, sorted_idx)
-        
+
         self.point_linear1.ptconv.conv._W.d = np.stack(
             [self.point_linear1.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
         adjust_bn_according_to_idx(self.point_linear1.bn.bn, sorted_idx)
 
         self.depth_conv3.dwconv.conv._W.d = np.stack(
             [self.depth_conv3.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
-        
+
         self.depth_conv2.dwconv.conv._W.d = np.stack(
             [self.depth_conv2.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
 
