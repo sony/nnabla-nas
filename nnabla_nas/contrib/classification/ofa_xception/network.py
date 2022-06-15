@@ -403,15 +403,15 @@ class TrainNet(SearchNet):
 
         if op_candidates is None:
             op_candidates = [
-                "XP1 3x3 1",    "XP1 3x3 2",    "XP1 3x3 3", 
-                "XP0.8 3x3 1",  "XP0.8 3x3 2",  "XP0.8 3x3 3", 
-                "XP0.6 3x3 1",  "XP0.6 3x3 2",  "XP0.6 3x3 3",
-                "XP1 5x5 1",    "XP1 5x5 2",    "XP1 5x5 3", 
-                "XP0.8 5x5 1",  "XP0.8 5x5 2",  "XP0.8 5x5 3", 
-                "XP0.6 5x5 1",  "XP0.6 5x5 2",  "XP0.6 5x5 3",
-                "XP1 7x7 1",    "XP1 7x7 2",    "XP1 7x7 3", 
-                "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3", 
-                "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
+                "XP1 3x3 1", "XP1 3x3 2", "XP1 3x3 3",
+                "XP0.8 3x3 1", "XP0.8 3x3 2", "XP0.8 3x3 3",
+                "XP0.6 3x3 1", "XP0.6 3x3 2", "XP0.6 3x3 3",
+                "XP1 5x5 1", "XP1 5x5 2", "XP1 5x5 3",
+                "XP0.8 5x5 1", "XP0.8 5x5 2", "XP0.8 5x5 3",
+                "XP0.6 5x5 1", "XP0.6 5x5 2", "XP0.6 5x5 3",
+                "XP1 7x7 1", "XP1 7x7 2", "XP1 7x7 3",
+                "XP0.8 7x7 1", "XP0.8 7x7 2", "XP0.8 7x7 3",
+                "XP0.6 7x7 1", "XP0.6 7x7 2", "XP0.6 7x7 3"
             ]
         if depth_candidates is None:
             depth_candidates = [1, 2, 3]
