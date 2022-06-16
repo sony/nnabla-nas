@@ -159,6 +159,7 @@ class ConvLayer(Mo.Sequential):
 
         super(ConvLayer, self).__init__(module_dict)
 
+    @staticmethod
     def build_from_config(config):
         return ConvLayer(**config)
 
