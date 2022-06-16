@@ -21,7 +21,7 @@ import nnabla.functions as F
 
 from ..... import module as Mo
 from .modules.dynamic_op import DynamicBatchNorm2d
-from ....common.ofa.utils.my_random_resize_crop import MyResize
+from ....common.ofa.utils.random_resize_crop import OFAResize
 
 
 def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, batch_size, inp_shape):
@@ -51,7 +51,7 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
         return inp_list
 
     with nn.no_grad():
-        resize = MyResize()
+        resize = OFAResize()
         transform = dataloader.transform('valid')
         with nn.auto_forward(True):
             # Note: only support NCHW data format
