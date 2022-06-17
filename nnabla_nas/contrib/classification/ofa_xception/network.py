@@ -105,8 +105,6 @@ class SearchNet(MyNetwork):
             Defaults to 1.0.
         op_candidates (str or list of str, optional): Operator choices.
             Defaults to XP1 7x7 3.
-        depth_candidates (int or list of int, optional): Depth choices.
-            Defaults to 3.
         weight (str, optional): The path to weight file. Defaults to
             None.
 
@@ -119,9 +117,8 @@ class SearchNet(MyNetwork):
                  num_classes=1000,
                  bn_param=(0.9, 1e-5),
                  drop_rate=0.1,
-                 base_stage_width=None,
+                 base_stage_width=[32, 64, 128, 256, 728, 1024, 1536, 2048],
                  op_candidates="XP1 7x7 3",
-                 depth_candidates=3,
                  width_mult=1.0,
                  weights=None):
         self._num_classes = num_classes
@@ -129,21 +126,18 @@ class SearchNet(MyNetwork):
         self._drop_rate = drop_rate
         self._op_candidates = op_candidates
         self._width_mult = width_mult
-        self._depth_candidates = depth_candidates
         self._weights = weights
 
         op_candidates = val2list(op_candidates, 1)
-        ks_list, expand_ratio_list = candidates2subnetlist(op_candidates)
-        self._ks_list = val2list(ks_list, 1)
-        self._expand_ratio_list = val2list(expand_ratio_list, 1)
-        self._depth_list = val2list(depth_candidates)
+        ks_list, expand_ratio_list, depth_list = candidates2subnetlist(op_candidates)
+        self._ks_list = ks_list
+        self._expand_ratio_list = expand_ratio_list
+        self._depth_list = depth_list
 
         # sort
         self._ks_list.sort()
         self._expand_ratio_list.sort()
         self._depth_list.sort()
-
-        base_stage_width = [32, 64, 128, 256, 728, 1024, 1536, 2048]
 
         expand_1_width = make_divisible(base_stage_width[-3] * self._width_mult)
         expand_2_width = make_divisible(base_stage_width[-2] * self._width_mult)
@@ -180,8 +174,7 @@ class SearchNet(MyNetwork):
         # Middle flow blocks
         self.block_group_info = []
         self.middleblocks = []
-        _block_index = 0
-        self.block_group_info.append([_block_index + i for i in range(max(self._depth_list))])
+        self.block_group_info.append([i for i in range(max(self._depth_list))])
         # Here only one set of blocks is needed
         for depth in n_block_list:
             # 8 blocks with each block having 1,2,3 layers of relu+sep_conv
