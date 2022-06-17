@@ -356,13 +356,12 @@ class OFASearchNet(SearchNet):
                  base_stage_width=None,
                  width_mult=1.0,
                  op_candidates="XP1 7x7 3",
-                 depth_candidates=3,
                  weights=None
                  ):
         super(OFASearchNet, self).__init__(
             num_classes=num_classes, bn_param=bn_param, drop_rate=drop_rate,
             base_stage_width=base_stage_width, width_mult=width_mult,
-            op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
+            op_candidates=op_candidates, weights=weights)
         if weights is not None:
             self.re_organize_middle_weights()
 
@@ -384,15 +383,13 @@ class TrainNet(SearchNet):
             Defaults to 1.0.
         op_candidates (str or list of str, optional): Operator choices.
             Defaults to list of all op_candidates.
-        depth_candidates (int or list of int, optional): Depth choices.
-            Defaults to 3.
         weight (str, optional): The path to weight file. Defaults to None.
         genotype (list of int, optional): A list to operators, Defaults to None.
     """
 
     def __init__(self, num_classes=1000, bn_param=(0.9, 1e-5), drop_rate=0.1,
                  base_stage_width=None, width_mult=1,
-                 op_candidates=None, depth_candidates=None, genotype=None, weights=None):
+                 op_candidates=None, genotype=None, weights=None):
 
         if op_candidates is None:
             op_candidates = [
@@ -406,12 +403,10 @@ class TrainNet(SearchNet):
                 "XP0.8 7x7 1", "XP0.8 7x7 2", "XP0.8 7x7 3",
                 "XP0.6 7x7 1", "XP0.6 7x7 2", "XP0.6 7x7 3"
             ]
-        if depth_candidates is None:
-            depth_candidates = [1, 2, 3]
 
         super(TrainNet, self).__init__(
             num_classes, bn_param, drop_rate, width_mult=width_mult,
-            op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
+            op_candidates=op_candidates, weights=weights)
 
         if genotype is not None:
             assert(len(genotype) == 8)
