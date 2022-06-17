@@ -353,7 +353,7 @@ class OFASearchNet(SearchNet):
                  num_classes=1000,
                  bn_param=(0.9, 1e-5),
                  drop_rate=0.1,
-                 base_stage_width=None,
+                 base_stage_width=[32, 64, 128, 256, 728, 1024, 1536, 2048],
                  width_mult=1.0,
                  op_candidates="XP1 7x7 3",
                  weights=None
@@ -387,9 +387,15 @@ class TrainNet(SearchNet):
         genotype (list of int, optional): A list to operators, Defaults to None.
     """
 
-    def __init__(self, num_classes=1000, bn_param=(0.9, 1e-5), drop_rate=0.1,
-                 base_stage_width=None, width_mult=1,
-                 op_candidates=None, genotype=None, weights=None):
+    def __init__(self,
+                 num_classes=1000,
+                 bn_param=(0.9, 1e-5),
+                 drop_rate=0.1,
+                 base_stage_width=[32, 64, 128, 256, 728, 1024, 1536, 2048],
+                 width_mult=1,
+                 op_candidates=None,
+                 genotype=None,
+                 weights=None):
 
         if op_candidates is None:
             op_candidates = [
@@ -406,7 +412,7 @@ class TrainNet(SearchNet):
 
         super(TrainNet, self).__init__(
             num_classes, bn_param, drop_rate, width_mult=width_mult,
-            op_candidates=op_candidates, weights=weights)
+            base_stage_width=base_stage_width, op_candidates=op_candidates, weights=weights)
 
         if genotype is not None:
             assert(len(genotype) == 8)
