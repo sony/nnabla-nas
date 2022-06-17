@@ -174,7 +174,7 @@ class SearchNet(MyNetwork):
         # Middle flow blocks
         self.block_group_info = []
         self.middleblocks = []
-        self.block_group_info.append([i for i in range(max(self._depth_list))])
+        self.block_group_info.append([i for i in range(len(n_block_list))])
         # Here only one set of blocks is needed
         for depth in n_block_list:
             # 8 blocks with each block having 1,2,3 layers of relu+sep_conv
@@ -232,7 +232,7 @@ class SearchNet(MyNetwork):
         x = self.entryblocks[2](x)
         # blocks
         # just one set of blocks
-        for stage_id, block_idx in enumerate(self.block_group_info):
+        for block_idx in self.block_group_info:
             for idx in block_idx:
                 depth = self.runtime_depth[idx]
                 self.middleblocks[idx]._runtime_depth = depth
@@ -422,7 +422,7 @@ class TrainNet(SearchNet):
 
             blocks = []
             input_channel = self.entryblocks[-1]._out_channels
-            for stage_id, block_idx in enumerate(self.block_group_info):  # This loop will just run once
+            for block_idx in self.block_group_info:  # This loop will just run once
                 for idx in block_idx:
                     depth = self.runtime_depth[idx]
                     self.middleblocks[idx]._runtime_depth = depth
