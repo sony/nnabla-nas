@@ -413,12 +413,14 @@ class SearchNet(MyNetwork):
         }
 
     def extra_repr(self):
-        return (f'num_classes={self._num_classes}, '
-                f'drop_rate={self._drop_rate}, '
-                f'width_mult={self._width_mult}, '
-                f'ks_list={self._ks_list}, '
-                f'expand_ratio_list={self._expand_ratio_list}, '
-                f'depth_list={self._depth_list}')
+        repr = ""
+        for var in vars(self):
+            var_value = getattr(self, var)
+            repr += f'{var}='
+            repr += f'{var_value}, '
+
+        repr += ')'
+        return repr
 
     def save_parameters(self, path=None, params=None, grad_only=False):
         super().save_parameters(path, params=params, grad_only=grad_only)

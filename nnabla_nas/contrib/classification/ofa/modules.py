@@ -105,6 +105,21 @@ def get_bn_param(net):
             }
 
 
+def get_extra_repr(cur_obj):
+    repr = ""
+    for var in vars(cur_obj):
+        # Skip this field just for a better printout
+        if var == '_modules':
+            continue
+
+        var_value = getattr(cur_obj, var)
+        repr += f'{var}='
+        repr += f'{var_value}, '
+
+    repr += ')'
+    return repr
+
+
 class ResidualBlock(Mo.Module):
     r"""ResidualBlock layer.
 
@@ -197,16 +212,7 @@ class ConvLayer(Mo.Sequential):
         return ConvLayer(**config)
 
     def extra_repr(self):
-        return (f'in_channels={self._in_channels}, '
-                f'out_channels={self._out_channels}, '
-                f'kernel={self._kernel}, '
-                f'stride={self._stride}, '
-                f'dilation={self._dilation}, '
-                f'group={self._group}, '
-                f'with_bias={self._with_bias}, '
-                f'use_bn={self._use_bn}, '
-                f'act_func={self._act_func}, '
-                f'name={self._name}')
+        return get_extra_repr(self)
 
 
 class MBConvLayer(Mo.Module):
@@ -290,15 +296,7 @@ class MBConvLayer(Mo.Module):
         return MBConvLayer(**config)
 
     def extra_repr(self):
-        return (f'in_channels={self._in_channels}, '
-                f'out_channels={self._out_channels}, '
-                f'kernel={self._kernel}, '
-                f'stride={self._stride}, '
-                f'expand_ratio={self._expand_ratio}, '
-                f'mid_channels={self._mid_channels}, '
-                f'act_func={self._act_func}, '
-                f'use_se={self._use_se}, '
-                f'group={self._group} ')
+        return get_extra_repr(self)
 
 
 class LinearLayer(Mo.Sequential):
@@ -330,11 +328,7 @@ class LinearLayer(Mo.Sequential):
         return LinearLayer(**config)
 
     def extra_repr(self):
-        return (f'in_channels={self._in_channels}, '
-                f'out_channels={self._out_channels}, '
-                f'bias={self._bias}, '
-                f'drop_rate={self._drop_rate}, '
-                f'name={self._name} ')
+        return get_extra_repr(self)
 
 
 def build_activation(act_func, inplace=False):
