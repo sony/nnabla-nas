@@ -22,53 +22,34 @@ import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 
 
-CANDIDATES = {
-    # we'll need 27 options
-    'XP1 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 1},
-    'XP1 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 1},
-    'XP1 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 1},
-    'XP0.8 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 0.8},
-    'XP0.8 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 0.8},
-    'XP0.8 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 0.8},
-    'XP0.6 3x3 1': {'ks': 3, 'depth': 1, 'expand_ratio': 0.6},
-    'XP0.6 3x3 2': {'ks': 3, 'depth': 2, 'expand_ratio': 0.6},
-    'XP0.6 3x3 3': {'ks': 3, 'depth': 3, 'expand_ratio': 0.6},
+CANDIDATES = {}
+KERNEL_SEARCH_SPACE = [3, 5, 7]
+DEPTH_SEARCH_SPACE = [1, 2, 3]
+EXPAND_RATIO_SEARCH_SPACE = [0.6, 0.8, 1]
 
-    'XP1 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 1},
-    'XP1 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 1},
-    'XP1 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 1},
-    'XP0.8 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 0.8},
-    'XP0.8 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 0.8},
-    'XP0.8 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 0.8},
-    'XP0.6 5x5 1': {'ks': 5, 'depth': 1, 'expand_ratio': 0.6},
-    'XP0.6 5x5 2': {'ks': 5, 'depth': 2, 'expand_ratio': 0.6},
-    'XP0.6 5x5 3': {'ks': 5, 'depth': 3, 'expand_ratio': 0.6},
-
-    'XP1 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 1},
-    'XP1 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 1},
-    'XP1 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 1},
-    'XP0.8 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 0.8},
-    'XP0.8 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 0.8},
-    'XP0.8 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 0.8},
-    'XP0.6 7x7 1': {'ks': 7, 'depth': 1, 'expand_ratio': 0.6},
-    'XP0.6 7x7 2': {'ks': 7, 'depth': 2, 'expand_ratio': 0.6},
-    'XP0.6 7x7 3': {'ks': 7, 'depth': 3, 'expand_ratio': 0.6},
-
-    'skip_connect': {'ks': None, 'depth': None, 'expand_ratio': None},
-}
+for cur_kernel in KERNEL_SEARCH_SPACE:
+    for cur_depth in DEPTH_SEARCH_SPACE:
+        for cur_expand_ratio in EXPAND_RATIO_SEARCH_SPACE:
+            key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
+            value = {'ks': cur_kernel, 'depth': cur_depth, 'expand_ratio': cur_expand_ratio}
+            CANDIDATES[key] = value
 
 
 def candidates2subnetlist(candidates):
     ks_list = []
     expand_list = []
+    depth_list = []
     for candidate in candidates:
         ks = CANDIDATES[candidate]['ks']
         e = CANDIDATES[candidate]['expand_ratio']
+        depth = CANDIDATES[candidate]['depth']
         if ks not in ks_list:
             ks_list.append(ks)
         if e not in expand_list:
             expand_list.append(e)
-    return ks_list, expand_list
+        if depth not in depth_list:
+            depth_list.append(depth)
+    return ks_list, expand_list, depth_list
 
 
 def genotype2subnetlist(op_candidates, genotype):
