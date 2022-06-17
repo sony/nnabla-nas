@@ -19,9 +19,9 @@ import numpy as np
 import nnabla as nn
 
 from ...... import module as Mo
-from .....common.ofa.layers import MBConvLayer, SEModule
-from .....common.ofa.layers import set_layer_from_config, build_activation, get_extra_repr
-from .....common.ofa.utils.common_tools import val2list, make_divisible
+from ...layers import MBConvLayer, SEModule
+from ...layers import set_layer_from_config, build_activation, get_extra_repr
+from ...utils.common_tools import val2list, make_divisible
 from .dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
 
 

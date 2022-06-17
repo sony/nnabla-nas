@@ -21,15 +21,15 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.logger as logger
 
-from ....base import ClassificationModel
-from ...... import module as Mo
-from .....common.ofa.layers import ResidualBlock, ConvLayer, LinearLayer, MBConvLayer, set_bn_param
-from .....common.ofa.utils.common_tools import val2list, make_divisible
-from .....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoothing
-from .....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
-from .....common.ofa.layers import init_models
-from ..modules.dynamic_layers import DynamicMBConvLayer
-from ..modules.dynamic_op import DynamicBatchNorm2d
+from ...base import ClassificationModel
+from ..... import module as Mo
+from ....common.ofa.layers import ResidualBlock, ConvLayer, LinearLayer, MBConvLayer, set_bn_param
+from ....common.ofa.utils.common_tools import val2list, make_divisible
+from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoothing
+from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
+from ....common.ofa.layers import init_models
+from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicMBConvLayer
+from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
 
 
 CANDIDATES = {
