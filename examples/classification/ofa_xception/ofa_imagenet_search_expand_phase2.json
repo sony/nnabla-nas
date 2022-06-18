@@ -26,23 +26,22 @@
                 "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3", 
                 "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
             ],
-            "depth_candidates": [1, 2, 3],
             "weights": "log/classification/ofa_xception/imagenet/search/K357_E46_D234/weights.h5"
         }
     },
     "optimizer": {
         "train": {
-            "weight_decay": 3e-5,
-            "lr_scheduler": "CosineSchedulerWarmup",
-            "name": "Nesterov",
-            "lr": 0.02,
+            "weight_decay": 1e-5,
+            "lr_scheduler": "StepScheduler",
+            "name": "Momentum",
+            "lr": 0.03,
             "momentum": 0.9
             },
         "train_no_decay": {
             "weight_decay": 0,
-            "lr_scheduler": "CosineSchedulerWarmup",
-            "name": "Nesterov",
-            "lr": 0.02,
+            "lr_scheduler": "StepScheduler",
+            "name": "Momentum",
+            "lr": 0.03,
             "momentum": 0.9
             }
     },
@@ -66,7 +65,8 @@
         "target_shapes": [
             [1]
         ],
-        "no_decay_keys": "bn#_b",
+        "no_decay_keys": "bn#bias",
+        "valid_ce_loss": true,
         "lambda_kd": 1,
         "teacher_network": {
             "ofa_xception": {
@@ -74,17 +74,16 @@
                 "bn_param": [0.9, 1e-5],
                 "drop_rate": 0,
                 "op_candidates": ["XP1 7x7 3"],
-                "depth_candidates": [3],
                 "weights": "log/classification/ofa_xception/imagenet/search/K7_E6_D4/weights.h5"
             }
         },
         "epoch": 125,
-        "cosine_warmup_epoch": 5,
-        "warmup_lr": 0.0075,
-        "batch_size_train": 32,
-        "batch_size_valid": 64,
-        "mini_batch_train": 32,
-        "mini_batch_valid": 64,
+        "epoch_steps": 2,
+        "step_decay_rate": 0.94,
+        "batch_size_train": 96,
+        "batch_size_valid": 200,
+        "mini_batch_train": 96,
+        "mini_batch_valid": 200,
         "print_frequency": 100,
         "validation_frequency": 1
     }

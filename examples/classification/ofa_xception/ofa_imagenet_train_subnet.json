@@ -32,16 +32,16 @@
     },
     "optimizer": {
         "train": {
-            "weight_decay": 3e-5,
-            "lr_scheduler": "CosineSchedulerWarmup",
-            "name": "Nesterov",
+            "weight_decay": 1e-5,
+            "lr_scheduler": "StepScheduler",
+            "name": "Momentum",
             "lr": 0.005,
             "momentum": 0.9
             },
         "train_no_decay": {
             "weight_decay": 0,
-            "lr_scheduler": "CosineSchedulerWarmup",
-            "name": "Nesterov",
+            "lr_scheduler": "StepScheduler",
+            "name": "Momentum",
             "lr": 0.005,
             "momentum": 0.9
             }
@@ -54,15 +54,16 @@
             [1]
         ],
         "img_size": 224,
-        "no_decay_keys": "bn#_b",
+        "no_decay_keys": "bn#bias",
+        "valid_ce_loss": true,
         "lambda_kd": 0,
         "epoch": 2,
-        "cosine_warmup_epoch": 0,
-        "warmup_lr": 0.0025,
-        "batch_size_train": 32,
-        "batch_size_valid": 64,
-        "mini_batch_train": 32,
-        "mini_batch_valid": 64,
+        "epoch_steps": 2,
+        "step_decay_rate": 0.94,
+        "batch_size_train": 96,
+        "batch_size_valid": 200,
+        "mini_batch_train": 96,
+        "mini_batch_valid": 200,
         "print_frequency": 100,
         "validation_frequency": 1
     }
