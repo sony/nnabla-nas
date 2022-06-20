@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import random
 import numpy as np
 from tqdm import tqdm
@@ -220,9 +219,6 @@ class OFASearcher(Searcher):
             if info:
                 self.monitor.info(f'{info}\n')
             if not is_test:
-                self.model.save_parameters(
-                    path=os.path.join(self.args['output_path'], 'weights.h5')
-                )
                 self.save_checkpoint()
 
     def update_graph(self, key='train'):
