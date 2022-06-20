@@ -62,7 +62,7 @@ class Module(object):
     @training.setter
     def training(self, mode):
         self.__dict__['_training'] = mode
-        for m in self.get_modules():
+        for _, m in self.modules.items():
             m.training = mode
 
     @property
@@ -75,7 +75,7 @@ class Module(object):
     @need_grad.setter
     def need_grad(self, mode):
         self.__dict__['_need_grad'] = mode
-        for m in self.get_modules():
+        for _, m in self.modules.items():
             m.need_grad = mode
 
     @property
