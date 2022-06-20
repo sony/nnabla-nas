@@ -22,7 +22,8 @@ import nnabla.logger as logger
 from ..base import ClassificationModel as Model
 from .... import module as Mo
 from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock
-from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param, get_bn_param
+from .modules import ProcessGenotype as PG
+from .modules import set_bn_param, get_bn_param
 from .elastic_modules import DynamicXPLayer
 from ..ofa.ofa_modules.dynamic_op import DynamicBatchNorm2d
 from ..ofa.ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
@@ -129,7 +130,7 @@ class SearchNet(MyNetwork):
         self._weights = weights
 
         op_candidates = val2list(op_candidates, 1)
-        ks_list, expand_ratio_list, depth_list = candidates2subnetlist(op_candidates)
+        ks_list, expand_ratio_list, depth_list = PG.candidates_subnetlist(op_candidates)
         self._ks_list = ks_list
         self._expand_ratio_list = expand_ratio_list
         self._depth_list = depth_list
@@ -249,7 +250,7 @@ class SearchNet(MyNetwork):
         assert(len(genotype) == 8)
         # Here we can assert that genotypes are not skip_connect
         ks_list, expand_ratio_list, depth_list =\
-            genotype2subnetlist(self._op_candidates, genotype)
+            PG.genotype2subnetlist(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
     @property
@@ -416,7 +417,7 @@ class TrainNet(SearchNet):
 
         if genotype is not None:
             assert(len(genotype) == 8)
-            ks_list, expand_ratio_list, depth_list = genotype2subnetlist(op_candidates, genotype)
+            ks_list, expand_ratio_list, depth_list = PG.genotype2subnetlist(op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
             preserve_weight = True if weights is not None else False

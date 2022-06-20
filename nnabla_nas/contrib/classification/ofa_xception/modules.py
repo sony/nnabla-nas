@@ -22,46 +22,49 @@ import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 
 
-CANDIDATES = {}
-KERNEL_SEARCH_SPACE = [3, 5, 7]
-DEPTH_SEARCH_SPACE = [1, 2, 3]
-EXPAND_RATIO_SEARCH_SPACE = [0.6, 0.8, 1]
+class ProcessGenotype:
+    CANDIDATES = {}
+    KERNEL_SEARCH_SPACE = [3, 5, 7]
+    DEPTH_SEARCH_SPACE = [1, 2, 3]
+    EXPAND_RATIO_SEARCH_SPACE = [0.6, 0.8, 1]
 
-for cur_kernel in KERNEL_SEARCH_SPACE:
-    for cur_depth in DEPTH_SEARCH_SPACE:
-        for cur_expand_ratio in EXPAND_RATIO_SEARCH_SPACE:
-            key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
-            value = {'ks': cur_kernel, 'depth': cur_depth, 'expand_ratio': cur_expand_ratio}
-            CANDIDATES[key] = value
+    for cur_kernel in KERNEL_SEARCH_SPACE:
+        for cur_depth in DEPTH_SEARCH_SPACE:
+            for cur_expand_ratio in EXPAND_RATIO_SEARCH_SPACE:
+                key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
+                value = {'ks': cur_kernel, 'depth': cur_depth,
+                         'expand_ratio': cur_expand_ratio}
+                CANDIDATES[key] = value
 
+    @staticmethod
+    def candidates_subnetlist(candidates):
+        ks_list = []
+        expand_list = []
+        depth_list = []
+        for candidate in candidates:
+            ks = ProcessGenotype.CANDIDATES[candidate]['ks']
+            e = ProcessGenotype.CANDIDATES[candidate]['expand_ratio']
+            depth = ProcessGenotype.CANDIDATES[candidate]['depth']
+            if ks not in ks_list:
+                ks_list.append(ks)
+            if e not in expand_list:
+                expand_list.append(e)
+            if depth not in depth_list:
+                depth_list.append(depth)
+        return ks_list, expand_list, depth_list
 
-def candidates2subnetlist(candidates):
-    ks_list = []
-    expand_list = []
-    depth_list = []
-    for candidate in candidates:
-        ks = CANDIDATES[candidate]['ks']
-        e = CANDIDATES[candidate]['expand_ratio']
-        depth = CANDIDATES[candidate]['depth']
-        if ks not in ks_list:
-            ks_list.append(ks)
-        if e not in expand_list:
-            expand_list.append(e)
-        if depth not in depth_list:
-            depth_list.append(depth)
-    return ks_list, expand_list, depth_list
-
-
-def genotype2subnetlist(op_candidates, genotype):
-    op_candidates.append('skip_connect')
-    subnet_list = [op_candidates[i] for i in genotype]
-    ks_list = [CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
-               else 3 for subnet in subnet_list]
-    expand_ratio_list = [CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
-                         else 4 for subnet in subnet_list]
-    depth_list = [CANDIDATES[subnet]['depth'] if subnet != 'skip_connect' else 3 for subnet in subnet_list]
-    assert([d >= 1 for d in depth_list])
-    return ks_list, expand_ratio_list, depth_list
+    @staticmethod
+    def genotype_subnetlist(op_candidates, genotype):
+        op_candidates.append('skip_connect')
+        subnet_list = [op_candidates[i] for i in genotype]
+        ks_list = [ProcessGenotype.CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
+                   else 3 for subnet in subnet_list]
+        expand_ratio_list = [ProcessGenotype.CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
+                             else 4 for subnet in subnet_list]
+        depth_list = [ProcessGenotype.CANDIDATES[subnet]['depth']
+                      if subnet != 'skip_connect' else 3 for subnet in subnet_list]
+        assert([d >= 1 for d in depth_list])
+        return ks_list, expand_ratio_list, depth_list
 
 
 def set_layer_from_config(layer_config):
@@ -180,13 +183,15 @@ class ConvLayer(Mo.Sequential):
         if isinstance(padding, int):
             padding *= self._dilation
         else:
-            new_padding = (padding[0] * self._dilation[0], padding[1] * self._dilation[1])
+            new_padding = (padding[0] * self._dilation[0],
+                           padding[1] * self._dilation[1])
             padding = tuple(new_padding)
 
         module_dict = OrderedDict()
         module_dict['conv'] = Mo.Conv(self._in_channels, self._out_channels, self._kernel,
                                       pad=padding, stride=self._stride, dilation=self._dilation,
-                                      group=min_divisible_value(self._in_channels, self._group),
+                                      group=min_divisible_value(
+                                          self._in_channels, self._group),
                                       with_bias=self._with_bias)
         if self._use_bn:
             module_dict['bn'] = Mo.BatchNormalization(out_channels, 4)
@@ -248,7 +253,8 @@ class DwConvLayer(Mo.Sequential):
         if isinstance(padding, int):
             padding *= self._dilation
         else:
-            new_padding = (padding[0] * self._dilation[0], padding[1] * self._dilation[1])
+            new_padding = (padding[0] * self._dilation[0],
+                           padding[1] * self._dilation[1])
             padding = tuple(new_padding)
 
         module_dict = OrderedDict()
@@ -326,7 +332,8 @@ class XceptionBlock(Mo.Module):
         self._out_channels = out_channels
 
         if out_channels != in_channels or stride != 1:
-            self.skip = Mo.Conv(in_channels, out_channels, (1, 1), stride=stride, with_bias=False)
+            self.skip = Mo.Conv(in_channels, out_channels,
+                                (1, 1), stride=stride, with_bias=False)
             self.skipbn = Mo.BatchNormalization(out_channels, 4)
         else:
             self.skip = None
@@ -341,16 +348,20 @@ class XceptionBlock(Mo.Module):
                     inc = in_channels
                     outc = in_channels if i < (reps - 1) else out_channels
                 rep.append(Mo.ReLU(inplace=True))
-                rep.append(SeparableConv(inc, outc, kernel=kernel, stride=(1, 1), pad=(1, 1)))
+                rep.append(SeparableConv(
+                    inc, outc, kernel=kernel, stride=(1, 1), pad=(1, 1)))
         elif reps == 3:
             rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(in_channels, mid_channels, kernel=kernel, stride=(1, 1), pad=(1, 1)))
+            rep.append(SeparableConv(in_channels, mid_channels,
+                       kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
             rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(mid_channels, mid_channels, kernel=kernel, stride=(1, 1), pad=(1, 1)))
+            rep.append(SeparableConv(mid_channels, mid_channels,
+                       kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
             rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(mid_channels, out_channels, kernel=kernel, stride=(1, 1), pad=(1, 1)))
+            rep.append(SeparableConv(mid_channels, out_channels,
+                       kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
         if not start_with_relu:
             rep = rep[1:]
