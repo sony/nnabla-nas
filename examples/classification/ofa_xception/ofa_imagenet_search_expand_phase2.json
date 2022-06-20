@@ -65,7 +65,7 @@
         "target_shapes": [
             [1]
         ],
-        "no_decay_keys": "bn#bias",
+        "no_decay_keys": "bn#_b",
         "valid_ce_loss": true,
         "lambda_kd": 1,
         "teacher_network": {
