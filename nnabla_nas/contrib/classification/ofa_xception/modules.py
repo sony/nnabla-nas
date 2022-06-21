@@ -100,6 +100,21 @@ def get_bn_param(net):
             }
 
 
+def get_extra_repr(cur_obj):
+    repr = ""
+    for var in vars(cur_obj):
+        # Skip this field just for a better printout
+        if var == '_modules':
+            continue
+
+        var_value = getattr(cur_obj, var)
+        repr += f'{var}='
+        repr += f'{var_value}, '
+
+    repr += ')'
+    return repr
+
+
 def force_tuple2(value):
     if value is None:
         return value
@@ -203,16 +218,7 @@ class ConvLayer(Mo.Sequential):
         return ConvLayer(**config)
 
     def extra_repr(self):
-        return (f'in_channels={self._in_channels}, '
-                f'out_channels={self._out_channels}, '
-                f'kernel={self._kernel}, '
-                f'stride={self._stride}, '
-                f'dilation={self._dilation}, '
-                f'group={self._group}, '
-                f'with_bias={self._with_bias}, '
-                f'use_bn={self._use_bn}, '
-                f'act_func={self._act_func}, '
-                f'name={self._name}')
+        return get_extra_repr(self)
 
 
 class DwConvLayer(Mo.Sequential):
@@ -271,14 +277,7 @@ class DwConvLayer(Mo.Sequential):
         return DwConvLayer(**config)
 
     def extra_repr(self):
-        return (f'in_channels={self._in_channels}, '
-                f'kernel={self._kernel}, '
-                f'stride={self._stride}, '
-                f'dilation={self._dilation}, '
-                f'with_bias={self._with_bias}, '
-                f'use_bn={self._use_bn}, '
-                f'act_func={self._act_func}, '
-                f'name={self._name}')
+        return get_extra_repr(self)
 
 
 class SeparableConv(Mo.Module):
@@ -319,6 +318,9 @@ class SeparableConv(Mo.Module):
     @staticmethod
     def build_from_config(config):
         return SeparableConv(**config)
+
+    def extra_repr(self):
+        return get_extra_repr(self)
 
 
 class XceptionBlock(Mo.Module):
@@ -388,6 +390,9 @@ class XceptionBlock(Mo.Module):
     def build_from_config(config):
         return XceptionBlock(**config)
 
+    def extra_repr(self):
+        return get_extra_repr(self)
+
 
 class LinearLayer(Mo.Sequential):
 
@@ -418,11 +423,7 @@ class LinearLayer(Mo.Sequential):
         return LinearLayer(**config)
 
     def extra_repr(self):
-        return (f'in_channels={self._in_channels}, '
-                f'out_channels={self._out_channels}, '
-                f'bias={self._bias}, '
-                f'drop_rate={self._drop_rate}, '
-                f'name={self._name} ')
+        return get_extra_repr(self)
 
 
 class FusedBatchNormalization(Mo.Module):
@@ -477,10 +478,7 @@ class FusedBatchNormalization(Mo.Module):
                                            self.training, self._nonlinearity, self._output_stat)
 
     def extra_repr(self):
-        return (f'n_features={self._n_features}, '
-                f'fix_parameters={self._fix_parameters}, '
-                f'eps={self._eps}, '
-                f'decay_rate={self._decay_rate}')
+        return get_extra_repr(self)
 
     @staticmethod
     def build_from_config(config):
