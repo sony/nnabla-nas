@@ -161,14 +161,12 @@ class SearchNet(MyNetwork):
 
         # entry flow blocks
         self.entryblocks = []
-        self.entryblocks.append(
-            XceptionBlock(
-                base_stage_width[1],
-                base_stage_width[2],
-                2, stride=(2, 2),
-                start_with_relu=False))
-        self.entryblocks.append(XceptionBlock(base_stage_width[2], base_stage_width[3], 2, stride=(2, 2)))
-        self.entryblocks.append(XceptionBlock(base_stage_width[3], base_stage_width[4], 2, stride=(2, 2)))
+        self.entryblocks.append(XceptionBlock(
+            base_stage_width[1], base_stage_width[2], 2, stride=(2, 2), start_with_relu=False))
+        self.entryblocks.append(XceptionBlock(
+            base_stage_width[2], base_stage_width[3], 2, stride=(2, 2)))
+        self.entryblocks.append(XceptionBlock(
+            base_stage_width[3], base_stage_width[4], 2, stride=(2, 2)))
 
         self.entryblocks = Mo.ModuleList(self.entryblocks)
 

@@ -281,9 +281,7 @@ class DwConvLayer(Mo.Sequential):
 class SeparableConv(Mo.Module):
     def __init__(
             self, in_channels, out_channels, kernel=(1, 1),
-            stride=(1, 1),
-            pad=(0, 0),
-            dilation=(1, 1),
+            stride=(1, 1), pad=(0, 0), dilation=(1, 1),
             use_bn=True, act_fn=None):
         super(SeparableConv, self).__init__()
 
