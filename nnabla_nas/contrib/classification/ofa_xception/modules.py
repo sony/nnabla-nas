@@ -324,14 +324,14 @@ class SeparableConv(Mo.Module):
 class XceptionBlock(Mo.Module):
     def __init__(
             self, in_channels, out_channels, reps, kernel=(3, 3),
-            stride=(1, 1),
-            start_with_relu=True, grow_first=True, expand_ratio=None, mid_channels=None):
+            stride=(1, 1), start_with_relu=True, grow_first=True,
+            expand_ratio=None, mid_channels=None):
         super(XceptionBlock, self).__init__()
 
         self._in_channels = in_channels
         self._out_channels = out_channels
 
-        if out_channels != in_channels or stride != 1:
+        if out_channels != in_channels or stride != (1, 1):
             self.skip = Mo.Conv(in_channels, out_channels,
                                 (1, 1), stride=stride, with_bias=False)
             self.skipbn = Mo.BatchNormalization(out_channels, 4)
@@ -348,8 +348,7 @@ class XceptionBlock(Mo.Module):
                     inc = in_channels
                     outc = in_channels if i < (reps - 1) else out_channels
                 rep.append(Mo.ReLU(inplace=True))
-                rep.append(SeparableConv(
-                    inc, outc, kernel=kernel, stride=(1, 1), pad=(1, 1)))
+                rep.append(SeparableConv(inc, outc, kernel=kernel, stride=(1, 1), pad=(1, 1)))
         elif reps == 3:
             rep.append(Mo.ReLU(inplace=True))
             rep.append(SeparableConv(in_channels, mid_channels,
@@ -368,7 +367,7 @@ class XceptionBlock(Mo.Module):
         else:
             rep[0] = Mo.ReLU(inplace=False)
 
-        if stride != 1:
+        if stride != (1, 1):
             rep.append(Mo.MaxPool((3, 3), stride=stride, pad=(1, 1)))
         self.rep = Mo.Sequential(*rep)
 
