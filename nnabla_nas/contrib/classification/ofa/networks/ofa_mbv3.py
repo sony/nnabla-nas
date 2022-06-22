@@ -84,7 +84,7 @@ def genotype2subnetlist(op_candidates, genotype):
     return ks_list, expand_ratio_list, depth_list
 
 
-class OFABaseNet(ClassificationModel):
+class OFAMbv3Net(ClassificationModel):
     r""" MobileNet V3 Search Net
     This implementation is based on the PyTorch implementation.
 
@@ -149,7 +149,7 @@ class OFABaseNet(ClassificationModel):
         base_stage_width = [16, 16, 24, 40, 80, 112, 160, 960, 1280]
 
         final_expand_width = make_divisible(
-            base_stage_width[-2] * self._width_mult, OFABaseNet.CHANNEL_DIVISIBLE)
+            base_stage_width[-2] * self._width_mult, OFAMbv3Net.CHANNEL_DIVISIBLE)
         last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
 
         stride_stages = [1, 2, 2, 2, 1, 2]
@@ -158,7 +158,7 @@ class OFABaseNet(ClassificationModel):
         n_block_list = [1] + [max(self._depth_list)] * 5
         width_list = []
         for base_width in base_stage_width[:-2]:
-            width = make_divisible(base_width * self._width_mult, OFABaseNet.CHANNEL_DIVISIBLE)
+            width = make_divisible(base_width * self._width_mult, OFAMbv3Net.CHANNEL_DIVISIBLE)
             width_list.append(width)
 
         input_channel, first_block_dim = width_list[0], width_list[1]
@@ -476,7 +476,7 @@ class OFABaseNet(ClassificationModel):
                             'as True. Please turn off if you allow it.')
 
 
-class SearchNet(OFABaseNet):
+class SearchNet(OFAMbv3Net):
     def __init__(self,
                  num_classes=1000,
                  bn_param=(0.9, 1e-5),
@@ -506,7 +506,7 @@ class SearchNet(OFABaseNet):
             block.conv.re_organize_middle_weights(expand_ratio_stage)
 
 
-class TrainNet(OFABaseNet):
+class TrainNet(OFAMbv3Net):
     r""" MobileNet V3 Train Net.
     Args:
         num_classes (int): Number of classes
