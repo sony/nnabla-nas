@@ -58,12 +58,16 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
             x = [nn.Variable([dataloader_batch_size] + shape) for shape in inp_shape]
             accum = batch_size // dataloader_batch_size + 1
             for i in range(data_size // batch_size):
-                x_accum = []
-                for _ in range(accum):
+                if accum > 1:
+                    x_accum = []
+                    for _ in range(accum):
+                        data = dataloader.next()
+                        x_accum.append(load_data(x, data['inputs']))
+                    x_concat = [F.concatenate(*[x_accum[i][j] for i in range(len(x_accum))], axis=0)
+                                for j in range(len(x))]
+                else:
                     data = dataloader.next()
-                    x_accum.append(load_data(x, data['inputs']))
-                x_concat = [F.concatenate(*[x_accum[i][j] for i in range(len(x_accum))], axis=0)
-                            for j in range(len(x))]
+                    x_concat = load_data(x, data['inputs'])
                 inputs = [resize(transform(x[:batch_size, :, :, :])) for x in x_concat]
                 model(*inputs)
 
