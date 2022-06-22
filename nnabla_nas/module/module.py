@@ -115,7 +115,7 @@ class Module(object):
             need_grad_state = self._get_need_grad_state()
             p = self.parameters[name]
             if not need_grad_state and p.need_grad:
-                return p.get_unlinked_variable(need_grad=need_grad_state).apply(name=p.name)
+                return p.get_unlinked_variable(need_grad=need_grad_state)
             return p
         return object.__getattr__(self, name)
 
