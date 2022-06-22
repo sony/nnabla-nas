@@ -36,15 +36,15 @@ class ProcessGenotype:
                          'expand_ratio': cur_expand_ratio}
                 CANDIDATES[key] = value
 
-    @staticmethod
-    def candidates_subnetlist(candidates):
+    @classmethod
+    def candidates_subnetlist(cls, candidates):
         ks_list = []
         expand_list = []
         depth_list = []
         for candidate in candidates:
-            ks = ProcessGenotype.CANDIDATES[candidate]['ks']
-            e = ProcessGenotype.CANDIDATES[candidate]['expand_ratio']
-            depth = ProcessGenotype.CANDIDATES[candidate]['depth']
+            ks = cls.CANDIDATES[candidate]['ks']
+            e = cls.CANDIDATES[candidate]['expand_ratio']
+            depth = cls.CANDIDATES[candidate]['depth']
             if ks not in ks_list:
                 ks_list.append(ks)
             if e not in expand_list:
@@ -53,13 +53,13 @@ class ProcessGenotype:
                 depth_list.append(depth)
         return ks_list, expand_list, depth_list
 
-    @staticmethod
-    def genotype_subnetlist(op_candidates, genotype):
+    @classmethod
+    def genotype_subnetlist(cls, op_candidates, genotype):
         # We don't need `skip_connect` with the current design of Xception41
         subnet_list = [op_candidates[i] for i in genotype]
-        ks_list = [ProcessGenotype.CANDIDATES[subnet]['ks'] for subnet in subnet_list]
-        expand_ratio_list = [ProcessGenotype.CANDIDATES[subnet]['expand_ratio'] for subnet in subnet_list]
-        depth_list = [ProcessGenotype.CANDIDATES[subnet]['depth'] for subnet in subnet_list]
+        ks_list = [cls.CANDIDATES[subnet]['ks'] for subnet in subnet_list]
+        expand_ratio_list = [cls.CANDIDATES[subnet]['expand_ratio'] for subnet in subnet_list]
+        depth_list = [cls.CANDIDATES[subnet]['depth'] for subnet in subnet_list]
 
         assert([d >= 1 for d in depth_list])
         return ks_list, expand_ratio_list, depth_list
