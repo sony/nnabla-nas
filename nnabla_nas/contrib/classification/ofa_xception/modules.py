@@ -55,14 +55,12 @@ class ProcessGenotype:
 
     @staticmethod
     def genotype_subnetlist(op_candidates, genotype):
-        op_candidates.append('skip_connect')
+        # We don't need `skip_connect` with the current design of Xception41
         subnet_list = [op_candidates[i] for i in genotype]
-        ks_list = [ProcessGenotype.CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
-                   else 3 for subnet in subnet_list]
-        expand_ratio_list = [ProcessGenotype.CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
-                             else 4 for subnet in subnet_list]
-        depth_list = [ProcessGenotype.CANDIDATES[subnet]['depth']
-                      if subnet != 'skip_connect' else 3 for subnet in subnet_list]
+        ks_list = [ProcessGenotype.CANDIDATES[subnet]['ks'] for subnet in subnet_list]
+        expand_ratio_list = [ProcessGenotype.CANDIDATES[subnet]['expand_ratio'] for subnet in subnet_list]
+        depth_list = [ProcessGenotype.CANDIDATES[subnet]['depth'] for subnet in subnet_list]
+
         assert([d >= 1 for d in depth_list])
         return ks_list, expand_ratio_list, depth_list
 
