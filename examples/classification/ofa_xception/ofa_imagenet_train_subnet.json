@@ -27,7 +27,7 @@
                     "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
             ],
             "genotype": [19, 2, 20, 5, 8, 10, 26, 23],
-            "weights": "log/classification/ofa_xception/imagenet/search/K357_E346_D234/weights.h5"
+            "weights": "log/classification/ofa_xception/imagenet/search/K57_E0.6+0.8+1_D123/weights.h5"
         }
     },
     "optimizer": {
