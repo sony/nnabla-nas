@@ -204,32 +204,32 @@ mpirun -n 4 python main.py \
 mpirun -n 4 python main.py \
                -f examples/classification/ofa_xception/ofa_imagenet_search_fullnet.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K7_E6_D4/
+               -o log/classification/ofa_xception/imagenet/search/K7_E1_D3/
 
 mpirun -n 4 python main.py --search \
                -f examples/classification/ofa_xception/ofa_imagenet_search_kernel.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E6_D4/
+               -o log/classification/ofa_xception/imagenet/search/K57_E1_D3/
 
 mpirun -n 4 python main.py --search \
                -f examples/classification/ofa_xception/ofa_imagenet_search_depth_phase1.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E6_D34/
+               -o log/classification/ofa_xception/imagenet/search/K57_E1_D23/
 
 mpirun -n 4 python main.py --search \
                -f examples/classification/ofa_xception/ofa_imagenet_search_depth_phase2.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E6_D234/
+               -o log/classification/ofa_xception/imagenet/search/K57_E1_D123/
 
 mpirun -n 4 python main.py --search \
                -f examples/classification/ofa_xception/ofa_imagenet_search_expand_phase1.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E46_D234/
+               -o log/classification/ofa_xception/imagenet/search/K57_E0.8+1_D123/
 
 mpirun -n 4 python main.py --search \
                -f examples/classification/ofa_xception/ofa_imagenet_search_expand_phase2.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E346_D234/
+               -o log/classification/ofa_xception/imagenet/search/K57_E0.6+0.8+1_D123/
 
 mpirun -n 4 python main.py \
                -f examples/classification/ofa_xception/ofa_imagenet_train_subnet.json \
