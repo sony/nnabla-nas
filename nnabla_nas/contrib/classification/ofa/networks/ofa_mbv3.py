@@ -27,7 +27,7 @@ from ....common.ofa.layers import ResidualBlock, ConvLayer, LinearLayer, MBConvL
 from ....common.ofa.utils.common_tools import val2list, make_divisible
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoothing
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
-from ....common.ofa.layers import init_models
+from ....common.ofa.utils.helper import init_models
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicMBConvLayer
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
 

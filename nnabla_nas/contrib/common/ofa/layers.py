@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
 from collections import OrderedDict
 import nnabla.functions as F
-from nnabla.initializer import ConstantInitializer, UniformInitializer
 
 from .... import module as Mo
 from .utils.common_tools import get_same_padding, min_divisible_value, make_divisible
-from ....module.initializers import he_initializer, torch_initializer
 
 
 def set_layer_from_config(layer_config):
@@ -337,48 +334,3 @@ def build_activation(act_func, inplace=False):
         return None
     else:
         raise ValueError('do not support: %s' % act_func)
-
-
-def init_models(net, model_init='he_fout'):
-    """ Initilizes parameters of Convolution, BatchNormalization, Linear,"""
-    if isinstance(net, list):
-        for sub_net in net:
-            init_models(sub_net, model_init)
-        return
-    for _, m in net.get_modules():
-        if isinstance(m, Mo.Conv):
-            if model_init == 'he_fout':
-                w_init = he_initializer(m._out_channels, m._kernel[0], rng=None)
-                m._W = Mo.Parameter(
-                    m._W.shape, initializer=w_init, scope=m._scope_name)
-            elif model_init == 'he_fin':
-                w_init = he_initializer(m._in_channels, m._kernel[0], rng=None)
-                m._W = Mo.Parameter(
-                    m._W.shape, initializer=w_init, scope=m._scope_name)
-            elif model_init == 'pytorch':
-                w_init = torch_initializer(
-                    m._in_channels, m._kernel, rng=None)
-                m._W = Mo.Parameter(
-                    m._W.shape, initializer=w_init, scope=m._scope_name)
-            else:
-                raise NotImplementedError
-            if m._b is not None:
-                b_init = ConstantInitializer(0)
-                m._b = Mo.Parameter(
-                    m._b.shape, initializer=b_init, scope=m._scope_name)
-        elif isinstance(m, Mo.BatchNormalization):
-            beta_init = ConstantInitializer(0)
-            m._beta = Mo.Parameter(
-                m._beta.shape, initializer=beta_init, scope=m._scope_name)
-            gamma_init = ConstantInitializer(1)
-            m._gamma = Mo.Parameter(
-                m._gamma.shape, initializer=gamma_init, scope=m._scope_name)
-        elif isinstance(m, Mo.Linear):
-            stdv = 1. / math.sqrt(m._W.shape[1])
-            w_init = UniformInitializer((-stdv, stdv))
-            m._W = Mo.Parameter(
-                m._W.shape, initializer=w_init, scope=m._scope_name)
-            if m._b is not None:
-                b_init = ConstantInitializer(0)
-                m._b = Mo.Parameter(
-                    m._b.shape, initializer=b_init, scope=m._scope_name)
