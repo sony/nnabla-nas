@@ -22,49 +22,6 @@ import nnabla.functions as F
 from nnabla.initializer import ConstantInitializer
 
 
-class ProcessGenotype:
-    CANDIDATES = {}
-    KERNEL_SEARCH_SPACE = [3, 5, 7]
-    DEPTH_SEARCH_SPACE = [1, 2, 3]
-    EXPAND_RATIO_SEARCH_SPACE = [0.6, 0.8, 1]
-
-    for cur_kernel in KERNEL_SEARCH_SPACE:
-        for cur_depth in DEPTH_SEARCH_SPACE:
-            for cur_expand_ratio in EXPAND_RATIO_SEARCH_SPACE:
-                key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
-                value = {'ks': cur_kernel, 'depth': cur_depth,
-                         'expand_ratio': cur_expand_ratio}
-                CANDIDATES[key] = value
-
-    @classmethod
-    def candidates_subnetlist(cls, candidates):
-        ks_list = []
-        expand_list = []
-        depth_list = []
-        for candidate in candidates:
-            ks = cls.CANDIDATES[candidate]['ks']
-            e = cls.CANDIDATES[candidate]['expand_ratio']
-            depth = cls.CANDIDATES[candidate]['depth']
-            if ks not in ks_list:
-                ks_list.append(ks)
-            if e not in expand_list:
-                expand_list.append(e)
-            if depth not in depth_list:
-                depth_list.append(depth)
-        return ks_list, expand_list, depth_list
-
-    @classmethod
-    def genotype_subnetlist(cls, op_candidates, genotype):
-        # We don't need `skip_connect` with the current design of Xception41
-        subnet_list = [op_candidates[i] for i in genotype]
-        ks_list = [cls.CANDIDATES[subnet]['ks'] for subnet in subnet_list]
-        expand_ratio_list = [cls.CANDIDATES[subnet]['expand_ratio'] for subnet in subnet_list]
-        depth_list = [cls.CANDIDATES[subnet]['depth'] for subnet in subnet_list]
-
-        assert([d >= 1 for d in depth_list])
-        return ks_list, expand_ratio_list, depth_list
-
-
 def set_layer_from_config(layer_config):
     if layer_config is None:
         return None

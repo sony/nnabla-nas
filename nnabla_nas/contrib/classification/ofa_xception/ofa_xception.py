@@ -22,11 +22,53 @@ import nnabla.logger as logger
 from ..base import ClassificationModel
 from .... import module as Mo
 from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock
-from .modules import ProcessGenotype as PG
 from .modules import set_bn_param, get_bn_param
 from .elastic_modules import DynamicXPLayer
 from ...common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
 from ...common.ofa.utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
+
+
+class ProcessGenotype:
+    CANDIDATES = {}
+    KERNEL_SEARCH_SPACE = [3, 5, 7]
+    DEPTH_SEARCH_SPACE = [1, 2, 3]
+    EXPAND_RATIO_SEARCH_SPACE = [0.6, 0.8, 1]
+
+    for cur_kernel in KERNEL_SEARCH_SPACE:
+        for cur_depth in DEPTH_SEARCH_SPACE:
+            for cur_expand_ratio in EXPAND_RATIO_SEARCH_SPACE:
+                key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
+                value = {'ks': cur_kernel, 'depth': cur_depth,
+                         'expand_ratio': cur_expand_ratio}
+                CANDIDATES[key] = value
+
+    @classmethod
+    def candidates_subnetlist(cls, candidates):
+        ks_list = []
+        expand_list = []
+        depth_list = []
+        for candidate in candidates:
+            ks = cls.CANDIDATES[candidate]['ks']
+            e = cls.CANDIDATES[candidate]['expand_ratio']
+            depth = cls.CANDIDATES[candidate]['depth']
+            if ks not in ks_list:
+                ks_list.append(ks)
+            if e not in expand_list:
+                expand_list.append(e)
+            if depth not in depth_list:
+                depth_list.append(depth)
+        return ks_list, expand_list, depth_list
+
+    @classmethod
+    def genotype_subnetlist(cls, op_candidates, genotype):
+        # We don't need `skip_connect` with the current design of Xception41
+        subnet_list = [op_candidates[i] for i in genotype]
+        ks_list = [cls.CANDIDATES[subnet]['ks'] for subnet in subnet_list]
+        expand_ratio_list = [cls.CANDIDATES[subnet]['expand_ratio'] for subnet in subnet_list]
+        depth_list = [cls.CANDIDATES[subnet]['depth'] for subnet in subnet_list]
+
+        assert([d >= 1 for d in depth_list])
+        return ks_list, expand_ratio_list, depth_list
 
 
 class OFAXceptionNet(ClassificationModel):
@@ -70,7 +112,7 @@ class OFAXceptionNet(ClassificationModel):
         self._weights = weights
 
         op_candidates = val2list(op_candidates, 1)
-        ks_list, expand_ratio_list, depth_list = PG.candidates_subnetlist(op_candidates)
+        ks_list, expand_ratio_list, depth_list = ProcessGenotype.candidates_subnetlist(op_candidates)
         self._ks_list = ks_list
         self._expand_ratio_list = expand_ratio_list
         self._depth_list = depth_list
@@ -188,7 +230,7 @@ class OFAXceptionNet(ClassificationModel):
         assert(len(genotype) == 8)
         # Here we can assert that genotypes are not skip_connect
         ks_list, expand_ratio_list, depth_list =\
-            PG.genotype2subnetlist(self._op_candidates, genotype)
+            ProcessGenotype.genotype2subnetlist(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
     @property
@@ -416,7 +458,7 @@ class TrainNet(OFAXceptionNet):
 
         if genotype is not None:
             assert(len(genotype) == 8)
-            ks_list, expand_ratio_list, depth_list = PG.genotype2subnetlist(op_candidates, genotype)
+            ks_list, expand_ratio_list, depth_list = ProcessGenotype.genotype2subnetlist(op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
             preserve_weight = True if weights is not None else False
