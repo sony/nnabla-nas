@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright 2022 Sony Group Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from .classification import darts
-from .classification import mobilenet
-from .classification import pnas
-from .classification import random_wired
-from .classification import zoph
-from .classification import fairnas
-from .classification.ofa.networks import ofa_mbv3
-from .classification import ofa_xception
-
-
-__all__ = ['darts', 'pnas', 'zoph', 'mobilenet', 'random_wired', 'fairnas', 'ofa_mbv3', 'ofa_xception']

@@ -19,7 +19,7 @@ import time
 import nnabla.functions as F
 
 
-class MyResize(object):
+class OFAResize(object):
     """Resizes input image by interpolation"""
 
     ACTIVE_SIZE = 224
@@ -35,26 +35,26 @@ class MyResize(object):
     BATCH = 0
 
     def __init__(self):
-        self.max_size = max(MyResize.IMAGE_SIZE_LIST)
+        self.max_size = max(OFAResize.IMAGE_SIZE_LIST)
 
     def __call__(self, img):
         # resize
-        if MyResize.IS_TRAINING:
+        if OFAResize.IS_TRAINING:
             self.sample_image_size()
         return F.interpolate(
-            img, output_size=(MyResize.ACTIVE_SIZE, MyResize.ACTIVE_SIZE), mode='linear')
+            img, output_size=(OFAResize.ACTIVE_SIZE, OFAResize.ACTIVE_SIZE), mode='linear')
 
     @staticmethod
     def get_candidate_image_size():
-        if MyResize.CONTINUOUS:
-            min_size = min(MyResize.IMAGE_SIZE_LIST)
-            max_size = max(MyResize.IMAGE_SIZE_LIST)
+        if OFAResize.CONTINUOUS:
+            min_size = min(OFAResize.IMAGE_SIZE_LIST)
+            max_size = max(OFAResize.IMAGE_SIZE_LIST)
             candidate_sizes = []
             for i in range(min_size, max_size + 1):
-                if i % MyResize.IMAGE_SIZE_SEG == 0:
+                if i % OFAResize.IMAGE_SIZE_SEG == 0:
                     candidate_sizes.append(i)
         else:
-            candidate_sizes = MyResize.IMAGE_SIZE_LIST
+            candidate_sizes = OFAResize.IMAGE_SIZE_LIST
 
         relative_probs = None
         return candidate_sizes, relative_probs
@@ -62,13 +62,13 @@ class MyResize(object):
     @staticmethod
     def sample_image_size(batch_id=None):
         if batch_id is None:
-            batch_id = MyResize.BATCH
-        if MyResize.SYNC_DISTRIBUTED:
-            _seed = int('%d%.3d' % (batch_id, MyResize.EPOCH))
+            batch_id = OFAResize.BATCH
+        if OFAResize.SYNC_DISTRIBUTED:
+            _seed = int('%d%.3d' % (batch_id, OFAResize.EPOCH))
         else:
             _seed = os.getpid() + time.time()
         random.seed(_seed)
-        candidate_sizes, relative_probs = MyResize.get_candidate_image_size()
+        candidate_sizes, relative_probs = OFAResize.get_candidate_image_size()
         idx = random.choices(range(len(candidate_sizes)), weights=relative_probs)[0]
-        MyResize.ACTIVE_SIZE = candidate_sizes[idx]
-        MyResize.ACTIVE_SIZE_NUM = idx
+        OFAResize.ACTIVE_SIZE = candidate_sizes[idx]
+        OFAResize.ACTIVE_SIZE_NUM = idx

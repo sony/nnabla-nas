@@ -16,15 +16,13 @@ import copy
 from collections import OrderedDict
 
 import numpy as np
-
 import nnabla as nn
 
-from .... import module as Mo
-from .modules import MBConvLayer, set_layer_from_config
-from .ofa_utils.common_tools import val2list, make_divisible
-from .ofa_modules.static_op import SEModule
-from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
-from .modules import build_activation
+from ...... import module as Mo
+from ...layers import MBConvLayer, SEModule
+from ...layers import set_layer_from_config, build_activation, get_extra_repr
+from ...utils.common_tools import val2list, make_divisible
+from .dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
 
 
 def adjust_bn_according_to_idx(bn, idx):
@@ -95,13 +93,7 @@ class DynamicConvLayer(Mo.Module):
         return x
 
     def extra_repr(self):
-        return (f'in_channel_list={self._in_channel_list}, '
-                f'out_channel_list={self._out_channel_list}, '
-                f'kernel={self._kernel}, '
-                f'stride={self._stride}, '
-                f'dilation={self._dilation}, '
-                f'use_bn={self._use_bn}, '
-                f'act_func={self._act_func}')
+        return get_extra_repr(self)
 
 
 class DynamicMBConvLayer(Mo.Module):
@@ -182,13 +174,7 @@ class DynamicMBConvLayer(Mo.Module):
         return x
 
     def extra_repr(self):
-        return (f'in_channel_list={self._in_feature_list}, '
-                f'out_channel_list={self._out_channel_list}, '
-                f'kernel_size_list={self._kernel_size_list}, '
-                f'expand_ratio_list={self._expand_ratio_list}, '
-                f'stride={self._strride}, '
-                f'act_func={self._act_func}, '
-                f'use_se={self._use_se} ')
+        return get_extra_repr(self)
 
     def re_organize_middle_weights(self, expand_ratio_stage=0):
         importance = np.sum(np.abs(self.point_linear.conv.conv._W.d), axis=(0, 2, 3))

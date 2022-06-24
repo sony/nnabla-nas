@@ -31,9 +31,9 @@ import numpy as np
 import nnabla as nn
 import nnabla.functions as F
 
-from ..... import module as Mo
-from ..ofa_utils.common_tools import get_same_padding, sub_filter_start_end, make_divisible
-from .static_op import SEModule
+from ...... import module as Mo
+from ...utils.common_tools import get_same_padding, sub_filter_start_end, make_divisible
+from ...layers import SEModule
 
 
 class DynamicSE(SEModule):
