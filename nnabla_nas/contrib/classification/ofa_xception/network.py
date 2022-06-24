@@ -19,7 +19,7 @@ import random
 
 import nnabla.logger as logger
 
-from ..base import ClassificationModel as Model
+from ..base import ClassificationModel
 from .... import module as Mo
 from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock
 from .modules import ProcessGenotype as PG
@@ -29,7 +29,29 @@ from ...common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
 from ...common.ofa.utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
 
 
-class MyNetwork(Model):
+class OFAXceptionNet(ClassificationModel):
+    r""" Xception41 Search Net
+    This implementation is based on the PyTorch implementation.
+    https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/xception.py
+
+    Args:
+        num_classes (int): Number of classes
+        bn_param (tuple, optional): BatchNormalization decay rate and eps.
+        drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.1.
+        base_stage_width (list of int, optional): A list of base stage
+            channel size. Defaults to None.
+        width_mult (float, optional): Multiplier value to base stage channel size.
+            Defaults to 1.0.
+        op_candidates (str or list of str, optional): Operator choices.
+            Defaults to XP1 7x7 3.
+        weight (str, optional): The path to weight file. Defaults to
+            None.
+
+    References:
+    [1] Cai, Han, et al. "Once-for-all: Train one network and specialize it for
+        efficient deployment." arXiv preprint arXiv:1908.09791 (2019).
+    """
+
     CHANNEL_DIVISIBLE = 8
 
     def set_bn_param(self, decay_rate, eps, **kwargs):
@@ -89,30 +111,6 @@ class MyNetwork(Model):
         """
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
-
-
-class SearchNet(MyNetwork):
-    r""" Xception41 Search Net
-    This implementation is based on the PyTorch implementation.
-    https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/xception.py
-
-    Args:
-        num_classes (int): Number of classes
-        bn_param (tuple, optional): BatchNormalization decay rate and eps.
-        drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.1.
-        base_stage_width (list of int, optional): A list of base stage
-            channel size. Defaults to None.
-        width_mult (float, optional): Multiplier value to base stage channel size.
-            Defaults to 1.0.
-        op_candidates (str or list of str, optional): Operator choices.
-            Defaults to XP1 7x7 3.
-        weight (str, optional): The path to weight file. Defaults to
-            None.
-
-    References:
-    [1] Cai, Han, et al. "Once-for-all: Train one network and specialize it for
-        efficient deployment." arXiv preprint arXiv:1908.09791 (2019).
-    """
 
     def __init__(self,
                  num_classes=1000,
@@ -350,7 +348,7 @@ class SearchNet(MyNetwork):
         super().save_parameters(path, params=params, grad_only=grad_only)
 
 
-class OFASearchNet(SearchNet):
+class SearchNet(OFAXceptionNet):
     def __init__(self,
                  num_classes=1000,
                  bn_param=(0.9, 1e-5),
@@ -360,7 +358,7 @@ class OFASearchNet(SearchNet):
                  op_candidates="XP1 7x7 3",
                  weights=None
                  ):
-        super(OFASearchNet, self).__init__(
+        super(SearchNet, self).__init__(
             num_classes=num_classes, bn_param=bn_param, drop_rate=drop_rate,
             base_stage_width=base_stage_width, width_mult=width_mult,
             op_candidates=op_candidates, weights=weights)
@@ -373,7 +371,7 @@ class OFASearchNet(SearchNet):
             block.re_organize_middle_weights(expand_ratio_stage)
 
 
-class TrainNet(SearchNet):
+class TrainNet(OFAXceptionNet):
     r""" Xception41 Train Net.
     Args:
         num_classes (int): Number of classes
