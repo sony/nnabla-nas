@@ -21,8 +21,8 @@ import nnabla.logger as logger
 
 from ..base import ClassificationModel
 from .... import module as Mo
-from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock
-from .modules import set_bn_param, get_bn_param
+from ...common.ofa.layers import ConvLayer, LinearLayer, SeparableConv, XceptionBlock
+from ...common.ofa.layers import set_bn_param, get_bn_param
 from .elastic_modules import DynamicXPLayer
 from ...common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
 from ...common.ofa.utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing

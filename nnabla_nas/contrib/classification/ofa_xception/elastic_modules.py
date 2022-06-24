@@ -20,10 +20,10 @@ import numpy as np
 import nnabla as nn
 
 from .... import module as Mo
-from .modules import XceptionBlock, set_layer_from_config, get_extra_repr
+from ...common.ofa.layers import XceptionBlock, set_layer_from_config, get_extra_repr
+from ...common.ofa.layers import build_activation
 from ...common.ofa.utils.common_tools import val2list, make_divisible
 from ...common.ofa.elastic_nn.modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d
-from .modules import build_activation
 
 
 def adjust_bn_according_to_idx(bn, idx):
