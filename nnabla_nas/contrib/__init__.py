@@ -18,8 +18,7 @@ from .classification import pnas
 from .classification import random_wired
 from .classification import zoph
 from .classification import fairnas
-from .classification.ofa.networks import ofa_mbv3
-from .classification import ofa_xception
+from .classification.ofa.networks import ofa_mbv3, ofa_xception
 
 
 __all__ = ['darts', 'pnas', 'zoph', 'mobilenet', 'random_wired', 'fairnas', 'ofa_mbv3', 'ofa_xception']
