@@ -25,8 +25,8 @@ from .modules import ConvLayer, LinearLayer, SeparableConv, XceptionBlock
 from .modules import ProcessGenotype as PG
 from .modules import set_bn_param, get_bn_param
 from .elastic_modules import DynamicXPLayer
-from ..ofa.ofa_modules.dynamic_op import DynamicBatchNorm2d
-from ..ofa.ofa_utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
+from ...common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
+from ...common.ofa.utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
 
 
 class MyNetwork(Model):
