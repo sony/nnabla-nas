@@ -43,7 +43,7 @@ class ProcessGenotype:
                 CANDIDATES[key] = value
 
     @classmethod
-    def candidates_subnetlist(cls, candidates):
+    def get_search_space(cls, candidates):
         ks_list = []
         expand_list = []
         depth_list = []
@@ -60,7 +60,7 @@ class ProcessGenotype:
         return ks_list, expand_list, depth_list
 
     @classmethod
-    def genotype_subnetlist(cls, op_candidates, genotype):
+    def get_subnet_arch(cls, op_candidates, genotype):
         # We don't need `skip_connect` with the current design of Xception41
         subnet_list = [op_candidates[i] for i in genotype]
         ks_list = [cls.CANDIDATES[subnet]['ks'] for subnet in subnet_list]
@@ -112,7 +112,7 @@ class OFAXceptionNet(ClassificationModel):
         self._weights = weights
 
         op_candidates = val2list(op_candidates, 1)
-        ks_list, expand_ratio_list, depth_list = ProcessGenotype.candidates_subnetlist(op_candidates)
+        ks_list, expand_ratio_list, depth_list = ProcessGenotype.get_search_space(op_candidates)
         self._ks_list = ks_list
         self._expand_ratio_list = expand_ratio_list
         self._depth_list = depth_list
@@ -230,7 +230,7 @@ class OFAXceptionNet(ClassificationModel):
         assert(len(genotype) == 8)
         # Here we can assert that genotypes are not skip_connect
         ks_list, expand_ratio_list, depth_list =\
-            ProcessGenotype.genotype2subnetlist(self._op_candidates, genotype)
+            ProcessGenotype.get_subnet_arch(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
     @property
@@ -458,7 +458,7 @@ class TrainNet(OFAXceptionNet):
 
         if genotype is not None:
             assert(len(genotype) == 8)
-            ks_list, expand_ratio_list, depth_list = ProcessGenotype.genotype2subnetlist(op_candidates, genotype)
+            ks_list, expand_ratio_list, depth_list = ProcessGenotype.get_subnet_arch(op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
             preserve_weight = True if weights is not None else False
