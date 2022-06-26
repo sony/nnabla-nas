@@ -95,6 +95,7 @@ class OFAXceptionNet(ClassificationModel):
     """
 
     CHANNEL_DIVISIBLE = 8
+    NUM_MIDDLE_BLOCKS = 8
 
     def __init__(self,
                  num_classes=1000,
@@ -130,16 +131,16 @@ class OFAXceptionNet(ClassificationModel):
         sec_conv_channel = make_divisible(base_stage_width[1] * self._width_mult)
         mid_block_width = make_divisible(base_stage_width[4] * self._width_mult)
 
-        n_block_list = [max(self._depth_list)] * 8  # 8 blocks in Xception Middle Flow
+        middle_flow_depth_list = [max(self._depth_list)] * OFAXceptionNet.NUM_MIDDLE_BLOCKS
 
         # Entry flow
         # first conv layer
-        self.first_conv = ConvLayer(
-            3, first_conv_channel, kernel=(3, 3), stride=(2, 2), use_bn=True, act_func='relu', with_bias=False)
+        self.first_conv = ConvLayer(3, first_conv_channel,
+                                    kernel=(3, 3), stride=(2, 2), use_bn=True, act_func='relu', with_bias=False)
 
         # Second conv layer
         self.second_conv = ConvLayer(first_conv_channel, sec_conv_channel,
-                                     kernel=(3, 3), stride=(1, 1), dilation=(1, 1), use_bn=True, act_func=None)
+                                     kernel=(3, 3), stride=(1, 1), use_bn=True, act_func='relu', with_bias=False)
 
         # entry flow blocks
         self.entryblocks = []
@@ -155,9 +156,9 @@ class OFAXceptionNet(ClassificationModel):
         # Middle flow blocks
         self.block_group_info = []
         self.middleblocks = []
-        self.block_group_info.append([i for i in range(len(n_block_list))])
+        self.block_group_info.append([i for i in range(len(middle_flow_depth_list))])
         # Here only one set of blocks is needed
-        for depth in n_block_list:
+        for depth in middle_flow_depth_list:
             # 8 blocks with each block having 1,2,3 layers of relu+sep_conv
             self.middleblocks.append(DynamicXPLayer(
                 in_channel_list=val2list(mid_block_width),
@@ -187,8 +188,8 @@ class OFAXceptionNet(ClassificationModel):
         self.set_bn_param(decay_rate=bn_param[0], eps=bn_param[1])
 
         # runtime depth
-        self.block_depth_info = [depth for depth in n_block_list]
-        self.runtime_depth = [depth for depth in n_block_list]
+        self.block_depth_info = [depth for depth in middle_flow_depth_list]
+        self.runtime_depth = [depth for depth in middle_flow_depth_list]
 
         # set static/dynamic bn
         for _, m in self.get_modules():
@@ -212,12 +213,12 @@ class OFAXceptionNet(ClassificationModel):
         x = self.entryblocks[1](x)
         x = self.entryblocks[2](x)
         # blocks
-        # just one set of blocks
-        for block_idx in self.block_group_info:
-            for idx in block_idx:
-                depth = self.runtime_depth[idx]
-                self.middleblocks[idx]._runtime_depth = depth
-                x = self.middleblocks[idx](x)
+        # just one set of blocks in xception
+        # self.block_group_info = [[0,1,2,3,4,5,6,7]]
+        for idx in self.block_group_info[0]:
+            depth = self.runtime_depth[idx]
+            self.middleblocks[idx]._runtime_depth = depth
+            x = self.middleblocks[idx](x)
         x = self.exitblocks[0](x)
         x = self.expand_block1(x)
         x = self.expand_block2(x)
@@ -228,7 +229,6 @@ class OFAXceptionNet(ClassificationModel):
 
     def set_valid_arch(self, genotype):
         assert(len(genotype) == 8)
-        # Here we can assert that genotypes are not skip_connect
         ks_list, expand_ratio_list, depth_list =\
             ProcessGenotype.get_subnet_arch(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
