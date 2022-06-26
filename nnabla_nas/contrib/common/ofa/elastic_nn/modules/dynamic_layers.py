@@ -477,14 +477,13 @@ class DynamicXPLayer(Mo.Module):
 
         return sub_layer
 
-    def get_active_subnet_config(self, in_channel):
+    def get_active_subnet_config(self, in_channels):
         return {
             'name': XceptionBlock.__name__,
-            'in_channels': in_channel,
+            'in_channels': in_channels,
             'out_channels': self.active_out_channel,
             'reps': 3,
             'kernel': (self.active_kernel_size, self.active_kernel_size),
             'stride': self._stride,
             'expand_ratio': self.active_expand_ratio,
-            'mid_channels': self.active_middle_channel(in_channel),
         }

@@ -356,12 +356,8 @@ class SeparableConv(Mo.Module):
 
         self.conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
                              stride=stride, with_bias=False, group=in_channels)
-        self.pointwise = Mo.Conv(
-            in_channels, out_channels, (1, 1),
-            stride=(1, 1),
-            pad=(0, 0),
-            dilation=(1, 1),
-            group=1, with_bias=False)
+        self.pointwise = Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1),
+                                 pad=(0, 0), dilation=(1, 1), group=1, with_bias=False)
 
         self.use_bn = use_bn
         if use_bn:
@@ -389,10 +385,15 @@ class SeparableConv(Mo.Module):
 
 
 class XceptionBlock(Mo.Module):
+
+    r""" TODO: Description
+    Note: `assert reps in  [2, 3]`
+    """
+
     def __init__(
             self, in_channels, out_channels, reps, kernel=(3, 3),
             stride=(1, 1), start_with_relu=True, grow_first=True,
-            expand_ratio=None, mid_channels=None):
+            expand_ratio=None):
         super(XceptionBlock, self).__init__()
 
         self._in_channels = in_channels
@@ -406,28 +407,25 @@ class XceptionBlock(Mo.Module):
             self.skip = None
 
         rep = []
-        if expand_ratio is None:
-            for i in range(reps):
-                if grow_first:
-                    inc = in_channels if i == 0 else out_channels
-                    outc = out_channels
-                else:
-                    inc = in_channels
-                    outc = in_channels if i < (reps - 1) else out_channels
-                rep.append(Mo.ReLU(inplace=True))
-                rep.append(SeparableConv(inc, outc, kernel=kernel, stride=(1, 1), pad=(1, 1)))
-        elif reps == 3:
-            rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(in_channels, mid_channels,
-                       kernel=kernel, stride=(1, 1), pad=(1, 1)))
+        mid_channels = out_channels if grow_first else in_channels
+        if expand_ratio is not None:
+            # override mid_channels if expand_ratio is given, since this
+            # refers to keeping the current active number of mid_channels
+            # as supplied by `get_active_subnet_config` of DynamicXPLayer
+            mid_channels = make_divisible(round(in_channels * expand_ratio))
 
+        rep.append(Mo.ReLU(inplace=True))
+        rep.append(SeparableConv(in_channels, mid_channels,
+                   kernel=kernel, stride=(1, 1), pad=(1, 1)))
+
+        for _ in range(reps-2):
             rep.append(Mo.ReLU(inplace=True))
             rep.append(SeparableConv(mid_channels, mid_channels,
                        kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
-            rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(mid_channels, out_channels,
-                       kernel=kernel, stride=(1, 1), pad=(1, 1)))
+        rep.append(Mo.ReLU(inplace=True))
+        rep.append(SeparableConv(mid_channels, out_channels,
+                   kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
         if not start_with_relu:
             rep = rep[1:]
