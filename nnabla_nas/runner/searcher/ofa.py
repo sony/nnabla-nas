@@ -253,8 +253,8 @@ class OFASearcher(Searcher):
                     soft_logits = self.teacher_model(*inputs)
                     soft_logits = soft_logits if isinstance(soft_logits, (tuple, list)) else (soft_logits,)
                     p['soft_logits'] = [x.apply(need_grad=False) for x in soft_logits]
-                    kd_loss = self.model.kd_loss(
-                        p['outputs'], p['soft_logits'], p['targets'], self.args['loss_weights'])
+                kd_loss = self.model.kd_loss(
+                    p['outputs'], p['soft_logits'], p['targets'], self.args['loss_weights'])
 
             # loss function
             if self.args['lambda_kd'] > 0:
