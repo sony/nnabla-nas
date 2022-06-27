@@ -309,7 +309,7 @@ class OFASearcher(Searcher):
 
     def reset_running_statistics(self, net=None, subset_size=2000, subset_batch_size=200,
                                  dataloader=None, dataloader_batch_size=None, inp_shape=None):
-        from ...contrib.classification.ofa.ofa_utils.utils import set_running_statistics
+        from ...contrib.common.ofa.elastic_nn.utils import set_running_statistics
 
         if net is None:
             net = self.model
