@@ -123,34 +123,36 @@ class OFAXceptionNet(ClassificationModel):
         self._expand_ratio_list.sort()
         self._depth_list.sort()
 
-        expand_1_width = make_divisible(base_stage_width[-3] * self._width_mult)
-        expand_2_width = make_divisible(base_stage_width[-2] * self._width_mult)
-        last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
+        # width_mult scaled block widths
+        width_list = []
+        for base_width in base_stage_width:
+            width = make_divisible(base_width * self._width_mult, OFAXceptionNet.CHANNEL_DIVISIBLE)
+            width_list.append(width)
 
-        first_conv_channel = make_divisible(base_stage_width[0] * self._width_mult)
-        sec_conv_channel = make_divisible(base_stage_width[1] * self._width_mult)
-        mid_block_width = make_divisible(base_stage_width[4] * self._width_mult)
+        # width_mult scaled middle and exit block widths
+        mid_block_width = width_list[-4]
+        last_channel = width_list[-1]
 
         # list of max supported depth for each block in the middle flow
         self.middle_flow_max_depth_list = [max(self._depth_list)] * OFAXceptionNet.NUM_MIDDLE_BLOCKS
 
         # Entry flow
         # first conv layer
-        self.first_conv = ConvLayer(3, first_conv_channel,
+        self.first_conv = ConvLayer(3, width_list[0],
                                     kernel=(3, 3), stride=(2, 2), use_bn=True, act_func='relu', with_bias=False)
 
         # Second conv layer
-        self.second_conv = ConvLayer(first_conv_channel, sec_conv_channel,
+        self.second_conv = ConvLayer(width_list[0], width_list[1],
                                      kernel=(3, 3), stride=(1, 1), use_bn=True, act_func='relu', with_bias=False)
 
         # entry flow blocks
         self.entryblocks = []
         self.entryblocks.append(XceptionBlock(
-            base_stage_width[1], base_stage_width[2], 2, stride=(2, 2), start_with_relu=False))
+            width_list[1], width_list[2], 2, stride=(2, 2), start_with_relu=False))
         self.entryblocks.append(XceptionBlock(
-            base_stage_width[2], base_stage_width[3], 2, stride=(2, 2)))
+            width_list[2], width_list[3], 2, stride=(2, 2)))
         self.entryblocks.append(XceptionBlock(
-            base_stage_width[3], base_stage_width[4], 2, stride=(2, 2)))
+            width_list[3], mid_block_width, 2, stride=(2, 2)))
 
         self.entryblocks = Mo.ModuleList(self.entryblocks)
 
@@ -170,13 +172,13 @@ class OFAXceptionNet(ClassificationModel):
 
         # Exit flow blocks
         self.exitblocks = []
-        self.exitblocks.append(XceptionBlock(mid_block_width, expand_1_width, 2, stride=(2, 2), grow_first=False))
+        self.exitblocks.append(XceptionBlock(mid_block_width, width_list[-3], 2, stride=(2, 2), grow_first=False))
 
         self.exitblocks = Mo.ModuleList(self.exitblocks)
 
-        self.expand_block1 = SeparableConv(expand_1_width, expand_2_width, (3, 3),
+        self.expand_block1 = SeparableConv(width_list[-3], width_list[-2], (3, 3),
                                            (1, 1), (1, 1), use_bn=True, act_fn='relu')
-        self.expand_block2 = SeparableConv(expand_2_width, last_channel, (3, 3),
+        self.expand_block2 = SeparableConv(width_list[-2], last_channel, (3, 3),
                                            (1, 1), (1, 1), use_bn=True, act_fn='relu')
 
         # use a global average pooling before this FC Layer
