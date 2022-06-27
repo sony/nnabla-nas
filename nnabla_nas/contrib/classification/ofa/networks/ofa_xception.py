@@ -131,7 +131,8 @@ class OFAXceptionNet(ClassificationModel):
         sec_conv_channel = make_divisible(base_stage_width[1] * self._width_mult)
         mid_block_width = make_divisible(base_stage_width[4] * self._width_mult)
 
-        middle_flow_depth_list = [max(self._depth_list)] * OFAXceptionNet.NUM_MIDDLE_BLOCKS
+        # list of max supported depth for each block in the middle flow
+        self.middle_flow_max_depth_list = [max(self._depth_list)] * OFAXceptionNet.NUM_MIDDLE_BLOCKS
 
         # Entry flow
         # first conv layer
@@ -154,12 +155,9 @@ class OFAXceptionNet(ClassificationModel):
         self.entryblocks = Mo.ModuleList(self.entryblocks)
 
         # Middle flow blocks
-        self.block_group_info = []
         self.middleblocks = []
-        self.block_group_info.append([i for i in range(len(middle_flow_depth_list))])
-        # Here only one set of blocks is needed
-        for depth in middle_flow_depth_list:
-            # 8 blocks with each block having 1,2,3 layers of relu+sep_conv
+        for depth in self.middle_flow_max_depth_list:
+            # 8 blocks with each block having 1/2/3 layers of relu+sep_conv
             self.middleblocks.append(DynamicXPLayer(
                 in_channel_list=val2list(mid_block_width),
                 out_channel_list=val2list(mid_block_width),
@@ -187,9 +185,8 @@ class OFAXceptionNet(ClassificationModel):
         # set bn param
         self.set_bn_param(decay_rate=bn_param[0], eps=bn_param[1])
 
-        # runtime depth
-        self.block_depth_info = [depth for depth in middle_flow_depth_list]
-        self.runtime_depth = [depth for depth in middle_flow_depth_list]
+        # initialise the runtime depth of each block in the middle flow
+        self.middle_flow_runtime_depth_list = self.middle_flow_max_depth_list.copy()
 
         # set static/dynamic bn
         for _, m in self.get_modules():
@@ -212,13 +209,10 @@ class OFAXceptionNet(ClassificationModel):
         x = self.entryblocks[0](x)
         x = self.entryblocks[1](x)
         x = self.entryblocks[2](x)
-        # blocks
-        # just one set of blocks in xception
-        # self.block_group_info = [[0,1,2,3,4,5,6,7]]
-        for idx in self.block_group_info[0]:
-            depth = self.runtime_depth[idx]
-            self.middleblocks[idx]._runtime_depth = depth
-            x = self.middleblocks[idx](x)
+        # xception has only one stage in the middle flow
+        for middleblock, runtime_depth in zip(self.middleblocks, self.middle_flow_runtime_depth_list):
+            middleblock._runtime_depth = runtime_depth
+            x = middleblock(x)
         x = self.exitblocks[0](x)
         x = self.expand_block1(x)
         x = self.expand_block2(x)
@@ -228,14 +222,10 @@ class OFAXceptionNet(ClassificationModel):
         return self.classifier(x)
 
     def set_valid_arch(self, genotype):
-        assert(len(genotype) == 8)
+        assert(len(genotype) == OFAXceptionNet.NUM_MIDDLE_BLOCKS)
         ks_list, expand_ratio_list, depth_list =\
             ProcessGenotype.get_subnet_arch(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
-
-    @property
-    def grouped_block_index(self):
-        return self.block_group_info
 
     def set_active_subnet(self, ks=None, e=None, d=None, **kwargs):
         ks = val2list(ks)
@@ -250,20 +240,17 @@ class OFAXceptionNet(ClassificationModel):
 
         for i, d in enumerate(depth):
             if d is not None:
-                self.runtime_depth[i] = min(self.block_depth_info[i], d)
+                self.runtime_depth[i] = min(self.middle_flow_max_depth_list[i], d)
 
     def sample_active_subnet(self):
-        ks_candidates = self._ks_list if self.__dict__.get('_ks_include_list', None) is None \
-            else self.__dict__['_ks_include_list']
-        expand_candidates = self._expand_ratio_list if self.__dict__.get('_expand_include_list', None) is None \
-            else self.__dict__['_expand_include_list']
-        depth_candidates = self._depth_list if self.__dict__.get('_depth_include_list', None) is None else \
-            self.__dict__['_depth_include_list']
+        ks_candidates = self._ks_list
+        expand_candidates = self._expand_ratio_list
+        depth_candidates = self._depth_list
 
         # sample kernel size
         ks_setting = []
         if not isinstance(ks_candidates[0], list):
-            ks_candidates = [ks_candidates for _ in range(len(self.middleblocks))]
+            ks_candidates = [ks_candidates for _ in range(OFAXceptionNet.NUM_MIDDLE_BLOCKS)]
         for k_set in ks_candidates:
             k = random.choice(k_set)
             ks_setting.append(k)
@@ -271,7 +258,7 @@ class OFAXceptionNet(ClassificationModel):
         # sample expand ratio
         expand_setting = []
         if not isinstance(expand_candidates[0], list):
-            expand_candidates = [expand_candidates for _ in range(len(self.middleblocks))]
+            expand_candidates = [expand_candidates for _ in range(OFAXceptionNet.NUM_MIDDLE_BLOCKS)]
         for e_set in expand_candidates:
             e = random.choice(e_set)
             expand_setting.append(e)
@@ -279,7 +266,7 @@ class OFAXceptionNet(ClassificationModel):
         # sample depth
         depth_setting = []
         if not isinstance(depth_candidates[0], list):
-            depth_candidates = [depth_candidates for _ in range(len(self.block_group_info))]
+            depth_candidates = [depth_candidates for _ in range(OFAXceptionNet.NUM_MIDDLE_BLOCKS)]
         for d_set in depth_candidates:
             d = random.choice(d_set)
             depth_setting.append(d)
@@ -360,15 +347,11 @@ class OFAXceptionNet(ClassificationModel):
         for prefix, module in self.get_modules():
             for name, p in module.parameters.items():
                 key = prefix + ('/' if prefix else '') + name
-                if '/mobile_inverted_conv/' in key:
-                    new_key = key.replace('/mobile_inverted_conv/', '/conv/')
+                if key in params and p.shape == params[key].shape:
+                    p.d = params[key].d.copy()
+                    nn.logger.info(f'`{key}` loaded.')
                 else:
-                    new_key = key
-                if new_key in params:
-                    p.d = params[new_key].d.copy()
-                    nn.logger.info(f'`{new_key}` loaded.')
-                else:
-                    nn.logger.info(f'`{new_key}` does not exist.')
+                    nn.logger.info(f'`{key}` does not exist.')
                     if raise_if_missing:
                         raise ValueError(
                             f'A child module {name} cannot be found in '
@@ -457,7 +440,7 @@ class TrainNet(OFAXceptionNet):
             base_stage_width=base_stage_width, op_candidates=op_candidates, weights=weights)
 
         if genotype is not None:
-            assert(len(genotype) == 8)
+            assert(len(genotype) == OFAXceptionNet.NUM_MIDDLE_BLOCKS)
             ks_list, expand_ratio_list, depth_list = ProcessGenotype.get_subnet_arch(op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
@@ -465,12 +448,10 @@ class TrainNet(OFAXceptionNet):
 
             blocks = []
             input_channel = self.entryblocks[-1]._out_channels
-            for block_idx in self.block_group_info:  # This loop will just run once
-                for idx in block_idx:
-                    depth = self.runtime_depth[idx]
-                    self.middleblocks[idx]._runtime_depth = depth
-                    blocks.append(self.middleblocks[idx].get_active_subnet(input_channel, preserve_weight))
-                    input_channel = blocks[-1]._out_channels
+            for middleblock, runtime_depth in zip(self.middleblocks, self.middle_flow_max_depth_list):
+                middleblock._runtime_depth = runtime_depth
+                blocks.append(middleblock.get_active_subnet(input_channel, preserve_weight))
+                input_channel = blocks[-1]._out_channels
 
             self.middleblocks = Mo.ModuleList(blocks)
 
