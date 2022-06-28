@@ -302,12 +302,11 @@ class DynamicXPLayer(Mo.Module):
             ratio. Defaults to 6.
         stride (tuple of int, optional): Stride sizes for dimensions.
             Defaults to (1, 1).
-        last_block (bool): Indicates whether the block is last
+        depth (int, optional): _description_. Defaults to 3.
     """
 
     def __init__(self, in_channel_list, out_channel_list,
                  kernel_size_list=3, expand_ratio_list=6, stride=(1, 1), depth=3):
-
         self._in_channel_list = in_channel_list
         self._out_channel_list = out_channel_list
         self._kernel_size_list = val2list(kernel_size_list)
