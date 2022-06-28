@@ -242,7 +242,7 @@ class OFAXceptionNet(ClassificationModel):
 
         for i, d in enumerate(depth):
             if d is not None:
-                self.runtime_depth[i] = min(self.middle_flow_max_depth_list[i], d)
+                self.middle_flow_runtime_depth_list[i] = min(self.middle_flow_max_depth_list[i], d)
 
     def sample_active_subnet(self):
         ks_candidates = self._ks_list
@@ -450,7 +450,7 @@ class TrainNet(OFAXceptionNet):
 
             blocks = []
             input_channel = self.entryblocks[-1]._out_channels
-            for middleblock, runtime_depth in zip(self.middleblocks, self.middle_flow_max_depth_list):
+            for middleblock, runtime_depth in zip(self.middleblocks, self.middle_flow_runtime_depth_list):
                 middleblock._runtime_depth = runtime_depth
                 blocks.append(middleblock.get_active_subnet(input_channel, preserve_weight))
                 input_channel = blocks[-1]._out_channels

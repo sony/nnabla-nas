@@ -414,7 +414,7 @@ class XceptionBlock(Mo.Module):
             # as supplied by `get_active_subnet_config` of DynamicXPLayer
             mid_channels = make_divisible(round(in_channels * expand_ratio))
 
-        rep.append(Mo.ReLU(inplace=True))
+        rep.append(Mo.ReLU(inplace=False))
         rep.append(SeparableConv(in_channels, mid_channels,
                    kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
@@ -429,8 +429,6 @@ class XceptionBlock(Mo.Module):
 
         if not start_with_relu:
             rep = rep[1:]
-        else:
-            rep[0] = Mo.ReLU(inplace=False)
 
         if stride != (1, 1):
             rep.append(Mo.MaxPool((3, 3), stride=stride, pad=(1, 1)))
