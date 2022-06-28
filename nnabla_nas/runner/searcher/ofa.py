@@ -24,11 +24,13 @@ from nnabla_ext.cuda import clear_memory_cache
 from ... import contrib
 from .search import Searcher
 
-from ...contrib.classification.ofa.ofa_utils.my_random_resize_crop import MyResize
+from ...contrib.common.ofa.utils.random_resize_crop import OFAResize
+from ...contrib.common.ofa.elastic_nn.utils import set_running_statistics
 
 
 class OFASearcher(Searcher):
     r"""An implementation of OFA."""
+
     def __init__(self, model, optimizer, regularizer, dataloader, args):
         super().__init__(model, optimizer, regularizer, dataloader, args)
 
@@ -43,10 +45,10 @@ class OFASearcher(Searcher):
         self.one_epoch_test = len(self.dataloader['test']) // self.bs_test
 
         self.image_size_list = self.args['train_image_size_list']
-        MyResize.IMAGE_SIZE_LIST = self.image_size_list
-        MyResize.ACTIVE_SIZE = max(self.image_size_list)
-        MyResize.IMAGE_SIZE_SEG = 4 if 'image_size_seg' not in self.args else self.args['image_size_seg']
-        MyResize.CONTINUOUS = True if "image_size_continuous" not in self.args else self.args['image_size_continuous']
+        OFAResize.IMAGE_SIZE_LIST = self.image_size_list
+        OFAResize.ACTIVE_SIZE = max(self.image_size_list)
+        OFAResize.IMAGE_SIZE_SEG = 4 if 'image_size_seg' not in self.args else self.args['image_size_seg']
+        OFAResize.CONTINUOUS = True if "image_size_continuous" not in self.args else self.args['image_size_continuous']
 
         if self.args['lambda_kd'] > 0:  # knowledge distillation
             name, attributes = list(self.args['teacher_network'].items())[0]
@@ -66,11 +68,11 @@ class OFASearcher(Searcher):
 
         # Test for init parameters
         if self.args['task'] != 'fullnet':
-            MyResize.IS_TRAINING = False
+            OFAResize.IS_TRAINING = False
             for genotype in self.args['valid_genotypes']:
                 for img_size in self.args['valid_image_size_list']:
                     self.monitor.reset()
-                    MyResize.ACTIVE_SIZE = img_size
+                    OFAResize.ACTIVE_SIZE = img_size
                     self.model.set_valid_arch(genotype)
                     self.reset_running_statistics()
                     for i in tqdm(range(self.one_epoch_test), desc='Test for init parameters'):
@@ -87,12 +89,12 @@ class OFASearcher(Searcher):
         # training
         for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
             self.monitor.reset()
-            MyResize.IS_TRAINING = True
+            OFAResize.IS_TRAINING = True
 
             lr = self.optimizer['train'].get_learning_rate()
             self.monitor.info(f'Running epoch={self.cur_epoch}\tlr={lr:.5f}\n')
 
-            MyResize.EPOCH = self.cur_epoch
+            OFAResize.EPOCH = self.cur_epoch
             for i in range(self.one_epoch_train):
                 self.train_on_batch(self.cur_epoch, i)
                 if i % (self.args['print_frequency']) == 0:
@@ -101,11 +103,11 @@ class OFASearcher(Searcher):
                     self.monitor.display(i, key=train_keys)
                 clear_memory_cache()
             if self.cur_epoch % self.args["validation_frequency"] == 0:
-                MyResize.IS_TRAINING = False
+                OFAResize.IS_TRAINING = False
                 for genotype in self.args['valid_genotypes']:
                     for img_size in self.args['valid_image_size_list']:
                         self.monitor.reset()
-                        MyResize.ACTIVE_SIZE = img_size
+                        OFAResize.ACTIVE_SIZE = img_size
                         self.model.set_valid_arch(genotype)
                         self.reset_running_statistics()
                         for i in tqdm(range(self.one_epoch_valid),
@@ -141,7 +143,7 @@ class OFASearcher(Searcher):
 
     def train_on_batch(self, epoch, n_iter, key='train'):
         r"""Update the model parameters."""
-        MyResize.BATCH = n_iter
+        OFAResize.BATCH = n_iter
         batch = [self.dataloader['train'].next()
                  for _ in range(self.accum_train)]
         bz, p = self.mbs_train, self.placeholder['train']
@@ -234,7 +236,7 @@ class OFASearcher(Searcher):
 
         fake_key = 'train' if key == 'train' else 'valid'
         p = self.placeholder[fake_key]
-        resize = MyResize()
+        resize = OFAResize()
         transform = self.dataloader[fake_key].transform(fake_key)
         accum = self.accum_test if key == 'test' else (self.accum_valid if key == 'valid' else self.accum_train)
 
@@ -308,8 +310,6 @@ class OFASearcher(Searcher):
 
     def reset_running_statistics(self, net=None, subset_size=2000, subset_batch_size=200,
                                  dataloader=None, dataloader_batch_size=None, inp_shape=None):
-        from ...contrib.classification.ofa.ofa_utils.utils import set_running_statistics
-
         if net is None:
             net = self.model
         if dataloader is None:

@@ -21,7 +21,7 @@ from tqdm import trange
 from ..runner import Runner
 
 from ...runner.searcher import OFASearcher
-from ...contrib.classification.ofa.ofa_utils.my_random_resize_crop import MyResize
+from ...contrib.common.ofa.utils.random_resize_crop import OFAResize
 
 
 class OFATrainer(Runner):
@@ -57,8 +57,8 @@ class OFATrainer(Runner):
         """Run the training process."""
         self.callback_on_start()
 
-        MyResize.ACTIVE_SIZE = self.args['img_size']
-        MyResize.IS_TRAINING = False
+        OFAResize.ACTIVE_SIZE = self.args['img_size']
+        OFAResize.IS_TRAINING = False
 
         self.reset_running_statistics()
 

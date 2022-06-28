@@ -21,100 +21,70 @@ import nnabla as nn
 import nnabla.functions as F
 import nnabla.logger as logger
 
-from ..base import ClassificationModel as Model
-from .... import module as Mo
-from .modules import ResidualBlock, ConvLayer, LinearLayer, MBConvLayer
-from .modules import candidates2subnetlist, genotype2subnetlist, set_bn_param
-from .elastic_modules import DynamicMBConvLayer
-from .ofa_modules.dynamic_op import DynamicBatchNorm2d
-from .ofa_utils.common_tools import val2list, make_divisible
-from .ofa_utils.common_tools import cross_entropy_loss_with_label_smoothing, cross_entropy_loss_with_soft_target
-from .ofa_utils.utils import init_models
+from ...base import ClassificationModel
+from ..... import module as Mo
+from ....common.ofa.layers import ResidualBlock, ConvLayer, LinearLayer, MBConvLayer, set_bn_param
+from ....common.ofa.utils.common_tools import val2list, make_divisible
+from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoothing
+from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
+from ....common.ofa.utils.common_tools import init_models
+from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicMBConvLayer
+from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
 
 
-class MyNetwork(Model):
-    CHANNEL_DIVISIBLE = 8
-
-    def set_bn_param(self, decay_rate, eps, **kwargs):
-        r"""Sets decay_rate and eps to batchnormalization layers.
-
-        Args:
-            decay_rate (float): Deccay rate of running mean and variance.
-            eps (float):Tiny value to avoid zero division by std.
-        """
-        set_bn_param(self, decay_rate, eps, **kwargs)
-
-    def loss(self, outputs, targets, loss_weights=None):
-        r"""Return loss computed from a list of outputs and list of targets.
-
-        Args:
-            outputs (list of nn.Variable):
-                A list of output variables computed from the model.
-            targets (list of nn.Variable):
-                A list of target variables loaded from the data.
-            loss_weights (list of float, optional):
-                A list specifying scalar coefficients to weight the loss
-                contributions of different model outputs.
-                It is expected to have a 1:1 mapping to model outputs.
-                Defaults to None.
-        Returns:
-            nn.Variable: A scalar NNabla Variable represents the loss.
-        """
-        return cross_entropy_loss_with_label_smoothing(outputs[0], targets[0])
-
-    def kd_loss(self, outputs, logits, targets, loss_weights=None):
-        soft_label = F.softmax(logits[0], axis=1)
-        soft_label.apply(persistent=True)
-        kd_loss = cross_entropy_loss_with_soft_target(outputs[0], soft_label)
-        return kd_loss
-
-    def get_net_parameters(self, grad_only=False):
-        r"""Returns an `OrderedDict` containing architecture parameters.
-
-        Args:
-            grad_only (bool, optional): If sets to `True`, then only parameters
-                with `need_grad=True` are returned. Defaults to False.
-        Returns:
-            OrderedDict: A dictionary containing parameters.
-        """
-        p = self.get_parameters(grad_only)
-        return OrderedDict([(k, v) for k, v in p.items()])
-
-    def get_arch_parameters(self, grad_only=False):
-        r"""Returns an `OrderedDict` containing architecture parameters.
-        Args:
-            grad_only (bool, optional): If sets to `True`, then only parameters
-                with `need_grad=True` are returned. Defaults to False.
-        Returns:
-            OrderedDict: A dictionary containing parameters.
-        """
-        p = self.get_parameters(grad_only)
-        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
-
-    def load_parameters(self, path, raise_if_missing=False):
-        with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
-            params = nn.get_parameters(grad_only=False)
-        self.set_parameters(params, raise_if_missing=raise_if_missing)
-
-    def set_parameters(self, params, raise_if_missing=False):
-        for prefix, module in self.get_modules():
-            for name, p in module.parameters.items():
-                key = prefix + ('/' if prefix else '') + name
-                if key in params and p.shape == params[key].shape:
-                    p.d = params[key].d.copy()
-                    nn.logger.info(f'`{key}` loaded.')
-                else:
-                    nn.logger.info(f'`{key}` does not exist.')
-                    if raise_if_missing:
-                        raise ValueError(
-                            f'A child module {name} cannot be found in '
-                            '{this}. This error is raised because '
-                            '`raise_if_missing` is specified '
-                            'as True. Please turn off if you allow it.')
+CANDIDATES = {
+    'MB3 3x3': {'ks': 3, 'expand_ratio': 3},
+    'MB3 5x5': {'ks': 5, 'expand_ratio': 3},
+    'MB3 7x7': {'ks': 7, 'expand_ratio': 3},
+    'MB4 3x3': {'ks': 3, 'expand_ratio': 4},
+    'MB4 5x5': {'ks': 5, 'expand_ratio': 4},
+    'MB4 7x7': {'ks': 7, 'expand_ratio': 4},
+    'MB6 3x3': {'ks': 3, 'expand_ratio': 6},
+    'MB6 5x5': {'ks': 5, 'expand_ratio': 6},
+    'MB6 7x7': {'ks': 7, 'expand_ratio': 6},
+    'skip_connect': {'ks': None, 'expand_ratio': None},
+}
 
 
-class SearchNet(MyNetwork):
+def candidates2subnetlist(candidates):
+    ks_list = []
+    expand_list = []
+    for candidate in candidates:
+        ks = CANDIDATES[candidate]['ks']
+        e = CANDIDATES[candidate]['expand_ratio']
+        if ks not in ks_list:
+            ks_list.append(ks)
+        if e not in expand_list:
+            expand_list.append(e)
+    return ks_list, expand_list
+
+
+def genotype2subnetlist(op_candidates, genotype):
+    op_candidates.append('skip_connect')
+    subnet_list = [op_candidates[i] for i in genotype]
+    ks_list = [CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
+               else 3 for subnet in subnet_list]
+    expand_ratio_list = [CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
+                         else 4 for subnet in subnet_list]
+    depth_list = []
+    d = 0
+    for i, subnet in enumerate(subnet_list):
+        if subnet == 'skip_connect':
+            if d > 1:
+                depth_list.append(d)
+                d = 0
+        elif d == 4:
+            depth_list.append(d)
+            d = 1
+        elif i == len(subnet_list) - 1:
+            depth_list.append(d + 1)
+        else:
+            d += 1
+    assert([d > 1 for d in depth_list])
+    return ks_list, expand_ratio_list, depth_list
+
+
+class OFAMbv3Net(ClassificationModel):
     r""" MobileNet V3 Search Net
     This implementation is based on the PyTorch implementation.
 
@@ -137,6 +107,8 @@ class SearchNet(MyNetwork):
     [1] Cai, Han, et al. "Once-for-all: Train one network and specialize it for
         efficient deployment." arXiv preprint arXiv:1908.09791 (2019).
     """
+
+    CHANNEL_DIVISIBLE = 8
 
     def __init__(self,
                  num_classes=1000,
@@ -177,7 +149,7 @@ class SearchNet(MyNetwork):
         base_stage_width = [16, 16, 24, 40, 80, 112, 160, 960, 1280]
 
         final_expand_width = make_divisible(
-            base_stage_width[-2] * self._width_mult, SearchNet.CHANNEL_DIVISIBLE)
+            base_stage_width[-2] * self._width_mult, OFAMbv3Net.CHANNEL_DIVISIBLE)
         last_channel = make_divisible(base_stage_width[-1] * self._width_mult)
 
         stride_stages = [1, 2, 2, 2, 1, 2]
@@ -186,7 +158,7 @@ class SearchNet(MyNetwork):
         n_block_list = [1] + [max(self._depth_list)] * 5
         width_list = []
         for base_width in base_stage_width[:-2]:
-            width = make_divisible(base_width * self._width_mult, SearchNet.CHANNEL_DIVISIBLE)
+            width = make_divisible(base_width * self._width_mult, OFAMbv3Net.CHANNEL_DIVISIBLE)
             width_list.append(width)
 
         input_channel, first_block_dim = width_list[0], width_list[1]
@@ -378,7 +350,7 @@ class SearchNet(MyNetwork):
             d: len(mapping[d])**d for d in depth_candidates}
         sum_combinations = sum(combinations_per_depth.values())
         depth_sampling_weights = {
-            k: v/sum_combinations for k, v in combinations_per_depth.items()}
+            k: v / sum_combinations for k, v in combinations_per_depth.items()}
 
         depth_setting = []
         expand_setting = []
@@ -425,8 +397,86 @@ class SearchNet(MyNetwork):
     def save_parameters(self, path=None, params=None, grad_only=False):
         super().save_parameters(path, params=params, grad_only=grad_only)
 
+    def set_bn_param(self, decay_rate, eps, **kwargs):
+        r"""Sets decay_rate and eps to batchnormalization layers.
 
-class OFASearchNet(SearchNet):
+        Args:
+            decay_rate (float): Deccay rate of running mean and variance.
+            eps (float):Tiny value to avoid zero division by std.
+        """
+        set_bn_param(self, decay_rate, eps, **kwargs)
+
+    def loss(self, outputs, targets, loss_weights=None):
+        r"""Return loss computed from a list of outputs and list of targets.
+
+        Args:
+            outputs (list of nn.Variable):
+                A list of output variables computed from the model.
+            targets (list of nn.Variable):
+                A list of target variables loaded from the data.
+            loss_weights (list of float, optional):
+                A list specifying scalar coefficients to weight the loss
+                contributions of different model outputs.
+                It is expected to have a 1:1 mapping to model outputs.
+                Defaults to None.
+        Returns:
+            nn.Variable: A scalar NNabla Variable represents the loss.
+        """
+        return cross_entropy_loss_with_label_smoothing(outputs[0], targets[0])
+
+    def kd_loss(self, outputs, logits, targets, loss_weights=None):
+        soft_label = F.softmax(logits[0], axis=1)
+        soft_label.apply(persistent=True)
+        kd_loss = cross_entropy_loss_with_soft_target(outputs[0], soft_label)
+        return kd_loss
+
+    def get_net_parameters(self, grad_only=False):
+        r"""Returns an `OrderedDict` containing architecture parameters.
+
+        Args:
+            grad_only (bool, optional): If sets to `True`, then only parameters
+                with `need_grad=True` are returned. Defaults to False.
+        Returns:
+            OrderedDict: A dictionary containing parameters.
+        """
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items()])
+
+    def get_arch_parameters(self, grad_only=False):
+        r"""Returns an `OrderedDict` containing architecture parameters.
+        Args:
+            grad_only (bool, optional): If sets to `True`, then only parameters
+                with `need_grad=True` are returned. Defaults to False.
+        Returns:
+            OrderedDict: A dictionary containing parameters.
+        """
+        p = self.get_parameters(grad_only)
+        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
+
+    def load_parameters(self, path, raise_if_missing=False):
+        with nn.parameter_scope('', OrderedDict()):
+            nn.load_parameters(path)
+            params = nn.get_parameters(grad_only=False)
+        self.set_parameters(params, raise_if_missing=raise_if_missing)
+
+    def set_parameters(self, params, raise_if_missing=False):
+        for prefix, module in self.get_modules():
+            for name, p in module.parameters.items():
+                key = prefix + ('/' if prefix else '') + name
+                if key in params and p.shape == params[key].shape:
+                    p.d = params[key].d.copy()
+                    nn.logger.info(f'`{key}` loaded.')
+                else:
+                    nn.logger.info(f'`{key}` does not exist.')
+                    if raise_if_missing:
+                        raise ValueError(
+                            f'A child module {name} cannot be found in '
+                            '{this}. This error is raised because '
+                            '`raise_if_missing` is specified '
+                            'as True. Please turn off if you allow it.')
+
+
+class SearchNet(OFAMbv3Net):
     def __init__(self,
                  num_classes=1000,
                  bn_param=(0.9, 1e-5),
@@ -440,7 +490,7 @@ class OFASearchNet(SearchNet):
                  weight_init="he_fout",
                  weights=None
                  ):
-        super(OFASearchNet, self).__init__(
+        super(SearchNet, self).__init__(
             num_classes=num_classes, bn_param=bn_param, drop_rate=drop_rate,
             base_stage_width=base_stage_width, width_mult=width_mult,
             op_candidates=op_candidates, depth_candidates=depth_candidates,
@@ -456,7 +506,7 @@ class OFASearchNet(SearchNet):
             block.conv.re_organize_middle_weights(expand_ratio_stage)
 
 
-class TrainNet(SearchNet):
+class TrainNet(OFAMbv3Net):
     r""" MobileNet V3 Train Net.
     Args:
         num_classes (int): Number of classes

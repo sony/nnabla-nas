@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2022 Sony Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,62 +13,10 @@
 # limitations under the License.
 
 from collections import OrderedDict
+import nnabla.functions as F
 
 from .... import module as Mo
-from .ofa_modules.static_op import SEModule
-from .ofa_utils.common_tools import get_same_padding, min_divisible_value
-
-
-CANDIDATES = {
-    'MB3 3x3': {'ks': 3, 'expand_ratio': 3},
-    'MB3 5x5': {'ks': 5, 'expand_ratio': 3},
-    'MB3 7x7': {'ks': 7, 'expand_ratio': 3},
-    'MB4 3x3': {'ks': 3, 'expand_ratio': 4},
-    'MB4 5x5': {'ks': 5, 'expand_ratio': 4},
-    'MB4 7x7': {'ks': 7, 'expand_ratio': 4},
-    'MB6 3x3': {'ks': 3, 'expand_ratio': 6},
-    'MB6 5x5': {'ks': 5, 'expand_ratio': 6},
-    'MB6 7x7': {'ks': 7, 'expand_ratio': 6},
-    'skip_connect': {'ks': None, 'expand_ratio': None},
-}
-
-
-def candidates2subnetlist(candidates):
-    ks_list = []
-    expand_list = []
-    for candidate in candidates:
-        ks = CANDIDATES[candidate]['ks']
-        e = CANDIDATES[candidate]['expand_ratio']
-        if ks not in ks_list:
-            ks_list.append(ks)
-        if e not in expand_list:
-            expand_list.append(e)
-    return ks_list, expand_list
-
-
-def genotype2subnetlist(op_candidates, genotype):
-    op_candidates.append('skip_connect')
-    subnet_list = [op_candidates[i] for i in genotype]
-    ks_list = [CANDIDATES[subnet]['ks'] if subnet != 'skip_connect'
-               else 3 for subnet in subnet_list]
-    expand_ratio_list = [CANDIDATES[subnet]['expand_ratio'] if subnet != 'skip_connect'
-                         else 4 for subnet in subnet_list]
-    depth_list = []
-    d = 0
-    for i, subnet in enumerate(subnet_list):
-        if subnet == 'skip_connect':
-            if d > 1:
-                depth_list.append(d)
-                d = 0
-        elif d == 4:
-            depth_list.append(d)
-            d = 1
-        elif i == len(subnet_list) - 1:
-            depth_list.append(d + 1)
-        else:
-            d += 1
-    assert([d > 1 for d in depth_list])
-    return ks_list, expand_ratio_list, depth_list
+from .utils.common_tools import get_same_padding, min_divisible_value, make_divisible
 
 
 def set_layer_from_config(layer_config):
@@ -208,6 +156,7 @@ class ConvLayer(Mo.Sequential):
 
         super(ConvLayer, self).__init__(module_dict)
 
+    @staticmethod
     def build_from_config(config):
         return ConvLayer(**config)
 
@@ -329,6 +278,49 @@ class LinearLayer(Mo.Sequential):
 
     def extra_repr(self):
         return get_extra_repr(self)
+
+
+class SEModule(Mo.Module):
+
+    r"""Squeeze-and-Excitation module, that adaptively recalibrates channel-wise
+        feature responces by explicitlly modelling interdependencies
+        between channels.
+
+    Args:
+        channel (int): The number of input channels.
+        reduction (int, optional): The reduction rate used to determine
+            the number of middle channels.
+
+    References:
+    [1] Hu, Jie, Li Shen, and Gang Sun. "Squeeze-and-excitation networks."
+        Proceedings of the IEEE conference on computer vision and pattern
+        recognition. 2018.
+    """
+
+    REDUCTION = 4
+
+    def __init__(self, channel, reduction=None, name=''):
+        self._name = name
+        self._scope_name = f'<semodule at {hex(id(self))}>'
+
+        self._channel = channel
+        self.reduction = SEModule.REDUCTION if reduction is None else reduction
+
+        num_mid = make_divisible(self._channel // self.reduction)
+
+        self.fc = Mo.Sequential(OrderedDict([
+            ('reduce', Mo.Conv(
+                self._channel, num_mid, (1, 1), pad=(0, 0), stride=(1, 1), with_bias=True)),
+            ('relu', Mo.ReLU()),
+            ('expand', Mo.Conv(
+                num_mid, self._channel, (1, 1), pad=(0, 0), stride=(1, 1), with_bias=True)),
+            ('h_sigmoid', Mo.Hsigmoid())
+        ]))
+
+    def call(self, input):
+        y = F.mean(input, axis=(2, 3), keepdims=True)
+        y = self.fc(y)
+        return input * y
 
 
 def build_activation(act_func, inplace=False):

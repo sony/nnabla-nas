@@ -11,7 +11,7 @@
         }
     },
     "network": {
-        "ofa": {
+        "ofa_mbv3": {
             "num_classes": 1000,
             "bn_param": [0.9, 1e-5],
             "drop_rate": 0.1,
@@ -22,7 +22,7 @@
             ],
             "depth_candidates": [2, 3, 4],
             "compound": true,
-            "weights": "log/classification/ofa/imagenet/search/K357_E346_D234/phase1/weights.h5"
+            "weights": "log/classification/ofa_mbv3/imagenet/search/K357_E346_D234/phase1/weights.h5"
         }
     },
     "optimizer": {
@@ -69,13 +69,13 @@
         "valid_ce_loss": true,
         "lambda_kd": 1,
         "teacher_network": {
-            "ofa": {
+            "ofa_mbv3": {
                 "num_classes": 1000,
                 "bn_param": [0.9, 1e-5],
                 "drop_rate": 0,
                 "op_candidates": ["MB6 7x7"],
                 "depth_candidates": [4],
-                "weights": "log/classification/ofa/imagenet/search/K7_E6_D4/weights.h5"
+                "weights": "log/classification/ofa_mbv3/imagenet/search/K7_E6_D4/weights.h5"
             }
         },
         "epoch": 125,

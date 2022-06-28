@@ -16,15 +16,13 @@ import copy
 from collections import OrderedDict
 
 import numpy as np
-
 import nnabla as nn
 
-from .... import module as Mo
-from .modules import MBConvLayer, set_layer_from_config
-from .ofa_utils.common_tools import val2list, make_divisible
-from .ofa_modules.static_op import SEModule
-from .ofa_modules.dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
-from .modules import build_activation, get_extra_repr
+from ...... import module as Mo
+from ...layers import MBConvLayer, SEModule
+from ...layers import set_layer_from_config, build_activation, get_extra_repr
+from ...utils.common_tools import val2list, make_divisible
+from .dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
 
 
 def adjust_bn_according_to_idx(bn, idx):
