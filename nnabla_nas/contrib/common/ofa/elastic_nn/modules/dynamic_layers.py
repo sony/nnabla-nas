@@ -313,42 +313,42 @@ class DynamicXPLayer(Mo.Module):
         self._kernel_size_list = val2list(kernel_size_list)
         self._expand_ratio_list = val2list(expand_ratio_list)
         self._stride = stride
-        self._runtime_depth = depth
 
         # build modules
         max_middle_channel = make_divisible(
             round(max(self._in_channel_list) * max(self._expand_ratio_list)))
 
-        self.depth_conv1 = Mo.Sequential(OrderedDict([
+        self._depth_conv1 = Mo.Sequential(OrderedDict([
             ('act', build_activation('relu')),
             ('dwconv', DynamicSeparableConv2d(max(self._in_channel_list), self._kernel_size_list, self._stride)),
         ]))
 
-        self.point_linear1 = Mo.Sequential(OrderedDict([
+        self._point_linear1 = Mo.Sequential(OrderedDict([
             ('ptconv', DynamicConv2d(max(self._in_channel_list), max_middle_channel)),
             ('bn', DynamicBatchNorm2d(max_middle_channel, 4))
         ]))
 
-        self.depth_conv2 = Mo.Sequential(OrderedDict([
+        self._depth_conv2 = Mo.Sequential(OrderedDict([
             ('act', build_activation('relu')),
             ('dwconv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
         ]))
 
-        self.point_linear2 = Mo.Sequential(OrderedDict([
+        self._point_linear2 = Mo.Sequential(OrderedDict([
             ('ptconv', DynamicConv2d(max_middle_channel, max_middle_channel)),
             ('bn', DynamicBatchNorm2d(max_middle_channel, 4))
         ]))
 
-        self.depth_conv3 = Mo.Sequential(OrderedDict([
+        self._depth_conv3 = Mo.Sequential(OrderedDict([
             ('act', build_activation('relu')),
             ('dwconv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
         ]))
 
-        self.point_linear3 = Mo.Sequential(OrderedDict([
+        self._point_linear3 = Mo.Sequential(OrderedDict([
             ('ptconv', DynamicConv2d(max_middle_channel, max(self._out_channel_list))),
             ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4))
         ]))
 
+        self.runtime_depth = depth
         self.active_kernel_size = max(self._kernel_size_list)
         self.active_expand_ratio = max(self._expand_ratio_list)
         self.active_out_channel = max(self._out_channel_list)
@@ -356,32 +356,32 @@ class DynamicXPLayer(Mo.Module):
     def call(self, inp):
         in_channel = inp.shape[1]
 
-        self.depth_conv1.dwconv.active_kernel_size = self.active_kernel_size
-        self.point_linear1.ptconv.active_out_channel = \
+        self._depth_conv1.dwconv.active_kernel_size = self.active_kernel_size
+        self._point_linear1.ptconv.active_out_channel = \
             make_divisible(round(in_channel * self.active_expand_ratio))
 
-        self.depth_conv2.dwconv.active_kernel_size = self.active_kernel_size
-        self.point_linear2.ptconv.active_out_channel = \
+        self._depth_conv2.dwconv.active_kernel_size = self.active_kernel_size
+        self._point_linear2.ptconv.active_out_channel = \
             make_divisible(round(in_channel * self.active_expand_ratio))
 
-        self.depth_conv3.dwconv.active_kernel_size = self.active_kernel_size
-        self.point_linear3.ptconv.active_out_channel = self.active_out_channel
+        self._depth_conv3.dwconv.active_kernel_size = self.active_kernel_size
+        self._point_linear3.ptconv.active_out_channel = self.active_out_channel
 
-        if self._runtime_depth == 1:
-            self.point_linear1.ptconv.active_out_channel = self.active_out_channel
-        elif self._runtime_depth == 2:
-            self.point_linear2.ptconv.active_out_channel = self.active_out_channel
+        if self.runtime_depth == 1:
+            self._point_linear1.ptconv.active_out_channel = self.active_out_channel
+        elif self.runtime_depth == 2:
+            self._point_linear2.ptconv.active_out_channel = self.active_out_channel
 
-        x = self.depth_conv1(inp)
-        x = self.point_linear1(x)
+        x = self._depth_conv1(inp)
+        x = self._point_linear1(x)
 
-        if self._runtime_depth > 1:  # runtime depth
-            x = self.depth_conv2(x)
-            x = self.point_linear2(x)
+        if self.runtime_depth > 1:  # runtime depth
+            x = self._depth_conv2(x)
+            x = self._point_linear2(x)
 
-        if self._runtime_depth > 2:  # runtime depth
-            x = self.depth_conv3(x)
-            x = self.point_linear3(x)
+        if self.runtime_depth > 2:  # runtime depth
+            x = self._depth_conv3(x)
+            x = self._point_linear3(x)
 
         # Skip is a simple shortcut ->
         skip = inp
@@ -392,7 +392,7 @@ class DynamicXPLayer(Mo.Module):
         return get_extra_repr(self)
 
     def re_organize_middle_weights(self, expand_ratio_stage=0):
-        importance = np.sum(np.abs(self.point_linear3.ptconv.conv._W.d), axis=(0, 2, 3))
+        importance = np.sum(np.abs(self._point_linear3.ptconv.conv._W.d), axis=(0, 2, 3))
         if expand_ratio_stage > 0:  # ranking channels
             sorted_expand_list = copy.deepcopy(self._expand_ratio_list)
             sorted_expand_list.sort(reverse=True)
@@ -410,26 +410,26 @@ class DynamicXPLayer(Mo.Module):
                     larger_stage = smaller_stage
 
         sorted_idx = np.argsort(-importance)
-        self.point_linear3.ptconv.conv._W.d = np.stack(
-            [self.point_linear3.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
-        adjust_bn_according_to_idx(self.point_linear3.bn.bn, sorted_idx)
+        self._point_linear3.ptconv.conv._W.d = np.stack(
+            [self._point_linear3.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self._point_linear3.bn.bn, sorted_idx)
 
-        self.point_linear2.ptconv.conv._W.d = np.stack(
-            [self.point_linear2.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
-        adjust_bn_according_to_idx(self.point_linear2.bn.bn, sorted_idx)
+        self._point_linear2.ptconv.conv._W.d = np.stack(
+            [self._point_linear2.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self._point_linear2.bn.bn, sorted_idx)
 
-        self.point_linear1.ptconv.conv._W.d = np.stack(
-            [self.point_linear1.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
-        adjust_bn_according_to_idx(self.point_linear1.bn.bn, sorted_idx)
+        self._point_linear1.ptconv.conv._W.d = np.stack(
+            [self._point_linear1.ptconv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self._point_linear1.bn.bn, sorted_idx)
 
-        self.depth_conv3.dwconv.conv._W.d = np.stack(
-            [self.depth_conv3.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+        self._depth_conv3.dwconv.conv._W.d = np.stack(
+            [self._depth_conv3.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
 
-        self.depth_conv2.dwconv.conv._W.d = np.stack(
-            [self.depth_conv2.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+        self._depth_conv2.dwconv.conv._W.d = np.stack(
+            [self._depth_conv2.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
 
-        self.depth_conv1.dwconv.conv._W.d = np.stack(
-            [self.depth_conv1.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+        self._depth_conv1.dwconv.conv._W.d = np.stack(
+            [self._depth_conv1.dwconv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
 
     @property
     def in_channels(self):
@@ -451,27 +451,27 @@ class DynamicXPLayer(Mo.Module):
 
         middle_channel = self.active_middle_channel(in_channel)
 
-        active_filter = self.depth_conv1.dwconv.get_active_filter(in_channel, self.active_kernel_size)
+        active_filter = self._depth_conv1.dwconv.get_active_filter(in_channel, self.active_kernel_size)
         sub_layer.depth_conv1.dwconv._W.d = active_filter.d
 
-        active_filter = self.depth_conv2.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
+        active_filter = self._depth_conv2.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
         sub_layer.depth_conv2.dwconv._W.d = active_filter.d
 
-        active_filter = self.depth_conv3.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
+        active_filter = self._depth_conv3.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
         sub_layer.depth_conv3.dwconv._W.d = active_filter.d
 
-        copy_bn(sub_layer.point_linear1.bn, self.point_linear1.bn.bn)
-        copy_bn(sub_layer.point_linear2.bn, self.point_linear2.bn.bn)
-        copy_bn(sub_layer.point_linear3.bn, self.point_linear3.bn.bn)
+        copy_bn(sub_layer.point_linear1.bn, self._point_linear1.bn.bn)
+        copy_bn(sub_layer.point_linear2.bn, self._point_linear2.bn.bn)
+        copy_bn(sub_layer.point_linear3.bn, self._point_linear3.bn.bn)
 
         sub_layer.point_linear1.ptconv._W.d =\
-            self.point_linear1.ptconv.conv._W.d[:middle_channel, :in_channel, :, :]
+            self._point_linear1.ptconv.conv._W.d[:middle_channel, :in_channel, :, :]
 
         sub_layer.point_linear2.ptconv._W.d =\
-            self.point_linear2.ptconv.conv._W.d[:middle_channel, :middle_channel, :, :]
+            self._point_linear2.ptconv.conv._W.d[:middle_channel, :middle_channel, :, :]
 
         sub_layer.point_linear3.ptconv._W.d =\
-            self.point_linear3.ptconv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
+            self._point_linear3.ptconv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
 
         nn.set_auto_forward(False)
 

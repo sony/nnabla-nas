@@ -354,25 +354,25 @@ class SeparableConv(Mo.Module):
             use_bn=True, act_fn=None):
         super(SeparableConv, self).__init__()
 
-        self.conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
-                             stride=stride, with_bias=False, group=in_channels)
-        self.pointwise = Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1),
-                                 pad=(0, 0), dilation=(1, 1), group=1, with_bias=False)
+        self._conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
+                              stride=stride, with_bias=False, group=in_channels)
+        self._pointwise = Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1),
+                                  pad=(0, 0), dilation=(1, 1), group=1, with_bias=False)
 
-        self.use_bn = use_bn
+        self._use_bn = use_bn
         if use_bn:
-            self.bn = Mo.BatchNormalization(out_channels, 4)
-        self.act = build_activation(act_fn)
+            self._bn = Mo.BatchNormalization(out_channels, 4)
+        self._act = build_activation(act_fn)
 
     def call(self, x):
-        x = self.conv1(x)
-        x = self.pointwise(x)
+        x = self._conv1(x)
+        x = self._pointwise(x)
 
         if self.use_bn:
-            x = self.bn(x)
+            x = self._bn(x)
 
         if self.act is not None:
-            x = self.act(x)
+            x = self._act(x)
 
         return x
 
@@ -400,11 +400,11 @@ class XceptionBlock(Mo.Module):
         self._out_channels = out_channels
 
         if out_channels != in_channels or stride != (1, 1):
-            self.skip = Mo.Conv(in_channels, out_channels,
-                                (1, 1), stride=stride, with_bias=False)
-            self.skipbn = Mo.BatchNormalization(out_channels, 4)
+            self._skip = Mo.Conv(in_channels, out_channels,
+                                 (1, 1), stride=stride, with_bias=False)
+            self._skipbn = Mo.BatchNormalization(out_channels, 4)
         else:
-            self.skip = None
+            self._skip = None
 
         rep = []
         mid_channels = out_channels if grow_first else in_channels
@@ -432,19 +432,27 @@ class XceptionBlock(Mo.Module):
 
         if stride != (1, 1):
             rep.append(Mo.MaxPool((3, 3), stride=stride, pad=(1, 1)))
-        self.rep = Mo.Sequential(*rep)
+        self._rep = Mo.Sequential(*rep)
 
     def call(self, inp):
-        x = self.rep(inp)
+        x = self._rep(inp)
 
-        if self.skip is not None:
-            skip = self.skip(inp)
-            skip = self.skipbn(skip)
+        if self._skip is not None:
+            skip = self._skip(inp)
+            skip = self._skipbn(skip)
         else:
             skip = inp
 
         x += skip
         return x
+
+    @property
+    def in_channels(self):
+        return self._in_channels
+
+    @property
+    def out_channels(self):
+        return self._out_channels
 
     @staticmethod
     def build_from_config(config):

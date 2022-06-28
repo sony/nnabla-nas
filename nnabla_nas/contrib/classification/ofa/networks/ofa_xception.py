@@ -134,7 +134,7 @@ class OFAXceptionNet(ClassificationModel):
         last_channel = width_list[-1]
 
         # list of max supported depth for each block in the middle flow
-        self.middle_flow_max_depth_list = [max(self._depth_list)] * OFAXceptionNet.NUM_MIDDLE_BLOCKS
+        self._middle_flow_max_depth_list = [max(self._depth_list)] * OFAXceptionNet.NUM_MIDDLE_BLOCKS
 
         # Entry flow
         # first conv layer
@@ -158,7 +158,7 @@ class OFAXceptionNet(ClassificationModel):
 
         # Middle flow blocks
         self.middleblocks = []
-        for depth in self.middle_flow_max_depth_list:
+        for depth in self._middle_flow_max_depth_list:
             # 8 blocks with each block having 1/2/3 layers of relu+sep_conv
             self.middleblocks.append(DynamicXPLayer(
                 in_channel_list=val2list(mid_block_width),
@@ -188,7 +188,7 @@ class OFAXceptionNet(ClassificationModel):
         self.set_bn_param(decay_rate=bn_param[0], eps=bn_param[1])
 
         # initialise the runtime depth of each block in the middle flow
-        self.middle_flow_runtime_depth_list = self.middle_flow_max_depth_list.copy()
+        self.middle_flow_runtime_depth_list = self._middle_flow_max_depth_list.copy()
 
         # set static/dynamic bn
         for _, m in self.get_modules():
@@ -213,7 +213,7 @@ class OFAXceptionNet(ClassificationModel):
         x = self.entryblocks[2](x)
         # xception has only one stage in the middle flow
         for middleblock, runtime_depth in zip(self.middleblocks, self.middle_flow_runtime_depth_list):
-            middleblock._runtime_depth = runtime_depth
+            middleblock.runtime_depth = runtime_depth
             x = middleblock(x)
         x = self.exitblocks[0](x)
         x = self.expand_block1(x)
@@ -242,7 +242,7 @@ class OFAXceptionNet(ClassificationModel):
 
         for i, d in enumerate(depth):
             if d is not None:
-                self.middle_flow_runtime_depth_list[i] = min(self.middle_flow_max_depth_list[i], d)
+                self.middle_flow_runtime_depth_list[i] = min(self._middle_flow_max_depth_list[i], d)
 
     def sample_active_subnet(self):
         ks_candidates = self._ks_list
@@ -449,11 +449,11 @@ class TrainNet(OFAXceptionNet):
             preserve_weight = True if weights is not None else False
 
             blocks = []
-            input_channel = self.entryblocks[-1]._out_channels
+            input_channel = self.entryblocks[-1].out_channels
             for middleblock, runtime_depth in zip(self.middleblocks, self.middle_flow_runtime_depth_list):
-                middleblock._runtime_depth = runtime_depth
+                middleblock.runtime_depth = runtime_depth
                 blocks.append(middleblock.get_active_subnet(input_channel, preserve_weight))
-                input_channel = blocks[-1]._out_channels
+                input_channel = blocks[-1].out_channels
 
             self.middleblocks = Mo.ModuleList(blocks)
 
