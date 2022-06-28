@@ -62,6 +62,8 @@ class Module(object):
     @training.setter
     def training(self, mode):
         self.__dict__['_training'] = mode
+        for _, m in self.modules.items():
+            m.training = mode
 
     @property
     def need_grad(self):
@@ -73,6 +75,8 @@ class Module(object):
     @need_grad.setter
     def need_grad(self, mode):
         self.__dict__['_need_grad'] = mode
+        for _, m in self.modules.items():
+            m.need_grad = mode
 
     @property
     def is_active(self):
@@ -96,11 +100,23 @@ class Module(object):
     def input_shapes(self, v):
         setattr(self, '_input_shapes', v)
 
+    def _get_need_grad_state(self):
+        from nnabla import parameter
+        # TODO: Ideally want to have get_current_no_grad_state() in parameter module?
+        no_grad = parameter.current_no_grad
+        if no_grad:
+            return False
+        return self.need_grad
+
     def __getattr__(self, name):
         if name in self.modules:
             return self.modules[name]
         if name in self.parameters:
-            return self.parameters[name]
+            need_grad_state = self._get_need_grad_state()
+            p = self.parameters[name]
+            if not need_grad_state and p.need_grad:
+                return p.get_unlinked_variable(need_grad=need_grad_state)
+            return p
         return object.__getattr__(self, name)
 
     def __setattr__(self, name, value):

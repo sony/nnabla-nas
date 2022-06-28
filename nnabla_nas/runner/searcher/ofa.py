@@ -25,6 +25,7 @@ from ... import contrib
 from .search import Searcher
 
 from ...contrib.common.ofa.utils.random_resize_crop import OFAResize
+from ...contrib.common.ofa.elastic_nn.utils import set_running_statistics
 
 
 class OFASearcher(Searcher):
@@ -254,8 +255,8 @@ class OFASearcher(Searcher):
                     soft_logits = self.teacher_model(*inputs)
                     soft_logits = soft_logits if isinstance(soft_logits, (tuple, list)) else (soft_logits,)
                     p['soft_logits'] = [x.apply(need_grad=False) for x in soft_logits]
-                    kd_loss = self.model.kd_loss(
-                        p['outputs'], p['soft_logits'], p['targets'], self.args['loss_weights'])
+                kd_loss = self.model.kd_loss(
+                    p['outputs'], p['soft_logits'], p['targets'], self.args['loss_weights'])
 
             # loss function
             if self.args['lambda_kd'] > 0:
@@ -309,8 +310,6 @@ class OFASearcher(Searcher):
 
     def reset_running_statistics(self, net=None, subset_size=2000, subset_batch_size=200,
                                  dataloader=None, dataloader_batch_size=None, inp_shape=None):
-        from ...contrib.common.ofa.elastic_nn.utils import set_running_statistics
-
         if net is None:
             net = self.model
         if dataloader is None:
