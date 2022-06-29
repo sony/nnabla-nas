@@ -16,7 +16,7 @@
             "bn_param": [0.9, 1e-5],
             "drop_rate": 0.1,
             "op_candidates": ["XP1 7x7 3", "XP1 5x5 3", "XP1 3x3 3"],
-            "weights": "log/classification/ofa_xception/imagenet/search/K7_E1_D3/weights.h5"
+            "weights": "log/classification/ofa_xception/imagenet/search/K7_E1_D3/checkpoint/weights.h5"
         }
     },
     "optimizer": {
@@ -58,7 +58,7 @@
                 "bn_param": [0.9, 1e-5],
                 "drop_rate": 0,
                 "op_candidates": ["XP1 7x7 3"],
-                "weights": "log/classification/ofa_xception/imagenet/search/K7_E1_D3/weights.h5"
+                "weights": "log/classification/ofa_xception/imagenet/search/K7_E1_D3/checkpoint/weights.h5"
             }
         },
         "epoch": 30,

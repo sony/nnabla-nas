@@ -26,7 +26,7 @@
                 "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3", 
                 "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
             ],
-            "weights": "log/classification/ofa_xception/imagenet/search/K357_E0.8+1_D123/weights.h5"
+            "weights": "log/classification/ofa_xception/imagenet/search/K357_E0.8+1_D123/checkpoint/weights.h5"
         }
     },
     "optimizer": {
@@ -74,7 +74,7 @@
                 "bn_param": [0.9, 1e-5],
                 "drop_rate": 0,
                 "op_candidates": ["XP1 7x7 3"],
-                "weights": "log/classification/ofa_xception/imagenet/search/K7_E1_D3/weights.h5"
+                "weights": "log/classification/ofa_xception/imagenet/search/K7_E1_D3/checkpoint/weights.h5"
             }
         },
         "epoch": 125,
