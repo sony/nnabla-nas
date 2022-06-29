@@ -22,7 +22,7 @@ from ...... import module as Mo
 from ...layers import MBConvLayer, SEModule, XceptionBlock
 from ...layers import set_layer_from_config, build_activation, get_extra_repr
 from ...utils.common_tools import val2list, make_divisible
-from .dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicSeparableConv2d, DynamicSE
+from .dynamic_op import DynamicConv2d, DynamicBatchNorm2d, DynamicDepthwiseConv, DynamicSE
 
 
 def adjust_bn_according_to_idx(bn, idx):
@@ -140,7 +140,7 @@ class DynamicMBConvLayer(Mo.Module):
                 ('act', build_activation(self._act_func)),
             ]))
         depth_conv_list = [
-            ('conv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
+            ('conv', DynamicDepthwiseConv(max_middle_channel, self._kernel_size_list, self._stride)),
             ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
             ('act', build_activation(self._act_func))
         ]
@@ -319,7 +319,7 @@ class DynamicXPLayer(Mo.Module):
 
         self._depth_conv1 = Mo.Sequential(OrderedDict([
             ('act', build_activation('relu')),
-            ('dwconv', DynamicSeparableConv2d(max(self._in_channel_list), self._kernel_size_list, self._stride)),
+            ('dwconv', DynamicDepthwiseConv(max(self._in_channel_list), self._kernel_size_list, self._stride)),
         ]))
 
         self._point_linear1 = Mo.Sequential(OrderedDict([
@@ -329,7 +329,7 @@ class DynamicXPLayer(Mo.Module):
 
         self._depth_conv2 = Mo.Sequential(OrderedDict([
             ('act', build_activation('relu')),
-            ('dwconv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
+            ('dwconv', DynamicDepthwiseConv(max_middle_channel, self._kernel_size_list, self._stride)),
         ]))
 
         self._point_linear2 = Mo.Sequential(OrderedDict([
@@ -339,7 +339,7 @@ class DynamicXPLayer(Mo.Module):
 
         self._depth_conv3 = Mo.Sequential(OrderedDict([
             ('act', build_activation('relu')),
-            ('dwconv', DynamicSeparableConv2d(max_middle_channel, self._kernel_size_list, self._stride)),
+            ('dwconv', DynamicDepthwiseConv(max_middle_channel, self._kernel_size_list, self._stride)),
         ]))
 
         self._point_linear3 = Mo.Sequential(OrderedDict([
