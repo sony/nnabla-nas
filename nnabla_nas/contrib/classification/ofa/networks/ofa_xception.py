@@ -231,7 +231,7 @@ class OFAXceptionNet(ClassificationModel):
             ProcessGenotype.get_subnet_arch(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 
-    def set_active_subnet(self, ks=None, e=None, d=None, **kwargs):
+    def set_active_subnet(self, ks, e, d, **kwargs):
         ks = val2list(ks)
         expand_ratio = val2list(e)
         depth = val2list(d)
