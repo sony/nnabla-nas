@@ -25,7 +25,9 @@ from ....common.ofa.layers import ConvLayer, LinearLayer, DWSeparableConv, Xcept
 from ....common.ofa.layers import set_bn_param, get_bn_param
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicXPLayer
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
-from ....common.ofa.utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
+from ....common.ofa.utils.common_tools import val2list, make_divisible
+from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoothing
+from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
 
 
 class ProcessGenotype:
@@ -315,6 +317,12 @@ class OFAXceptionNet(ClassificationModel):
             nn.Variable: A scalar NNabla Variable represents the loss.
         """
         return cross_entropy_loss_with_label_smoothing(outputs[0], targets[0])
+
+    def kd_loss(self, outputs, logits, targets, loss_weights=None):
+        soft_label = F.softmax(logits[0], axis=1)
+        soft_label.apply(persistent=True)
+        kd_loss = cross_entropy_loss_with_soft_target(outputs[0], soft_label)
+        return kd_loss
 
     def get_net_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing architecture parameters.
