@@ -21,7 +21,7 @@ import nnabla.logger as logger
 
 from ...base import ClassificationModel
 from ..... import module as Mo
-from ....common.ofa.layers import ConvLayer, LinearLayer, SeparableConv, XceptionBlock
+from ....common.ofa.layers import ConvLayer, LinearLayer, DWSeparableConv, XceptionBlock
 from ....common.ofa.layers import set_bn_param, get_bn_param
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicXPLayer
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
@@ -176,9 +176,9 @@ class OFAXceptionNet(ClassificationModel):
 
         self.exitblocks = Mo.ModuleList(self.exitblocks)
 
-        self.expand_block1 = SeparableConv(width_list[-3], width_list[-2], (3, 3),
+        self.expand_block1 = DWSeparableConv(width_list[-3], width_list[-2], (3, 3),
                                            (1, 1), (1, 1), use_bn=True, act_fn='relu')
-        self.expand_block2 = SeparableConv(width_list[-2], last_channel, (3, 3),
+        self.expand_block2 = DWSeparableConv(width_list[-2], last_channel, (3, 3),
                                            (1, 1), (1, 1), use_bn=True, act_fn='relu')
 
         # use a global average pooling before this FC Layer

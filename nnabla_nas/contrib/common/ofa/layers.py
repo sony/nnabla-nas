@@ -347,12 +347,12 @@ class SEModule(Mo.Module):
         return input * y
 
 
-class SeparableConv(Mo.Module):
+class DWSeparableConv(Mo.Module):
     def __init__(
             self, in_channels, out_channels, kernel=(1, 1),
             stride=(1, 1), pad=(0, 0), dilation=(1, 1),
             use_bn=True, act_fn=None):
-        super(SeparableConv, self).__init__()
+        super(DWSeparableConv, self).__init__()
 
         self._conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
                               stride=stride, with_bias=False, group=in_channels)
@@ -378,7 +378,7 @@ class SeparableConv(Mo.Module):
 
     @staticmethod
     def build_from_config(config):
-        return SeparableConv(**config)
+        return DWSeparableConv(**config)
 
     def extra_repr(self):
         return get_extra_repr(self)
@@ -415,16 +415,16 @@ class XceptionBlock(Mo.Module):
             mid_channels = make_divisible(round(in_channels * expand_ratio))
 
         rep.append(Mo.ReLU(inplace=False))
-        rep.append(SeparableConv(in_channels, mid_channels,
+        rep.append(DWSeparableConv(in_channels, mid_channels,
                    kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
         for _ in range(reps-2):
             rep.append(Mo.ReLU(inplace=True))
-            rep.append(SeparableConv(mid_channels, mid_channels,
+            rep.append(DWSeparableConv(mid_channels, mid_channels,
                        kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
         rep.append(Mo.ReLU(inplace=True))
-        rep.append(SeparableConv(mid_channels, out_channels,
+        rep.append(DWSeparableConv(mid_channels, out_channels,
                    kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
         if not start_with_relu:
