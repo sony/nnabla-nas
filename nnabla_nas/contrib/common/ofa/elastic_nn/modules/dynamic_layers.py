@@ -135,7 +135,7 @@ class DynamicMBConvLayer(Mo.Module):
             self.inverted_bottleneck = None
         else:
             self.inverted_bottleneck = Mo.Sequential(OrderedDict([
-                ('conv', DynamicConv(max(self._in_channel_list), max_middle_channel)),
+                ('conv', DynamicConv(max(self._in_channel_list), max_middle_channel, kernel=(1, 1))),
                 ('bn', DynamicBatchNorm(max_middle_channel, 4)),
                 ('act', build_activation(self._act_func)),
             ]))
@@ -149,7 +149,7 @@ class DynamicMBConvLayer(Mo.Module):
         self.depth_conv = Mo.Sequential(OrderedDict(depth_conv_list))
 
         self.point_linear = Mo.Sequential(OrderedDict([
-            ('conv', DynamicConv(max_middle_channel, max(self._out_channel_list))),
+            ('conv', DynamicConv(max_middle_channel, max(self._out_channel_list), kernel=(1, 1))),
             ('bn', DynamicBatchNorm(max(self._out_channel_list), 4)),
         ]))
 
@@ -323,7 +323,7 @@ class DynamicXPLayer(Mo.Module):
         ]))
 
         self._point_linear1 = Mo.Sequential(OrderedDict([
-            ('ptconv', DynamicConv(max(self._in_channel_list), max_middle_channel)),
+            ('ptconv', DynamicConv(max(self._in_channel_list), max_middle_channel, kernel=(1, 1))),
             ('bn', DynamicBatchNorm(max_middle_channel, 4))
         ]))
 
@@ -333,7 +333,7 @@ class DynamicXPLayer(Mo.Module):
         ]))
 
         self._point_linear2 = Mo.Sequential(OrderedDict([
-            ('ptconv', DynamicConv(max_middle_channel, max_middle_channel)),
+            ('ptconv', DynamicConv(max_middle_channel, max_middle_channel, kernel=(1, 1))),
             ('bn', DynamicBatchNorm(max_middle_channel, 4))
         ]))
 
@@ -343,7 +343,7 @@ class DynamicXPLayer(Mo.Module):
         ]))
 
         self._point_linear3 = Mo.Sequential(OrderedDict([
-            ('ptconv', DynamicConv(max_middle_channel, max(self._out_channel_list))),
+            ('ptconv', DynamicConv(max_middle_channel, max(self._out_channel_list), kernel=(1, 1))),
             ('bn', DynamicBatchNorm(max(self._out_channel_list), 4))
         ]))
 

@@ -107,8 +107,8 @@ class DynamicConv(Mo.Module):
             dimensions. Defaults to (1, 1).
     """
 
-    def __init__(self, max_in_channels, max_out_channels,
-                 kernel=(1, 1), stride=(1, 1), dilation=(1, 1)):
+    def __init__(self, max_in_channels, max_out_channels, kernel,
+                 stride=(1, 1), dilation=(1, 1)):
         super(DynamicConv, self).__init__()
 
         self._scope_name = f'<dynamicconv2d at {hex(id(self))}>'
