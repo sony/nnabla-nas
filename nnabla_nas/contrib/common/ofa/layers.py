@@ -70,15 +70,6 @@ def get_extra_repr(cur_obj):
     return repr
 
 
-def force_tuple2(value):
-    if value is None:
-        return value
-    if hasattr(value, '__len__'):
-        assert len(value) == 2
-        return value
-    return (value,) * 2
-
-
 def build_activation(act_func, inplace=False):
     if act_func == 'relu':
         return Mo.ReLU(inplace=inplace)
