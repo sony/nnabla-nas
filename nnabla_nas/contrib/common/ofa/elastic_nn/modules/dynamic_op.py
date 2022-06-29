@@ -89,7 +89,7 @@ class DynamicSE(SEModule):
         return input * y
 
 
-class DynamicConv2d(Mo.Module):
+class DynamicConv(Mo.Module):
 
     r"""Convolution layer with dynamic channel size.
 
@@ -109,7 +109,7 @@ class DynamicConv2d(Mo.Module):
 
     def __init__(self, max_in_channels, max_out_channels,
                  kernel=(1, 1), stride=(1, 1), dilation=(1, 1)):
-        super(DynamicConv2d, self).__init__()
+        super(DynamicConv, self).__init__()
 
         self._scope_name = f'<dynamicconv2d at {hex(id(self))}>'
         self._max_in_channels = max_in_channels
