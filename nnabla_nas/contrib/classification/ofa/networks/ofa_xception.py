@@ -177,9 +177,9 @@ class OFAXceptionNet(ClassificationModel):
         self.exitblocks = Mo.ModuleList(self.exitblocks)
 
         self.expand_block1 = DWSeparableConv(width_list[-3], width_list[-2], (3, 3),
-                                           (1, 1), (1, 1), use_bn=True, act_fn='relu')
+                                             (1, 1), (1, 1), use_bn=True, act_fn='relu')
         self.expand_block2 = DWSeparableConv(width_list[-2], last_channel, (3, 3),
-                                           (1, 1), (1, 1), use_bn=True, act_fn='relu')
+                                             (1, 1), (1, 1), use_bn=True, act_fn='relu')
 
         # use a global average pooling before this FC Layer
         self.classifier = LinearLayer(last_channel, num_classes, drop_rate=drop_rate)

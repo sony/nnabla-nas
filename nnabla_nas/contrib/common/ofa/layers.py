@@ -418,7 +418,7 @@ class XceptionBlock(Mo.Module):
         rep.append(DWSeparableConv(in_channels, mid_channels,
                    kernel=kernel, stride=(1, 1), pad=(1, 1)))
 
-        for _ in range(reps-2):
+        for _ in range(reps - 2):
             rep.append(Mo.ReLU(inplace=True))
             rep.append(DWSeparableConv(mid_channels, mid_channels,
                        kernel=kernel, stride=(1, 1), pad=(1, 1)))
