@@ -29,7 +29,7 @@ from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoo
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
 from ....common.ofa.utils.common_tools import init_models
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicMBConvLayer
-from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
+from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
 
 
 CANDIDATES = {
@@ -224,7 +224,7 @@ class OFAMbv3Net(ClassificationModel):
 
         # set static/dynamic bn
         for _, m in self.get_modules():
-            if isinstance(m, DynamicBatchNorm2d):
+            if isinstance(m, DynamicBatchNorm):
                 if len(self._expand_ratio_list) > 1:
                     m.use_static_bn = False
                 else:

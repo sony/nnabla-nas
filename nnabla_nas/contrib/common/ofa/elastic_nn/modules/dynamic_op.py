@@ -138,7 +138,7 @@ class DynamicConv(Mo.Module):
                              stride=self._stride, dilation=self._dilation, group=1)
 
 
-class DynamicBatchNorm2d(Mo.Module):
+class DynamicBatchNorm(Mo.Module):
 
     r"""Batch normalization layer with dynamic channel size.
 
@@ -148,7 +148,7 @@ class DynamicBatchNorm2d(Mo.Module):
     """
 
     def __init__(self, max_feature_dim, n_dims):
-        super(DynamicBatchNorm2d, self).__init__()
+        super(DynamicBatchNorm, self).__init__()
 
         self._scope_name = f'<dynamicbatchnorm2d at {hex(id(self))}>'
 

@@ -24,7 +24,7 @@ from ..... import module as Mo
 from ....common.ofa.layers import ConvLayer, LinearLayer, DWSeparableConv, XceptionBlock
 from ....common.ofa.layers import set_bn_param, get_bn_param
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicXPLayer
-from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm2d
+from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
 from ....common.ofa.utils.common_tools import val2list, make_divisible, cross_entropy_loss_with_label_smoothing
 
 
@@ -192,7 +192,7 @@ class OFAXceptionNet(ClassificationModel):
 
         # set static/dynamic bn
         for _, m in self.get_modules():
-            if isinstance(m, DynamicBatchNorm2d):
+            if isinstance(m, DynamicBatchNorm):
                 if len(self._expand_ratio_list) > 1:
                     m.use_static_bn = False
                 else:

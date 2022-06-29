@@ -22,7 +22,7 @@ from ...... import module as Mo
 from ...layers import MBConvLayer, SEModule, XceptionBlock
 from ...layers import set_layer_from_config, build_activation, get_extra_repr
 from ...utils.common_tools import val2list, make_divisible
-from .dynamic_op import DynamicConv, DynamicBatchNorm2d, DynamicDepthwiseConv, DynamicSE
+from .dynamic_op import DynamicConv, DynamicBatchNorm, DynamicDepthwiseConv, DynamicSE
 
 
 def adjust_bn_according_to_idx(bn, idx):
@@ -78,7 +78,7 @@ class DynamicConvLayer(Mo.Module):
             kernel=self._kernel, stride=self._stride, dilation=self._dilation,
         )
         if self._use_bn:
-            self.bn = DynamicBatchNorm2d(max(self._out_channel_list), 4)
+            self.bn = DynamicBatchNorm(max(self._out_channel_list), 4)
 
         self.act = build_activation(self._act_func)
 
@@ -136,12 +136,12 @@ class DynamicMBConvLayer(Mo.Module):
         else:
             self.inverted_bottleneck = Mo.Sequential(OrderedDict([
                 ('conv', DynamicConv(max(self._in_channel_list), max_middle_channel)),
-                ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
+                ('bn', DynamicBatchNorm(max_middle_channel, 4)),
                 ('act', build_activation(self._act_func)),
             ]))
         depth_conv_list = [
             ('conv', DynamicDepthwiseConv(max_middle_channel, self._kernel_size_list, self._stride)),
-            ('bn', DynamicBatchNorm2d(max_middle_channel, 4)),
+            ('bn', DynamicBatchNorm(max_middle_channel, 4)),
             ('act', build_activation(self._act_func))
         ]
         if self._use_se:
@@ -150,7 +150,7 @@ class DynamicMBConvLayer(Mo.Module):
 
         self.point_linear = Mo.Sequential(OrderedDict([
             ('conv', DynamicConv(max_middle_channel, max(self._out_channel_list))),
-            ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4)),
+            ('bn', DynamicBatchNorm(max(self._out_channel_list), 4)),
         ]))
 
         self.active_kernel_size = max(self._kernel_size_list)
@@ -324,7 +324,7 @@ class DynamicXPLayer(Mo.Module):
 
         self._point_linear1 = Mo.Sequential(OrderedDict([
             ('ptconv', DynamicConv(max(self._in_channel_list), max_middle_channel)),
-            ('bn', DynamicBatchNorm2d(max_middle_channel, 4))
+            ('bn', DynamicBatchNorm(max_middle_channel, 4))
         ]))
 
         self._depth_conv2 = Mo.Sequential(OrderedDict([
@@ -334,7 +334,7 @@ class DynamicXPLayer(Mo.Module):
 
         self._point_linear2 = Mo.Sequential(OrderedDict([
             ('ptconv', DynamicConv(max_middle_channel, max_middle_channel)),
-            ('bn', DynamicBatchNorm2d(max_middle_channel, 4))
+            ('bn', DynamicBatchNorm(max_middle_channel, 4))
         ]))
 
         self._depth_conv3 = Mo.Sequential(OrderedDict([
@@ -344,7 +344,7 @@ class DynamicXPLayer(Mo.Module):
 
         self._point_linear3 = Mo.Sequential(OrderedDict([
             ('ptconv', DynamicConv(max_middle_channel, max(self._out_channel_list))),
-            ('bn', DynamicBatchNorm2d(max(self._out_channel_list), 4))
+            ('bn', DynamicBatchNorm(max(self._out_channel_list), 4))
         ]))
 
         self.runtime_depth = depth
