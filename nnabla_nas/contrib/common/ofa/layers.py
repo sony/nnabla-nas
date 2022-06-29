@@ -359,19 +359,17 @@ class DWSeparableConv(Mo.Module):
         self._pointwise = Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1),
                                   pad=(0, 0), dilation=(1, 1), group=1, with_bias=False)
 
-        self._use_bn = use_bn
-        if use_bn:
-            self._bn = Mo.BatchNormalization(out_channels, 4)
+        self._bn = Mo.BatchNormalization(out_channels, 4) if use_bn else None
         self._act = build_activation(act_fn)
 
     def call(self, x):
         x = self._conv1(x)
         x = self._pointwise(x)
 
-        if self.use_bn:
+        if self._bn is not None:
             x = self._bn(x)
 
-        if self.act is not None:
+        if self._act is not None:
             x = self._act(x)
 
         return x
