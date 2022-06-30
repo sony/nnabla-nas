@@ -162,7 +162,7 @@ mpirun -n 4 python main.py -f examples/classification/fairnas/fairnas_imagenet_t
                -a Trainer \
                -o log/classification/fairnas/imagenet/retrain/
 
-#---------------------- OFA ----------------------------#
+#---------------------- OFA-MobileNetV3 (ImageNet) ----------------------------#
 mpirun -n 4 python main.py \
                -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_fullnet.json \
                -a OFASearcher \
@@ -200,7 +200,7 @@ mpirun -n 4 python main.py \
 #------------------------------------------------------------------#
 
 
-#---------------------- OFA_XCEPTION ----------------------------#
+#---------------------- OFA-XCEPTION(ImageNet) ----------------------------#
 mpirun -n 4 python main.py \
                -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_fullnet.json \
                -a OFASearcher \
@@ -238,7 +238,7 @@ mpirun -n 4 python main.py \
 #------------------------------------------------------------------#
 
 
-#---------------------- CompOFA ----------------------------#
+#---------------------- CompOFA-MobileNetV3 (ImageNet) ----------------------------#
 mpirun -n 4 python main.py --search \
                -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_comp_phase1.json \
                -a OFASearcher \
