@@ -71,9 +71,16 @@ def get_extra_repr(cur_obj):
 
 
 def get_active_padding(kernel, stride, dilation):
-    # returns the padding required such that
-    # [output_size = input_size/stride]
-    # Assumption: padding is equal in both dimensions
+    r"""
+        Returns the padding required (as a tuple) such that
+        [output_size = input_size/stride] after convolution
+        Assumption: padding is equal in both dimensions
+
+    Args:
+        kernel (int): kernel size as an int (assuming equal in both dimensions)
+        stride (int): stride size as an int (assuming equal in both dimensions)
+        dilation (int): dilation size as an int (assuming equal in both dimensions)
+    """
     pad = math.ceil(stride * ((kernel + (kernel-1)*(dilation-1))/stride - 1) / 2)
     return (pad, pad)
 
@@ -347,6 +354,32 @@ class SEModule(Mo.Module):
 
 
 class DWSeparableConv(Mo.Module):
+
+    r"""Depthwise-Separable Conv Layer
+
+    This is an implementation of a depthwise-separable convolution layer.
+    Structure followed:
+        DepthwiseConv-PointwiseConv-BatchNorm(Optional)-Activation(Optional)
+
+    Args:
+        in_channels (int): Number of convolution kernels in the
+            depthwise convolution (which is equal to the number
+            of input channels).
+        out_channels (int): Number of convolution kernels in the pointwise
+            convolution (which is equal to the number of output channels).
+        kernel (tuple of int, optional): Convolution kernel size for the
+            depthwise convolution. Defaults to (1, 1)
+        stride (tuple of int, optional): Stride sizes for the depthwise
+            convolution. Defaults to (1, 1).
+        pad (tuple of int, optional): Padding sizes for the depthwise
+            convolution layer. Defaults to (0, 0)
+        dilation (tuple of int, optional): Dilation sizes for the
+            depthwise convolution layer. Defaults to (1, 1)
+        use_bn (bool, optional): If True, BatchNormalization layer is added.
+            Defaults to True.
+        act_func (str, optional) Type of activation. Defaults to None.
+    """
+
     def __init__(
             self, in_channels, out_channels, kernel=(1, 1),
             stride=(1, 1), pad=(0, 0), dilation=(1, 1),
@@ -383,8 +416,33 @@ class DWSeparableConv(Mo.Module):
 
 class XceptionBlock(Mo.Module):
 
-    r""" TODO: Description
-    Note: `assert reps in  [2, 3]`
+    r"""XceptionBlock
+
+    This is the primary static XceptionBlock used in
+    EntryFlow, MiddleFlow and ExitFlow of the Xception
+    Models
+
+    Args:
+        in_channels (int): Number of convolution kernels in the input
+            layer (which is equal to the number of input channels).
+        out_channels (int): Number of convolution kernels in the last
+            layer (which is equal to the number of output channels).
+        reps (int): Number of ReLU+DWSeparableConv layers in the block.
+            Choices: reps must be in [2, 3]
+        kernel (tuple of int, optional): Convolution kernel size for the
+            DWSeparableConv layers in this block. Defaults to (3, 3)
+        stride (tuple of int, optional): Stride sizes for residual
+            connections and maxpool layers. Defaults to (1, 1).
+        start_with_relu (bool, optional): Sets the first layer of the
+            block as ReLU, otherwise skips this. Defaults to True
+        grow_first (bool, optional): Sets mid_channels to out_channels if True,
+            else sets mid_channels to in_channels. The effect of this
+            argument is rendered useless when expand_ratio is not None.
+            Defaults to True
+        expand_ratio (float, optional): Used for calculating the number
+            of mid_channels. This is especially useful when this block
+            is constructed by DynamicXPLayer for building the subnet.
+            Defaults to None
     """
 
     def __init__(

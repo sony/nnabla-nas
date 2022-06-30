@@ -31,6 +31,14 @@ from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_targe
 
 
 class ProcessGenotype:
+
+    r""" ProcessGenotype
+
+    This class defines the search space and contains functions
+    to process the genotypes and op_candidates to get the subnet
+    architecture or the search space.
+    """
+
     CANDIDATES = {}
     KERNEL_SEARCH_SPACE = [3, 5, 7]
     DEPTH_SEARCH_SPACE = [1, 2, 3]
@@ -74,26 +82,31 @@ class ProcessGenotype:
 
 
 class OFAXceptionNet(ClassificationModel):
-    r""" Xception41 Search Net
-    This implementation is based on the PyTorch implementation.
-    https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/xception.py
+
+    r"""Xception41 Base Class
+
+    This is the Base Class used for both TrainNet and SearchNet.
+    This implementation is based on the PyTorch implementation given in References.
 
     Args:
         num_classes (int): Number of classes
         bn_param (tuple, optional): BatchNormalization decay rate and eps.
-        drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.1.
-        base_stage_width (list of int, optional): A list of base stage
-            channel size. Defaults to None.
+        drop_rate (float, optional): Drop rate used in Dropout in classifier.
+            Defaults to 0.1.
+        base_stage_width (list of int, optional): A list of base stage channel size.
+            Defaults to None.
+        op_candidates (str or list of str, optional): Operator choices.
+            Defaults to "XP1 7x7 3" (the largest block in the search space).
         width_mult (float, optional): Multiplier value to base stage channel size.
             Defaults to 1.0.
-        op_candidates (str or list of str, optional): Operator choices.
-            Defaults to XP1 7x7 3.
         weight (str, optional): The path to weight file. Defaults to
             None.
 
     References:
-    [1] Cai, Han, et al. "Once-for-all: Train one network and specialize it for
-        efficient deployment." arXiv preprint arXiv:1908.09791 (2019).
+        [1] Cai, Han, et al. "Once-for-all: Train one network and specialize it for
+            efficient deployment." arXiv preprint arXiv:1908.09791 (2019).
+        [2] GitHub implementation of Xception41.
+            https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/xception.py
     """
 
     CHANNEL_DIVISIBLE = 8
@@ -384,6 +397,25 @@ class OFAXceptionNet(ClassificationModel):
 
 
 class SearchNet(OFAXceptionNet):
+
+    r"""Xception41 Search Net.
+
+    This defines the search space of OFA-Xception Model.
+
+    Args:
+        num_classes (int): Number of classes
+        bn_param (tuple, optional): BatchNormalization decay rate and eps.
+        drop_rate (float, optional): Drop rate used in Dropout of classifier.
+            Defaults to 0.1.
+        base_stage_width (list of int, optional): A list of base stage channel size.
+            Defaults to [32, 64, 128, 256, 728, 1024, 1536, 2048].
+        width_mult (float, optional): Multiplier value to base stage channel size.
+            Defaults to 1.0.
+        op_candidates (str or list of str, optional): Operator choices.
+            Defaults to "XP1 7x7 3" (the largest block in the search space)
+        weights (str, optional): The path to weight file. Defaults to None.
+    """
+
     def __init__(self,
                  num_classes=1000,
                  bn_param=(0.9, 1e-5),
@@ -407,19 +439,25 @@ class SearchNet(OFAXceptionNet):
 
 
 class TrainNet(OFAXceptionNet):
-    r""" Xception41 Train Net.
+    r"""Xception41 Train Net.
+
+    This builds and initialises the OFA-Xception subnet architecture which
+    is passed as a genotype list along with the corresponding op_candidates
+    list to decode the genotypes.
+
     Args:
         num_classes (int): Number of classes
         bn_param (tuple, optional): BatchNormalization decay rate and eps.
-        drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.1.
-        base_stage_width (list of int, optional): A list of base stage
-            channel size. Defaults to None.
+        drop_rate (float, optional): Drop rate used in Dropout of classifier.
+            Defaults to 0.1.
+        base_stage_width (list of int, optional): A list of base stage channel size.
+            Defaults to [32, 64, 128, 256, 728, 1024, 1536, 2048].
         width_mult (float, optional): Multiplier value to base stage channel size.
             Defaults to 1.0.
         op_candidates (str or list of str, optional): Operator choices.
-            Defaults to list of all op_candidates.
-        weight (str, optional): The path to weight file. Defaults to None.
-        genotype (list of int, optional): A list to operators, Defaults to None.
+            Defaults to None. [Necessary Argument]
+        genotype (list of int, optional): A list to operators. Defaults to None.
+        weights (str, optional): The path to weight file. Defaults to None.
     """
 
     def __init__(self,

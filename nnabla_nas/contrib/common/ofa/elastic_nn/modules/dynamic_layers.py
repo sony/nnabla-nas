@@ -289,7 +289,10 @@ class DynamicMBConvLayer(Mo.Module):
 
 class DynamicXPLayer(Mo.Module):
 
-    r"""The Xception block layers with depthwise separable convolution.
+    r"""Dynamic Xception Block
+
+    This block implements the dynamic version of MiddleFlow blocks of
+    Xception.
 
     Args:
         in_channel_list (list of int): Candidates for the number of
@@ -299,14 +302,15 @@ class DynamicXPLayer(Mo.Module):
         kernel_size_list (list of int or int): Candidates for the kernel size.
             Defaults to 3.
         expand_ratio_list (list of int or int): Candidates for the expand
-            ratio. Defaults to 6.
+            ratio. Defaults to 1.
         stride (tuple of int, optional): Stride sizes for dimensions.
             Defaults to (1, 1).
-        depth (int, optional): _description_. Defaults to 3.
+        depth (int, optional): Initialise the runtime depth.
+            Defaults to 3 (which is the maximum depth).
     """
 
     def __init__(self, in_channel_list, out_channel_list,
-                 kernel_size_list=3, expand_ratio_list=6, stride=(1, 1), depth=3):
+                 kernel_size_list=3, expand_ratio_list=1, stride=(1, 1), depth=3):
         self._in_channel_list = in_channel_list
         self._out_channel_list = out_channel_list
         self._kernel_size_list = val2list(kernel_size_list)
