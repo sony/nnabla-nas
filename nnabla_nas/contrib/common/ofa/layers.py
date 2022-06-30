@@ -353,23 +353,23 @@ class DWSeparableConv(Mo.Module):
             use_bn=True, act_fn=None):
         super(DWSeparableConv, self).__init__()
 
-        self._dwconv = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
-                               stride=stride, with_bias=False, group=in_channels)
-        self._pointwise = Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1),
-                                  pad=(0, 0), dilation=(1, 1), group=1, with_bias=False)
+        self.dwconv = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
+                              stride=stride, with_bias=False, group=in_channels)
+        self.pointwise = Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1),
+                                 pad=(0, 0), dilation=(1, 1), group=1, with_bias=False)
 
-        self._bn = Mo.BatchNormalization(out_channels, 4) if use_bn else None
-        self._act = build_activation(act_fn)
+        self.bn = Mo.BatchNormalization(out_channels, 4) if use_bn else None
+        self.act = build_activation(act_fn)
 
     def call(self, x):
-        x = self._dwconv(x)
-        x = self._pointwise(x)
+        x = self.dwconv(x)
+        x = self.pointwise(x)
 
-        if self._bn is not None:
-            x = self._bn(x)
+        if self.bn is not None:
+            x = self.bn(x)
 
-        if self._act is not None:
-            x = self._act(x)
+        if self.act is not None:
+            x = self.act(x)
 
         return x
 
@@ -411,20 +411,21 @@ class XceptionBlock(Mo.Module):
             # as supplied by `get_active_subnet_config` of DynamicXPLayer
             mid_channels = make_divisible(round(in_channels * expand_ratio))
 
-        pad_separable = get_active_padding(kernel[0], 1, 1)
+        # calculate padding required in the dwconv of DWSeparableConv
+        pad_sep = get_active_padding(kernel[0], 1, 1)
 
         rep.append(('relu1', Mo.ReLU(inplace=False)))
         rep.append(('sepconv1', DWSeparableConv(in_channels, mid_channels,
-                    kernel=kernel, stride=(1, 1), pad=pad_separable)))
+                    kernel=kernel, stride=(1, 1), pad=pad_sep)))
 
         for idx in range(2, reps):
             rep.append((f'relu{idx}', Mo.ReLU(inplace=True)))
             rep.append((f'sepconv{idx}', DWSeparableConv(mid_channels, mid_channels,
-                        kernel=kernel, stride=(1, 1), pad=pad_separable)))
+                        kernel=kernel, stride=(1, 1), pad=pad_sep)))
 
         rep.append((f'relu{reps}', Mo.ReLU(inplace=True)))
         rep.append((f'sepconv{reps}', DWSeparableConv(mid_channels, out_channels,
-                    kernel=kernel, stride=(1, 1), pad=pad_separable)))
+                    kernel=kernel, stride=(1, 1), pad=pad_sep)))
 
         if not start_with_relu:
             rep = rep[1:]
