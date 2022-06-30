@@ -16,11 +16,14 @@
             "bn_param": [0.9, 1e-5],
             "drop_rate": 0.1,
             "op_candidates": [
-                "XP1 7x7 3", "XP1 5x5 3", "XP1 3x3 3", 
-                "XP1 7x7 2", "XP1 5x5 2", "XP1 3x3 2",
-                "XP1 7x7 1", "XP1 5x5 1", "XP1 3x3 1"
+                "XP1 3x3 1",    "XP1 3x3 2",    "XP1 3x3 3", 
+                "XP0.8 3x3 1",  "XP0.8 3x3 2",  "XP0.8 3x3 3", 
+                "XP1 5x5 1",    "XP1 5x5 2",    "XP1 5x5 3", 
+                "XP0.8 5x5 1",  "XP0.8 5x5 2",  "XP0.8 5x5 3", 
+                "XP1 7x7 1",    "XP1 7x7 2",    "XP1 7x7 3", 
+                "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3"
             ],
-            "weights": "log/classification/ofa_xception/imagenet/search/K357_E1_D23/checkpoint/weights.h5"
+            "weights": "log/classification/ofa/ofa_xception/imagenet/search/K357_E1_D123/checkpoint/weights.h5"
         }
     },
     "optimizer": {
@@ -28,27 +31,30 @@
             "weight_decay": 1e-5,
             "lr_scheduler": "StepScheduler",
             "name": "Momentum",
-            "lr": 0.03,
+            "lr": 0.02,
             "momentum": 0.9
             },
         "train_no_decay": {
             "weight_decay": 0,
             "lr_scheduler": "StepScheduler",
             "name": "Momentum",
-            "lr": 0.03,
+            "lr": 0.02,
             "momentum": 0.9
             }
     },
     "hparams": {
-        "task": "depth",
+        "task": "expand",
         "train_image_size_list": [128, 160, 192, 224],
         "valid_image_size_list": [160, 224],
         "valid_genotypes": [
-            [0, 1, 0, 2, 0, 0, 3, 2],
-            [0, 4, 0, 1, 2, 1, 3, 4],
-            [1, 1, 0, 2, 1, 1, 1, 2],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 1, 1, 1, 1, 1, 1]
+            [12, 12, 5, 5, 1, 4, 5, 8],
+            [2, 2, 5, 5, 2, 2, 0, 11],
+            [3, 3, 5, 9, 3, 3, 5, 5],
+            [5, 5, 17, 9, 5, 5, 4, 4],
+            [0, 0, 0, 0, 0, 10, 11, 12],
+            [2, 2, 2, 2, 2, 9, 2, 2],
+            [3, 3, 3, 3, 14, 3, 3, 3],
+            [5, 5, 5, 12, 5, 5, 5, 5]
         ],
         "input_shapes": [
             [3, 224, 224]
@@ -65,7 +71,7 @@
                 "bn_param": [0.9, 1e-5],
                 "drop_rate": 0,
                 "op_candidates": ["XP1 7x7 3"],
-                "weights": "log/classification/ofa_xception/imagenet/search/K7_E1_D3/checkpoint/weights.h5"
+                "weights": "log/classification/ofa/ofa_xception/imagenet/search/K7_E1_D3/checkpoint/weights.h5"
             }
         },
         "epoch": 30,

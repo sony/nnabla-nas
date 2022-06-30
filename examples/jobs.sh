@@ -164,87 +164,87 @@ mpirun -n 4 python main.py -f examples/classification/fairnas/fairnas_imagenet_t
 
 #---------------------- OFA ----------------------------#
 mpirun -n 4 python main.py \
-               -f examples/classification/ofa/ofa_imagenet_search_fullnet.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_fullnet.json \
                -a OFASearcher \
-               -o log/classification/ofa/imagenet/search/K7_E6_D4/
+               -o log/classification/ofa/ofa_mbv3/imagenet/search/K7_E6_D4/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_imagenet_search_kernel.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_kernel.json \
                -a OFASearcher \
-               -o log/classification/ofa/imagenet/search/K357_E6_D4/
+               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D4/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_imagenet_search_depth_phase1.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_depth_phase1.json \
                -a OFASearcher \
-               -o log/classification/ofa/imagenet/search/K357_E6_D34/
+               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D34/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_imagenet_search_depth_phase2.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_depth_phase2.json \
                -a OFASearcher \
-               -o log/classification/ofa/imagenet/search/K357_E6_D234/
+               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D234/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_imagenet_search_expand_phase1.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_expand_phase1.json \
                -a OFASearcher \
-               -o log/classification/ofa/imagenet/search/K357_E46_D234/
+               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E46_D234/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_imagenet_search_expand_phase2.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_expand_phase2.json \
                -a OFASearcher \
-               -o log/classification/ofa/imagenet/search/K357_E346_D234/
+               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/
 
 mpirun -n 4 python main.py \
-               -f examples/classification/ofa/ofa_imagenet_train_subnet.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_train_subnet.json \
                -a OFATrainer \
-               -o log/classification/ofa/imagenet/train_subnet/
+               -o log/classification/ofa/ofa_mbv3/imagenet/train_subnet/
 #------------------------------------------------------------------#
 
 
 #---------------------- OFA_XCEPTION ----------------------------#
 mpirun -n 4 python main.py \
-               -f examples/classification/ofa_xception/ofa_imagenet_search_fullnet.json \
+               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_fullnet.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K7_E1_D3/
+               -o log/classification/ofa/ofa_xception/imagenet/search/K7_E1_D3/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa_xception/ofa_imagenet_search_kernel.json \
+               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_kernel.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E1_D3/
+               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E1_D3/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa_xception/ofa_imagenet_search_depth_phase1.json \
+               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_depth_phase1.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E1_D23/
+               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E1_D23/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa_xception/ofa_imagenet_search_depth_phase2.json \
+               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_depth_phase2.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E1_D123/
+               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E1_D123/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa_xception/ofa_imagenet_search_expand_phase1.json \
+               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_expand_phase1.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E0.8+1_D123/
+               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E0.8+1_D123/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa_xception/ofa_imagenet_search_expand_phase2.json \
+               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_expand_phase2.json \
                -a OFASearcher \
-               -o log/classification/ofa_xception/imagenet/search/K357_E0.6+0.8+1_D123/
+               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E0.6+0.8+1_D123/
 
 mpirun -n 4 python main.py \
-               -f examples/classification/ofa_xception/ofa_imagenet_train_subnet.json \
+               -f examples/classification/ofa/ofa_xception/ofa_imagenet_train_subnet.json \
                -a OFATrainer \
-               -o log/classification/ofa_xception/imagenet/train_subnet/
+               -o log/classification/ofa/ofa_xception/imagenet/train_subnet/
 #------------------------------------------------------------------#
 
 
 #---------------------- CompOFA ----------------------------#
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_imagenet_search_comp_phase1.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_comp_phase1.json \
                -a OFASearcher \
-               -o log/classification/ofa/imagenet/search/K357_E346_D234/phase1/
+               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/phase1/
 
 mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_imagenet_search_comp_phase2.json \
+               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_comp_phase2.json \
                -a OFASearcher \
-               -o log/classification/ofa/imagenet/search/K357_E346_D234/phase2/
+               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/phase2/
