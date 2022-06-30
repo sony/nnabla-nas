@@ -428,7 +428,7 @@ class XceptionBlock(Mo.Module):
         out_channels (int): Number of convolution kernels in the last
             layer (which is equal to the number of output channels).
         reps (int): Number of ReLU+DWSeparableConv layers in the block.
-            Choices: reps must be in [2, 3]
+            If reps==1, grow_first and expand_ratio will be ignored.
         kernel (tuple of int, optional): Convolution kernel size for the
             DWSeparableConv layers in this block. Defaults to (3, 3)
         stride (tuple of int, optional): Stride sizes for residual
@@ -472,21 +472,21 @@ class XceptionBlock(Mo.Module):
         # calculate padding required in the dwconv of DWSeparableConv
         pad_sep = get_active_padding(kernel[0], 1, 1)
 
-        rep.append(('relu1', Mo.ReLU(inplace=False)))
-        rep.append(('sepconv1', DWSeparableConv(in_channels, mid_channels,
-                    kernel=kernel, stride=(1, 1), pad=pad_sep)))
+        # if reps==1, we just have a single DWSeparableConv and hence,
+        # mid_channels is not required. grow_first and expand_ratio
+        # are ignored completely.
+        for idx in range(1, reps + 1):
+            inp_c = in_channels if idx == 1 else mid_channels
+            out_c = out_channels if idx == reps else mid_channels
 
-        for idx in range(2, reps):
             rep.append((f'relu{idx}', Mo.ReLU(inplace=True)))
-            rep.append((f'sepconv{idx}', DWSeparableConv(mid_channels, mid_channels,
+            rep.append((f'sepconv{idx}', DWSeparableConv(inp_c, out_c,
                         kernel=kernel, stride=(1, 1), pad=pad_sep)))
-
-        rep.append((f'relu{reps}', Mo.ReLU(inplace=True)))
-        rep.append((f'sepconv{reps}', DWSeparableConv(mid_channels, out_channels,
-                    kernel=kernel, stride=(1, 1), pad=pad_sep)))
 
         if not start_with_relu:
             rep = rep[1:]
+        else:
+            rep[0] = ('relu1', Mo.ReLU(inplace=False))
 
         if stride != (1, 1):
             rep.append(('maxpool', Mo.MaxPool((3, 3), stride=stride, pad=(1, 1))))

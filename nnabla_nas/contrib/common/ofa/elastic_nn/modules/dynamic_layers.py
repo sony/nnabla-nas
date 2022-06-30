@@ -456,25 +456,35 @@ class DynamicXPLayer(Mo.Module):
 
         active_filter = self._depth_conv1.dwconv.get_active_filter(in_channel, self.active_kernel_size)
         sub_layer.rep.sepconv1.dwconv._W.d = active_filter.d
-
-        active_filter = self._depth_conv2.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
-        sub_layer.rep.sepconv2.dwconv._W.d = active_filter.d
-
-        active_filter = self._depth_conv3.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
-        sub_layer.rep.sepconv3.dwconv._W.d = active_filter.d
-
         copy_bn(sub_layer.rep.sepconv1.bn, self._point_linear1.bn.bn)
-        copy_bn(sub_layer.rep.sepconv2.bn, self._point_linear2.bn.bn)
-        copy_bn(sub_layer.rep.sepconv3.bn, self._point_linear3.bn.bn)
 
-        sub_layer.rep.sepconv1.pointwise._W.d =\
-            self._point_linear1.ptconv.conv._W.d[:middle_channel, :in_channel, :, :]
+        if self.runtime_depth == 1:
+            sub_layer.rep.sepconv1.pointwise._W.d =\
+                self._point_linear1.ptconv.conv._W.d[:self.active_out_channel, :in_channel, :, :]
 
-        sub_layer.rep.sepconv2.pointwise._W.d =\
-            self._point_linear2.ptconv.conv._W.d[:middle_channel, :middle_channel, :, :]
+        if self.runtime_depth > 1:
+            active_filter = self._depth_conv2.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
+            sub_layer.rep.sepconv2.dwconv._W.d = active_filter.d
 
-        sub_layer.rep.sepconv3.pointwise._W.d =\
-            self._point_linear3.ptconv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
+            copy_bn(sub_layer.rep.sepconv2.bn, self._point_linear2.bn.bn)
+
+            sub_layer.rep.sepconv1.pointwise._W.d =\
+                self._point_linear1.ptconv.conv._W.d[:middle_channel, :in_channel, :, :]
+
+        if self.runtime_depth == 2:
+            sub_layer.rep.sepconv2.pointwise._W.d =\
+                self._point_linear2.ptconv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
+
+        if self.runtime_depth > 2:
+            active_filter = self._depth_conv3.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
+            sub_layer.rep.sepconv3.dwconv._W.d = active_filter.d
+            copy_bn(sub_layer.rep.sepconv3.bn, self._point_linear3.bn.bn)
+
+            sub_layer.rep.sepconv2.pointwise._W.d =\
+                self._point_linear2.ptconv.conv._W.d[:middle_channel, :middle_channel, :, :]
+
+            sub_layer.rep.sepconv3.pointwise._W.d =\
+                self._point_linear3.ptconv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
 
         nn.set_auto_forward(False)
 
@@ -485,7 +495,7 @@ class DynamicXPLayer(Mo.Module):
             'name': XceptionBlock.__name__,
             'in_channels': in_channels,
             'out_channels': self.active_out_channel,
-            'reps': 3,
+            'reps': self.runtime_depth,
             'kernel': (self.active_kernel_size, self.active_kernel_size),
             'stride': self._stride,
             'expand_ratio': self.active_expand_ratio,
