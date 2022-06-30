@@ -451,25 +451,25 @@ class DynamicXPLayer(Mo.Module):
         middle_channel = self.active_middle_channel(in_channel)
 
         active_filter = self._depth_conv1.dwconv.get_active_filter(in_channel, self.active_kernel_size)
-        sub_layer.depth_conv1.dwconv._W.d = active_filter.d
+        sub_layer.rep.sepconv1._dwconv._W.d = active_filter.d
 
         active_filter = self._depth_conv2.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
-        sub_layer.depth_conv2.dwconv._W.d = active_filter.d
+        sub_layer.rep.sepconv2._dwconv._W.d = active_filter.d
 
         active_filter = self._depth_conv3.dwconv.get_active_filter(middle_channel, self.active_kernel_size)
-        sub_layer.depth_conv3.dwconv._W.d = active_filter.d
+        sub_layer.rep.sepconv3._dwconv._W.d = active_filter.d
 
-        copy_bn(sub_layer.point_linear1.bn, self._point_linear1.bn.bn)
-        copy_bn(sub_layer.point_linear2.bn, self._point_linear2.bn.bn)
-        copy_bn(sub_layer.point_linear3.bn, self._point_linear3.bn.bn)
+        copy_bn(sub_layer.rep.sepconv1._bn, self._point_linear1.bn.bn)
+        copy_bn(sub_layer.rep.sepconv2._bn, self._point_linear2.bn.bn)
+        copy_bn(sub_layer.rep.sepconv3._bn, self._point_linear3.bn.bn)
 
-        sub_layer.point_linear1.ptconv._W.d =\
+        sub_layer.rep.sepconv1._pointwise._W.d =\
             self._point_linear1.ptconv.conv._W.d[:middle_channel, :in_channel, :, :]
 
-        sub_layer.point_linear2.ptconv._W.d =\
+        sub_layer.rep.sepconv2._pointwise._W.d =\
             self._point_linear2.ptconv.conv._W.d[:middle_channel, :middle_channel, :, :]
 
-        sub_layer.point_linear3.ptconv._W.d =\
+        sub_layer.rep.sepconv3._pointwise._W.d =\
             self._point_linear3.ptconv.conv._W.d[:self.active_out_channel, :middle_channel, :, :]
 
         nn.set_auto_forward(False)

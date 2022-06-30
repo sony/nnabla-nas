@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import math
 from collections import OrderedDict
 
 import nnabla.functions as F
@@ -68,6 +68,14 @@ def get_extra_repr(cur_obj):
 
     repr += ')'
     return repr
+
+
+def get_active_padding(kernel, stride, dilation):
+    # returns the padding required such that
+    # [output_size = input_size/stride]
+    # Assumption: padding is equal in both dimensions
+    pad = math.ceil(stride * ((kernel + (kernel-1)*(dilation-1))/stride - 1) / 2)
+    return (pad, pad)
 
 
 def build_activation(act_func, inplace=False):
@@ -345,8 +353,8 @@ class DWSeparableConv(Mo.Module):
             use_bn=True, act_fn=None):
         super(DWSeparableConv, self).__init__()
 
-        self._conv1 = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
-                              stride=stride, with_bias=False, group=in_channels)
+        self._dwconv = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
+                               stride=stride, with_bias=False, group=in_channels)
         self._pointwise = Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1),
                                   pad=(0, 0), dilation=(1, 1), group=1, with_bias=False)
 
@@ -354,7 +362,7 @@ class DWSeparableConv(Mo.Module):
         self._act = build_activation(act_fn)
 
     def call(self, x):
-        x = self._conv1(x)
+        x = self._dwconv(x)
         x = self._pointwise(x)
 
         if self._bn is not None:
@@ -403,28 +411,30 @@ class XceptionBlock(Mo.Module):
             # as supplied by `get_active_subnet_config` of DynamicXPLayer
             mid_channels = make_divisible(round(in_channels * expand_ratio))
 
-        rep.append(Mo.ReLU(inplace=False))
-        rep.append(DWSeparableConv(in_channels, mid_channels,
-                   kernel=kernel, stride=(1, 1), pad=(1, 1)))
+        pad_separable = get_active_padding(kernel[0], 1, 1)
 
-        for _ in range(reps - 2):
-            rep.append(Mo.ReLU(inplace=True))
-            rep.append(DWSeparableConv(mid_channels, mid_channels,
-                       kernel=kernel, stride=(1, 1), pad=(1, 1)))
+        rep.append(('relu1', Mo.ReLU(inplace=False)))
+        rep.append(('sepconv1', DWSeparableConv(in_channels, mid_channels,
+                    kernel=kernel, stride=(1, 1), pad=pad_separable)))
 
-        rep.append(Mo.ReLU(inplace=True))
-        rep.append(DWSeparableConv(mid_channels, out_channels,
-                   kernel=kernel, stride=(1, 1), pad=(1, 1)))
+        for idx in range(2, reps):
+            rep.append((f'relu{idx}', Mo.ReLU(inplace=True)))
+            rep.append((f'sepconv{idx}', DWSeparableConv(mid_channels, mid_channels,
+                        kernel=kernel, stride=(1, 1), pad=pad_separable)))
+
+        rep.append((f'relu{reps}', Mo.ReLU(inplace=True)))
+        rep.append((f'sepconv{reps}', DWSeparableConv(mid_channels, out_channels,
+                    kernel=kernel, stride=(1, 1), pad=pad_separable)))
 
         if not start_with_relu:
             rep = rep[1:]
 
         if stride != (1, 1):
-            rep.append(Mo.MaxPool((3, 3), stride=stride, pad=(1, 1)))
-        self._rep = Mo.Sequential(*rep)
+            rep.append(('maxpool', Mo.MaxPool((3, 3), stride=stride, pad=(1, 1))))
+        self.rep = Mo.Sequential(OrderedDict(rep))
 
     def call(self, inp):
-        x = self._rep(inp)
+        x = self.rep(inp)
 
         if self._skip is not None:
             skip = self._skip(inp)
