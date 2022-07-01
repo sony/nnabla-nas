@@ -11,19 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import random
 from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
-import random
-
 import nnabla.logger as logger
 
 from ...base import ClassificationModel
 from ..... import module as Mo
 from ....common.ofa.layers import ConvLayer, LinearLayer, DWSeparableConv, XceptionBlock
 from ....common.ofa.layers import set_bn_param, get_bn_param
-from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicXPLayer
+from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicMiddleFlowXPBlock
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
 from ....common.ofa.utils.common_tools import val2list, make_divisible
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoothing
@@ -37,6 +36,16 @@ class ProcessGenotype:
     This class defines the search space and contains functions
     to process the genotypes and op_candidates to get the subnet
     architecture or the search space.
+
+    Operator candidates: "XP{E} {K}x{K} {D}"
+                         E=expand_ratio
+                         K=kernel_size
+                         D=depth_of_block
+
+    Note: If depth of a block==1, expand_ratio will be ignored since we
+          just need in_channels and out_channels for a block with a single
+          layer. So blocks: ["XP0.6 KxK 1", "XP0.8 KxK 1", "XP1 KxK 1"]
+          are equivalent in this architecture design.
     """
 
     CANDIDATES = {}
@@ -175,7 +184,7 @@ class OFAXceptionNet(ClassificationModel):
         self.middleblocks = []
         for depth in self._middle_flow_max_depth_list:
             # 8 blocks with each block having 1/2/3 layers of relu+sep_conv
-            self.middleblocks.append(DynamicXPLayer(
+            self.middleblocks.append(DynamicMiddleFlowXPBlock(
                 in_channel_list=val2list(mid_block_width),
                 out_channel_list=val2list(mid_block_width),
                 kernel_size_list=self._ks_list,

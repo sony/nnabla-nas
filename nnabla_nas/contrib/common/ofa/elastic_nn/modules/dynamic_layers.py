@@ -287,11 +287,11 @@ class DynamicMBConvLayer(Mo.Module):
         }
 
 
-class DynamicXPLayer(Mo.Module):
+class DynamicMiddleFlowXPBlock(Mo.Module):
 
-    r"""Dynamic Xception Block
+    r"""Dynamic Middle Flow Xception Block
 
-    This block implements the dynamic version of MiddleFlow blocks of
+    This block implements the dynamic version of MiddleFlow blocks for
     Xception.
 
     Args:
