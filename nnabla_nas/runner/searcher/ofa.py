@@ -233,7 +233,6 @@ class OFASearcher(Searcher):
                 )
             if not is_test:
                 self.save_checkpoint()
-            
 
     def update_graph(self, key='train'):
         r"""Builds the graph and update the placeholder.
