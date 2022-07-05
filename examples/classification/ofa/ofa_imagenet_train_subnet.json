@@ -49,6 +49,7 @@
         ],
         "img_size": 224,
         "no_decay_keys": "bn#_b",
+        "valid_ce_loss": true,
         "lambda_kd": 0,
         "epoch": 2,
         "cosine_warmup_epoch": 0,
