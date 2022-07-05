@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
-from abc import abstractmethod
-import json
+from abc import ABC, abstractmethod
+from more_itertools import consume
 from pathlib import Path
+from os import environ
+import json
 
 import nnabla as nn
 
@@ -64,19 +65,34 @@ class Runner(ABC):
         self.cur_epoch = 0
 
         # setup placeholder
-        self.placeholder = {
-            'train': {
-                'inputs': [nn.Variable([self.mbs_train] + shape) for shape in args['input_shapes']],
-                'targets': [nn.Variable([self.mbs_train] + shape) for shape in args['target_shapes']]
-            },
-            'valid': {
-                'inputs': [nn.Variable([self.mbs_valid] + shape) for shape in args['input_shapes']],
-                'targets': [nn.Variable([self.mbs_valid] + shape) for shape in args['target_shapes']]
-            }
+        def create_variables(mbs, shapes):
+            return [nn.Variable([mbs] + shape) for shape in shapes]
+
+        self.placeholder = {}
+        self.placeholder['train'] = {
+            'inputs': create_variables(self.mbs_train, args['input_shapes']),
+            'targets': create_variables(self.mbs_train, args['target_shapes'])
+        }
+        self.placeholder['valid'] = {
+            'inputs': create_variables(self.mbs_valid, args['input_shapes']),
+            'targets': create_variables(self.mbs_valid, args['target_shapes'])
         }
 
         # monitor log info
-        self.monitor = ProgressMeter(self.one_epoch_train, path=args['output_path'], quiet=self.comm.rank > 0)
+        output_path = args['output_path']
+        self.monitor = ProgressMeter(self.one_epoch_train, output_path,
+                                     quiet=self.comm.rank > 0)
+
+        # Check if we should run in fast mode where all computation graph is
+        # kept in memory and mixed operations just switch the propagation path.
+        fast_mode = environ.get('NNABLA_NAS_MIXEDOP_FAST_MODE') is not None
+        self.monitor.info('NNABLA_NAS_MIXEDOP_FAST_MODE is {}\n'.format(
+                          'enabled' if fast_mode else 'disabled'))
+        self._fast_mode = fast_mode
+
+    @property
+    def fast_mode(self):
+        return self._fast_mode
 
     @abstractmethod
     def run(self):
@@ -89,30 +105,50 @@ class Runner(ABC):
         Args:
             key (str, optional): Type of graph. Defaults to 'train'.
         """
-        assert key in ('train', 'valid', 'warmup')
-        self.model.apply(training=key != 'valid')
+        if key not in ('train', 'valid', 'warmup'):
+            raise ValueError(f'{key = } is not allowed')
 
-        fake_key = 'valid' if key == 'valid' else 'train'
-        p = self.placeholder[fake_key]
-        transform = self.dataloader[fake_key].transform(fake_key)
-        accum = self.accum_valid if key == 'valid' else self.accum_train
+        if key in ('train', 'warmup'):
+            key = 'train'
 
-        # outputs
-        inputs = [transform(x) for x in p['inputs']]
-        outputs = self.model(*inputs)
-        outputs = outputs if isinstance(outputs, tuple) else (outputs,)
+        placeholder = self.placeholder[key]
+        transform = self.dataloader[key].transform(key)
+        training = key == 'train'
+        model = self.model
 
-        p['outputs'] = [x.apply(persistent=True) for x in outputs]
+        # apply data transformations
+        if not self.fast_mode or 'transformed' not in placeholder:
+            inputs = placeholder['inputs']
+            inputs = [transform(x) for x in inputs]
+            placeholder['transformed'] = inputs
 
-        # loss function
-        p['loss'] = self.model.loss(p['outputs'], p['targets'], self.args['loss_weights']) / accum
-        p['loss'].apply(persistent=True)
+        inputs = placeholder['transformed']
+
+        # generate a new architecture
+        model.apply(None, training=training)
+        outputs = model(*inputs)
+        if not isinstance(outputs, tuple):
+            outputs = (outputs,)
+
+        outputs = [output.apply(persistent=True) for output in outputs]
+        placeholder['outputs'] = outputs
+
+        # add the model's loss function
+        if not self.fast_mode or 'loss' not in placeholder:
+            targets = placeholder['targets']
+            loss_weights = self.args['loss_weights']
+            accum = self.accum_train if training else self.accum_valid
+            loss = model.loss(outputs, targets, loss_weights) / accum
+            placeholder['loss'] = loss.apply(persistent=True)
 
         # metrics to monitor during training
-        targets = [out.get_unlinked_variable().apply(need_grad=False) for out in p['outputs']]
-        p['metrics'] = self.model.metrics(targets, p['targets'])
-        for v in p['metrics'].values():
-            v.apply(persistent=True)
+        if not self.fast_mode or 'metrics' not in placeholder:
+            targets = placeholder['targets']
+            outputs = (v.get_unlinked_variable() for v in outputs)
+            outputs = list(v.apply(need_grad=False) for v in outputs)
+            metrics = model.metrics(outputs, targets)
+            consume(v.apply(persistent=True) for v in metrics.values())
+            placeholder['metrics'] = metrics
 
     @staticmethod
     def _load_data(placeholder, data):

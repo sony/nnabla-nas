@@ -219,7 +219,6 @@ class FairNasSearcher(Searcher):
                                   self.search_monitor.meters)
             self.logger.save(self.args['output_path'])
             self.search_monitor.write(sample_id)
-            self.search_monitor.info(f'Running sample={sample_id}\n')
             self.search_monitor.display(sample_id)
 
         # reset loss and metric
