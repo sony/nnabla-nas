@@ -18,6 +18,8 @@ import nnabla as nn
 import nnabla.functions as F
 import numpy as np
 
+from nnabla_nas.contrib.classification.base import ClassificationModel as Model
+
 from ....module import static as smo
 from ....module.parameter import Parameter
 
@@ -485,7 +487,7 @@ class ZophCell(smo.Graph):
                                 parents=cell_modules, mode='concat'))
 
 
-class SearchNet(smo.Graph):
+class SearchNet(Model, smo.Graph):
     """
     A search space as defined in [Bender et. al]
 
