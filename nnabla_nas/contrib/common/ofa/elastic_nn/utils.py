@@ -20,7 +20,7 @@ import nnabla.functions as F
 
 
 from ..... import module as Mo
-from .modules.dynamic_op import DynamicBatchNorm2d
+from .modules.dynamic_op import DynamicBatchNorm
 from ....common.ofa.utils.random_resize_crop import OFAResize
 
 
@@ -37,7 +37,7 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
             m.set_running_statistics = True
             m.mean_est.reset()
             m.var_est.reset()
-        elif isinstance(m, DynamicBatchNorm2d):
+        elif isinstance(m, DynamicBatchNorm):
             m.set_running_statistics = True
 
     def load_data(placeholder, data):
@@ -82,7 +82,7 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
                 m._mean.d = new_mean
                 m._var.d = new_var
             m.set_running_statistics = False
-        elif isinstance(m, DynamicBatchNorm2d):
+        elif isinstance(m, DynamicBatchNorm):
             m.set_running_statistics = False
 
     logger.info('Batch normalization stats calibaration finished')

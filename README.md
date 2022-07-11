@@ -17,6 +17,7 @@ NNablaNAS aims to make the architecture search research more reusable and reprod
 - [Neural Architecture Search for Neural Network Libraries](#neural-architecture-search-for-neural-network-libraries)
   - [Getting started](#getting-started)
     - [Installation](#installation)
+    - [Setup the datasets](#setup-the-datasets)
     - [Examples](#examples)
   - [Features](#features)
     - [Search spaces](#search-spaces)
@@ -52,6 +53,12 @@ Run tests to check for correctness:
 ```bash
 pytest .
 ```
+
+### Setup the datasets
+
+Please follow the instructions below to prepare the datasets.
+
+* ImageNet: https://github.com/sony/nnabla-examples/tree/master/image-classification/imagenet#preparing-imagenet-dataset
 
 ### Examples
 

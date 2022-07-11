@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import math
 from collections import OrderedDict
+
 import nnabla.functions as F
 
 from .... import module as Mo
@@ -30,6 +31,7 @@ def set_layer_from_config(layer_config):
         'MBInvertedConvLayer': MBConvLayer,
         ##########################################################
         ResidualBlock.__name__: ResidualBlock,
+        XceptionBlock.__name__: XceptionBlock,
     }
 
     layer_name = layer_config.pop('name')
@@ -66,6 +68,34 @@ def get_extra_repr(cur_obj):
 
     repr += ')'
     return repr
+
+
+def get_active_padding(kernel, stride, dilation):
+    r"""
+        Returns the padding required (as a tuple) such that
+        [output_size = input_size/stride] after convolution
+        Assumption: padding is equal in both dimensions
+
+    Args:
+        kernel (int): kernel size as an int (assuming equal in both dimensions)
+        stride (int): stride size as an int (assuming equal in both dimensions)
+        dilation (int): dilation size as an int (assuming equal in both dimensions)
+    """
+    pad = math.ceil(stride * ((kernel + (kernel-1)*(dilation-1))/stride - 1) / 2)
+    return (pad, pad)
+
+
+def build_activation(act_func, inplace=False):
+    if act_func == 'relu':
+        return Mo.ReLU(inplace=inplace)
+    elif act_func == 'relu6':
+        return Mo.ReLU6()
+    elif act_func == 'h_swish':
+        return Mo.Hswish()
+    elif act_func is None or act_func == 'none':
+        return None
+    else:
+        raise ValueError('do not support: %s' % act_func)
 
 
 class ResidualBlock(Mo.Module):
@@ -323,14 +353,168 @@ class SEModule(Mo.Module):
         return input * y
 
 
-def build_activation(act_func, inplace=False):
-    if act_func == 'relu':
-        return Mo.ReLU(inplace=inplace)
-    elif act_func == 'relu6':
-        return Mo.ReLU6()
-    elif act_func == 'h_swish':
-        return Mo.Hswish()
-    elif act_func is None or act_func == 'none':
-        return None
-    else:
-        raise ValueError('do not support: %s' % act_func)
+class DWSeparableConv(Mo.Module):
+
+    r"""Depthwise-Separable Conv Layer
+
+    This is an implementation of a depthwise-separable convolution layer.
+    Structure followed:
+        DepthwiseConv-PointwiseConv-BatchNorm(Optional)-Activation(Optional)
+
+    Args:
+        in_channels (int): Number of convolution kernels in the
+            depthwise convolution (which is equal to the number
+            of input channels).
+        out_channels (int): Number of convolution kernels in the pointwise
+            convolution (which is equal to the number of output channels).
+        kernel (tuple of int, optional): Convolution kernel size for the
+            depthwise convolution. Defaults to (1, 1)
+        stride (tuple of int, optional): Stride sizes for the depthwise
+            convolution. Defaults to (1, 1).
+        pad (tuple of int, optional): Padding sizes for the depthwise
+            convolution layer. Defaults to (0, 0)
+        dilation (tuple of int, optional): Dilation sizes for the
+            depthwise convolution layer. Defaults to (1, 1)
+        use_bn (bool, optional): If True, BatchNormalization layer is added.
+            Defaults to True.
+        act_func (str, optional) Type of activation. Defaults to None.
+    """
+
+    def __init__(
+            self, in_channels, out_channels, kernel=(1, 1),
+            stride=(1, 1), pad=(0, 0), dilation=(1, 1),
+            use_bn=True, act_fn=None):
+        super(DWSeparableConv, self).__init__()
+
+        self.dwconv = Mo.Conv(in_channels, in_channels, kernel, pad=pad, dilation=dilation,
+                              stride=stride, with_bias=False, group=in_channels)
+        self.pointwise = Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1),
+                                 pad=(0, 0), dilation=(1, 1), group=1, with_bias=False)
+
+        self.bn = Mo.BatchNormalization(out_channels, 4) if use_bn else None
+        self.act = build_activation(act_fn)
+
+    def call(self, x):
+        x = self.dwconv(x)
+        x = self.pointwise(x)
+
+        if self.bn is not None:
+            x = self.bn(x)
+
+        if self.act is not None:
+            x = self.act(x)
+
+        return x
+
+    @staticmethod
+    def build_from_config(config):
+        return DWSeparableConv(**config)
+
+    def extra_repr(self):
+        return get_extra_repr(self)
+
+
+class XceptionBlock(Mo.Module):
+
+    r"""XceptionBlock
+
+    This is the primary static XceptionBlock used in
+    EntryFlow, MiddleFlow and ExitFlow of the Xception
+    Models
+
+    Args:
+        in_channels (int): Number of convolution kernels in the input
+            layer (which is equal to the number of input channels).
+        out_channels (int): Number of convolution kernels in the last
+            layer (which is equal to the number of output channels).
+        reps (int): Number of ReLU+DWSeparableConv layers in the block.
+            If reps==1, grow_first and expand_ratio will be ignored.
+        kernel (tuple of int, optional): Convolution kernel size for the
+            DWSeparableConv layers in this block. Defaults to (3, 3)
+        stride (tuple of int, optional): Stride sizes for residual
+            connections and maxpool layers. Defaults to (1, 1).
+        start_with_relu (bool, optional): Sets the first layer of the
+            block as ReLU, otherwise skips this. Defaults to True
+        grow_first (bool, optional): Sets mid_channels to out_channels if True,
+            else sets mid_channels to in_channels. The effect of this
+            argument is rendered useless when expand_ratio is not None.
+            Defaults to True
+        expand_ratio (float, optional): Used for calculating the number
+            of mid_channels. This is especially useful when this block
+            is constructed by DynamicXPLayer for building the subnet.
+            Defaults to None
+    """
+
+    def __init__(
+            self, in_channels, out_channels, reps, kernel=(3, 3),
+            stride=(1, 1), start_with_relu=True, grow_first=True,
+            expand_ratio=None):
+        super(XceptionBlock, self).__init__()
+
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+
+        if out_channels != in_channels or stride != (1, 1):
+            self._skip = Mo.Conv(in_channels, out_channels,
+                                 (1, 1), stride=stride, with_bias=False)
+            self._skipbn = Mo.BatchNormalization(out_channels, 4)
+        else:
+            self._skip = None
+
+        rep = []
+        mid_channels = out_channels if grow_first else in_channels
+        if expand_ratio is not None:
+            # override mid_channels if expand_ratio is given, since this
+            # refers to keeping the current active number of mid_channels
+            # as supplied by `get_active_subnet_config` of DynamicXPLayer
+            mid_channels = make_divisible(round(in_channels * expand_ratio))
+
+        # calculate padding required in the dwconv of DWSeparableConv
+        pad_sep = get_active_padding(kernel[0], 1, 1)
+
+        # if reps==1, we just have a single DWSeparableConv and hence,
+        # mid_channels is not required. grow_first and expand_ratio
+        # are ignored completely.
+        for idx in range(1, reps + 1):
+            inp_c = in_channels if idx == 1 else mid_channels
+            out_c = out_channels if idx == reps else mid_channels
+
+            rep.append((f'relu{idx}', Mo.ReLU(inplace=True)))
+            rep.append((f'sepconv{idx}', DWSeparableConv(inp_c, out_c,
+                        kernel=kernel, stride=(1, 1), pad=pad_sep)))
+
+        if not start_with_relu:
+            rep = rep[1:]
+        else:
+            rep[0] = ('relu1', Mo.ReLU(inplace=False))
+
+        if stride != (1, 1):
+            rep.append(('maxpool', Mo.MaxPool((3, 3), stride=stride, pad=(1, 1))))
+        self.rep = Mo.Sequential(OrderedDict(rep))
+
+    def call(self, inp):
+        x = self.rep(inp)
+
+        if self._skip is not None:
+            skip = self._skip(inp)
+            skip = self._skipbn(skip)
+        else:
+            skip = inp
+
+        x += skip
+        return x
+
+    @property
+    def in_channels(self):
+        return self._in_channels
+
+    @property
+    def out_channels(self):
+        return self._out_channels
+
+    @staticmethod
+    def build_from_config(config):
+        return XceptionBlock(**config)
+
+    def extra_repr(self):
+        return get_extra_repr(self)
