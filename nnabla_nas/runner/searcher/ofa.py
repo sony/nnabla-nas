@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 import random
 import numpy as np
 from tqdm import tqdm
@@ -276,19 +277,29 @@ class OFASearcher(Searcher):
         r"""Returns an `OrderedDict` containing model parameters.
 
         Args:
+            keys (list of str): Keys of parameters to be considered for inclusion
+                or exclusion.
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
 
         Returns:
             OrderedDict: A dictionary containing parameters.
         """
+
+        PARAMS_CHECKS = {
+            '_b': re.compile("_b$"),
+            'bn': re.compile("bn/_[^/]*$")
+        }
+        if not set(keys).issubset(set(PARAMS_CHECKS.keys())):
+            raise ValueError('do not support one of the keys: %s' % keys)
+
         net_params = self.model.get_net_parameters(grad_only)
         if mode == 'include':  # without weight decay
             param_dict = OrderedDict()
             for name in net_params.keys():
                 flag = False
                 for key in keys:
-                    if key in name:
+                    if re.search(PARAMS_CHECKS[key], name) is not None:
                         flag = True
                         break
                 if flag:
@@ -299,7 +310,7 @@ class OFASearcher(Searcher):
             for name in net_params.keys():
                 flag = True
                 for key in keys:
-                    if key in name:
+                    if re.search(PARAMS_CHECKS[key], name) is not None:
                         flag = False
                         break
                 if flag:
