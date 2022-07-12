@@ -126,7 +126,7 @@ class OFASearcher(Searcher):
         return self
 
     def callback_on_start(self):
-        keys = self.args['no_decay_keys'].split('#')
+        keys = self.args['no_decay_keys']
         net_params = [
             self.get_net_parameters_with_keys(keys, mode='exclude', grad_only=True),  # parameters with weight decay
             self.get_net_parameters_with_keys(keys, mode='include', grad_only=True),  # parameters without weight decay
@@ -286,34 +286,18 @@ class OFASearcher(Searcher):
             OrderedDict: A dictionary containing parameters.
         """
 
-        PARAMS_CHECKS = {
-            '_b': re.compile("_b$"),
-            'bn': re.compile("bn/_[^/]*$")
-        }
-        if not set(keys).issubset(set(PARAMS_CHECKS.keys())):
-            raise ValueError('do not support one of the keys: %s' % keys)
-
+        pattern = re.compile('|'.join(keys))  # compile the pattern of all keys
         net_params = self.model.get_net_parameters(grad_only)
         if mode == 'include':  # without weight decay
             param_dict = OrderedDict()
             for name in net_params.keys():
-                flag = False
-                for key in keys:
-                    if re.search(PARAMS_CHECKS[key], name) is not None:
-                        flag = True
-                        break
-                if flag:
+                if re.search(pattern, name) is not None:
                     param_dict[name] = net_params[name]
             return param_dict
         elif mode == 'exclude':  # with weight decay
             param_dict = OrderedDict()
             for name in net_params.keys():
-                flag = True
-                for key in keys:
-                    if re.search(PARAMS_CHECKS[key], name) is not None:
-                        flag = False
-                        break
-                if flag:
+                if re.search(pattern, name) is None:
                     param_dict[name] = net_params[name]
             return param_dict
         else:

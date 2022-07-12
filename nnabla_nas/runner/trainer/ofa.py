@@ -31,7 +31,7 @@ class OFATrainer(Runner):
         r"""Builds the graphs and assigns parameters to the optimizers."""
 
         self.update_graph('train')
-        keys = self.args['no_decay_keys'].split('#')
+        keys = self.args['no_decay_keys']
         net_params = [
             self.get_net_parameters_with_keys(keys, mode='exclude', grad_only=True),  # parameters with weight decay
             self.get_net_parameters_with_keys(keys, mode='include', grad_only=True),  # parameters without weight decay
