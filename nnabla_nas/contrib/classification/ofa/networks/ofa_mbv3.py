@@ -442,17 +442,6 @@ class OFAMbv3Net(ClassificationModel):
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items()])
 
-    def get_arch_parameters(self, grad_only=False):
-        r"""Returns an `OrderedDict` containing architecture parameters.
-        Args:
-            grad_only (bool, optional): If sets to `True`, then only parameters
-                with `need_grad=True` are returned. Defaults to False.
-        Returns:
-            OrderedDict: A dictionary containing parameters.
-        """
-        p = self.get_parameters(grad_only)
-        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
-
     def load_parameters(self, path, raise_if_missing=False):
         with nn.parameter_scope('', OrderedDict()):
             nn.load_parameters(path)
