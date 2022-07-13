@@ -277,8 +277,12 @@ class OFASearcher(Searcher):
         r"""Returns an `OrderedDict` containing model parameters.
 
         Args:
-            keys (list of str): Keys of parameters to be considered for inclusion
-                or exclusion.
+            keys (list of str): Patterns of parameters to be considered for inclusion
+                or exclusion. Note: Keys passed must be in regular expression format.
+            mode (str, optional): Mode of getting network parameters with keys.
+                - Selects parameters satisfying the keys if mode=='include'
+                - Selects parameters not satisfying the keys if mode=='exclude'
+                Choices: ['include', 'exclude']. Defaults to 'include'.
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
 
