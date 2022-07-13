@@ -89,7 +89,7 @@ class DynamicSE(SEModule):
         return input * y
 
 
-class DynamicConv2d(Mo.Module):
+class DynamicConv(Mo.Module):
 
     r"""Convolution layer with dynamic channel size.
 
@@ -107,9 +107,9 @@ class DynamicConv2d(Mo.Module):
             dimensions. Defaults to (1, 1).
     """
 
-    def __init__(self, max_in_channels, max_out_channels,
-                 kernel=(1, 1), stride=(1, 1), dilation=(1, 1)):
-        super(DynamicConv2d, self).__init__()
+    def __init__(self, max_in_channels, max_out_channels, kernel,
+                 stride=(1, 1), dilation=(1, 1)):
+        super(DynamicConv, self).__init__()
 
         self._scope_name = f'<dynamicconv2d at {hex(id(self))}>'
         self._max_in_channels = max_in_channels
@@ -138,7 +138,7 @@ class DynamicConv2d(Mo.Module):
                              stride=self._stride, dilation=self._dilation, group=1)
 
 
-class DynamicBatchNorm2d(Mo.Module):
+class DynamicBatchNorm(Mo.Module):
 
     r"""Batch normalization layer with dynamic channel size.
 
@@ -148,7 +148,7 @@ class DynamicBatchNorm2d(Mo.Module):
     """
 
     def __init__(self, max_feature_dim, n_dims):
-        super(DynamicBatchNorm2d, self).__init__()
+        super(DynamicBatchNorm, self).__init__()
 
         self._scope_name = f'<dynamicbatchnorm2d at {hex(id(self))}>'
 
@@ -182,7 +182,7 @@ class DynamicBatchNorm2d(Mo.Module):
         return y
 
 
-class DynamicSeparableConv2d(Mo.Module):
+class DynamicDepthwiseConv(Mo.Module):
 
     r"""Seperable convolution layer (depthwise) with
         dynamic kernel and channel size.
@@ -200,7 +200,7 @@ class DynamicSeparableConv2d(Mo.Module):
     KERNEL_TRANSFORM_MODE = True
 
     def __init__(self, max_in_channels, kernel_size_list, stride=(1, 1), dilation=(1, 1)):
-        super(DynamicSeparableConv2d, self).__init__()
+        super(DynamicDepthwiseConv, self).__init__()
 
         self._scope_name = f'<dynamicseperableconv2d at {hex(id(self))}>'
         self._max_in_channels = max_in_channels

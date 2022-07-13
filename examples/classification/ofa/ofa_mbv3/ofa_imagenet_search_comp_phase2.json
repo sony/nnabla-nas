@@ -22,7 +22,7 @@
             ],
             "depth_candidates": [2, 3, 4],
             "compound": true,
-            "weights": "log/classification/ofa_mbv3/imagenet/search/K357_E346_D234/phase1/weights.h5"
+            "weights": "log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/phase1/weights.h5"
         }
     },
     "optimizer": {
@@ -75,7 +75,7 @@
                 "drop_rate": 0,
                 "op_candidates": ["MB6 7x7"],
                 "depth_candidates": [4],
-                "weights": "log/classification/ofa_mbv3/imagenet/search/K7_E6_D4/weights.h5"
+                "weights": "log/classification/ofa/ofa_mbv3/imagenet/search/K7_E6_D4/weights.h5"
             }
         },
         "epoch": 125,

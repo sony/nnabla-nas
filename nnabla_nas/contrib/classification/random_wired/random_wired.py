@@ -19,6 +19,7 @@ import networkx as nx
 import nnabla as nn
 import numpy as np
 
+from nnabla_nas.contrib.classification.base import ClassificationModel as Model
 from nnabla_nas.module import static as smo
 
 
@@ -349,7 +350,7 @@ RANDOM_CANDIDATES = [RandomModule,
                      AvgPool2x2]
 
 
-class TrainNet(smo.Graph):
+class TrainNet(Model, smo.Graph):
     """
     A randomly wired DNN that uses the Watts-Strogatz process to generate
     random DNN architectures. Please refer to [Xie et. al]

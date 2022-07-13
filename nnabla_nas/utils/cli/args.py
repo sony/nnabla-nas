@@ -136,6 +136,12 @@ class Configuration(object):
                             warmup_lr = self.hparams['warmup_lr']
                         lr_scheduler = CosineSchedulerWarmup(
                             base_lr=lr, max_iter=max_iter, warmup_iter=warmup_iter, warmup_lr=warmup_lr)
+                    elif class_name == "StepScheduler":
+                        decay_rate = self.hparams["step_decay_rate"]
+                        batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
+                        epoch_steps = self.hparams["epoch_steps"]  # number of epochs before each decay in lr
+                        iter_steps = [ep * batch_iters for ep in range(epoch_steps, epoch+1, epoch_steps)]
+                        lr_scheduler = LRS.StepScheduler(init_lr=lr, gamma=decay_rate, iter_steps=iter_steps)
                     else:
                         lr_scheduler = LRS.__dict__[class_name](init_lr=lr, max_iter=max_iter)
                 args['lr_scheduler'] = lr_scheduler
