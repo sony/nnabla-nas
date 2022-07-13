@@ -1,0 +1,30 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/cifar10.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: train.yaml
+  - override /network: classification/fairnas.yaml
+
+args:
+  algorithm: Trainer
+
+name: classification/fairnas/cifar10/train
+
+hparams:
+  epoch: 600
+  batch_size_train: 128
+  batch_size_valid: 200
+  mini_batch_train: 128
+  mini_batch_valid: 200
+  print_frequency: 20
+
+optimizer:
+  train:
+    lr: 0.1
+    weight_decay: 4e-5
+
+network:
+  fairnas:
+    genotype: [2, 0, 1, 2, 2, 2, 0, 0, 4, 2, 5, 1, 3, 0, 1, 5, 3, 4, 5, 1, 4]

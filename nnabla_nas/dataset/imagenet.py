@@ -151,7 +151,7 @@ def get_data_iterators(batch_size,
 
 
 class DataLoader(BaseDataLoader):
-    def __init__(self, batch_size=1, searching=False, training=False,
+    def __init__(self, batch_size=1, searching=False, training=False, datapath=None,
                  train_path=None, train_file=None, valid_path=None, valid_file=None,
                  train_portion=1.0, *, augment_valid=True, colortwist=False,
                  rng=None, communicator=None, type_config=float, channel_last=False):
@@ -182,6 +182,11 @@ class DataLoader(BaseDataLoader):
                 considered as channel dimension, a.k.a NHWC order. Defaults to`False`.
         """
         self.rng = rng or random.prng  # np.random.RandomState(313) #
+
+        train_path = datapath + train_path
+        train_file = datapath + train_file
+        valid_path = datapath + valid_path
+        valid_file = datapath + valid_file
 
         if searching:
             train_file, valid_file = self._split_data(

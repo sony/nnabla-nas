@@ -75,7 +75,7 @@ def visualize_mobilenet_arch(model, filename):
     for c, n, s in model._settings:
         for i in range(n):
             k = k + 1
-            selected_idx = features[k]._mixed._active
+            selected_idx = int(features[k]._mixed._active)
             if selected_idx < len(candidates):
                 op = candidates[selected_idx]
                 gr.node(op + str(k), label=op,

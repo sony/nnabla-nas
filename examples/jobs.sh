@@ -1,39 +1,24 @@
 #---------------------------- DARTS --------------------------------#
 # search DARTS
-python main.py --search \
-               -f examples/classification/darts/cifar10_search.json  \
-               -a DartsSearcher \
-               -o log/classification/darts/cifar10/search
+python main.py experiment=darts/cifar10_search
 
 # train DARTS
-python main.py -f examples/classification/darts/cifar10_train.json \
-               -a Trainer \
-               -o log/classification/darts/cifar10/train
+python main.py experiment=darts/cifar10_train
 #------------------------------------------------------------------#
 
 
 #---------------------------- PNAS --------------------------------#
 # search PNAS
-python main.py --search \
-               -f examples/classification/pnas/cifar10_search.json \
-               -a ProxylessNasSearcher \
-               -o log/classification/pnas/cifar10/search
+python main.py experiment=pnas/cifar10_search
 
 # train PNAS
-python main.py -f examples/classification/pnas/cifar10_train.json \
-               -a Trainer \
-               -o log/classification/pnas/cifar10/train
+python main.py experiment=pnas/cifar10_train
 
 # search PNAS with latency constraints
-python main.py --search \
-               -f examples/classification/pnas/cifar10_search_latency.json \
-               -a ProxylessNasSearcher \
-               -o log/classification/pnas/cifar10/constrained/search
+python main.py experiment=pnas/cifar10_search_latency
 
 # train PNAS with latency constraints
-python main.py -f examples/classification/pnas/cifar10_train_latency.json \
-               -a Trainer \
-               -o log/classification/pnas/cifar10/constrained/train               
+python main.py experiment=pnas/cifar10_train_latency             
 #------------------------------------------------------------------#
 
 
@@ -42,209 +27,113 @@ python main.py -f examples/classification/pnas/cifar10_train_latency.json \
 # on cifar10 data set
 
 # search MobileNet
-python main.py --search \
-               -f examples/classification/mobilenet/cifar10_search.json \
-               -a ProxylessNasSearcher \
-               -o log/classification/mobilenet/cifar10/search
+python main.py experiment=mobilenet/cifar10_search
 
 # train MobileNet
-python main.py -f examples/classification/mobilenet/cifar10_train.json \
-               -a Trainer \
-               -o log/classification/mobilenet/cifar10/train
+python main.py experiment=mobilenet/cifar10_train
 
 # search MobileNet with latency
-python main.py --search \
-               -f examples/classification/mobilenet/cifar10_search_latency.json \
-               -a ProxylessNasSearcher \
-               -o log/classification/mobilenet/cifar10/constrained/search
-
+python main.py experiment=mobilenet/cifar10_search_latency
 # train MobileNet with latancy
-python main.py -f examples/classification/mobilenet/cifar10_train_latency.json \
-               -a Trainer \
-               -o log/classification/mobilenet/cifar10/constrained/train
+python main.py experiment=mobilenet/cifar10_train_latency
 
 # reference MobileNet V2
-python main.py -f examples/classification/mobilenet/cifar10_reference.json  \
-               -a Trainer \
-               -o log/classification/mobilenet/cifar10/reference
+python main.py experiment=mobilenet/cifar10_reference
 #------------------------------------------------------------------#
 
 
 
 #----------------------------Zoph---------------------------------#
 # search zoph search space with pnas and without latency constraint
-python main.py --search \
-               -f examples/classification/zoph/pnas_zoph_search.json \
-               -a ProxylessNasSearcher \
-               -o log/classification/zoph/search
+python main.py experiment=zoph/pnas_zoph_search
 
 # train zoph network
-python main.py -f examples/classification/zoph/zoph_train.json \
-               -a Trainer \
-               -o log/classification/zoph/train
+python main.py experiment=zoph/zoph_train
 #------------------------------------------------------------------#
 
 
 # train random zoph network
-python main.py -f examples/classification/zoph/zoph_train_random.json \
-               -a Trainer \
-               -o log/classification/zoph/train_random
+python main.py experiment=zoph/zoph_train_random
 
 # train random zoph network, using additions for merging
-python main.py -f examples/classification/zoph/zoph_train_random_merge_add.json \
-               -a Trainer \
-               -o log/classification/zoph/train_random_merge_add
+python main.py experiment=zoph/zoph_train_random_merge_add
 
 # continue training from checkpoint
-python main.py -f examples/zoph/zoph_train_continue.json \
-               -a Trainer \
-               -o log/classification/zoph/train_continue
+python main.py experiment=zoph/zoph_train_continue
 #------------------------------------------------------------------#
 
 
 
 #---------------------------- RandomlyWired------------------------#
 # train randomly wired network
-python main.py -f examples/classification/random_wired/random_wired_train.json \
-               -a Trainer \
-               -o log/classification/random_wired/train
+python main.py experiment=random_wired/cifar10_train
 #------------------------------------------------------------------#
 
 
 
 #---------------------- ImageNet (PNAS)----------------------------#
 # search MobileNet network
-mpirun -n 4 python main.py --search \
-               -f examples/classification/mobilenet/imagenet_search.json \
-               -a ProxylessNasSearcher \
-               -o log/classification/mobilenet/imagenet/search
+mpirun -n 4 python main.py experiment=mobilenet/imagenet_search
 
 # train MobileNet network
-mpirun -n 4 python main.py\
-               -f examples/classification/mobilenet/imagenet_train.json \
-               -a Trainer \
-               -o log/classification/mobilenet/imagenet/train
+mpirun -n 4 python main.py experiment=mobilenet/imagenet_train
 
 # search MobileNet network with latency
-mpirun -n 4 python main.py --search \
-               -f examples/classification/mobilenet/imagenet_search_latency.json \
-               -a ProxylessNasSearcher \
-               -o log/classification/mobilenet/imagenet/latency/search
+mpirun -n 4 python main.py experiment=mobilenet/imagenet_search_latency
 
-# search MobileNet network with latency
-mpirun -n 4 python main.py \
-               -f examples/classification/mobilenet/imagenet_train_latency.json \
-               -a ProxylessNasSearcher \
-               -o log/classification/mobilenet/imagenet/latency/train
+# train MobileNet network with latency
+mpirun -n 4 python main.py experiment=mobilenet/imagenet_train_latency
 
 # ref MobileNet network
-mpirun -n 4 python main.py\
-               -f examples/classification/mobilenet/imagenet_reference.json \
-               -a Trainer \
-               -o log/classification/mobilenet/imagenet/reference
+mpirun -n 4 python main.py experiment=mobilenet/imagenet_reference
 #------------------------------------------------------------------#
 
 
 
 #---------------------- FAIR NAS ----------------------------#
-mpirun -n 4 python main.py --search \
-               -f examples/classification/fairnas/fairnas_cifar10_search.json \
-               -a FairNasSearcher \
-               -o log/classification/fairnas/cifar10/search
+mpirun -n 4 python main.py experiment=fairnas/cifar10_search
 
+mpirun -n 4 python main.py experiment=fairnas/cifar10_train
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/fairnas/fairnas_imagenet_search.json \
-               -a FairNasSearcher \
-               -o log/classification/fairnas/imagenet/search
+mpirun -n 4 python main.py experiment=fairnas/imagenet_search
 
-mpirun -n 4 python main.py -f examples/classification/fairnas/fairnas_imagenet_train.json \
-               -a Trainer \
-               -o log/classification/fairnas/imagenet/retrain/
+mpirun -n 4 python main.py experiment=fairnas/imagenet_train
 
 #---------------------- OFA-MobileNetV3 (ImageNet) ----------------------------#
-mpirun -n 4 python main.py \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_fullnet.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_mbv3/imagenet/search/K7_E6_D4/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_search_fullnet
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_kernel.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D4/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_search_kernel
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_depth_phase1.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D34/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_search_depth_phase1
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_depth_phase2.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D234/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_search_depth_phase2
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_expand_phase1.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E46_D234/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_search_expand_phase1
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_expand_phase2.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_search_expand_phase2
 
-mpirun -n 4 python main.py \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_train_subnet.json \
-               -a OFATrainer \
-               -o log/classification/ofa/ofa_mbv3/imagenet/train_subnet/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_train_subnet
 #------------------------------------------------------------------#
 
 
 #---------------------- OFA-XCEPTION(ImageNet) ----------------------------#
-mpirun -n 4 python main.py \
-               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_fullnet.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_xception/imagenet/search/K7_E1_D3/
+mpirun -n 4 python main.py experiment=ofa/ofa_xception/imagenet_search_fullnet
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_kernel.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E1_D3/
+mpirun -n 4 python main.py experiment=ofa/ofa_xception/imagenet_search_kernel
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_depth_phase1.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E1_D23/
+mpirun -n 4 python main.py experiment=ofa/ofa_xception/imagenet_search_depth_phase1
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_depth_phase2.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E1_D123/
+mpirun -n 4 python main.py experiment=ofa/ofa_xception/imagenet_search_depth_phase2
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_expand_phase1.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E0.8+1_D123/
+mpirun -n 4 python main.py experiment=ofa/ofa_xception/imagenet_search_expand_phase1
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_xception/ofa_imagenet_search_expand_phase2.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_xception/imagenet/search/K357_E0.6+0.8+1_D123/
+mpirun -n 4 python main.py experiment=ofa/ofa_xception/imagenet_search_expand_phase2
 
-mpirun -n 4 python main.py \
-               -f examples/classification/ofa/ofa_xception/ofa_imagenet_train_subnet.json \
-               -a OFATrainer \
-               -o log/classification/ofa/ofa_xception/imagenet/train_subnet/
+mpirun -n 4 python main.py experiment=ofa/ofa_xception/imagenet_train_subnet
 #------------------------------------------------------------------#
 
 
 #---------------------- CompOFA-MobileNetV3 (ImageNet) ----------------------------#
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_comp_phase1.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/phase1/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_search_comp_phase1
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_mbv3/ofa_imagenet_search_comp_phase2.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/phase2/
+mpirun -n 4 python main.py experiment=ofa/ofa_mbv3/imagenet_search_comp_phase2

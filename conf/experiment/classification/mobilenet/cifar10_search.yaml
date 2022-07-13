@@ -1,0 +1,34 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/cifar10.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: warmup.yaml
+  - override /network: classification/mobilenet_cifar10.yaml
+
+args:
+  search: true
+  algorithm: ProxylessNasSearcher
+
+name: classification/mobilenet/cifar10/search
+
+dataloader:
+  cifar10:
+    train_portion: 0.9
+
+hparams:
+  epoch: 200
+  batch_size_train: 128
+  batch_size_valid: 256
+  mini_batch_train: 128
+  mini_batch_valid: 256
+  print_frequency: 25
+  warmup: 100
+
+optimizer:
+  train:
+    lr: 0.1
+    weight_decay: 4e-5
+  valid:
+    alpha: 0.001

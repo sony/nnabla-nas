@@ -1,0 +1,21 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/cifar10.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: train.yaml
+  - override /network: classification/random_wired.yaml
+
+args:
+  algorithm: Trainer
+
+name: classification/random_wired/train
+
+hparams:
+  epoch: 600
+  batch_size_train: 64
+  batch_size_valid: 20
+  mini_batch_train: 64
+  mini_batch_valid: 20
+  print_frequency: 50

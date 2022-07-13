@@ -1,0 +1,29 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet_ofa.yaml
+  - override /hparams: hparams_ofa_mbv3_subnet.yaml 
+  - override /optimizer: train_ofa_mbv3.yaml
+  - override /network: classification/ofa_mbv3.yaml
+
+args:
+  algorithm: OFATrainer
+
+name: classification/ofa/ofa_mbv3/imagenet/train_subnet
+
+network:
+  ofa_mbv3:
+    op_candidates: [
+      "MB3 3x3", "MB3 5x5", "MB3 7x7", 
+      "MB4 3x3", "MB4 5x5", "MB4 7x7", 
+      "MB6 3x3", "MB6 5x5", "MB6 7x7"
+      ]
+    genotype: [5, 2, 9, 9, 6, 4, 2, 1, 7, 7, 8, 9, 8, 3, 9, 9, 8, 4, 3, 1]
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/weights.h5
+
+optimizer:
+  train:
+    lr: 0.005
+  train_no_decay:
+    lr: 0.005

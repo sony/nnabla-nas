@@ -1,0 +1,51 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet_ofa.yaml
+  - override /hparams: hparams_ofa_xception.yaml 
+  - override /optimizer: train_ofa_xception.yaml
+  - override /network: classification/ofa_xception.yaml
+
+args:
+  search: true
+  algorithm: OFASearcher
+
+name: classification/ofa/ofa_xception/imagenet/search/K357_E0.6+0.8+1_D123
+
+network:
+  ofa_xception:
+    op_candidates: [
+      "XP1 3x3 1",    "XP1 3x3 2",    "XP1 3x3 3", 
+      "XP0.8 3x3 1",  "XP0.8 3x3 2",  "XP0.8 3x3 3", 
+      "XP0.6 3x3 1",  "XP0.6 3x3 2",  "XP0.6 3x3 3",
+      "XP1 5x5 1",    "XP1 5x5 2",    "XP1 5x5 3", 
+      "XP0.8 5x5 1",  "XP0.8 5x5 2",  "XP0.8 5x5 3", 
+      "XP0.6 5x5 1",  "XP0.6 5x5 2",  "XP0.6 5x5 3",
+      "XP1 7x7 1",    "XP1 7x7 2",    "XP1 7x7 3", 
+      "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3", 
+      "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
+      ]
+    weights: log/classification/ofa/ofa_xception/imagenet/search/K357_E0.8+1_D123/checkpoint/weights.h5
+
+optimizer:
+  train:
+    lr: 0.03
+  train_no_decay:
+    lr: 0.03
+
+hparams:
+  task: expand
+  valid_genotypes: [
+    [20, 20, 6, 6, 1, 4, 6, 16],
+    [2, 2, 6, 6, 2, 2, 0, 20],
+    [3, 3, 6, 7, 3, 3, 6, 6],
+    [5, 5, 6, 8, 5, 5, 6, 6],
+    [0, 0, 0, 0, 0, 10, 0, 0],
+    [2, 2, 2, 2, 2, 9, 2, 2],
+    [3, 3, 3, 3, 14, 3, 3, 3],
+    [5, 5, 5, 12, 5, 5, 5, 5],
+    [20, 20, 20, 20, 20, 20, 20, 20]
+    ]
+  epoch: 30
+  validation_frequency: 3

@@ -1,0 +1,19 @@
+valid_ce_loss: true
+input_shapes: [
+  [3, 224, 224]
+]
+target_shapes: [
+  [1]
+]
+img_size: 224
+no_decay_keys: ["_b$", "/bn/_[^/]*$", "/_skipbn/_[^/]*$"]
+lambda_kd: 0
+epoch: 5
+epoch_steps: 2
+step_decay_rate: 0.94
+batch_size_train: 128
+batch_size_valid: 200
+mini_batch_train: 32
+mini_batch_valid: 200
+print_frequency: 100
+validation_frequency: 1

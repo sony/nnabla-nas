@@ -1,0 +1,31 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet_ofa.yaml
+  - override /hparams: hparams_ofa_xception.yaml 
+  - override /optimizer: train_ofa_xception.yaml
+  - override /network: classification/ofa_xception.yaml
+
+args:
+  search: true
+  algorithm: OFASearcher
+
+name: classification/ofa/ofa_xception/imagenet/search/K357_E1_D23
+
+network:
+  ofa_xception:
+    op_candidates: [
+      "XP1 7x7 3", "XP1 5x5 3", "XP1 3x3 3", 
+      "XP1 7x7 2", "XP1 5x5 2", "XP1 3x3 2"
+      ]
+    weights: log/classification/ofa/ofa_xception/imagenet/search/K357_E1_D3/checkpoint/weights.h5
+
+optimizer:
+  train:
+    lr: 0.025
+  train_no_decay:
+    lr: 0.025
+
+hparams:
+  task: depth

@@ -14,6 +14,7 @@
 
 from collections import OrderedDict
 import random
+import os
 
 import numpy as np
 
@@ -30,6 +31,7 @@ from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_targe
 from ....common.ofa.utils.common_tools import init_models
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicMBConvLayer
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
+from hydra import utils
 
 
 CANDIDATES = {
@@ -444,7 +446,9 @@ class OFAMbv3Net(ClassificationModel):
 
     def load_parameters(self, path, raise_if_missing=False):
         with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
+            # adjust path because hydra changes the working directory
+            load_path = os.path.realpath(os.path.join(utils.get_original_cwd(), path))
+            nn.load_parameters(load_path)
             params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
 

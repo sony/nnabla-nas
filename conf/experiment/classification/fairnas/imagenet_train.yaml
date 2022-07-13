@@ -1,0 +1,47 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: train.yaml
+  - override /network: classification/fairnas.yaml
+
+args:
+  algorithm: Trainer
+
+name: classification/fairnas/imagenet/retrain
+
+hparams:
+  epoch: 120
+  batch_size_train: 64
+  batch_size_valid: 64
+  mini_batch_train: 32
+  mini_batch_valid: 32
+  print_frequency: 100
+  input_shapes: [
+    [3, 224, 224]
+  ]
+    
+optimizer:
+  train:
+    lr: 0.05
+    weight_decay: 4e-5
+
+network:
+  fairnas:
+    num_classes: 1000
+    settings: [
+      [24, 4, 2],
+      [40, 4, 2],
+      [80, 4, 2],
+      [96, 4, 1],
+      [192, 4, 2],
+      [320, 1, 1]
+      ]
+    candidates: [
+      "MB6 3x3",
+      "MB6 5x5",
+      "MB6 7x7"
+      ]
+    genotype: [2, 2, 3, 1, 0, 0, 2, 2, 1, 1, 3, 2, 2, 2, 0, 3, 2, 0, 0, 2, 2]

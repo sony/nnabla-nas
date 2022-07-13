@@ -17,6 +17,7 @@ from collections import OrderedDict
 import nnabla as nn
 from nnabla.utils.save import save
 from .parameter import Parameter
+from hydra import utils
 
 
 class Module(object):
@@ -247,7 +248,8 @@ class Module(object):
                 parameters are missing. Defaults to `False`.
         """
         with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
+            load_path = os.path.realpath(os.path.join(utils.get_original_cwd(), path))  # because hydra changes
+            nn.load_parameters(load_path)                                               # the working directory
             params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
 

@@ -1,0 +1,38 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet_ofa.yaml
+  - override /hparams: hparams_ofa_mbv3.yaml 
+  - override /optimizer: train_ofa_mbv3.yaml
+  - override /network: classification/ofa_mbv3.yaml
+
+args:
+  search: true
+  algorithm: OFASearcher
+
+name: classification/ofa/ofa_mbv3/imagenet/search/K357_E46_D234
+
+network:
+  ofa_mbv3:
+    op_candidates: [
+      "MB4 3x3", "MB4 5x5", "MB4 7x7", 
+      "MB6 3x3", "MB6 5x5", "MB6 7x7"
+      ]
+    depth_candidates: [2, 3, 4]
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D234/weights.h5
+
+hparams:
+  task: expand
+  valid_genotypes: [
+    [0, 0, 6, 6, 0, 0, 6, 6, 0, 0, 6, 6, 0, 0, 6, 6, 0, 0, 6, 6],
+    [2, 2, 6, 6, 2, 2, 6, 6, 2, 2, 6, 6, 2, 2, 6, 6, 2, 2, 6, 6],
+    [3, 3, 6, 6, 3, 3, 6, 6, 3, 3, 6, 6, 3, 3, 6, 6, 3, 3, 6, 6],
+    [5, 5, 6, 6, 5, 5, 6, 6, 5, 5, 6, 6, 5, 5, 6, 6, 5, 5, 6, 6],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+    [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+    [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+    ]
+  batch_size_train: 256
+  mini_batch_train: 16

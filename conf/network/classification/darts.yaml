@@ -1,0 +1,5 @@
+darts:
+  in_channels: 3
+  num_classes: 10
+  init_channels: 16
+  num_cells: 8

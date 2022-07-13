@@ -1,0 +1,8 @@
+random_wired:
+  name: random_wired
+  n_classes: 10
+  n_vertices: 20
+  min_channels: 128
+  max_channels: 512
+  k: 4
+  p: 0.75

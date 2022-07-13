@@ -12,4 +12,6 @@ graphviz
 sklearn
 networkx
 mako
+hydra-core
+hydra_colorlog
 protobuf<=3.20.1

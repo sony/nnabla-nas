@@ -1,0 +1,6 @@
+train:
+  grad_clip: 5.0
+  lr_scheduler: CosineScheduler
+  lr: 0.025
+  weight_decay: 3e-4
+  name: Momentum

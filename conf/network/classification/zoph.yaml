@@ -1,0 +1,4 @@
+zoph:
+  name: zoph
+  n_classes: 10
+  stem_channels: 128

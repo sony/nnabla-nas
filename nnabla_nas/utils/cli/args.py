@@ -12,17 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-from pathlib import Path
 import sys
 
-from nnabla.logger import logger
 import nnabla.utils.learning_rate_scheduler as LRS
 
 from nnabla_nas import dataset
 from nnabla_nas.optimizer import Optimizer
 from nnabla_nas.utils import estimator as EST
-from nnabla_nas.utils import helper
 from nnabla_nas.utils.learning_rate_scheduler import CosineSchedulerWarmup
 
 
@@ -39,22 +35,6 @@ class Configuration(object):
         self.optimizer = self.get_optimizer(conf['optimizer'])
         # optional configuration
         self.regularizer = self.get_regularizer(conf.get('regularizer', dict()))
-
-        # write the configuration
-        path = self.hparams['output_path']
-        Path(path).mkdir(parents=True, exist_ok=True)
-        if self.hparams['comm'].rank == 0:
-            file = os.path.join(path, 'config.json')
-            if os.path.isfile(file):
-                file = os.path.join(path, 'config')
-                i = 1
-                while os.path.isfile("{}.{}.json".format(file, i)):
-                    i += 1
-                # new file incremental name like "config.1.json"
-                file = "{}.{}.json".format(file, i)
-
-            logger.info(f'Saving the configurations to {file}')
-            helper.write_to_json_file(conf, file)
 
     def get_hyperparameters(self, conf):
         r"""Setup hyperparameters."""

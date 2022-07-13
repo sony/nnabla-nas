@@ -1,0 +1,38 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/cifar10.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: warmup.yaml
+  - override /network: classification/zoph.yaml
+
+args:
+  search: true
+  algorithm: ProxylessNasSearcher
+
+name: classification/zoph/search
+
+dataloader:
+  cifar10:
+    train_portion: 0.9
+
+network:
+  zoph:
+    mode: sample
+
+optimizer:
+  valid:
+    alpha: 0.01
+  warmup:
+    weight_decay: 3e-4
+    lr: 0.025
+
+hparams:
+  epoch: 150
+  batch_size_train: 256
+  batch_size_valid: 256
+  mini_batch_train: 64
+  mini_batch_valid: 64
+  print_frequency: 20
+  warmup: 50
