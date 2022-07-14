@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import re
+import os
 import random
 import numpy as np
 from tqdm import tqdm
@@ -221,6 +222,16 @@ class OFASearcher(Searcher):
                 self.monitor.info(f'{k}/valid={self.metrics[k].data[0]:.4f}\n')
             if info:
                 self.monitor.info(f'{info}\n')
+            if self.args['save_nnp']:
+                self.model.save_net_nnp(
+                    self.args['output_path'],
+                    self.placeholder['valid']['inputs'][0],
+                    self.placeholder['valid']['outputs'][0],
+                    save_params=self.args.get('save_params'))
+            else:
+                self.model.save_parameters(
+                    path=os.path.join(self.args['output_path'], 'weights.h5')
+                )
             if not is_test:
                 self.save_checkpoint()
 
