@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 import os
 import random
 import numpy as np
@@ -126,7 +127,7 @@ class OFASearcher(Searcher):
         return self
 
     def callback_on_start(self):
-        keys = self.args['no_decay_keys'].split('#')
+        keys = self.args['no_decay_keys']
         net_params = [
             self.get_net_parameters_with_keys(keys, mode='exclude', grad_only=True),  # parameters with weight decay
             self.get_net_parameters_with_keys(keys, mode='include', grad_only=True),  # parameters without weight decay
@@ -287,33 +288,31 @@ class OFASearcher(Searcher):
         r"""Returns an `OrderedDict` containing model parameters.
 
         Args:
+            keys (list of str): Patterns of parameters to be considered for inclusion
+                or exclusion. Note: Keys passed must be in regular expression format.
+            mode (str, optional): Mode of getting network parameters with keys.
+                - Selects parameters satisfying the keys if mode=='include'
+                - Selects parameters not satisfying the keys if mode=='exclude'
+                Choices: ['include', 'exclude']. Defaults to 'include'.
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
 
         Returns:
             OrderedDict: A dictionary containing parameters.
         """
+
+        pattern = re.compile('|'.join(keys))  # compile the pattern of all keys
         net_params = self.model.get_net_parameters(grad_only)
         if mode == 'include':  # without weight decay
             param_dict = OrderedDict()
             for name in net_params.keys():
-                flag = False
-                for key in keys:
-                    if key in name:
-                        flag = True
-                        break
-                if flag:
+                if re.search(pattern, name) is not None:
                     param_dict[name] = net_params[name]
             return param_dict
         elif mode == 'exclude':  # with weight decay
             param_dict = OrderedDict()
             for name in net_params.keys():
-                flag = True
-                for key in keys:
-                    if key in name:
-                        flag = False
-                        break
-                if flag:
+                if re.search(pattern, name) is None:
                     param_dict[name] = net_params[name]
             return param_dict
         else:
