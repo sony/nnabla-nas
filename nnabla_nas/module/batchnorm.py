@@ -31,7 +31,7 @@ class BatchNormalization(Module):
             element in ``axes`` are calculated using elements on the
             rest axes. For example, if an input is 4 dimensions,
             and ``axes`` is ``[1]``, batch mean is calculated as
-             ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
+            ``np.mean(inp.d, axis=(0, 2, 3), keepdims=True)``
             (using numpy expression as an example).
         decay_rate (float, optional): Decay rate of running mean and
             variance. Defaults to 0.9.
@@ -46,19 +46,22 @@ class BatchNormalization(Module):
             dict must be ``'beta'``, ``'gamma'``, ``'mean'`` or ``'var'``.
             A value of the dict must be an :obj:`~nnabla.initializer.
             Initializer` or a :obj:`numpy.ndarray`.
-            E.g. ``{
+            E.g.::
+
+                {
                     'beta': ConstantIntializer(0),
                     'gamma': np.ones(gamma_shape) * 2
-                    }``.
+                }
+
         name (string): the name of this module
 
     Returns:
         :class:`~nnabla.Variable`: N-D array.
 
     References:
-        - Ioffe and Szegedy, Batch Normalization: Accelerating Deep
-        Network Training by Reducing Internal Covariate Shift.
-        https://arxiv.org/abs/1502.03167
+        Ioffe and Szegedy, Batch Normalization: Accelerating Deep
+            Network Training by Reducing Internal Covariate Shift.
+            https://arxiv.org/abs/1502.03167
     """
 
     def __init__(self, n_features, n_dims, axes=[1], decay_rate=0.9, eps=1e-5,

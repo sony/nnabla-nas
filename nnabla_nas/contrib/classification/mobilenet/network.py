@@ -58,10 +58,10 @@ class SearchNet(Model):
             Defaults to `True`.
 
     References:
-    [1] Sandler, M., Howard, A., Zhu, M., Zhmoginov, A. and Chen, L.C., 2018.
-        Mobilenetv2: Inverted residuals and linear bottlenecks. In Proceedings
-        of the IEEE conference on computer vision and pattern recognition
-        (pp. 4510-4520).
+        Sandler, M., Howard, A., Zhu, M., Zhmoginov, A. and Chen, L.C., 2018.
+            Mobilenetv2: Inverted residuals and linear bottlenecks. In
+            Proceedings of the IEEE conference on computer vision and pattern
+            recognition (pp. 4510-4520).
     """
 
     def __init__(self,
@@ -277,10 +277,10 @@ class TrainNet(SearchNet):
             None.
 
     References:
-    [1] Sandler, M., Howard, A., Zhu, M., Zhmoginov, A. and Chen, L.C., 2018.
-        Mobilenetv2: Inverted residuals and linear bottlenecks. In Proceedings
-        of the IEEE conference on computer vision and pattern recognition
-        (pp. 4510-4520).
+        [1] Sandler, M., Howard, A., Zhu, M., Zhmoginov, A. and Chen, L.C.,
+            2018. Mobilenetv2: Inverted residuals and linear bottlenecks. In
+            Proceedings of the IEEE conference on computer vision and pattern
+            recognition (pp. 4510-4520).
     """
 
     def __init__(self,

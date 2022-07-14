@@ -43,13 +43,11 @@ class Conv(Module):
         group (int, optional): Number of groups of channels. This makes
             connections across channels more sparse by grouping connections
             along map direction. Defaults to 1.
-        w_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`, optional):
             Initializer for weight. By default, it is initialized with
             :obj:`nnabla.initializer.UniformInitializer` within the range
             determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
-        b_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`, optional):
             Initializer for bias. By default, it is initialized with zeros if
             `with_bias` is `True`.
         base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
@@ -147,13 +145,11 @@ class DwConv(Module):
             dimensions. Defaults to None.
         multiplier (:obj:`int`, optional): Number of output feature maps per
             input feature map. Defaults to 1.
-        w_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`, optional):
             Initializer for weight. By default, it is initialized with
             :obj:`nnabla.initializer.UniformInitializer` within the range
             determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
-        b_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`, optional):
             Initializer for bias. By default, it is initialized with zeros if
             `with_bias` is `True`.
         base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
@@ -167,8 +163,8 @@ class DwConv(Module):
         name (string): the name of this module
 
     References:
-        - F. Chollet: Chollet, Francois. "Xception: Deep Learning with
-        Depthwise Separable Convolutions. https://arxiv.org/abs/1610.02357
+        F. Chollet: Chollet, Francois. "Xception: Deep Learning with
+            Depthwise Separable Convolutions. https://arxiv.org/abs/1610.02357
     """
 
     def __init__(self, in_channels, kernel, pad=None, stride=None,

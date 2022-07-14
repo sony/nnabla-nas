@@ -116,4 +116,3 @@ The above genotype means::
 
     ["MB4 7x7", "MB3 7x7", skip_connect, skip_connect, "MB6 3x3", ...]
 
-.. bibliography:: ../bibtex/reference.bib

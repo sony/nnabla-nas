@@ -382,13 +382,11 @@ class Conv(mo.Conv, Module):
         group (int, optional): Number of groups of channels. This makes
             connections across channels more sparse by grouping connections
             along map direction. Defaults to 1.
-        w_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`, optional):
             Initializer for weight. By default, it is initialized with
             :obj:`nnabla.initializer.UniformInitializer` within the range
             determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
-        b_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`, optional):
             Initializer for bias. By default, it is initialized with zeros if
             `with_bias` is `True`.
         base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
@@ -423,14 +421,13 @@ class Linear(mo.Linear, Module):
         in_features (int): The size of each output sample.
         base_axis (int, optional): Dimensions up to `base_axis` are treated as
             the sample dimensions. Defaults to 1.
-        w_init (:obj:`nnabla.initializer.BaseInitializer` or
-            :obj:`numpy.ndarray`): Initializer for weight. By default, it is
-            initialized with :obj:`nnabla.initializer.UniformInitializer`
-            within the range determined by
-            :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
-        b_init (:obj:`nnabla.initializer.BaseInitializer` or
-            :obj:`numpy.ndarray`): Initializer for bias. By default, it is
-            initialized with zeros if `with_bias` is `True`.
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`):
+            Initializer for weight. By default, it is initialized with
+            :obj:`nnabla.initializer.UniformInitializer` within the range
+            determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`):
+            Initializer for bias. By default, it is initialized with zeros if
+            `with_bias` is `True`.
         rng (numpy.random.RandomState): Random generator for Initializer.
         with_bias (bool): Specify whether to include the bias term.
     """
@@ -463,13 +460,11 @@ class DwConv(mo.DwConv, Module):
             dimensions. Defaults to None.
         multiplier (:obj:`int`, optional): Number of output feature maps per
             input feature map. Defaults to 1.
-        w_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`, optional):
             Initializer for weight. By default, it is initialized with
             :obj:`nnabla.initializer.UniformInitializer` within the range
             determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
-        b_init (:obj:`nnabla.initializer.BaseInitializer`
-            or :obj:`numpy.ndarray`, optional):
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`, optional):
             Initializer for bias. By default, it is initialized with zeros if
             `with_bias` is `True`.
         base_axis (:obj:`int`, optional): Dimensions up to `base_axis` are
@@ -482,8 +477,8 @@ class DwConv(mo.DwConv, Module):
             Defaults to `True`.
 
     References:
-        - F. Chollet: Chollet, Francois. "Xception: Deep Learning with
-        Depthwise Separable Convolutions. https://arxiv.org/abs/1610.02357
+        F. Chollet: Chollet, Francois. "Xception: Deep Learning with
+            Depthwise Separable Convolutions. https://arxiv.org/abs/1610.02357
     """
 
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):
@@ -666,18 +661,20 @@ class BatchNormalization(mo.BatchNormalization, Module):
             dict must be ``'beta'``, ``'gamma'``, ``'mean'`` or ``'var'``.
             A value of the dict must be an :obj:`~nnabla.initializer.
             Initializer` or a :obj:`numpy.ndarray`.
-            E.g. ``{
+            E.g.::
+
+                {
                     'beta': ConstantIntializer(0),
                     'gamma': np.ones(gamma_shape) * 2
-                    }``.
+                }
 
     Returns:
         :class:`~nnabla.Variable`: N-D array.
 
     References:
-        - Ioffe and Szegedy, Batch Normalization: Accelerating Deep
-        Network Training by Reducing Internal Covariate Shift.
-        https://arxiv.org/abs/1502.03167
+        Ioffe and Szegedy, Batch Normalization: Accelerating Deep
+            Network Training by Reducing Internal Covariate Shift.
+            https://arxiv.org/abs/1502.03167
     """
 
     def __init__(self, parents, name='', eval_prob=None, *args, **kwargs):

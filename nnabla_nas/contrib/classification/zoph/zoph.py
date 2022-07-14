@@ -31,7 +31,6 @@ class SepConv(smo.Graph):
     Args:
         parents (list): a list of static modules that
             are parents to this module
-        name (string, optional): the name of the module
         in_channels (:obj:`int`): Number of convolution kernels (which is
             equal to the number of input channels).
         out_channels (:obj:`int`): Number of convolution kernels (which is
@@ -46,6 +45,7 @@ class SepConv(smo.Graph):
             dimensions. Defaults to None.
         with_bias (bool, optional): Specify whether to include the bias term.
             Defaults to `True`.
+        name (string, optional): the name of the module
 
     """
     def __init__(self, parents,
@@ -93,7 +93,6 @@ class SepConvBN(smo.Graph):
     Args:
         parents (list): a list of static modules that
             are parents to this module
-        name (string, optional): the name of the module
         out_channels (:obj:`int`): Number of convolution kernels (which is
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
@@ -102,6 +101,7 @@ class SepConvBN(smo.Graph):
             (width) two-dimensional kernel, specify (3,5).
         dilation (:obj:`tuple` of :obj:`int`, optional): Dilation sizes for
             dimensions. Defaults to None.
+        name (string, optional): the name of the module
     """
 
     def __init__(self, parents, out_channels,
@@ -152,10 +152,10 @@ class SepConv3x3(SepConvBN):
     Args:
         parents (list): a list of static modules that
             are parents to this module
-        name (string, optional): the name of the module
         channels (:obj:`int`): Number of convolution kernels (which is
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
+        name (string, optional): the name of the module
     """
 
     def __init__(self, parents, channels, name='', eval_prob=None):
@@ -176,10 +176,10 @@ class SepConv5x5(SepConvBN):
     Args:
         parents (list): a list of static modules that
             are parents to this module
-        name (string, optional): the name of the module
         channels (:obj:`int`): Number of convolution kernels (which is
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
+        name (string, optional): the name of the module
     """
 
     def __init__(self, parents, channels, name='', eval_prob=None):
@@ -200,10 +200,10 @@ class DilSepConv3x3(SepConvBN):
     Args:
         parents (list): a list of static modules that
             are parents to this module
-        name (string, optional): the name of the module
         channels (:obj:`int`): Number of convolution kernels (which is
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
+        name (string, optional): the name of the module
     """
 
     def __init__(self, parents, channels, name='', eval_prob=None):
@@ -224,10 +224,10 @@ class DilSepConv5x5(SepConvBN):
     Args:
         parents (list): a list of static modules that
             are parents to this module
-        name (string, optional): the name of the module
         channels (:obj:`int`): Number of convolution kernels (which is
             equal to the number of output channels). For example, to apply
             convolution on an input with 16 types of filters, specify 16.
+        name (string, optional): the name of the module
     """
 
     def __init__(self, parents, channels, name='', eval_prob=None):
@@ -243,11 +243,12 @@ class DilSepConv5x5(SepConvBN):
 class MaxPool3x3(smo.Graph):
     """
     A static max pooling of size 3x3 followed by batch normalization and ReLU
+
     Args:
         parents (list): a list of static modules that
             are parents to this module
-        name (string, optional): the name of the module
         channels (int): the number of features
+        name (string, optional): the name of the module
     """
     def __init__(self, parents,
                  channels,
@@ -286,11 +287,12 @@ class AveragePool3x3(smo.Graph):
     """
     A static average pooling of size 3x3 followed by
     batch normalization and ReLU
+
     Args:
         parents (list): a list of static modules that
             are parents to this module
-        name (string, optional): the name of the module
         channels (int): the number of features
+        name (string, optional): the name of the module
     """
     def __init__(self, parents,
                  channels,
@@ -345,17 +347,16 @@ class ZophBlock(smo.Graph):
             are parents to this module
         name (string, optional): the name of the module
         candidates (list): the candidate modules instantiated
-                           within this block (e.g. ZOPH_CANDIDATES)
+            within this block (e.g. ZOPH_CANDIDATES)
         channels (int): the number of output channels of this block
         join_parameters (nnabla variable, optional): the architecture
-                        parameters used to join the outputs
-                        of the candidate modules.
-                        join_parameters must have the same number
-                        of elements as we have candidates.
+            parameters used to join the outputs of the candidate modules.
+            join_parameters must have the same number of elements as we have
+            candidates.
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot
-         architecture search." (2019).
+        Bender, Gabriel. "Understanding and simplifying one-shot
+            architecture search." (2019).
     """
 
     def __init__(self, parents, candidates,
@@ -407,18 +408,17 @@ class ZophCell(smo.Graph):
             are parents to this module
         name (string, optional): the name of the module
         candidates (list): the candidate modules instantiated within
-                          this block (e.g. ZOPH_CANDIDATES)
+            this block (e.g. ZOPH_CANDIDATES)
         channels (int): the number of output channels of this block
         join_parameters (list of nnabla variable, optional):
-            lift of the architecture
-            parameters used to join the outputs
-            of the candidate modules.Each element in join_parameters must have
-            the same number of elements as we have candidates.
-            The length of this list must be n_modules.
+            lift of the architecture parameters used to join the outputs of the
+            candidate modules. Each element in join_parameters must have the
+            same number of elements as we have candidates.  The length of this
+            list must be n_modules.
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot
-         architecture search." (2019).
+        Bender, Gabriel. "Understanding and simplifying one-shot
+            architecture search." (2019).
     """
 
     def __init__(self, parents, candidates, channels, name='',
@@ -499,16 +499,16 @@ class SearchNet(Model, smo.Graph):
         cells (list): the type of the cells used within this search space
         cell_depth (list): the number of modules within each cell
         reducing (list): specifies for each cell if it reduces the feature
-                         map dimensions through pooling
+            map dimensions through pooling
         join_parameters (list): the join_parameters used in each
-                         cell and block.
+            cell and block.
         candidates (list, optional): the candidate modules instantiated
-                         within this block (e.g. ZOPH_CANDIDATES)
+            within this block (e.g. ZOPH_CANDIDATES)
         mode (string): the mode which the join modules within this network use
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot
-         architecture search." (2019).
+        Bender, Gabriel. "Understanding and simplifying one-shot
+            architecture search." (2019).
     """
 
     def __init__(self, name='', input_shape=(3, 32, 32),
@@ -715,15 +715,15 @@ class TrainNet(SearchNet):
         cells (list): the type of the cells used within this search space
         cell_depth (list): the number of modules within each cell
         reducing (list): specifies for each cell if it reduces the feature map
-                         dimensions through pooling
+            dimensions through pooling
         join_parameters (list): the join_parameters used in each cell and block
         candidates (list, optional): the candidate modules instantiated within
-                         this block (e.g. ZOPH_CANDIDATES)
+            this block (e.g. ZOPH_CANDIDATES)
         mode (string): the mode which the join modules within this network use
 
     References:
-        - Bender, Gabriel. "Understanding and simplifying one-shot
-        architecture search." (2019).
+        Bender, Gabriel. "Understanding and simplifying one-shot
+            architecture search." (2019).
     """
 
     def __init__(self, name, input_shape=(3, 32, 32),
