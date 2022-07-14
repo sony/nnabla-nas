@@ -19,20 +19,20 @@ from nnabla.parameter import set_parameter
 
 class Parameter(nn.Variable):
     r"""Parameter is a Variable.
+
     A kind of Variable that is to be considered a module parameter. Parameters
-    are :class:`~nnabla.Variable` subclasses, that have a very special
-    property when used with :class:`Module` s - when they're
-    assigned as Module attributes they are automatically added to the list of
-    its parameters.
+    are :class:`~nnabla.Variable` subclasses, that have a very special property
+    when used with :class:`Module` s - when they're assigned as Module
+    attributes they are automatically added to the list of its parameters.
 
     Args:
         shape (tuple of int): The shape of Parameter.
         need_grad (bool, optional): If the parameter requires gradient.
             Defaults to True.
-        initializer (:obj:`nnabla.initializer.BaseInitializer` or
-            :obj:`numpy.ndarray`): An initialization function to be applied to
-            the parameter. :obj:`numpy.ndarray` can also be given to
-            initialize parameters from numpy array data. Defaults to None.
+        initializer (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`):
+            An initialization function to be applied to the parameter.
+            :obj:`numpy.ndarray` can also be given to initialize parameters
+            from numpy array data. Defaults to None.
     """
 
     def __init__(self, *args, **kwargs):
