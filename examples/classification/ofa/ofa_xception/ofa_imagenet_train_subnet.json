@@ -26,7 +26,7 @@
                     "XP0.8 7x7 1",  "XP0.8 7x7 2",  "XP0.8 7x7 3", 
                     "XP0.6 7x7 1",  "XP0.6 7x7 2",  "XP0.6 7x7 3"
             ],
-            "genotype": [19, 2, 20, 5, 8, 10, 26, 23],
+            "genotype": [19, 2, 20, 5, 8, 10, 26, 25],
             "weights": "log/classification/ofa/ofa_xception/imagenet/search/K357_E0.6+0.8+1_D123/checkpoint/weights.h5"
         }
     },
@@ -57,12 +57,12 @@
         "no_decay_keys": ["_b$", "/bn/_[^/]*$", "/_skipbn/_[^/]*$"],
         "valid_ce_loss": true,
         "lambda_kd": 0,
-        "epoch": 2,
+        "epoch": 5,
         "epoch_steps": 2,
         "step_decay_rate": 0.94,
-        "batch_size_train": 96,
+        "batch_size_train": 128,
         "batch_size_valid": 200,
-        "mini_batch_train": 96,
+        "mini_batch_train": 32,
         "mini_batch_valid": 200,
         "print_frequency": 100,
         "validation_frequency": 1

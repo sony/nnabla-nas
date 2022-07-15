@@ -43,11 +43,11 @@
         "train_image_size_list": [128, 160, 192, 224],
         "valid_image_size_list": [160, 224],
         "valid_genotypes": [
-            [0, 1, 0, 2, 0, 0, 3, 2],
+            [0, 1, 0, 2, 0, 5, 3, 2],
             [0, 0, 3, 2, 0, 1, 0, 2],
-            [1, 1, 0, 2, 1, 1, 1, 2],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 1, 1, 1, 1, 1, 1]
+            [1, 1, 4, 2, 1, 1, 1, 2],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0]
         ],
         "input_shapes": [
             [3, 224, 224]
@@ -67,14 +67,14 @@
                 "weights": "log/classification/ofa/ofa_xception/imagenet/search/K7_E1_D3/checkpoint/weights.h5"
             }
         },
-        "epoch": 30,
+        "epoch": 15,
         "epoch_steps": 2,
         "step_decay_rate": 0.94,
-        "batch_size_train": 96,
+        "batch_size_train": 128,
         "batch_size_valid": 200,
-        "mini_batch_train": 96,
+        "mini_batch_train": 64,
         "mini_batch_valid": 200,
         "print_frequency": 100,
-        "validation_frequency": 1
+        "validation_frequency": 2
     }
 }
