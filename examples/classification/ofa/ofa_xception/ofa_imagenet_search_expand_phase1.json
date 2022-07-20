@@ -54,7 +54,7 @@
             [0, 0, 0, 0, 0, 10, 11, 12],
             [2, 2, 2, 2, 2, 9, 2, 2],
             [3, 3, 3, 3, 14, 3, 3, 3],
-            [5, 5, 5, 12, 5, 5, 5, 5]
+            [14, 14, 14, 14, 14, 14, 14, 14]
         ],
         "input_shapes": [
             [3, 224, 224]
@@ -74,14 +74,14 @@
                 "weights": "log/classification/ofa/ofa_xception/imagenet/search/K7_E1_D3/checkpoint/weights.h5"
             }
         },
-        "epoch": 30,
+        "epoch": 15,
         "epoch_steps": 2,
         "step_decay_rate": 0.94,
-        "batch_size_train": 96,
+        "batch_size_train": 128,
         "batch_size_valid": 200,
-        "mini_batch_train": 96,
+        "mini_batch_train": 64,
         "mini_batch_valid": 200,
         "print_frequency": 100,
-        "validation_frequency": 1
+        "validation_frequency": 3
     }
 }
