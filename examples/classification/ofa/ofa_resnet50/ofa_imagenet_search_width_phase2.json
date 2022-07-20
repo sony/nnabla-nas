@@ -4,10 +4,10 @@
             "train_portion": 0.99,
             "augment_valid": false,
             "colortwist": true,
-            "train_path": "/data/imagenet/train/",
-            "train_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/train_label",
-            "valid_path": "/data/imagenet/val/",
-            "valid_file": "/home/yuiko.sakuma/data/ilsvrc2012/imagenet_dir/val_label"
+            "train_path": "/disk1/data/ILSVRC-2012/img_train/",
+            "train_file": "/disk1/data/ILSVRC-2012/train.txt",
+            "valid_path": "/disk1/data/ILSVRC-2012/img_val/",
+            "valid_file": "/disk1/data/ILSVRC-2012/val.txt"
         }
     },
     "network": {
