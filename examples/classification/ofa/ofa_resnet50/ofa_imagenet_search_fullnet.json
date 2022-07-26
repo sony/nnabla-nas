@@ -46,7 +46,7 @@
         "target_shapes": [
             [1]
         ],
-        "no_decay_keys": "bn#_b",
+        "no_decay_keys": ["_b$", "/bn/_[^/]*$"],
         "valid_ce_loss": true,
         "valid_genotypes": [
             [2, 0.35, 1.0]
