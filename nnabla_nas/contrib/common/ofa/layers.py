@@ -568,7 +568,7 @@ class ResNetBottleneckBlock(Mo.Module):
         self._mid_channels = feature_dim
 
         self.conv1 = Mo.Sequential(OrderedDict([
-            ('conv', Mo.Conv(self._in_channels, feature_dim, (1, 1), pad=(0, 0), stride=(1, 1), with_bias=False)),
+            ('conv', Mo.Conv(self._in_channels, feature_dim, (1, 1), stride=(1, 1), pad=(0, 0), with_bias=False)),
             ('bn', Mo.BatchNormalization(feature_dim, 4)),
             ('act', build_activation(self._act_func))
         ]))
@@ -582,7 +582,7 @@ class ResNetBottleneckBlock(Mo.Module):
 
         self.conv3 = Mo.Sequential(OrderedDict([
             ('conv', Mo.Conv(
-                feature_dim, self._out_channels, (1, 1), pad=(0, 0), stride=(1, 1), group=1, with_bias=False)),
+                feature_dim, self._out_channels, (1, 1), stride=(1, 1), pad=(0, 0), with_bias=False)),
             ('bn', Mo.BatchNormalization(self._out_channels, 4))
         ]))
 
@@ -590,17 +590,17 @@ class ResNetBottleneckBlock(Mo.Module):
             self.downsample = Mo.Identity()
         elif self._downsample_mode == 'conv':
             self.downsample = Mo.Sequential(OrderedDict([
-                ('conv', Mo.Conv(in_channels, out_channels, (1, 1), pad=(0, 0), stride=stride, with_bias=False)),
+                ('conv', Mo.Conv(in_channels, out_channels, (1, 1), stride=stride, pad=(0, 0), with_bias=False)),
                 ('bn', Mo.BatchNormalization(out_channels, 4)),
             ]))
         elif self._downsample_mode == 'avgpool_conv':
             self.downsample = Mo.Sequential(OrderedDict([
                 ('avg_pool', Mo.AvgPool(stride, stride=stride, pad=(0, 0), ignore_border=False)),
-                ('conv', Mo.Conv(in_channels, out_channels, (1, 1), pad=(0, 0), stride=(1, 1), with_bias=False)),
+                ('conv', Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1), pad=(0, 0), with_bias=False)),
                 ('bn', Mo.BatchNormalization(out_channels, 4)),
             ]))
         else:
-            raise NotImplementedError
+            raise ValueError()
 
         self.final_act = build_activation(self._act_func)
 
