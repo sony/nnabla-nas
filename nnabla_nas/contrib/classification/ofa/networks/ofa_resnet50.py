@@ -79,7 +79,7 @@ class OFAResNet50(ClassificationModel):
         self._expand_ratio_list = val2list(expand_ratio_list)
         self._width_mult_list = val2list(width_mult_list)
 
-    # sort
+        # sort
         self._depth_list.sort()
         self._expand_ratio_list.sort()
         self._width_mult_list.sort()
