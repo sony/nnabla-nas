@@ -209,7 +209,6 @@ class OFAResNet50(ClassificationModel):
         depth = val2list(d, len(self.BASE_DEPTH_LIST) + 1)
         expand_ratio = val2list(e, len(self.blocks))
         width_mult = val2list(w, len(self.BASE_DEPTH_LIST) + 2)
-        print(depth, expand_ratio, width_mult)
 
         for block, e in zip(self.blocks, expand_ratio):
             if e is not None:
