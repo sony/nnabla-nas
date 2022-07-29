@@ -75,8 +75,4 @@ html_logo = "logo/logo.png"
 
 autodoc_mock_imports = [
     "nnabla_ext.cuda",
-    "more_itertools",
-    "tensorboard",
-    "networkx",
-    "sklearn",
 ]
