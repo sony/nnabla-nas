@@ -86,7 +86,7 @@ class ProcessGenotype:
         expand_ratio_list = [cls.CANDIDATES[subnet]['expand_ratio'] for subnet in subnet_list]
         depth_list = [cls.CANDIDATES[subnet]['depth'] for subnet in subnet_list]
 
-        assert([d >= 1 for d in depth_list])
+        assert ([d >= 1 for d in depth_list])
         return ks_list, expand_ratio_list, depth_list
 
 
@@ -248,7 +248,7 @@ class OFAXceptionNet(ClassificationModel):
         return self.classifier(x)
 
     def set_valid_arch(self, genotype):
-        assert(len(genotype) == OFAXceptionNet.NUM_MIDDLE_BLOCKS)
+        assert (len(genotype) == OFAXceptionNet.NUM_MIDDLE_BLOCKS)
         ks_list, expand_ratio_list, depth_list =\
             ProcessGenotype.get_subnet_arch(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
@@ -497,7 +497,7 @@ class TrainNet(OFAXceptionNet):
             base_stage_width=base_stage_width, op_candidates=op_candidates, weights=weights)
 
         if genotype is not None:
-            assert(len(genotype) == OFAXceptionNet.NUM_MIDDLE_BLOCKS)
+            assert (len(genotype) == OFAXceptionNet.NUM_MIDDLE_BLOCKS)
             ks_list, expand_ratio_list, depth_list = ProcessGenotype.get_subnet_arch(op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
 

@@ -26,7 +26,7 @@ class Estimator(object):
         """Returns the estimation of the whole module."""
         return sum(self.predict(m) for _, m in module.get_modules()
                    if len(m.modules) == 0 and m.need_grad
-                   and (not(hasattr(m, 'is_active')) or m.is_active))
+                   and (not (hasattr(m, 'is_active')) or m.is_active))
 
     def reset(self):
         """Clear cache."""

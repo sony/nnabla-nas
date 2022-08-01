@@ -80,7 +80,7 @@ def genotype2subnetlist(op_candidates, genotype):
             depth_list.append(d + 1)
         else:
             d += 1
-    assert([d > 1 for d in depth_list])
+    assert ([d > 1 for d in depth_list])
     return ks_list, expand_ratio_list, depth_list
 
 
@@ -255,7 +255,7 @@ class OFAMbv3Net(ClassificationModel):
         return self.classifier(x)
 
     def set_valid_arch(self, genotype):
-        assert(len(genotype) == 20)
+        assert (len(genotype) == 20)
         ks_list, expand_ratio_list, depth_list =\
             genotype2subnetlist(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
@@ -531,7 +531,7 @@ class TrainNet(OFAMbv3Net):
             op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
 
         if genotype is not None:
-            assert(len(genotype) == 20)
+            assert (len(genotype) == 20)
             ks_list, expand_ratio_list, depth_list = genotype2subnetlist(
                 op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
