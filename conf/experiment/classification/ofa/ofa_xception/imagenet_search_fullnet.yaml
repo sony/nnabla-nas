@@ -1,0 +1,14 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet_ofa.yaml
+  - override /hparams: hparams_ofa_xception_fullnet.yaml 
+  - override /optimizer: train_ofa_xception.yaml
+  - override /network: classification/ofa_xception.yaml
+
+args:
+  search: true
+  algorithm: OFASearcher
+
+name: classification/ofa/ofa_xception/imagenet/search/K7_E1_D3

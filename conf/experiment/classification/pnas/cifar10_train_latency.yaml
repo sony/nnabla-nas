@@ -1,0 +1,25 @@
+# @package _global_
+
+defaults:
+  - override /dataloader: classification/cifar10.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: train.yaml
+  - override /network: classification/pnas.yaml
+
+args:
+  algorithm: Trainer
+
+name: classification/pnas/cifar10/constrained/train
+
+network:
+  pnas:
+    genotype: log/classification/pnas/cifar10/constrained/search/arch.h5
+
+hparams:
+  epoch: 600
+  batch_size_train: 256
+  batch_size_valid: 100
+  mini_batch_train: 32
+  mini_batch_valid: 50
+  print_frequency: 20
+  loss_weights: [1, 0.4]

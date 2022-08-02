@@ -1,0 +1,24 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - args: args.yaml
+  - dataloader: classification/cifar10.yaml
+  - network: classification/darts.yaml
+  - optimizer: valid.yaml
+  - hparams: hparams.yaml
+
+  - experiment: classification/darts/cifar10_search.yaml
+
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+
+hydra:
+  mode: RUN
+  job:
+    chdir: True
+  run:
+    dir: log/${name}/        # to modify in order to change the job's output directory for a simple run
+  sweep:
+    dir: log/multirun
+    subdir: ${name}_${hydra.job.num}

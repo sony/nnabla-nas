@@ -26,6 +26,7 @@ from .... import module as Mo
 from ..base import ClassificationModel as Model
 from ..misc import AuxiliaryHeadCIFAR
 from .helper import save_dart_arch, visualize_dart_arch
+from hydra import utils
 
 
 class SearchNet(Model):
@@ -219,7 +220,8 @@ class TrainNet(Model):
         self._drop_path = drop_path
 
         num_channels = stem_multiplier * init_channels
-        genotype = json.load(open(genotype, 'r'))
+        genotype_path = os.path.realpath(os.path.join(utils.get_original_cwd(), genotype))
+        genotype = json.load(open(genotype_path, 'r'))
 
         # initialize the arch parameters
         self._stem = darts.StemConv(in_channels, num_channels)

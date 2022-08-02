@@ -1,0 +1,40 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: warmup.yaml
+  - override /network: classification/mobilenet_imagenet.yaml
+
+args:
+  search: true
+  algorithm: ProxylessNasSearcher
+
+name: classification/mobilenet/imagenet/search
+
+dataloader:
+  imagenet:
+    train_portion: 0.96
+
+hparams:
+  epoch: 120
+  input_shapes: [
+    [3, 224, 224]
+  ]
+  batch_size_train: 64
+  batch_size_valid: 64
+  mini_batch_train: 32
+  mini_batch_valid: 32
+  print_frequency: 100
+  warmup: 50
+
+optimizer:
+  train:
+    lr: 0.025
+    weight_decay: 4e-5
+  valid:
+    alpha: 0.001
+    beta1: 0.0
+  warmup:
+    lr: 0.05

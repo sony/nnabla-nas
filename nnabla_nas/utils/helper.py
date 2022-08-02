@@ -22,6 +22,10 @@ import nnabla.communicators as C
 from nnabla.ext_utils import get_extension_context
 import numpy as np
 
+from pathlib import Path
+from hydra.core.hydra_config import HydraConfig
+from omegaconf import OmegaConf
+
 from .tensorboard import SummaryWriter
 
 
@@ -173,6 +177,14 @@ def count_parameters(params):
         int: The total number of parameters.
     """
     return np.sum(np.prod(p.shape) for p in params.values())
+
+
+def get_output_path():
+    if 'hydra.mode=MULTIRUN' in OmegaConf.to_object(HydraConfig.get().overrides.hydra):
+        output_path = Path(HydraConfig.get().sweep.dir) / Path(HydraConfig.get().sweep.subdir)
+    else:
+        output_path = HydraConfig.get().run.dir
+    return output_path
 
 
 class SearchLogger(object):

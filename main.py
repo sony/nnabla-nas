@@ -13,8 +13,16 @@
 # limitations under the License.
 
 import sys
+from omegaconf import DictConfig
+import hydra
 
-if __name__ == "__main__":
+
+@hydra.main(config_path="conf", config_name="config", version_base="1.1")
+def app(cfg: DictConfig) -> None:
     sys.path.append('.')
     from nnabla_nas.utils.cli.cli import main
-    main()
+    main(cfg)
+
+
+if __name__ == "__main__":
+    app()

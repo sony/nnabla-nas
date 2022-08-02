@@ -1,0 +1,25 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet_ofa.yaml
+  - override /hparams: hparams_ofa_mbv3_fullnet.yaml 
+  - override /optimizer: train_ofa_mbv3.yaml
+  - override /network: classification/ofa_mbv3.yaml
+
+args:
+  search: true
+  algorithm: OFASearcher
+
+name: classification/ofa/ofa_mbv3/imagenet/search/K7_E6_D4
+
+network:
+  ofa_mbv3:
+    op_candidates: ["MB6 7x7"]
+    depth_candidates: [4]
+
+optimizer:
+  train:
+    lr: 0.65
+  train_no_decay:
+    lr: 0.65

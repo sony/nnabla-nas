@@ -1,0 +1,8 @@
+context: cudnn
+device_id: '-1'
+type_config: float
+search: false
+algorithm: DartsSearcher
+output_path: '.' # Caution: this is the output path relative to the current hydra ouput directory
+save_nnp: false
+no_visualize: true
