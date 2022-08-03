@@ -45,7 +45,7 @@ class ModuleList(Module):
         r"""Appends a given module to the end of the list.
 
         Args:
-            module (Module): A module to append.
+            module (~nnabla_nas.module.module.Module): A module to append.
         """
         if not isinstance(module, Module):
             ValueError(f'{module} is not an instance of Module.')
@@ -67,7 +67,7 @@ class ModuleList(Module):
 
         Args:
             index (int): An index to insert.
-            module (Module): A module to insert.
+            module (~nnabla_nas.module.module.Module): A module to insert.
         """
         if not isinstance(module, Module):
             ValueError(f'{module} is not an instance of Module.')

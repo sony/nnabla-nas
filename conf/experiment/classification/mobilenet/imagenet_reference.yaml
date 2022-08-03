@@ -1,0 +1,46 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: train.yaml
+  - override /network: classification/mobilenet_imagenet.yaml
+
+args: 
+  algorithm: Trainer
+
+name: classification/mobilenet/imagenet/reference
+
+hparams:
+  epoch: 120
+  input_shapes: [
+    [3, 224, 224]
+  ]
+  batch_size_train: 64
+  batch_size_valid: 64
+  mini_batch_train: 64
+  mini_batch_valid: 64
+  print_frequency: 100
+
+optimizer:
+  train:
+    lr: 0.1
+    weight_decay: 4e-5
+
+network:
+  mobilenet:
+    num_classes: 1000
+    settings: [
+      [24, 2, 2],
+      [32, 3, 2],
+      [64, 4, 2],
+      [96, 3, 1],
+      [160, 3, 2],
+      [320, 1, 1]
+      ]
+    candidates: [
+      "MB6 3x3"
+    ]
+    skip_connect: false
+    mode: max

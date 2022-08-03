@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import numpy as np
+from omegaconf import ListConfig, OmegaConf
 import math
 
 import nnabla.functions as F
@@ -89,7 +90,9 @@ def init_models(net, model_init='he_fout'):
 def val2list(val, repeat_time=1):
     """Converts values into list
        (if not list or tuple, repeats 'val' for 'repeat_time')"""
-    if isinstance(val, list) or isinstance(val, np.ndarray):
+    if isinstance(val, ListConfig):
+        return OmegaConf.to_object(val)
+    elif isinstance(val, list) or isinstance(val, np.ndarray):
         return val
     elif isinstance(val, tuple):
         return list(val)

@@ -1,0 +1,5 @@
+ofa_xception:
+  num_classes: 1000
+  bn_param: [0.9, 1e-5]
+  drop_rate: 0.1
+  op_candidates: ["XP1 7x7 3"]

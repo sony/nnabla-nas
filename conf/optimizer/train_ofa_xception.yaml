@@ -1,0 +1,12 @@
+train:
+  weight_decay: 1e-5
+  lr_scheduler: StepScheduler
+  name: Momentum
+  lr: 0.045
+  momentum: 0.9
+train_no_decay:
+  weight_decay: 0
+  lr_scheduler: StepScheduler
+  name: Momentum
+  lr: 0.045
+  momentum: 0.9

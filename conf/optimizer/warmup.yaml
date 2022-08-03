@@ -1,0 +1,9 @@
+defaults:
+  - valid.yaml
+
+warmup:
+  grad_clip: 5.0
+  weight_decay: 4e-5
+  lr_scheduler: CosineScheduler
+  name: Momentum
+  lr: 0.1

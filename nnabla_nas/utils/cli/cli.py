@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
-import json
 import os
 import sys
 
 import nnabla as nn
 from nnabla.ext_utils import get_extension_context
 from nnabla.logger import logger
+from omegaconf import DictConfig, OmegaConf
+from ..helper import get_output_path
 
 try:
     from nnabla_ext.cuda import StreamEventHandler
@@ -43,35 +43,12 @@ from nnabla_nas import runner
 from nnabla_nas.utils.helper import CommunicatorWrapper
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--context', '-c', type=str, default='cudnn',
-                        help="Extension module. 'cudnn' is highly recommended.")
-    parser.add_argument("--device-id", "-d", type=str, default='-1',
-                        help='A list of device ids to use, e.g., `0,1,2,3`.\
-                        This is only valid if you specify `-c cudnn`.')
-    parser.add_argument("--type-config", "-t", type=str, default='float',
-                        help='Type configuration.')
-    parser.add_argument('--search', '-s', action='store_true',
-                        help='Whether it is searching for the architecture.')
-    parser.add_argument('--algorithm', '-a', type=str, default='DartsSeacher',
-                        choices=runner.__all__, help='Which algorithm to use.')
-    parser.add_argument('--config-file', '-f', type=str,
-                        help='The configuration file for the experiment.')
-    parser.add_argument('--output-path', '-o', type=str,
-                        help='Path to save the monitoring log files.')
-    parser.add_argument('--save-nnp', action='store_true',
-                        help='Store network and parameter with nnp format.')
-    parser.add_argument('--no-visualize', action='store_false',
-                        help='Disable visualization with graphviz.')
+def main(cfg: DictConfig):
 
-    options = parser.parse_args()
-
-    config = json.load(open(options.config_file)
-                       ) if options.config_file else dict()
+    config = OmegaConf.to_object(cfg)
     hparams = config['hparams']
 
-    hparams.update({k: v for k, v in vars(options).items() if v is not None})
+    hparams.update({k: v for k, v in cfg['args'].items() if v is not None})
 
     # setup cuda visible
     if hparams['device_id'] != '-1':
@@ -95,13 +72,17 @@ def main():
         logger.info(f'Distributed training with {n_procs} processes.')
 
     # build the model
-    name, attributes = list(config['network'].items())[0]
+    name, attributes = list(cfg.network.items())[0]
     algorithm = contrib.__dict__[name]
     model = algorithm.SearchNet(**attributes) if hparams['search'] else \
         algorithm.TrainNet(**attributes)
 
     # Get all arguments for the runner
     conf = Configuration(config)
+
+    # Logging the output path of the experiment
+    output_path = get_output_path()
+    logger.info("Saving experiment results to %s" % output_path)
 
     runner.__dict__[hparams['algorithm']](
         model,

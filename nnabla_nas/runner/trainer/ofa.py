@@ -31,7 +31,7 @@ class OFATrainer(Runner):
         r"""Builds the graphs and assigns parameters to the optimizers."""
 
         self.update_graph('train')
-        keys = self.args['no_decay_keys'].split('#')
+        keys = self.args['no_decay_keys']
         net_params = [
             self.get_net_parameters_with_keys(keys, mode='exclude', grad_only=True),  # parameters with weight decay
             self.get_net_parameters_with_keys(keys, mode='include', grad_only=True),  # parameters without weight decay
@@ -168,8 +168,17 @@ class OFATrainer(Runner):
             if better:
                 for k in self.metrics:
                     self._best_metric[k] = self.metrics[k].data[0]
-                path = os.path.join(self.args['output_path'], 'weights.h5')
-                self.model.save_parameters(path)
+                if self.args['save_nnp']:
+                    self.model.save_net_nnp(
+                        self.args['output_path'],
+                        self.placeholder['valid']['inputs'][0],
+                        self.placeholder['valid']['outputs'][0],
+                        save_params=self.args.get('save_params'))
+                else:
+                    path = os.path.join(self.args['output_path'], 'weights.h5')
+                    self.model.save_parameters(path)
+                # checkpoint
+                self.save_checkpoint({'best_metric': self._best_metric})
 
         # reset loss and metric
         self.loss.zero()

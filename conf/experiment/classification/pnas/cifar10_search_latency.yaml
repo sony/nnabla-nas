@@ -1,0 +1,46 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/cifar10.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: warmup.yaml
+  - override /network: classification/darts.yaml
+
+args:
+  search: true
+  algorithm: ProxylessNasSearcher
+
+name: classification/pnas/cifar10/constrained/search
+
+dataloader: 
+  cifar10:
+    train_portion: 0.9
+
+network:
+  darts:
+    init_channels: 36
+    num_cells: 15
+    num_choices: 4
+    shared: false
+    mode: sample
+    
+optimizer:
+  valid:
+    alpha: 0.01
+  warmup:
+    weight_decay: 3e-4
+    lr: 0.025
+  
+regularizer:
+  LatencyEstimator:
+    weight: 0.1
+    bound: 5.0
+
+hparams:
+  epoch: 150
+  batch_size_train: 256
+  batch_size_valid: 256
+  mini_batch_train: 64
+  mini_batch_valid: 64
+  warmup: 50

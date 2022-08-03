@@ -20,7 +20,7 @@ import json
 
 import nnabla as nn
 
-from ..utils.helper import ProgressMeter
+from ..utils.helper import ProgressMeter, get_output_path
 
 
 class Runner(ABC):
@@ -171,6 +171,9 @@ class Runner(ABC):
         for name, optimizer in self.optimizer.items():
             checkpoint_info['optimizers'][name] = optimizer.save_checkpoint(str(path), name)
 
+        if ("best_metric" in checkpoint_info.keys() and "error" in checkpoint_info["best_metric"].keys()):
+            checkpoint_info["best_metric"]["error"] = float(checkpoint_info["best_metric"]["error"])
+
         # save parameters
         self.model.save_parameters(str(path / 'weights.h5'))
         checkpoint_info['params_path'] = str(path / 'weights.h5')
@@ -181,7 +184,10 @@ class Runner(ABC):
         self.monitor.info(f"Checkpoint saved: {str(path)}\n")
 
     def load_checkpoint(self):
-        path = Path(self.args['output_path']) / 'checkpoint' / 'checkpoint.json'
+
+        output_path = get_output_path()
+
+        path = Path(output_path) / 'checkpoint' / 'checkpoint.json'
         if path.is_file():
             # path = os.path.join(path, 'checkpoint.json')
             with path.open('r') as f:

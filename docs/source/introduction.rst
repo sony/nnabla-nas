@@ -97,10 +97,3 @@ The most fundamental source codes are in the `nnabla_nas folder <https://github.
 
 **Fig. 2.** A high-level API of the NNablaNAS framework.
 
-.. rubric:: References
-
-.. [liu2018] Liu, Hanxiao, Karen Simonyan, and Yiming Yang. "Darts: Differentiable architecture search." arXiv preprint arXiv:1806.09055 (2018).
-
-.. [Elsken2018] Elsken, Thomas, Jan Hendrik Metzen, and Frank Hutter. "Neural architecture search: A survey." arXiv preprint arXiv:1808.05377 (2018).
-
-.. [Cai2018] Cai, Han, Ligeng Zhu, and Song Han. "Proxylessnas: Direct neural architecture search on target task and hardware." arXiv preprint arXiv:1812.00332 (2018).

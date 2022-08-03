@@ -1,0 +1,29 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/cifar10.yaml
+  - override /hparams: hparams.yaml
+  - override /optimizer: valid.yaml
+  - override /network: classification/darts.yaml
+
+name: classification/darts/cifar10/search
+
+dataloader: 
+  cifar10:
+    train_portion: 0.5
+
+hparams:
+  warmup: 0
+
+network:
+  darts:
+    shared: true
+    mode: full
+ 
+optimizer:
+  valid:
+    weight_decay: 1e-3
+
+args:
+  search: true

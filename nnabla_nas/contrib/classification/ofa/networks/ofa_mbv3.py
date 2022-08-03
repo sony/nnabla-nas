@@ -14,6 +14,7 @@
 
 from collections import OrderedDict
 import random
+import os
 
 import numpy as np
 
@@ -30,6 +31,7 @@ from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_targe
 from ....common.ofa.utils.common_tools import init_models
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicMBConvLayer
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
+from hydra import utils
 
 
 CANDIDATES = {
@@ -80,7 +82,7 @@ def genotype2subnetlist(op_candidates, genotype):
             depth_list.append(d + 1)
         else:
             d += 1
-    assert([d > 1 for d in depth_list])
+    assert ([d > 1 for d in depth_list])
     return ks_list, expand_ratio_list, depth_list
 
 
@@ -255,7 +257,7 @@ class OFAMbv3Net(ClassificationModel):
         return self.classifier(x)
 
     def set_valid_arch(self, genotype):
-        assert(len(genotype) == 20)
+        assert (len(genotype) == 20)
         ks_list, expand_ratio_list, depth_list =\
             genotype2subnetlist(self._op_candidates, genotype)
         self.set_active_subnet(ks_list, expand_ratio_list, depth_list)
@@ -442,20 +444,11 @@ class OFAMbv3Net(ClassificationModel):
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items()])
 
-    def get_arch_parameters(self, grad_only=False):
-        r"""Returns an `OrderedDict` containing architecture parameters.
-        Args:
-            grad_only (bool, optional): If sets to `True`, then only parameters
-                with `need_grad=True` are returned. Defaults to False.
-        Returns:
-            OrderedDict: A dictionary containing parameters.
-        """
-        p = self.get_parameters(grad_only)
-        return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
-
     def load_parameters(self, path, raise_if_missing=False):
         with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
+            # adjust path because hydra changes the working directory
+            load_path = os.path.realpath(os.path.join(utils.get_original_cwd(), path))
+            nn.load_parameters(load_path)
             params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
 
@@ -542,7 +535,7 @@ class TrainNet(OFAMbv3Net):
             op_candidates=op_candidates, depth_candidates=depth_candidates, weights=weights)
 
         if genotype is not None:
-            assert(len(genotype) == 20)
+            assert (len(genotype) == 20)
             ks_list, expand_ratio_list, depth_list = genotype2subnetlist(
                 op_candidates, genotype)
             self.set_active_subnet(ks_list, expand_ratio_list, depth_list)

@@ -1,5 +1,5 @@
 Overview of Static Modules
------------------------
+--------------------------
 
 Besides (dynamic) modules NNablaNAS offers static_modules, i.e.,
 modules that can be used to define static computational graphs.
@@ -116,8 +116,10 @@ There are different ways of how to define static modules.
 You can derive a static version from a dynamic module. Consider the following
 example, where we want to derive a static Conv module from the dynamic Conv module.
 First, we derive our StaticConv module from
+
    - The dynamic Conv class
    - The StaticModule base class
+
 We call the __init__() of both parent classes. Please note that the order of inheritance is important !
 
 .. code-block:: python

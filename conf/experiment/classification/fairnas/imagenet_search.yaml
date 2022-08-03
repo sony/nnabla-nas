@@ -1,0 +1,53 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: train.yaml
+  - override /network: classification/fairnas.yaml
+
+args:
+  search: true
+  algorithm: FairNasSearcher
+
+name: classification/fairnas/imagenet/search
+
+dataloader: 
+  imagenet:
+    train_portion: 0.96
+
+hparams:
+  epoch: 150
+  batch_size_train: 64
+  batch_size_valid: 128
+  mini_batch_train: 32
+  mini_batch_valid: 128
+  num_sampled_iter: 6
+  num_search_samples: 10000
+  print_frequency: 100
+  input_shapes: [
+    [3, 224, 224]
+  ]
+    
+optimizer:
+  train:
+    lr: 0.1
+    weight_decay: 4e-5
+
+network:
+  fairnas:
+    num_classes: 1000
+    settings: [
+      [24, 4, 2],
+      [40, 4, 2],
+      [80, 4, 2],
+      [96, 4, 1],
+      [192, 4, 2],
+      [320, 1, 1]
+      ]
+    candidates: [
+      "MB6 3x3",
+      "MB6 5x5",
+      "MB6 7x7"
+      ]

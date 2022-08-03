@@ -17,6 +17,7 @@ from collections import OrderedDict
 import nnabla as nn
 from nnabla.utils.save import save
 from .parameter import Parameter
+from hydra import utils
 
 
 class Module(object):
@@ -247,7 +248,8 @@ class Module(object):
                 parameters are missing. Defaults to `False`.
         """
         with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
+            load_path = os.path.realpath(os.path.join(utils.get_original_cwd(), path))  # because hydra changes
+            nn.load_parameters(load_path)                                               # the working directory
             params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
 
@@ -304,23 +306,22 @@ class Module(object):
                      func_real_latency=None, func_accum_latency=None,
                      save_params=None):
         """
-            Saves whole net as one nnp
-            Calc whole net (real) latency (using e.g.Nnabla's [Profiler])
-            Calculate also layer-based latency
-            The modules are discovered using the nnabla graph of the whole net
-            The latency is then calculated based on each individual module's
-            nnabla graph (e.g. [LatencyGraphEstimator])
+        Saves whole net as one nnp Calc whole net (real) latency (using
+        e.g.Nnabla's [Profiler]) Calculate also layer-based latency The modules
+        are discovered using the nnabla graph of the whole net The latency is
+        then calculated based on each individual module's nnabla graph (e.g.
+        [LatencyGraphEstimator])
 
-            Args:
-                path
-                inp: input of the created network
-                out: output of the created network
-                calc_latency: flag for calc latency
-                func_real_latency: function to use to calc actual latency
-                func_accum_latency: function to use to calc accum. latency,
-                        this is, dissecting the network layer by layer
-                        using the graph of the network, calculate the
-                        latency for each layer and add up all these results.
+        Args:
+            path
+            inp: input of the created network
+            out: output of the created network
+            calc_latency: flag for calc latency
+            func_real_latency: function to use to calc actual latency
+            func_accum_latency: function to use to calc accum. latency,
+                    this is, dissecting the network layer by layer
+                    using the graph of the network, calculate the
+                    latency for each layer and add up all these results.
         """
         batch_size = inp.shape[0]
 
@@ -365,19 +366,19 @@ class Module(object):
                          func_latency=None
                          ):
         """
-            Saves all modules of the network as individual nnp files,
-            using folder structure given by name convention.
-            The modules are extracted going over the module list, not
-            over the graph structure.
-            The latency is then calculated based on each individual module's
-            nnabla graph (e.g. [LatencyGraphEstimator])
-            Args:
-                path
-                active_only: if True, only active modules are saved
-                calc_latency: flag for calc latency
-                func_latency: function to use to calc latency of
-                              each of the extracted modules
-                              This function needs to work based on the graph
+        Saves all modules of the network as individual nnp files, using folder
+        structure given by name convention.  The modules are extracted going
+        over the module list, not over the graph structure.  The latency is
+        then calculated based on each individual module's nnabla graph (e.g.
+        [LatencyGraphEstimator])
+
+        Args:
+            path
+            active_only: if True, only active modules are saved
+            calc_latency: flag for calc latency
+            func_latency: function to use to calc latency of
+                          each of the extracted modules
+                          This function needs to work based on the graph
         """
         accum_lat = 0.0
         mods = self.get_net_modules(active_only=active_only)
@@ -430,20 +431,21 @@ class Module(object):
                                 func_latency=None,
                                 ):
         """
-            *** Note: This function is deprecated. Use save_modules_nnp() ***
-            Saves all modules of the network as individual nnp files,
-            using folder structure given by name convention.
-            The modules are extracted going over the module list, not
-            over the graph structure.
-            The latency is then calculated using the module themselves
-            (e.g. [LatencyEstimator])
-            Args:
-                path
-                active_only: if True, only active modules are saved
-                calc_latency: flag for calc latency
-                func_latency: function to use to calc latency of
-                              each of the extracted modules
-                              This function needs to work based on the modules
+        *** Note: This function is deprecated. Use save_modules_nnp() ***
+        Saves all modules of the network as individual nnp files,
+        using folder structure given by name convention.
+        The modules are extracted going over the module list, not
+        over the graph structure.
+        The latency is then calculated using the module themselves
+        (e.g. [LatencyEstimator])
+
+        Args:
+            path
+            active_only: if True, only active modules are saved
+            calc_latency: flag for calc latency
+            func_latency: function to use to calc latency of
+                          each of the extracted modules
+                          This function needs to work based on the modules
         """
         accum_lat = 0.0
         mods = self.get_net_modules(active_only=active_only)
@@ -493,18 +495,18 @@ class Module(object):
 
     def calc_latency_all_modules(self, path, graph, func_latency=None):
         """
-            Calculate the latency for each of the modules in a graph.
-            The modules are extracted using the graph structure information.
-            The latency is then calculated based on each individual module's
-            nnabla graph.
-            It also saves the accumulated latency of all modules.
+        Calculate the latency for each of the modules in a graph.
+        The modules are extracted using the graph structure information.
+        The latency is then calculated based on each individual module's
+        nnabla graph.
+        It also saves the accumulated latency of all modules.
 
-            Args:
-                path
-                graph:
-                func_latency: function to use to calc latency of
-                              each of the modules
-                              This function needs to work based on the graph
+        Args:
+            path
+            graph:
+            func_latency: function to use to calc latency of
+                          each of the modules
+                          This function needs to work based on the graph
         """
         import nnabla.function as Function
         from nnabla_nas.utils.estimator.latency import Profiler
@@ -574,21 +576,26 @@ class Module(object):
 
     def convert_npp_to_onnx(self, path, opset='opset_11'):
         """
-            Finds all nnp files in the given path and its
-            subfolders and converts them to ONNX
-            For this to run smoothly, nnabla_cli must be
-            installed and added to your python path.
-            Args:
-                path
-                opset
+        Finds all nnp files in the given path and its subfolders and converts
+        them to ONNX For this to run smoothly, nnabla_cli must be installed and
+        added to your python path.
 
-        The actual bash shell command used is:
-        > find <DIR> -name '*.nnp' -exec echo echo {} \|  # noqa: E501,W605
-            awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh  # noqa: E501,W605
-        which, for each file found with find, outputs the following:
-        > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'  # noqa: E501,W605
-        which, for each file, generates the final conversion command:
-        > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.nnp.onnx
+        Args:
+            path
+            opset
+
+        The actual bash shell command used is::
+
+            > find <DIR> -name '*.nnp' -exec echo echo {} \|
+              awk -F \\. \'\{print \"nnabla_cli convert -b 1 -d opset_11 \"\$0\" \"\$1\"\.\"\$2\"\.onnx\"\}\' \; | sh | sh
+
+        which, for each file found with find, outputs the following::
+
+            > echo <FILE>.nnp | awk -F \. '{print "nnabla_cli convert -b 1 -d opset_11 "$0" "$1"."$2".onnx"}'  # noqa: E501,W605
+
+        which, for each file, generates the final conversion command::
+
+            > nnabla_cli convert -b 1 -d opset_11 <FILE>.nnp <FILE>.nnp.onnx
 
         """
         os.system('find ' + path + ' -name "*.nnp" -exec echo echo {} \|'              # noqa: E501,W605

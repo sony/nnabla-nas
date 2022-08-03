@@ -1,0 +1,9 @@
+imagenet:
+  train_portion: 0.99
+  augment_valid: False
+  colortwist: True
+  datapath: /disk1/data/ILSVRC-2012/
+  train_path: img_train/
+  train_file: train_label
+  valid_path: img_val/
+  valid_file: val_label

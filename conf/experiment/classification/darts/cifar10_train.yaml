@@ -1,0 +1,30 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/cifar10.yaml
+  - override /hparams: hparams.yaml 
+  - override /optimizer: train.yaml
+  - override /network: classification/darts.yaml
+
+args:
+  algorithm: Trainer
+
+name: classification/darts/cifar10/train
+
+network:
+  darts:
+    init_channels: 36
+    num_cells: 20
+    auxiliary: true
+    drop_path: 0.1
+    genotype: log/classification/darts/cifar10/search/arch.json
+
+hparams:
+  epoch: 600
+  batch_size_train: 96
+  batch_size_valid: 100
+  mini_batch_train: 48
+  mini_batch_valid: 50
+  loss_weights: [1, 0.4]
+  print_frequency: 50

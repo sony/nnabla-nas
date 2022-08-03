@@ -1,0 +1,9 @@
+pnas:
+  in_channels: 3
+  init_channels: 36
+  num_cells: 15
+  num_classes: 10
+  num_choices: 4
+  auxiliary: true
+  drop_path: 0.1
+  genotype: log/classification/pnas/cifar10/search/arch.h5

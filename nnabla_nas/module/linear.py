@@ -30,14 +30,13 @@ class Linear(Module):
         in_features (int): The size of each output sample.
         base_axis (int, optional): Dimensions up to `base_axis` are treated as
             the sample dimensions. Defaults to 1.
-        w_init (:obj:`nnabla.initializer.BaseInitializer` or
-            :obj:`numpy.ndarray`): Initializer for weight. By default, it is
-            initialized with :obj:`nnabla.initializer.UniformInitializer`
-            within the range determined by
-            :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
-        b_init (:obj:`nnabla.initializer.BaseInitializer` or
-            :obj:`numpy.ndarray`): Initializer for bias. By default, it is
-            initialized with zeros if `with_bias` is `True`.
+        w_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`):
+            Initializer for weight. By default, it is initialized with
+            :obj:`nnabla.initializer.UniformInitializer` within the range
+            determined by :obj:`nnabla.initializer.calc_uniform_lim_glorot`.
+        b_init (:obj:`nnabla.initializer.BaseInitializer` or :obj:`numpy.ndarray`):
+            Initializer for bias. By default, it is initialized with zeros if
+            `with_bias` is `True`.
         rng (numpy.random.RandomState): Random generator for Initializer.
         with_bias (bool): Specify whether to include the bias term.
         name (string): the name of this module
