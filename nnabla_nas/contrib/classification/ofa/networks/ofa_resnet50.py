@@ -197,7 +197,7 @@ class OFAResNet50(ClassificationModel):
         return info_list
 
     def set_valid_arch(self, genotype):
-        assert(len(genotype) == 3)
+        assert len(genotype) == 3
         depth_list, expand_list, width_list = genotype
         if isinstance(width_list, float):
             width_mult_stages = self._width_mult_list.index(width_list)
