@@ -18,12 +18,12 @@ network:
     expand_ratio_list: [0.2, 0.25, 0.35]
     width_mult_list: [0.65, 0.8, 1.0]
     genotype: {
-      "d": [0, 2, 1, 2, 0],
-      "e": [0.35, 0.2, 0.35, 0.2, 
-            0.25, 0.25, 0.2, 0.25, 
-            0.25, 0.25, 0.25, 0.2, 0.2, 0.2, 
-            0.35, 0.2, 0.2, 0.2],
-      "w": [0.65, 0.65, 1.0, 0.65, 0.8, 1.0]
+      "d": [0, 2, 1, 2, 0],                   # depth for [input_stem[1], stage1, stage2, stage3, stage4]
+      "e": [0.35, 0.2, 0.35, 0.2,             # expand_width for each layer in stage1
+            0.25, 0.25, 0.2, 0.25,            # stage2  
+            0.25, 0.25, 0.25, 0.2, 0.2, 0.2,  # stage3
+            0.35, 0.2, 0.2, 0.2],             # stage4
+      "w": [0.65, 0.65, 1.0, 0.65, 0.8, 1.0]  # width_mult for [input_stem[1], input_stem[2], stage1, stage2, stage3, stage4]
     }
     weights: log/classification/ofa/ofa_resnet50/imagenet/search/D012_E0.20.250.35_W0.650.81.0/weights.h5
 

@@ -3,7 +3,7 @@ train_image_size_list: [128, 160, 192, 224]
 valid_image_size_list: [160, 224]
 valid_ce_loss: true
 valid_genotypes: [
-  [2, 0.35, 1.0]
+  [2, 0.35, 1.0]  # [depth, expand_ratio, width_mult]
 ]
 input_shapes: [
   [3, 224, 224]
