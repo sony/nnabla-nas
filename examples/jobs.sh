@@ -133,40 +133,19 @@ mpirun -n 4 python main.py experiment=ofa/ofa_xception/imagenet_train_subnet
 #------------------------------------------------------------------#
 
 #---------------------- OFA-ResNet50 (ImageNet) ----------------------------#
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_resnet50/ofa_imagenet_search_fullnet.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_resnet50/imagenet/search/D2_W0.35_W1.0/
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_fullnet
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_resnet50/ofa_imagenet_search_depth.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_resnet50/imagenet/search/D012_W0.35_W1.0/
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_depth
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_resnet50/ofa_imagenet_search_expand_phase1.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_resnet50/imagenet/search/D012_W0.250.35_W1.0/
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_expand_phase1
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_resnet50/ofa_imagenet_search_expand_phase2.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_resnet50/imagenet/search/D012_W0.20.250.35_W1.0/
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_expand_phase2
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_resnet50/ofa_imagenet_search_width_phase1.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_resnet50/imagenet/search/D012_W0.20.250.35_W0.81.0/
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_width_phase1
 
-mpirun -n 4 python main.py --search \
-               -f examples/classification/ofa/ofa_resnet50/ofa_imagenet_search_width_phase2.json \
-               -a OFASearcher \
-               -o log/classification/ofa/ofa_resnet50/imagenet/search/D012_W0.20.250.35_W0.650.81.0/
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_width_phase2
 
-mpirun -n 4 python main.py \
-               -f examples/classification/ofa/ofa_resnet50/ofa_imagenet_train_subnet.json \
-               -a OFATrainer \
-               -o log/classification/ofa/ofa_resnet50/imagenet/train_subnet/
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_train_subnet
 #------------------------------------------------------------------#
 
 #---------------------- CompOFA-MobileNetV3 (ImageNet) ----------------------------#

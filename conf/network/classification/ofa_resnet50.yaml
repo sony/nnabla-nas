@@ -1,0 +1,7 @@
+ofa_resnet50:
+  num_classes: 1000
+  bn_param: [0.9, 1e-5]
+  drop_rate: 0.1
+  depth_list: [2]
+  expand_ratio_list: [0.35]
+  width_mult_list: [1.0]
