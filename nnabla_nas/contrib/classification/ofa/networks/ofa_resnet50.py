@@ -27,7 +27,7 @@ from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoo
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
 from ....common.ofa.utils.common_tools import init_models
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicConvLayer, DynamicLinearLayer
-from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicResNetBottleneckBlock
+from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicBottleneckResidualBlock
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
 
 
@@ -125,7 +125,7 @@ class OFAResNet50(ClassificationModel):
             for i in range(d):
                 stride = (s, s) if i == 0 else (1, 1)
                 blocks.append(
-                    DynamicResNetBottleneckBlock(
+                    DynamicBottleneckResidualBlock(
                         input_channel,
                         width,
                         expand_ratio_list=self._expand_ratio_list,

@@ -19,7 +19,7 @@ import numpy as np
 import nnabla as nn
 
 from ...... import module as Mo
-from ...layers import ConvLayer, LinearLayer, MBConvLayer, SEModule, XceptionBlock, ResNetBottleneckBlock
+from ...layers import ConvLayer, LinearLayer, MBConvLayer, SEModule, XceptionBlock, BottleneckResidualBlock
 from ...layers import set_layer_from_config, build_activation, get_extra_repr
 from ...utils.common_tools import val2list, make_divisible
 from .dynamic_op import DynamicConv, DynamicLinear, DynamicBatchNorm, DynamicDepthwiseConv, DynamicSE
@@ -586,9 +586,9 @@ class DynamicMiddleFlowXPBlock(Mo.Module):
         }
 
 
-class DynamicResNetBottleneckBlock(Mo.Module):
+class DynamicBottleneckResidualBlock(Mo.Module):
 
-    r"""Dynamic ResNet Bottleneck Block
+    r"""Dynamic BottleneckResidualBlock
     This block implements the dynamic version of bottleneck blocks of
     ResNet.
 
@@ -763,7 +763,7 @@ class DynamicResNetBottleneckBlock(Mo.Module):
 
     def get_active_subnet_config(self, in_channel):
         return {
-            'name': ResNetBottleneckBlock.__name__,
+            'name': BottleneckResidualBlock.__name__,
             'in_channels': in_channel,
             'out_channels': self.active_out_channel,
             'kernel': self._kernel,

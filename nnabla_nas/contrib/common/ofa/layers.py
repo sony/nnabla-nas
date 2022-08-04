@@ -32,7 +32,7 @@ def set_layer_from_config(layer_config):
         ##########################################################
         ResidualBlock.__name__: ResidualBlock,
         XceptionBlock.__name__: XceptionBlock,
-        ResNetBottleneckBlock.__name__: ResNetBottleneckBlock,
+        BottleneckResidualBlock.__name__: BottleneckResidualBlock,
     }
 
     layer_name = layer_config.pop('name')
@@ -521,9 +521,9 @@ class XceptionBlock(Mo.Module):
         return get_extra_repr(self)
 
 
-class ResNetBottleneckBlock(Mo.Module):
+class BottleneckResidualBlock(Mo.Module):
 
-    r"""ResNetBottleneckBlock
+    r"""BottleneckResidualBlock
 
     Args:
         in_channels (int): Number of convolution kernels in the input
@@ -546,7 +546,7 @@ class ResNetBottleneckBlock(Mo.Module):
     def __init__(self, in_channels, out_channels, kernel=(3, 3),
                  stride=(1, 1), expand_ratio=0.25, mid_channels=None,
                  act_func='relu', downsample_mode='avgpool_conv'):
-        super(ResNetBottleneckBlock, self).__init__()
+        super(BottleneckResidualBlock, self).__init__()
 
         self._in_channels = in_channels
         self._out_channels = out_channels
@@ -617,7 +617,7 @@ class ResNetBottleneckBlock(Mo.Module):
 
     @staticmethod
     def build_from_config(config):
-        return ResNetBottleneckBlock(**config)
+        return BottleneckResidualBlock(**config)
 
     def extra_repr(self):
         return get_extra_repr(self)
