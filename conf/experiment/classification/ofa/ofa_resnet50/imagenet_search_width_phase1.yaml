@@ -23,7 +23,7 @@ network:
 hparams:
   task: width
   valid_genotypes: [
-    [0, 0.2, 0.8],
+    [0, 0.2, 0.8],  # [depth, expand_ratio, width_mult]
     [2, 0.2, 0.8],
     [0, 0.35, 0.8],
     [2, 0.35, 0.8],

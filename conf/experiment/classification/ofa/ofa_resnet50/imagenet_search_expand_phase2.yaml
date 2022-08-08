@@ -29,7 +29,7 @@ optimizer:
 hparams:
   task: expand
   valid_genotypes: [
-    [0, 0.2, 1.0],
+    [0, 0.2, 1.0],  # [depth, expand_ratio, width_mult]
     [2, 0.2, 1.0],
     [0, 0.25, 1.0],
     [2, 0.25, 1.0],
