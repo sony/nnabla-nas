@@ -424,14 +424,18 @@ class TrainNet(SearchNet):
             width_mult_list=width_mult_list, weights=weights)
 
         if genotype is not None:
-            assert len(genotype['d']) == 5, 'expected length 5, got {}'.format(len(genotype['d']))
-            assert len(genotype['e']) == 18, 'expected length 18, got {}'.format(len(genotype['e']))
-            assert len(genotype['w']) == 6, 'expected length 6, got {}'.format(len(genotype['w']))
+            assert all(map(genotype['d'].__contains__, ('input_stem1', 'block')))
+            assert all(map(genotype['w'].__contains__, ('input_stem1', 'input_stem2', 'block')))
+            assert 'block' in genotype['e']
+            assert (len(genotype['d']['block']) == 4 and len(genotype['w']['block']) == 4)
+            assert len(genotype['e']['block']) == 18
 
+            genotype['d'] = [genotype['d']['input_stem1']] + genotype['d']['block']
+            genotype['e'] = genotype['e']['block']
+            genotype['w'] = [genotype['w']['input_stem1']] + [genotype['w']['input_stem2']] + genotype['w']['block']
             genotype['w'] = [self._width_mult_list.index(w) for w in genotype['w']]
 
             self.set_active_subnet(**genotype)
-            depth_list = genotype['d']
             preserve_weight = True if weights is not None else False
 
             # input stem
