@@ -10,3 +10,4 @@ target_shapes: [
   [1]
 ]
 print_frequency: 20
+loss_weights:
