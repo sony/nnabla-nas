@@ -78,15 +78,12 @@ def main(cfg: DictConfig):
     model = algorithm.SearchNet(**attributes) if args_['search'] else \
         algorithm.TrainNet(**attributes)
 
-
     # Get all arguments for the runner
     conf = Configuration(config)
 
     # Logging the output path of the experiment
     output_path = get_output_path()
     logger.info("Saving experiment results to %s" % output_path)
-
-    import pdb; pdb.set_trace()  # noqa: E402, E702
 
     runner.__dict__[args_['algorithm']](
         model,
