@@ -38,17 +38,19 @@ class Runner(ABC):
             estimators
         dataloader (dict): This stores dataloaders for both `train` and `valid`
             graphs.
-        args (Configuration): This stores all hyperparmeters used during
-            training.
+        args  (Configuration): This stores all hyperparmeters used during training.
+        args_2 (Configuration): This stores other variables used during for training:
+             event, communicator, output_path...
     """
 
-    def __init__(self, model, optimizer, regularizer, dataloader, args):
+    def __init__(self, model, optimizer, regularizer, dataloader, args, args_2):
 
         self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer
         self.regularizer = regularizer
         self.args = args
+        self.args_2 = args_2
 
         # aditional argurments
         hp = self.args
@@ -60,8 +62,8 @@ class Runner(ABC):
         self.accum_valid = self.bs_valid // self.mbs_valid
         self.one_epoch_train = len(self.dataloader['train']) // self.bs_train
         self.one_epoch_valid = len(self.dataloader['valid']) // self.bs_valid
-        self.comm = hp['comm']
-        self.event = hp['event']
+        self.comm = args_2['comm']
+        self.event = args_2['event']
         self.cur_epoch = 0
 
         # setup placeholder
@@ -79,7 +81,7 @@ class Runner(ABC):
         }
 
         # monitor log info
-        output_path = args['output_path']
+        output_path = args_2['output_path']
         self.monitor = ProgressMeter(self.one_epoch_train, output_path,
                                      quiet=self.comm.rank > 0)
 
@@ -161,7 +163,7 @@ class Runner(ABC):
 
     def save_checkpoint(self, checkpoint_info={}):
         r"""Save the current states of the runner."""
-        path = Path(self.args['output_path']) / 'checkpoint'
+        path = Path(self.args_2['output_path']) / 'checkpoint'
         path.mkdir(parents=True, exist_ok=True)
 
         checkpoint_info['epoch'] = self.cur_epoch
