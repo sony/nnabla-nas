@@ -50,9 +50,8 @@ class Configuration(object):
         except ModuleNotFoundError:
             print(f"dataset `{name}` is not supported.")
             sys.exit(-1)
-        args.update({
-            'communicator': conf['args']['comm']
-        })
+        args.update({'communicator': conf['args']['comm']})
+        
         return {
             
             'train': loader_cls(
