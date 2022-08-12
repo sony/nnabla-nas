@@ -46,10 +46,7 @@ from nnabla_nas.utils.helper import CommunicatorWrapper
 def main(cfg: DictConfig):
 
     config = OmegaConf.to_object(cfg)
-
-    hparams = config['hparams']
     args_ = config['args']
-    # hparams.update({k: v for k, v in config['args'].items() if v is not None})
 
     # setup cuda visible
     if args_['device_id'] != '-1':
