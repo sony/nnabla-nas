@@ -46,36 +46,38 @@ from nnabla_nas.utils.helper import CommunicatorWrapper
 def main(cfg: DictConfig):
 
     config = OmegaConf.to_object(cfg)
-    hparams = config['hparams']
 
-    hparams.update({k: v for k, v in cfg['args'].items() if v is not None})
+    hparams = config['hparams']
+    args_ = config['args']
+    # hparams.update({k: v for k, v in config['args'].items() if v is not None})
 
     # setup cuda visible
-    if hparams['device_id'] != '-1':
-        os.environ["CUDA_VISIBLE_DEVICES"] = hparams['device_id']
+    if args_['device_id'] != '-1':
+        os.environ["CUDA_VISIBLE_DEVICES"] = args_['device_id']
 
     # setup context for nnabla
     ctx = get_extension_context(
-        hparams['context'],
+        args_['context'],
         device_id='0',
-        type_config=hparams['type_config']
+        type_config=args_['type_config']
     )
 
-    # setup for distributed training
-    hparams['comm'] = CommunicatorWrapper(ctx)
-    hparams['event'] = StreamEventHandler(int(hparams['comm'].ctx.device_id))
+    # setup for distributed training. Needs to go into hyperparameters
+    args_['comm'] = CommunicatorWrapper(ctx)
+    args_['event'] = StreamEventHandler(int(args_['comm'].ctx.device_id))
 
-    nn.set_default_context(hparams['comm'].ctx)
+    nn.set_default_context(args_['comm'].ctx)
 
-    if hparams['comm'].n_procs > 1 and hparams['comm'].rank == 0:
-        n_procs = hparams['comm'].n_procs
+    if args_['comm'].n_procs > 1 and args_['comm'].rank == 0:
+        n_procs = args_['comm'].n_procs
         logger.info(f'Distributed training with {n_procs} processes.')
 
     # build the model
-    name, attributes = list(cfg.network.items())[0]
+    name, attributes = list(config['network'].items())[0]
     algorithm = contrib.__dict__[name]
-    model = algorithm.SearchNet(**attributes) if hparams['search'] else \
+    model = algorithm.SearchNet(**attributes) if args_['search'] else \
         algorithm.TrainNet(**attributes)
+
 
     # Get all arguments for the runner
     conf = Configuration(config)
@@ -84,10 +86,13 @@ def main(cfg: DictConfig):
     output_path = get_output_path()
     logger.info("Saving experiment results to %s" % output_path)
 
-    runner.__dict__[hparams['algorithm']](
+    import pdb; pdb.set_trace()  # noqa: E402, E702
+
+    runner.__dict__[args_['algorithm']](
         model,
         optimizer=conf.optimizer,
         regularizer=conf.regularizer,
         dataloader=conf.dataloader,
-        args=conf.hparams
+        args=config['hparams'],  # hyperparameters
+        args_2=config['args']    # other parameters needed when training
     ).run()
