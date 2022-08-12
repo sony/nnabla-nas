@@ -63,13 +63,14 @@ def main(cfg: DictConfig):
     )
 
     # setup for distributed training. Needs to go into hyperparameters
-    args_['comm'] = CommunicatorWrapper(ctx)
-    args_['event'] = StreamEventHandler(int(args_['comm'].ctx.device_id))
+    comm = CommunicatorWrapper(ctx)
+    args_['comm'] = comm
+    args_['event'] = StreamEventHandler(int(comm.ctx.device_id))
 
-    nn.set_default_context(args_['comm'].ctx)
+    nn.set_default_context(comm.ctx)
 
-    if args_['comm'].n_procs > 1 and args_['comm'].rank == 0:
-        n_procs = args_['comm'].n_procs
+    if comm.n_procs > 1 and comm.rank == 0:
+        n_procs = comm.n_procs
         logger.info(f'Distributed training with {n_procs} processes.')
 
     # build the model
@@ -79,7 +80,7 @@ def main(cfg: DictConfig):
         algorithm.TrainNet(**attributes)
 
     # Get all arguments for the runner
-    conf = Configuration(config)
+    objects = Configuration(config)
 
     # Logging the output path of the experiment
     output_path = get_output_path()
@@ -87,9 +88,9 @@ def main(cfg: DictConfig):
 
     runner.__dict__[args_['algorithm']](
         model,
-        optimizer=conf.optimizer,
-        regularizer=conf.regularizer,
-        dataloader=conf.dataloader,
+        optimizer=objects.optimizer,
+        regularizer=objects.regularizer,
+        dataloader=objects.dataloader,
         args=config['hparams'],  # hyperparameters
         args_2=config['args']    # other parameters needed when training
     ).run()
