@@ -52,16 +52,18 @@ class Runner(ABC):
 
         # aditional argurments
         hp = self.args
-        self.bs_train = hp['batch_size_train']
+        self.comm = hp['comm']
+        self.event = hp['event']
+        n_procs = self.comm.n_procs
+        
+        self.bs_train = hp['batch_size_train'] / n_procs # This is the local (per GPU) batch size
         self.mbs_train = hp['mini_batch_train']
-        self.bs_valid = hp['batch_size_valid']
+        self.bs_valid = hp['batch_size_valid'] / n_procs # This is the local (per GPU) batch size
         self.mbs_valid = hp['mini_batch_valid']
         self.accum_train = self.bs_train // self.mbs_train
         self.accum_valid = self.bs_valid // self.mbs_valid
         self.one_epoch_train = len(self.dataloader['train']) // self.bs_train
         self.one_epoch_valid = len(self.dataloader['valid']) // self.bs_valid
-        self.comm = hp['comm']
-        self.event = hp['event']
         self.cur_epoch = 0
 
         # setup placeholder

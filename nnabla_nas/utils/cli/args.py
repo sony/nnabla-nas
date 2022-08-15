@@ -53,9 +53,14 @@ class Configuration(object):
         }
         hparams.update(conf)
 
-        # check validity of batch sizes
-        assert hparams['batch_size_train'] % hparams['mini_batch_train'] == 0
-        assert hparams['batch_size_valid'] % hparams['mini_batch_valid'] == 0
+        # check validity of global, local and mini batch sizes
+        # global batch size must be divisible by number of GPUs
+        assert hparams['batch_size_train'] % hparams['comm'].n_procs == 0
+        assert hparams['batch_size_valid'] % hparams['comm'].n_procs == 0
+        
+        # local (per GPU) batch size must be divisible by minibatch size
+        assert (hparams['batch_size_train']/hparams['comm'].n_procs) % hparams['mini_batch_train'] == 0
+        assert (hparams['batch_size_valid']/hparams['comm'].n_procs) % hparams['mini_batch_valid'] == 0
 
         return hparams
 
