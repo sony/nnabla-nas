@@ -35,19 +35,19 @@ You can start architecture search using `DartsSearcher` by the command below
 
 ::
 
-	python main.py experiment=darts/cifar10_search
+	python main.py experiment=classification/darts/cifar10_search
 			   
 The retraining script can be used as
 
 :: 
 
-	python main.py experiment=darts/cifar10_train
+	python main.py experiment=classification/darts/cifar10_train
 
 NNablaNAS also supports multi GPUs. More information can be found `here <https://nnabla.readthedocs.io/en/latest/python/tutorial/multi_device_training.html>`_. Below is an example of searching an architecture with 4 GPUs.
 
 :: 
 
-    mpirun -n 4 python main.py experiment=darts/cifar10_search
+    mpirun -n 4 python main.py experiment=classification/darts/cifar10_search
 
 The output directory which Hydra generates automatically and where it puts the job output can accessed through hydra.run.dir in the command line (or somewhere in the config file), and be modified as follows:
 

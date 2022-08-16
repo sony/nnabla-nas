@@ -41,6 +41,10 @@ class ProgressMeter(object):
     def __init__(self, num_batches, path=None, quiet=False, filename='log.txt'):
 
         # changing file name if file already exists
+        if filename == 'log_search.txt':
+            filename = 'log_search' + HydraConfig.get().output_subdir + '.txt'
+        else:
+            filename = 'log' + HydraConfig.get().output_subdir + '.txt'
         filename = os.path.join(path, filename)
         if os.path.isfile(filename):
             name, ext = os.path.splitext(filename)
