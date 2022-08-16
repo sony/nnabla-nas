@@ -39,7 +39,7 @@ class Configuration(object):
         self.optimizer = self.get_optimizer(conf)
         # optional configuration
         self.regularizer = self.get_regularizer(conf)
- 
+
     def get_dataloader(self, conf):
         r"""Setup dataloader."""
         assert len(conf['dataloader']) == 1
@@ -51,9 +51,9 @@ class Configuration(object):
             print(f"dataset `{name}` is not supported.")
             sys.exit(-1)
         args.update({'communicator': conf['args']['comm']})
-        
+
         return {
-            
+
             'train': loader_cls(
                 searching=conf['args']['search'],
                 training=True,
