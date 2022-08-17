@@ -159,9 +159,11 @@ class OFAResNet50(ClassificationModel):
             self.sample_active_subnet()
 
         for layer in self.input_stem:
-            if self.input_stem_skipping > 0 \
-                    and isinstance(layer, ResidualBlock) and\
-                    isinstance(layer.shortcut, Mo.Identity):
+            if (
+                self.input_stem_skipping > 0
+                and isinstance(layer, ResidualBlock)
+                and isinstance(layer.shortcut, Mo.Identity)
+            ):
                 pass
             else:
                 input = layer(input)
