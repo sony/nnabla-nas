@@ -50,7 +50,8 @@ class OFASearcher(Searcher):
         OFAResize.IMAGE_SIZE_LIST = self.image_size_list
         OFAResize.ACTIVE_SIZE = max(self.image_size_list)
         OFAResize.IMAGE_SIZE_SEG = 4 if 'image_size_seg' not in self.hparams else self.hparams['image_size_seg']
-        OFAResize.CONTINUOUS = True if "image_size_continuous" not in self.hparams else self.hparams['image_size_continuous']
+        OFAResize.CONTINUOUS = True if "image_size_continuous" not in self.hparams \
+            else self.hparams['image_size_continuous']
 
         if self.hparams['lambda_kd'] > 0:  # knowledge distillation
             name, attributes = list(self.hparams['teacher_network'].items())[0]
