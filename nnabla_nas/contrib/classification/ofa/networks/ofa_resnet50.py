@@ -59,6 +59,9 @@ class OFAResNet50(ClassificationModel):
             https://github.com/mit-han-lab/once-for-all
     """
 
+    BASE_DEPTH_LIST = [2, 2, 4, 2]
+    STAGE_WIDTH_LIST = [256, 512, 1024, 2048]
+
     def __init__(self,
                  num_classes=1000,
                  bn_param=(0.9, 1e-5),
@@ -82,9 +85,6 @@ class OFAResNet50(ClassificationModel):
         self._expand_ratio_list.sort()
         self._width_mult_list.sort()
 
-        self.BASE_DEPTH_LIST = [2, 2, 4, 2]
-        self.STAGE_WIDTH_LIST = [256, 512, 1024, 2048]
-
         input_channel = [
             make_divisible(64 * width_mult) for width_mult in self._width_mult_list
         ]
@@ -92,13 +92,13 @@ class OFAResNet50(ClassificationModel):
             make_divisible(channel // 2) for channel in input_channel
         ]
 
-        stage_width_list = self.STAGE_WIDTH_LIST.copy()
+        stage_width_list = OFAResNet50.STAGE_WIDTH_LIST.copy()
         for i, width in enumerate(stage_width_list):
             stage_width_list[i] = [
                 make_divisible(width * width_mult) for width_mult in self._width_mult_list
             ]
 
-        n_block_list = [base_depth + max(self._depth_list) for base_depth in self.BASE_DEPTH_LIST]
+        n_block_list = [base_depth + max(self._depth_list) for base_depth in OFAResNet50.BASE_DEPTH_LIST]
         stride_list = [1, 2, 2, 2]
 
         input_stem = [
