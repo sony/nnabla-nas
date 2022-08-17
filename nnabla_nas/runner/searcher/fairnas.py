@@ -60,7 +60,7 @@ class FairNasSearcher(Searcher):
             # training loop
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
-                if i % (self.hparams['print_frequency']) == 0:
+                if i % (self.args['print_frequency']) == 0:
                     train_keys = [m.name for m in self.monitor.meters.values()
                                   if 'train' in m.name]
                     self.monitor.display(i, key=train_keys)

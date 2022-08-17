@@ -10,7 +10,8 @@ defaults:
 args:
   search: true
   algorithm: ProxylessNasSearcher
-
+  print_frequency: 20
+  
 name: classification/zoph/search
 
 dataloader:
@@ -34,5 +35,4 @@ hparams:
   batch_size_valid: 256
   mini_batch_train: 64
   mini_batch_valid: 64
-  print_frequency: 20
   warmup: 50

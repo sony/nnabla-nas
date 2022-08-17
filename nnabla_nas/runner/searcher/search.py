@@ -35,7 +35,7 @@ class Searcher(Runner):
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
                 self.valid_on_batch()
-                if i % (self.hparams['print_frequency']) == 0:
+                if i % (self.args['print_frequency']) == 0:
                     self.monitor.display(i)
 
             self.callback_on_epoch_end()
@@ -55,7 +55,7 @@ class Searcher(Runner):
 
             for i in range(self.one_epoch_train):
                 self.train_on_batch(key='warmup')
-                if i % (self.hparams['print_frequency']) == 0:
+                if i % (self.args['print_frequency']) == 0:
                     self.monitor.display(i)
 
     def callback_on_epoch_end(self):

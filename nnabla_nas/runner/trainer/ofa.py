@@ -75,7 +75,7 @@ class OFATrainer(Runner):
 
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
-                if i % (self.hparams['print_frequency']) == 0:
+                if i % (self.args['print_frequency']) == 0:
                     self.monitor.display(i, [k for k in self.monitor.meters if 'train' in k])
 
             for i in trange(self.one_epoch_valid, disable=self.comm.rank > 0):
