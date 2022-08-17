@@ -10,6 +10,7 @@ defaults:
 args:
   search: true
   algorithm: ProxylessNasSearcher
+  print_frequency: 100
 
 name: classification/mobilenet/imagenet/latency/search
 
@@ -26,7 +27,6 @@ hparams:
   batch_size_valid: 64
   mini_batch_train: 32
   mini_batch_valid: 32
-  print_frequency: 100
   warmup: 50
 
 optimizer:

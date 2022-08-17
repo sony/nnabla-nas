@@ -9,7 +9,8 @@ defaults:
 
 args: 
   algorithm: Trainer
-
+  print_frequency: 100
+  
 name: classification/mobilenet/imagenet/reference
 
 hparams:
@@ -21,7 +22,6 @@ hparams:
   batch_size_valid: 64
   mini_batch_train: 64
   mini_batch_valid: 64
-  print_frequency: 100
 
 optimizer:
   train:

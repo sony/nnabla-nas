@@ -9,7 +9,8 @@ defaults:
 
 args:
   algorithm: Trainer
-
+  print_frequency: 50
+  
 name: classification/random_wired/train
 
 hparams:
@@ -18,4 +19,4 @@ hparams:
   batch_size_valid: 20
   mini_batch_train: 64
   mini_batch_valid: 20
-  print_frequency: 50
+
