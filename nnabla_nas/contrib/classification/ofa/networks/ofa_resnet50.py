@@ -72,8 +72,6 @@ class OFAResNet50(ClassificationModel):
         self._num_classes = num_classes
         self._bn_param = bn_param
         self._drop_rate = drop_rate
-        self._weight_init = weight_init
-        self._weights = weights
 
         self._depth_list = val2list(depth_list)
         self._expand_ratio_list = val2list(expand_ratio_list)
@@ -103,9 +101,6 @@ class OFAResNet50(ClassificationModel):
         n_block_list = [base_depth + max(self._depth_list) for base_depth in self.BASE_DEPTH_LIST]
         stride_list = [1, 2, 2, 2]
 
-        self._settings = [
-            [w, d, s] for (w, d, s) in zip(stage_width_list, depth_list, stride_list)
-        ]
         input_stem = [
             DynamicConvLayer(val2list(3), mid_input_channel, (3, 3), stride=(2, 2), use_bn=True),
             ResidualBlock(
@@ -117,11 +112,8 @@ class OFAResNet50(ClassificationModel):
         self.max_pooling = Mo.MaxPool(kernel=(3, 3), stride=(2, 2), pad=(1, 1))
 
         # blocks
-        self.block_group_info = []
         blocks = []
-        _block_index = 1
         for d, width, s in zip(n_block_list, stage_width_list, stride_list):
-            self.block_group_info.append([_block_index + i for i in range(d)])
             for i in range(d):
                 stride = (s, s) if i == 0 else (1, 1)
                 blocks.append(
