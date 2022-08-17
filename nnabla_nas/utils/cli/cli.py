@@ -88,6 +88,6 @@ def main(cfg: DictConfig):
         optimizer=objects.optimizer,
         regularizer=objects.regularizer,
         dataloader=objects.dataloader,
-        args=config['hparams'],  # hyperparameters
-        args_2=config['args']    # other parameters needed when training
+        hparams=config['hparams'],  # hyperparameters
+        args=args_  # other parameters needed when training
     ).run()

@@ -60,14 +60,14 @@ class Trainer(Runner):
         """Run the training process."""
         self.callback_on_start()
 
-        for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
+        for self.cur_epoch in range(self.cur_epoch, self.hparams['epoch']):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
             self.monitor.info(f'Running epoch={self.cur_epoch}\tlr={lr:.5f}\n')
 
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
-                if i % (self.args['print_frequency']) == 0:
+                if i % (self.hparams['print_frequency']) == 0:
                     self.monitor.display(i, [k for k in self.monitor.meters if 'train' in k])
 
             for i in trange(self.one_epoch_valid, disable=self.comm.rank > 0):
