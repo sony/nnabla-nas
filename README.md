@@ -255,7 +255,8 @@ You can then build the documentation by running ``make <format>`` from the
 ``docs/`` folder. Run ``make`` to get a list of all available output formats.
 
 ## Contact
-NNablaNAS is currently maintained by [SSG-DL group](mailto:STC_EUTEC-SSG-DL@eu.sony.com), [R&D Center Europe Stuttgart Laboratory 1](https://www.sony.net/SonyInfo/technology/about/stuttgart1/). For bug reports, questions, and suggestions, use [Github issues](https://github.com/nnabla/nnabla-nas/issues).
+NNablaNAS is currently maintained by [Sony R&D Center, Stuttgart Laboratory 1](https://www.sony.com/en/SonyInfo/research/about/stuttgart-laboratory1/).
+For bug reports, questions, and suggestions, use [Github issues](https://github.com/nnabla/nnabla-nas/issues).
 
 ## License
 
