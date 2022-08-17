@@ -84,7 +84,6 @@ class Configuration(object):
                     except KeyError:
                         lr = args['alpha']  # for adam
                     bz = conf['hparams']['batch_size_train'if name != 'valid' else 'batch_size_valid']
-                    # epoch = conf['hparams']['epoch'] if name == 'train' else conf['hparams']['warmup']
                     epoch = conf['hparams']['epoch'] if 'train' in name else conf['hparams']['warmup']
                     max_iter = epoch * \
                         len(self.dataloader['valid' if name == 'valid' else 'train']) // bz

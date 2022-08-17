@@ -10,4 +10,5 @@ target_shapes: [
   [1]
 ]
 print_frequency: 20
+warmup: 0
 loss_weights:

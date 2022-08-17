@@ -24,12 +24,12 @@ import numpy as np
 class FairNasSearcher(Searcher):
     r"""An implementation of FairNAS."""
 
-    def __init__(self, model, optimizer, regularizer, dataloader, args):
-        super().__init__(model, optimizer, regularizer, dataloader, args)
+    def __init__(self, model, optimizer, regularizer, dataloader, hparams, args):
+        super().__init__(model, optimizer, regularizer, dataloader, hparams, args)
         # Number of models sampled at each batch
-        self.m_sampled = args.get('num_sampled_iter', 4)
+        self.m_sampled = hparams.get('num_sampled_iter', 4)
         # Number of samples for the search
-        self.search_samples = args.get('num_search_samples', 0)
+        self.search_samples = hparams.get('num_search_samples', 0)
         self.logger = SearchLogger()
         self.search_monitor = ProgressMeter(
             self.search_samples,
@@ -53,14 +53,14 @@ class FairNasSearcher(Searcher):
         self._start_warmup()
 
         # Training
-        for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
+        for self.cur_epoch in range(self.cur_epoch, self.hparams['epoch']):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
             self.monitor.info(f'Running epoch={self.cur_epoch}\tlr={lr:.5f}\n')
             # training loop
             for i in range(self.one_epoch_train):
                 self.train_on_batch()
-                if i % (self.args['print_frequency']) == 0:
+                if i % (self.hparams['print_frequency']) == 0:
                     train_keys = [m.name for m in self.monitor.meters.values()
                                   if 'train' in m.name]
                     self.monitor.display(i, key=train_keys)
