@@ -2,7 +2,7 @@
 
 OFA ResNet50 search space includes elastic `depth` (D), `expand_ratio` (E), and `width_mult` (W).
 `expand_ratio` and `width_mult` adjust the channel size of the bottleneck residual blocks. 
-While `expand ratio` changes the middle layers' channel size, `width_mult` is the multiplication ratio for the output layers.
+While `expand ratio` changes the middle layer's channel size, `width_mult` is the multiplication ratio for the output layers.
 
 ## Search fullnet
 | Model                    | GPUs | Epochs | Train time(h)|Top1-accuracy (img_size=160)|Top1-accuracy (img_size=224)| 
