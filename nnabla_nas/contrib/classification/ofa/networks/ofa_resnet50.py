@@ -145,7 +145,7 @@ class OFAResNet50(ClassificationModel):
                 if (
                     len(self._expand_ratio_list) > 1
                     or len(self._width_mult_list) > 1
-                    ):
+                ):
                     m.use_static_bn = False
                 else:
                     m.use_static_bn = True
