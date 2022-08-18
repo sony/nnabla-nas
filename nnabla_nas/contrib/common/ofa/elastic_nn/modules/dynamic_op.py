@@ -153,7 +153,9 @@ class DynamicBatchNorm(Mo.Module):
         self._scope_name = f'<dynamicbatchnorm2d at {hex(id(self))}>'
 
         self._max_feature_dim = max_feature_dim
-        self.bn = Mo.BatchNormalization(self._max_feature_dim, n_dims)
+        self._n_dims = n_dims
+
+        self.bn = Mo.BatchNormalization(max_feature_dim, n_dims)
         self.use_static_bn = True
         self.set_running_statistics = False
         self.prev_running_stats = None
