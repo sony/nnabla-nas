@@ -142,7 +142,10 @@ class OFAResNet50(ClassificationModel):
 
         for _, m in self.get_modules():
             if isinstance(m, DynamicBatchNorm):
-                if len(self._expand_ratio_list) > 1:
+                if (
+                    len(self._expand_ratio_list) > 1
+                    or len(self._width_mult_list) > 1
+                    ):
                     m.use_static_bn = False
                 else:
                     m.use_static_bn = True
