@@ -160,7 +160,7 @@ class DynamicBatchNorm(Mo.Module):
         self.set_running_statistics = False
         self._prev_running_stats = None
 
-    def update_running_stats(self):
+    def _update_running_stats(self):
         """
         Note: This implementation is a workaround to avoid undesireble network
         graph construction in static mode that causes inefficient memory use.
@@ -189,7 +189,7 @@ class DynamicBatchNorm(Mo.Module):
             return self.bn(input)
         else:
             assert not nn.get_auto_forward(), "This code block is verified with static mode only so far."
-            self.update_running_stats()
+            self._update_running_stats()
             feature_dim = input.shape[1]
             bn = self.bn
             sbeta, sgamma = bn._beta[:, :feature_dim, :, :], bn._gamma[:, :feature_dim, :, :]
