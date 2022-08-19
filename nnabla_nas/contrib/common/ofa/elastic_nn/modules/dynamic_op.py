@@ -175,7 +175,7 @@ class DynamicBatchNorm(Mo.Module):
         if self.use_static_bn or self.set_running_statistics:
             return self.bn(input)
         else:
-            assert not nn.get_auto_forward(), "This code block is verified with static mode so far."
+            assert not nn.get_auto_forward(), "This code block is verified with static mode only so far."
             self.update_running_stats()
             feature_dim = input.shape[1]
             bn = self.bn
