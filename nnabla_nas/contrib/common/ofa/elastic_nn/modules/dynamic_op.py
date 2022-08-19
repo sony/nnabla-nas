@@ -161,6 +161,19 @@ class DynamicBatchNorm(Mo.Module):
         self._prev_running_stats = None
 
     def update_running_stats(self):
+        """
+        Note: This implementation is a workaround to avoid undesireble network
+        graph construction in static mode that causes inefficient memory use.
+
+        This method is called before the forward graph construction of each DynamicBN.
+        However, this leads to a missing update in some cases of using the model
+        before the next forward graph construction (e.g., saving parameters) unless
+        this method is callsed after the last iteration.
+
+        We decided to leave this issue remained since ignoring the last update
+        shouldn't affect the performance much.
+        """
+
         if self._prev_running_stats is None:
             return
         bn = self.bn
