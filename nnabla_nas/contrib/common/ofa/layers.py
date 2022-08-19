@@ -32,6 +32,7 @@ def set_layer_from_config(layer_config):
         ##########################################################
         ResidualBlock.__name__: ResidualBlock,
         XceptionBlock.__name__: XceptionBlock,
+        BottleneckResidualBlock.__name__: BottleneckResidualBlock,
     }
 
     layer_name = layer_config.pop('name')
@@ -515,6 +516,108 @@ class XceptionBlock(Mo.Module):
     @staticmethod
     def build_from_config(config):
         return XceptionBlock(**config)
+
+    def extra_repr(self):
+        return get_extra_repr(self)
+
+
+class BottleneckResidualBlock(Mo.Module):
+
+    r"""BottleneckResidualBlock
+
+    Args:
+        in_channels (int): Number of convolution kernels in the input
+            layer (which is equal to the number of input channels).
+        out_channels (int): Number of convolution kernels in the last
+            layer (which is equal to the number of output channels).
+        kernel (tuple of int, optional): Convolution kernel size for the
+            Conv layers in this block. Defaults to (3, 3)
+        stride (tuple of int, optional): Stride sizes for residual
+            connections. Defaults to (1, 1).
+        expand_ratio (float, optional): Used for calculating the number
+            of mid_channels. Defaults to None.
+        mid_channels (int, optional): Number of mid channels of the
+           bottleneck. Defaults to None.
+        act_func (str, optional): Type of activation. Defaults to 'relu'.
+        downsample_mode (str, optional): Downsample method for the
+           residual connection. Defaults to 'avgpool_conv'.
+    """
+
+    def __init__(self, in_channels, out_channels, kernel=(3, 3),
+                 stride=(1, 1), expand_ratio=0.25, mid_channels=None,
+                 act_func='relu', downsample_mode='avgpool_conv'):
+        super(BottleneckResidualBlock, self).__init__()
+
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+
+        self._kernel = kernel
+        self._stride = stride
+        self._expand_ratio = expand_ratio
+        self._mid_channels = mid_channels
+        self._act_func = act_func
+
+        self._downsample_mode = downsample_mode
+
+        if self._mid_channels is None:
+            feature_dim = round(self._out_channels * self._expand_ratio)
+        else:
+            feature_dim = self._mid_channels
+
+        feature_dim = make_divisible(feature_dim)
+        self._mid_channels = feature_dim
+
+        self.conv1 = Mo.Sequential(OrderedDict([
+            ('conv', Mo.Conv(self._in_channels, feature_dim, (1, 1), stride=(1, 1), pad=(0, 0), with_bias=False)),
+            ('bn', Mo.BatchNormalization(feature_dim, 4)),
+            ('act', build_activation(self._act_func))
+        ]))
+
+        pad = get_same_padding(self._kernel)
+        self.conv2 = Mo.Sequential(OrderedDict([
+            ('conv', Mo.Conv(feature_dim, feature_dim, kernel, stride=stride, pad=pad, with_bias=False)),
+            ('bn', Mo.BatchNormalization(feature_dim, 4)),
+            ('act', build_activation(self._act_func))
+        ]))
+
+        self.conv3 = Mo.Sequential(OrderedDict([
+            ('conv', Mo.Conv(
+                feature_dim, self._out_channels, (1, 1), stride=(1, 1), pad=(0, 0), with_bias=False)),
+            ('bn', Mo.BatchNormalization(self._out_channels, 4))
+        ]))
+
+        if stride == (1, 1) and in_channels == out_channels:
+            self.downsample = Mo.Identity()
+        elif self._downsample_mode == 'conv':
+            self.downsample = Mo.Sequential(OrderedDict([
+                ('conv', Mo.Conv(in_channels, out_channels, (1, 1), stride=stride, pad=(0, 0), with_bias=False)),
+                ('bn', Mo.BatchNormalization(out_channels, 4)),
+            ]))
+        elif self._downsample_mode == 'avgpool_conv':
+            self.downsample = Mo.Sequential(OrderedDict([
+                ('avg_pool', Mo.AvgPool(stride, stride=stride, pad=(0, 0), ignore_border=False)),
+                ('conv', Mo.Conv(in_channels, out_channels, (1, 1), stride=(1, 1), pad=(0, 0), with_bias=False)),
+                ('bn', Mo.BatchNormalization(out_channels, 4)),
+            ]))
+        else:
+            raise ValueError()
+
+        self.final_act = build_activation(self._act_func)
+
+    def call(self, x):
+        residual = self.downsample(x)
+
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+
+        x = x + residual
+        x = self.final_act(x)
+        return x
+
+    @staticmethod
+    def build_from_config(config):
+        return BottleneckResidualBlock(**config)
 
     def extra_repr(self):
         return get_extra_repr(self)
