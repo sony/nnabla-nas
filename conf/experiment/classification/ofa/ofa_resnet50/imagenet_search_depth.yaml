@@ -1,0 +1,39 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet_ofa.yaml
+  - override /hparams: hparams_ofa_resnet50.yaml 
+  - override /optimizer: train_ofa_resnet50.yaml
+  - override /network: classification/ofa_resnet50.yaml
+
+args:
+  search: true
+  algorithm: OFASearcher
+
+name: classification/ofa/ofa_resnet50/imagenet/search/D012_E0.35_W1.0
+
+network:
+  ofa_resnet50:
+    depth_list: [0, 1, 2]
+    expand_ratio_list: [0.35]
+    width_mult_list: [1.0]
+    weights: log/classification/ofa/ofa_resnet50/imagenet/search/D2_E0.35_W1.0/weights.h5
+
+optimizer:
+  train:
+    lr: 0.24
+  train_no_decay:
+    lr: 0.24
+
+hparams:
+  task: depth
+  valid_genotypes: [
+    [0, 0.35, 1.0],  # [depth, expand_ratio, width_mult]
+    [1, 0.35, 1.0],
+    [2, 0.35, 1.0]
+  ]
+  epoch: 125
+  cosine_warmup_epoch: 5
+  warmup_lr: 0.03
+  batch_size_train: 64

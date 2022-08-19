@@ -18,6 +18,16 @@ We will show how to run and modify the so-called ``MobileNet`` example on CIFAR1
 .. note::
     The command line for each example can be found in ./jobs.sh
 
+Quick notice about Hydra
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Since we are using Hydra to deal with our configurations, you can check your experimental configuration without having to launch your experiment before hand, by using the following command::
+
+    python main.py experiment=my_experiment --cfg job
+
+You can also take a look at Hydra's more general configuration by typing::
+
+    python main.py experiment=my_experiment --cfg hydra
+
 The MobileNet search space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 In this example we use MobileNetV2 :cite:`sandler2018mobilenetv2` as a backbone to build the search space. In :cite:`sandler2018mobilenetv2`, the proposed architecture use fixed inverted bottleneck convolution with an expansion factor of 6 and a kernel size of 3x3. Furthermore, the number of inverted bottleneck convolution for each block with the same feature map size is defined. In this example, we want to add flexibility in the MobileNetV2 architecture to choose the depth for each block as well as the expansion factor and the kernel size for each inverted residual convolution.
@@ -33,7 +43,7 @@ Running your first example
 
 First, we will run the search with the default setting::
 
-      python main.py experiment=mobilenet/cifar10_search
+      python main.py experiment=classification/mobilenet/cifar10_search
 
 We used the following arguments:
  * ``main.py`` is the entry script for all search and training examples.
@@ -47,7 +57,7 @@ In ``./log/classification/mobilenet/cifar10/search`` you will find the following
  * ``arch.png`` to visualize the best architecture so far.
  * ``main.log`` contains the general log.
  * ``log.txt`` contains the search log.
- * ``/.hydra`` contains the configuration files generated for this experiment, ie the job config, hydra config, and the eventual overrides (when an element from the config is modified through the command line).
+ * ``/.YEAR-MONTH-DAY.hour-minutes-seconds`` contains the configuration files generated for this experiment, ie the job config, hydra config, and the eventual overrides (when an element from the config is modified through the command line).
 
 Here is an example of a MobileNet architecture:
 
@@ -68,13 +78,13 @@ Access your TensorBoard page using your browser at the given address (typically:
 
 Once the search is finished, retrain the winning architecture from scratch using the same entry point python script::
 
-   python main.py experiment=mobilenet/cifar10_train
+   python main.py experiment=classification/mobilenet/cifar10_train
 
 Note that, this time, we use the ``Trainer`` algorithm inside the experiment config file. The retraining will take several hours. You can monitor the training from your TensorBoard.
 
 If you want to compare with the original implementation of MobileNetV2, just run::
 
-  python main.py experiment=mobilenet/cifar10_train_latency
+  python main.py experiment=classification/mobilenet/cifar10_train_latency
  
 Congratulations, you have performed your first neural architecture search using NNablaNAS. Now let's have a look at how to customize the search and training configuration. 
 

@@ -22,3 +22,4 @@ hydra:
   sweep:
     dir: log/multirun
     subdir: ${name}_${hydra.job.num}
+  output_subdir: .${now:%Y-%m-%d}.${now:%H-%M-%S}
