@@ -158,14 +158,14 @@ class DynamicBatchNorm(Mo.Module):
         self.bn = Mo.BatchNormalization(max_feature_dim, n_dims)
         self.use_static_bn = True
         self.set_running_statistics = False
-        self.prev_running_stats = None
+        self._prev_running_stats = None
 
     def update_running_stats(self):
-        if self.prev_running_stats is None:
+        if self._prev_running_stats is None:
             return
         bn = self.bn
-        smean, svar = self.prev_running_stats
-        self.prev_running_stats = None
+        smean, svar = self._prev_running_stats
+        self._prev_running_stats = None
         channel_axis = 1
         feature_dim = smean.shape[channel_axis]
         bn._mean.data.copy_from(F.concatenate(smean, bn._mean[:, feature_dim:, :, :], axis=1).data)
@@ -186,7 +186,7 @@ class DynamicBatchNorm(Mo.Module):
             svar.data = bn._var.data[:, :feature_dim, :, :]
             y = F.batch_normalization(input, sbeta, sgamma, smean, svar, batch_stat=self.training)
             if self.training:
-                self.prev_running_stats = (smean, svar)
+                self._prev_running_stats = (smean, svar)
             return y
 
 
