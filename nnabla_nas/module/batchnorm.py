@@ -122,8 +122,7 @@ class BatchNormalization(Module):
 
             _feature_dim = batch_mean.shape[1]
             return F.batch_normalization(
-                input, self._beta[:, :_feature_dim, :,
-                                  :], self._gamma[:, :_feature_dim, :, :],
+                input, self._beta[:, :_feature_dim, :, :], self._gamma[:, :_feature_dim, :, :],
                 batch_mean, batch_var, decay_rate=self._decay_rate, eps=self._eps, batch_stat=False
             )
         else:
