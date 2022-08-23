@@ -172,24 +172,35 @@ class DynamicBatchNorm(Mo.Module):
 
         We decided to leave this issue remained since ignoring the last update
         shouldn't affect the performance much.
+        Probably this implementation can be improved by replacing this part by
+        F.assign and replace after F.batch_normalization(...)
         """
-
         if self._prev_running_stats is None:
             return
         bn = self.bn
-        smean, svar = self._prev_running_stats
+        smean, svar, feature_dim = self._prev_running_stats
         self._prev_running_stats = None
         channel_axis = 1
-        feature_dim = smean.shape[channel_axis]
-        bn._mean.data.copy_from(F.concatenate(smean, bn._mean[:, feature_dim:, :, :], axis=1).data)
-        bn._var.data.copy_from(F.concatenate(svar, bn._var[:, feature_dim:, :, :], axis=1).data)
+        if feature_dim < bn._mean.shape[channel_axis]:
+            bn._mean.data.copy_from(F.concatenate(smean.data, bn._mean.data[:, feature_dim:, :, :], axis=1))
+            bn._var.data.copy_from(F.concatenate(svar.data, bn._var.data[:, feature_dim:, :, :], axis=1))
+        else:
+            bn._mean.data.copy_from(smean.data)
+            bn._var.data.copy_from(svar.data)
 
     def call(self, input):
         if self.use_static_bn or self.set_running_statistics:
             return self.bn(input)
         else:
             assert not nn.get_auto_forward(), "This code block is verified with static mode only so far."
-            self._update_running_stats()
+            if self.training:
+                """
+                Note: We decided to call self._update_running_stats() only for the training mode.
+                For OFA, running this part at the validation mode induces larger loss because
+                reset_running_statistics() runs before this; running this part overwrites the
+                re-calculated BN mean/var statistics.
+                """
+                self._update_running_stats()
             feature_dim = input.shape[1]
             bn = self.bn
             sbeta, sgamma = bn._beta[:, :feature_dim, :, :], bn._gamma[:, :feature_dim, :, :]
@@ -199,7 +210,7 @@ class DynamicBatchNorm(Mo.Module):
             svar.data = bn._var.data[:, :feature_dim, :, :]
             y = F.batch_normalization(input, sbeta, sgamma, smean, svar, batch_stat=self.training)
             if self.training:
-                self._prev_running_stats = (smean, svar)
+                self._prev_running_stats = (smean, svar, feature_dim)
             return y
 
 
