@@ -28,8 +28,8 @@ def test_ofa_resnet50():
 
 
 def test_ofa_resnet50_with_multiple_expand_ratio():
-    """Test OFAResnet50 search space with multiple expand ratio since 
-    this field will change how the dynamic batch normalization layer performs and 
+    """Test OFAResnet50 search space with multiple expand ratio since
+    this field will change how the dynamic batch normalization layer performs and
     affect the forward processing.
     """
     net = SearchNet(num_classes=1000, expand_ratio_list=[0.25, 0.35])
