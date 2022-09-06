@@ -18,7 +18,21 @@ from nnabla_nas.contrib.classification.ofa.networks.ofa_resnet50 import SearchNe
 
 
 def test_ofa_resnet50():
+    """Test OFAResnet50 search space with default values.
+    """
     net = SearchNet(num_classes=1000)
+    input = nn.Variable((1, 3, 224, 224))
+
+    assert net(input).shape == (1, net._num_classes)
+    assert str(net)
+
+
+def test_ofa_resnet50_with_multiple_expand_ratio():
+    """Test OFAResnet50 search space with multiple expand ratio since 
+    this field will change how the dynamic batch normalization layer performs and 
+    affect the forward processing.
+    """
+    net = SearchNet(num_classes=1000, expand_ratio_list=[0.25, 0.35])
     input = nn.Variable((1, 3, 224, 224))
 
     assert net(input).shape == (1, net._num_classes)
