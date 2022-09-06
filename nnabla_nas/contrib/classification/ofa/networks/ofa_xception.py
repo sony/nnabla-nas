@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import random
+import os
 from collections import OrderedDict
 
 import nnabla as nn
@@ -27,6 +28,7 @@ from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
 from ....common.ofa.utils.common_tools import val2list, make_divisible
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoothing
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
+from hydra import utils
 
 
 class ProcessGenotype:

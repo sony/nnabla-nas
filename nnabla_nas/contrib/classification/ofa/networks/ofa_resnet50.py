@@ -14,6 +14,7 @@
 
 from collections import OrderedDict
 import random
+import os
 
 import nnabla as nn
 import nnabla.functions as F
@@ -29,6 +30,7 @@ from ....common.ofa.utils.common_tools import init_models
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicConvLayer, DynamicLinearLayer
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicBottleneckResidualBlock
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
+from hydra import utils
 
 
 class OFAResNet50(ClassificationModel):
