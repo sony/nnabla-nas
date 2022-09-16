@@ -35,23 +35,39 @@ Here we show how to install NNablaNAS and build a simple search space.
 
 ### Installation
 
-For a local installation, run the following code snippet:
-
-```bash
-git clone git@github.com:sony/nnabla-nas.git
-cd nnabla_nas
+It is generally a good idea to install into a Python virtual environment
+which provides isolation from system packages.
+```
+python -m venv venv && source venv/bin/activate
 ```
 
-Install dependencies for NNablaNAS by the following command
-
-```bash
-pip install -r requirements.txt
+A release versions of NNablaNAS may then be installed from PyPI.
+```
+python -m pip install --upgrade pip
+python -m pip install nnabla-nas
 ```
 
-Run tests to check for correctness:
+Or clone the latest development version and install as editable package.
+```
+git clone git@github.com:sony/nnabla-nas.git && cd nnabla-nas
+python -m pip install --upgrade pip
+python -m pip install --editable .
+python -m pip install -r dev-requirements.txt
+```
 
-```bash
-pytest .
+Additionally, NNablaNAS requires the NNabla CUDA extension package. Find
+a suitable version on https://pypi.org/search/?q=nnabla-ext-cuda and
+install with (replace XXX with the desired version):
+```
+python -m pip install nnabla-ext-cudaXXX
+```
+
+A further requirement is the NVIDIA Data Loading Library (DALI) in a version
+that fits the installed CUDA toolkit. See https://github.com/NVIDIA/DALI/releases
+for possible installation methods. At the time of writing the pip installation
+for CUDA 11 toolkit was:
+```
+pip install --extra-index-url https://developer.download.nvidia.com/compute/redist nvidia-dali-cuda110
 ```
 
 ### Setup the datasets
