@@ -56,11 +56,11 @@ class Runner(ABC):
         self.event = hp['event']
         n_procs = self.comm.n_procs
 
-        # hp['batch_size_XX'] is the GLOBAL batch size used for training
-        # independent on the number of GPUs
+        # hp['batch_size_XX'] is the GLOBAL batch size used for train / val
+        #     which is independent on the number of GPUs
         # self.bs_XX is the LOCAL batch size (the batch size for each used GPU)
-        # self.mbs_XX is the MINIBATCH size, the nr. of sampled used at once
-        # for forward pass
+        # self.mbs_XX is the MINIBATCH size, the nr. of samples used at once
+        # for forward pass of the network
         self.bs_train = hp['batch_size_train'] / n_procs
         self.mbs_train = hp['mini_batch_train']
         self.bs_valid = hp['batch_size_valid'] / n_procs
