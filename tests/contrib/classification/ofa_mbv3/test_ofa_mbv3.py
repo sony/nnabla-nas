@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2022 Sony Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,4 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '0.13.0'
+import nnabla as nn
+
+from nnabla_nas.contrib.classification.ofa.networks.ofa_mbv3 import SearchNet
+
+
+def test_ofa_mbv3():
+    net = SearchNet(num_classes=1000, op_candidates=["MB6 7x7", "MB6 5x5"])
+    input = nn.Variable((1, 3, 224, 224))
+
+    assert net(input).shape == (1, net._num_classes)
+    assert str(net)

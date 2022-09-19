@@ -19,10 +19,10 @@ import numpy as np
 import nnabla as nn
 
 from ...... import module as Mo
-from ...layers import MBConvLayer, SEModule, XceptionBlock
+from ...layers import ConvLayer, LinearLayer, MBConvLayer, SEModule, XceptionBlock, BottleneckResidualBlock
 from ...layers import set_layer_from_config, build_activation, get_extra_repr
 from ...utils.common_tools import val2list, make_divisible
-from .dynamic_op import DynamicConv, DynamicBatchNorm, DynamicDepthwiseConv, DynamicSE
+from .dynamic_op import DynamicConv, DynamicLinear, DynamicBatchNorm, DynamicDepthwiseConv, DynamicSE
 
 
 def adjust_bn_according_to_idx(bn, idx):
@@ -94,6 +94,90 @@ class DynamicConvLayer(Mo.Module):
 
     def extra_repr(self):
         return get_extra_repr(self)
+
+    def get_active_subnet(self, in_channel, preserve_weight=True):
+        with nn.auto_forward():
+            sub_layer = set_layer_from_config(self.get_active_subnet_config(in_channel))
+
+            if not preserve_weight:
+                return sub_layer
+
+            sub_layer.conv._W.d = self.conv.get_active_filter(
+                self.active_out_channel, in_channel).d
+            if self._use_bn:
+                copy_bn(sub_layer.bn, self.bn.bn)
+
+        return sub_layer
+
+    def get_active_subnet_config(self, in_channel):
+        return {
+            "name": ConvLayer.__name__,
+            "in_channels": in_channel,
+            "out_channels": self.active_out_channel,
+            "kernel": self._kernel,
+            "stride": self._stride,
+            "dilation": self._dilation,
+            "use_bn": self._use_bn,
+            "act_func": self._act_func,
+        }
+
+
+class DynamicLinearLayer(Mo.Module):
+
+    r"""Dynamic version of affine or fully connected layer with dropout.
+
+        Args:
+            in_features_list (list of int): Candidates of each input sample.
+            in_features_list (list of int): Candidates of each output sample.
+            bias (bool, optional): Specify whether to include the bias term.
+                Defaults to True.
+            drop_rate (float, optional): Dropout ratio applied to parameters.
+                Defaults to 0.
+    """
+
+    def __init__(self, in_features_list, out_features, bias=True, drop_rate=0):
+
+        self._in_features_list = in_features_list
+        self._out_features = out_features
+        self._bias = bias
+        self._drop_rate = drop_rate
+
+        if self._drop_rate > 0:
+            self.dropout = Mo.Dropout(self._drop_rate)
+        else:
+            self.dropout = None
+        self.linear = DynamicLinear(
+            max(self._in_features_list), self._out_features, bias=self._bias)
+
+    def call(self, x):
+        if self.dropout is not None:
+            x = self.dropout(x)
+        return self.linear(x)
+
+    def extra_repr(self):
+        return get_extra_repr(self)
+
+    def get_active_subnet(self, in_features, preserve_weight=True):
+        with nn.auto_forward():
+            sub_layer = LinearLayer(
+                in_features, self._out_features, self._bias, drop_rate=self._drop_rate)
+            if not preserve_weight:
+                return sub_layer
+
+            sub_layer.linear._W = self.linear.get_active_weight(self._out_features, in_features).d
+            if self._bias:
+                sub_layer.linear._b.d = self.linear.get_active_bias(self._out_features).d
+
+        return sub_layer
+
+    def get_active_subnet_config(self, in_features):
+        return {
+            "name": LinearLayer.__name__,
+            "in_features": in_features,
+            "out_features": self._out_features,
+            "bias": self._bias,
+            "dropout_rate": self._drop_rate,
+        }
 
 
 class DynamicMBConvLayer(Mo.Module):
@@ -499,4 +583,193 @@ class DynamicMiddleFlowXPBlock(Mo.Module):
             'kernel': (self.active_kernel_size, self.active_kernel_size),
             'stride': self._stride,
             'expand_ratio': self.active_expand_ratio,
+        }
+
+
+class DynamicBottleneckResidualBlock(Mo.Module):
+
+    r"""Dynamic BottleneckResidualBlock
+    This block implements the dynamic version of bottleneck blocks of
+    ResNet.
+
+    Args:
+        in_channel_list (list of int): Candidates for the number of
+            active input channels.
+        out_channel_list (list of int): Candidates for the number of
+            output channels.
+        expand_ratio_list (list of float or float, optional): Candidates
+            for the expand ratio. Defaults to 0.25.
+        kernel (tuple of int, optional): Kernel size. Defaults to (3, 3).
+        stride (tuple of int, optional): Stride sizes for dimensions.
+            Defaults to (1, 1).
+        act_func (str, optional) Type of activation. Defaults to 'relu'.
+        downsample_mode (str, optional): Downsample method for the
+           residual connection. Defaults to 'avgpool_conv'.
+    """
+
+    def __init__(self, in_channel_list, out_channel_list, expand_ratio_list=0.25,
+                 kernel=(3, 3), stride=(1, 1), act_func='relu', downsample_mode='avgpool_conv'):
+
+        self._in_channel_list = in_channel_list
+        self._out_channel_list = out_channel_list
+        self._expand_ratio_list = val2list(expand_ratio_list)
+
+        self._kernel = kernel
+        self._stride = stride
+        self._act_func = act_func
+        self._downsample_mode = downsample_mode
+
+        # build modules
+        max_middle_channel = make_divisible(
+            round(max(self._out_channel_list) * max(self._expand_ratio_list)), 8)
+
+        self.conv1 = Mo.Sequential(OrderedDict([
+            ('conv', DynamicConv(max(self._in_channel_list), max_middle_channel, (1, 1))),
+            ('bn', DynamicBatchNorm(max_middle_channel, 4)),
+            ('act', build_activation(self._act_func))
+        ]))
+        self.conv2 = Mo.Sequential(OrderedDict([
+            ('conv', DynamicConv(max_middle_channel, max_middle_channel, kernel, stride=stride)),
+            ('bn', DynamicBatchNorm(max_middle_channel, 4)),
+            ('act', build_activation(self._act_func))
+        ]))
+        self.conv3 = Mo.Sequential(OrderedDict([
+            ('conv', DynamicConv(max_middle_channel, max(self._out_channel_list), (1, 1))),
+            ('bn', DynamicBatchNorm(max(self._out_channel_list), 4)),
+        ]))
+
+        if self._stride == (1, 1) and self._in_channel_list == self._out_channel_list:
+            self.downsample = Mo.Identity()
+        elif self._downsample_mode == 'conv':
+            self.downsample = Mo.Sequential(OrderedDict([
+                ('conv', DynamicConv(max(self._in_channel_list), max(self._out_channel_list), stride=stride)),
+                ('bn', DynamicBatchNorm(max(self._out_channel_list), 4)),
+            ]))
+        elif self._downsample_mode == 'avgpool_conv':
+            self.downsample = Mo.Sequential(OrderedDict([
+                ('avg_pool', Mo.AvgPool(stride, stride=stride, pad=(0, 0), ignore_border=False)),
+                ('conv', DynamicConv(max(self._in_channel_list), max(self._out_channel_list), (1, 1))),
+                ('bn', DynamicBatchNorm(max(self._out_channel_list), 4)),
+            ]))
+        else:
+            raise NotImplementedError
+
+        self.final_act = build_activation(self._act_func)
+
+        self.active_expand_ratio = max(self._expand_ratio_list)
+        self.active_out_channel = max(self._out_channel_list)
+
+    def call(self, x):
+        feature_dim = self.active_middle_channels
+
+        self.conv1.conv.active_out_channel = feature_dim
+        self.conv2.conv.active_out_channel = feature_dim
+        self.conv3.conv.active_out_channel = self.active_out_channel
+        if not isinstance(self.downsample, Mo.Identity):
+            self.downsample.conv.active_out_channel = self.active_out_channel
+
+        residual = self.downsample(x)
+
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = x + residual
+        x = self.final_act(x)
+
+        return x
+
+    def extra_repr(self):
+        return get_extra_repr(self)
+
+    @property
+    def active_middle_channels(self):
+        feature_dim = round(self.active_out_channel * self.active_expand_ratio)
+        feature_dim = make_divisible(feature_dim)
+        return feature_dim
+
+    def re_organize_middle_weights(self, expand_ratio_stage):
+        # conv3 -> conv2
+        importance = np.sum(np.abs(self.conv3.conv.conv._W.d), axis=(0, 2, 3))
+        if expand_ratio_stage > 0:
+            sorted_expand_list = copy.deepcopy(self._expand_ratio_list)
+            sorted_expand_list.sort(reverse=True)
+            target_width_list = [
+                make_divisible(round(max(self._out_channel_list) * expand))
+                for expand in sorted_expand_list
+            ]
+            right = len(importance)
+            base = - len(target_width_list) * 1e5
+            for i in range(expand_ratio_stage + 1):
+                left = target_width_list[i]
+                if right > left:  # not in the original code
+                    importance[left:right] += base
+                    base += 1e5
+                    right = left
+        sorted_idx = np.argsort(-importance)
+        self.conv3.conv.conv._W.d = np.stack([self.conv3.conv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self.conv2.bn.bn, sorted_idx)
+        self.conv2.conv.conv._W.d = np.stack([self.conv2.conv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+
+        # conv2 -> conv1
+        importance = np.sum(np.abs(self.conv2.conv.conv._W.d), axis=(0, 2, 3))
+        if expand_ratio_stage > 0:
+            sorted_expand_list = copy.deepcopy(self._expand_ratio_list)
+            sorted_expand_list.sort(reverse=True)
+            target_width_list = [
+                make_divisible(round(max(self._out_channel_list) * expand))
+                for expand in sorted_expand_list
+            ]
+            right = len(importance)
+            base = - len(target_width_list) * 1e5
+            for i in range(expand_ratio_stage + 1):
+                left = target_width_list[i]
+                if right > left:  # not in original code, need to check
+                    importance[left:right] += base
+                    base += 1e5
+                    right = left
+        sorted_idx = np.argsort(-importance)
+        self.conv2.conv.conv._W.d = np.stack([self.conv2.conv.conv._W.d[:, idx, :, :] for idx in sorted_idx], axis=1)
+        adjust_bn_according_to_idx(self.conv1.bn.bn, sorted_idx)
+        self.conv1.conv.conv._W.d = np.stack([self.conv1.conv.conv._W.d[idx, :, :, :] for idx in sorted_idx], axis=0)
+
+        return None
+
+    def get_active_subnet(self, in_channel, preserve_weight=True):
+        with nn.auto_forward(True):
+            # build the new layer
+            sub_layer = set_layer_from_config(self.get_active_subnet_config(in_channel))
+            if not preserve_weight:
+                return sub_layer
+
+            # copy weight from current layer
+            active_filter = self.conv1.conv.get_active_filter(self.active_middle_channels, in_channel)
+            sub_layer.conv1.conv._W.d = active_filter.d
+            copy_bn(sub_layer.conv1.bn, self.conv1.bn.bn)
+
+            active_filter = self.conv2.conv.get_active_filter(self.active_middle_channels, self.active_middle_channels)
+            sub_layer.conv2.conv._W.d = active_filter.d
+            copy_bn(sub_layer.conv2.bn, self.conv2.bn.bn)
+
+            active_filter = self.conv3.conv.get_active_filter(self.active_out_channel, self.active_middle_channels)
+            sub_layer.conv3.conv._W.d = active_filter.d
+            copy_bn(sub_layer.conv3.bn, self.conv3.bn.bn)
+
+            if not isinstance(self.downsample, Mo.Identity):
+                active_filter = self.downsample.conv.get_active_filter(self.active_out_channel, in_channel)
+                sub_layer.downsample.conv._W.d = active_filter.d
+                copy_bn(sub_layer.downsample.bn, self.downsample.bn.bn)
+
+        return sub_layer
+
+    def get_active_subnet_config(self, in_channel):
+        return {
+            'name': BottleneckResidualBlock.__name__,
+            'in_channels': in_channel,
+            'out_channels': self.active_out_channel,
+            'kernel': self._kernel,
+            'stride': self._stride,
+            'expand_ratio': self.active_expand_ratio,
+            'mid_channels': self.active_middle_channels,
+            'act_func': self._act_func,
+            'downsample_mode': self._downsample_mode,
         }

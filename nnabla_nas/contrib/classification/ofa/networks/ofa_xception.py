@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import random
+import os
 from collections import OrderedDict
 
 import nnabla as nn
@@ -27,6 +28,7 @@ from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
 from ....common.ofa.utils.common_tools import val2list, make_divisible
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoothing
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
+from hydra import utils
 
 
 class ProcessGenotype:
@@ -371,7 +373,9 @@ class OFAXceptionNet(ClassificationModel):
 
     def load_parameters(self, path, raise_if_missing=False):
         with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
+            # adjust path because hydra changes the working directory
+            load_path = os.path.realpath(os.path.join(utils.get_original_cwd(), path))
+            nn.load_parameters(load_path)
             params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
 
