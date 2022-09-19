@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Sony Corporation. All Rights Reserved.
+# Copyright (c) 2022 Sony Corporation. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,4 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '0.13.0'
+import nnabla as nn
+
+from nnabla_nas.contrib.classification.darts import SearchNet
+
+
+def test_darts():
+    net = SearchNet(in_channels=3, init_channels=16, num_cells=8, num_classes=1000)
+    input = nn.Variable((1, 3, 32, 32))
+
+    assert net(input).shape == (1, net._num_classes)
+    assert str(net)

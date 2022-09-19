@@ -108,7 +108,7 @@ class Runner(ABC):
             key (str, optional): Type of graph. Defaults to 'train'.
         """
         if key not in ('train', 'valid', 'warmup'):
-            raise ValueError(f'{key = } is not allowed')
+            raise ValueError(f'key = {key} is not allowed')
 
         if key in ('train', 'warmup'):
             key = 'train'

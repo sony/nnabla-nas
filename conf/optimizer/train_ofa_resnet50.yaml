@@ -1,0 +1,12 @@
+train:
+  weight_decay: 3e-5
+  lr_scheduler: CosineSchedulerWarmup
+  name: Nesterov
+  lr: 0.02
+  momentum: 0.9
+train_no_decay:
+  weight_decay: 0
+  lr_scheduler: CosineSchedulerWarmup
+  name: Nesterov
+  lr: 0.02
+  momentum: 0.9

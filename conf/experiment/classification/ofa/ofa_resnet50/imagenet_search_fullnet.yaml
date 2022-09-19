@@ -1,0 +1,26 @@
+# @package _global_
+
+defaults:
+  - override /args: args.yaml
+  - override /dataloader: classification/imagenet_ofa.yaml
+  - override /hparams: hparams_ofa_resnet50_fullnet.yaml 
+  - override /optimizer: train_ofa_resnet50.yaml
+  - override /network: classification/ofa_resnet50.yaml
+
+args:
+  search: true
+  algorithm: OFASearcher
+
+name: /classification/ofa/ofa_resnet50/imagenet/search/D2_E0.35_W1.0
+
+network:
+  ofa_resnet50:
+    depth_list: [2]
+    expand_ratio_list: [0.35]
+    width_mult_list: [1.0]
+
+optimizer:
+  train:
+    lr: 0.65
+  train_no_decay:
+    lr: 0.65

@@ -100,40 +100,55 @@ mpirun -n 4 python main.py experiment=classification/fairnas/imagenet_search
 mpirun -n 4 python main.py experiment=classification/fairnas/imagenet_train
 
 #---------------------- OFA-MobileNetV3 (ImageNet) ----------------------------#
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_fullnet
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_fullnet
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_kernel
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_kernel
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_depth_phase1
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_depth_phase1
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_depth_phase2
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_depth_phase2
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_expand_phase1
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_expand_phase1
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_expand_phase2
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_expand_phase2
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_train_subnet
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_train_subnet
 #------------------------------------------------------------------#
 
 
 #---------------------- OFA-XCEPTION(ImageNet) ----------------------------#
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_fullnet
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_fullnet
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_kernel
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_kernel
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_depth_phase1
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_depth_phase1
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_depth_phase2
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_depth_phase2
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_expand_phase1
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_expand_phase1
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_expand_phase2
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_xception/imagenet_search_expand_phase2
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_xception/imagenet_train_subnet
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_xception/imagenet_train_subnet
 #------------------------------------------------------------------#
 
+#---------------------- OFA-ResNet50 (ImageNet) ----------------------------#
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_fullnet
+
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_depth
+
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_expand_phase1
+
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_expand_phase2
+
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_width_phase1
+
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_search_width_phase2
+
+mpirun -n 4 python main.py experiment=classification/ofa/ofa_resnet50/imagenet_train_subnet
+#------------------------------------------------------------------#
 
 #---------------------- CompOFA-MobileNetV3 (ImageNet) ----------------------------#
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_comp_phase1
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_comp_phase1
 
-mpirun -n 4 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_comp_phase2
+mpirun -n 8 python main.py experiment=classification/ofa/ofa_mbv3/imagenet_search_comp_phase2
