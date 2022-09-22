@@ -173,7 +173,6 @@ class OFASearcher(Searcher):
 
     def valid_genotypes(self, mode='valid'):
         assert mode in ['valid', 'test']
-        one_epoch = self.one_epoch_valid if mode == 'valid' else self.one_epoch_test
         is_test = True if mode == 'test' else False
 
         OFAResize.IS_TRAINING = False
@@ -183,7 +182,8 @@ class OFASearcher(Searcher):
                 OFAResize.ACTIVE_SIZE = img_size
                 self.model.set_valid_arch(genotype)
                 self.reset_running_statistics()
-                for _ in tqdm(range(one_epoch), desc=f'{mode} [{self.cur_epoch}/{self.args["epoch"]}]'):
+                for _ in tqdm(range(self.one_epoch_valid if mode == 'valid' else self.one_epoch_test),
+                              desc=f'{mode} [{self.cur_epoch}/{self.args["epoch"]}]'):
                     self.update_graph(mode)
                     self.valid_on_batch(is_test=is_test)
                     clear_memory_cache()
