@@ -35,4 +35,4 @@ hparams:
   epoch: 125
   cosine_warmup_epoch: 5
   warmup_lr: 0.03
-  batch_size_train: 64
+  batch_size_train: 512

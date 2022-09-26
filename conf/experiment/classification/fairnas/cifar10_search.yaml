@@ -20,8 +20,8 @@ dataloader:
 
 hparams:
   epoch: 1000
-  batch_size_train: 128
-  batch_size_valid: 256
+  batch_size_train: 512
+  batch_size_valid: 1024
   mini_batch_train: 128
   mini_batch_valid: 256
   num_sampled_iter: 6
