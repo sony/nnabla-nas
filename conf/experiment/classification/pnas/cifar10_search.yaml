@@ -10,6 +10,7 @@ defaults:
 args:
   search: true
   algorithm: ProxylessNasSearcher
+  print_frequency: 10
 
 name: classification/pnas/cifar10/search
 

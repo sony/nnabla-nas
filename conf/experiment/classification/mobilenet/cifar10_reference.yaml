@@ -9,6 +9,7 @@ defaults:
 
 args:
   algorithm: Trainer
+  print_frequency: 25
 
 name: classification/mobilenet/cifar10/reference
 
@@ -18,7 +19,6 @@ hparams:
   batch_size_valid: 200
   mini_batch_train: 128
   mini_batch_valid: 200
-  print_frequency: 25
 
 optimizer:
   train:

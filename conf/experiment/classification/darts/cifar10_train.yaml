@@ -9,6 +9,7 @@ defaults:
 
 args:
   algorithm: Trainer
+  print_frequency: 50
 
 name: classification/darts/cifar10/train
 
@@ -27,4 +28,3 @@ hparams:
   mini_batch_train: 48
   mini_batch_valid: 50
   loss_weights: [1, 0.4]
-  print_frequency: 50

@@ -31,7 +31,7 @@ class OFATrainer(Runner):
         r"""Builds the graphs and assigns parameters to the optimizers."""
 
         self.update_graph('train')
-        keys = self.args['no_decay_keys']
+        keys = self.hparams['no_decay_keys']
         net_params = [
             self.get_net_parameters_with_keys(keys, mode='exclude', grad_only=True),  # parameters with weight decay
             self.get_net_parameters_with_keys(keys, mode='include', grad_only=True),  # parameters without weight decay
@@ -57,7 +57,7 @@ class OFATrainer(Runner):
         """Run the training process."""
         self.callback_on_start()
 
-        OFAResize.ACTIVE_SIZE = self.args['img_size']
+        OFAResize.ACTIVE_SIZE = self.hparams['img_size']
         OFAResize.IS_TRAINING = False
 
         self.reset_running_statistics()
@@ -68,7 +68,7 @@ class OFATrainer(Runner):
             self.valid_on_batch()
         self.callback_on_epoch_end()
 
-        for cur_epoch in range(self.args['epoch']):
+        for cur_epoch in range(self.hparams['epoch']):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
             self.monitor.info(f'Running epoch={cur_epoch}\tlr={lr:.5f}\n')

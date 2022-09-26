@@ -31,5 +31,4 @@ batch_size_train: 128
 batch_size_valid: 200
 mini_batch_train: 64
 mini_batch_valid: 200
-print_frequency: 100
 validation_frequency: 1

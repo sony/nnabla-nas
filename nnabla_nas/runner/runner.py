@@ -38,22 +38,24 @@ class Runner(ABC):
             estimators
         dataloader (dict): This stores dataloaders for both `train` and `valid`
             graphs.
-        args (Configuration): This stores all hyperparmeters used during
-            training.
+        hparams  (Configuration): This stores all hyperparmeters used during training.
+        args (Configuration): This stores other variables used during for training:
+             event, communicator, output_path...
     """
 
-    def __init__(self, model, optimizer, regularizer, dataloader, args):
+    def __init__(self, model, optimizer, regularizer, dataloader, hparams, args):
 
         self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer
         self.regularizer = regularizer
+        self.hparams = hparams
         self.args = args
 
         # aditional argurments
-        hp = self.args
-        self.comm = hp['comm']
-        self.event = hp['event']
+        hp = self.hparams
+        self.comm = args['comm']
+        self.event = args['event']
         n_procs = self.comm.n_procs
 
         # hp['batch_size_XX'] is the GLOBAL batch size used for train / val
@@ -77,12 +79,12 @@ class Runner(ABC):
 
         self.placeholder = {}
         self.placeholder['train'] = {
-            'inputs': create_variables(self.mbs_train, args['input_shapes']),
-            'targets': create_variables(self.mbs_train, args['target_shapes'])
+            'inputs': create_variables(self.mbs_train, hparams['input_shapes']),
+            'targets': create_variables(self.mbs_train, hparams['target_shapes'])
         }
         self.placeholder['valid'] = {
-            'inputs': create_variables(self.mbs_valid, args['input_shapes']),
-            'targets': create_variables(self.mbs_valid, args['target_shapes'])
+            'inputs': create_variables(self.mbs_valid, hparams['input_shapes']),
+            'targets': create_variables(self.mbs_valid, hparams['target_shapes'])
         }
 
         # monitor log info
@@ -143,7 +145,7 @@ class Runner(ABC):
         # add the model's loss function
         if not self.fast_mode or 'loss' not in placeholder:
             targets = placeholder['targets']
-            loss_weights = self.args['loss_weights']
+            loss_weights = self.hparams['loss_weights']
             accum = self.accum_train if training else self.accum_valid
             loss = model.loss(outputs, targets, loss_weights) / accum
             placeholder['loss'] = loss.apply(persistent=True)
