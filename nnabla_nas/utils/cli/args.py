@@ -31,7 +31,7 @@ class Configuration(object):
 
     def __init__(self, conf):
         # check validity of global, local and mini batch sizes
-        
+
         # global batch size must be divisible by number of GPUs
         assert conf['hparams']['batch_size_train'] \
             % conf['hparams']['comm'].n_procs == 0
@@ -94,27 +94,52 @@ class Configuration(object):
                         lr = args['lr']
                     except KeyError:
                         lr = args['alpha']  # for adam
-                    bz = conf['hparams']['batch_size_train'if name != 'valid' else 'batch_size_valid']
-                    epoch = conf['hparams']['epoch'] if 'train' in name else conf['hparams']['warmup']
-                    max_iter = epoch * \
-                        len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
+                    bz = conf['hparams'][
+                        'batch_size_train'if name != 'valid' else
+                        'batch_size_valid']
+                    epoch = conf['hparams']['epoch'] \
+                        if 'train' in name else conf['hparams']['warmup']
+                    max_iter = epoch * len(
+                        self.dataloader['valid'if name == 'valid' else 'train']
+                        ) // bz
+
                     if class_name == "CosineSchedulerWarmup":
-                        batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
-                        warmup_iter = conf['hparams']['cosine_warmup_epoch'] * batch_iters
+                        batch_iters = len(
+                            self.dataloader[
+                                'valid' if name == 'valid' else 'train'
+                                ]
+                            ) // bz
+                        warmup_iter = conf['hparams'][
+                                           'cosine_warmup_epoch'] * batch_iters
                         if conf['hparams']['warmup_lr'] < 0:
                             warmup_lr = args['lr']
                         else:
                             warmup_lr = conf['hparams']['warmup_lr']
                         lr_scheduler = CosineSchedulerWarmup(
-                            base_lr=lr, max_iter=max_iter, warmup_iter=warmup_iter, warmup_lr=warmup_lr)
+                            base_lr=lr, max_iter=max_iter,
+                            warmup_iter=warmup_iter, warmup_lr=warmup_lr
+                            )
+
                     elif class_name == "StepScheduler":
                         decay_rate = conf['hparams']["step_decay_rate"]
-                        batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
-                        epoch_steps = conf['hparams']["epoch_steps"]  # number of epochs before each decay in lr
-                        iter_steps = [ep * batch_iters for ep in range(epoch_steps, epoch+1, epoch_steps)]
-                        lr_scheduler = LRS.StepScheduler(init_lr=lr, gamma=decay_rate, iter_steps=iter_steps)
+                        batch_iters = len(
+                            self.dataloader['valid' if name == 'valid'
+                                            else 'train']
+                            ) // bz
+                        # number of epochs before each decay in lr
+                        epoch_steps = conf['hparams']["epoch_steps"]
+                        iter_steps = [ep * batch_iters
+                                      for ep in range(
+                                        epoch_steps, epoch+1, epoch_steps)
+                                      ]
+                        lr_scheduler = LRS.StepScheduler(
+                            init_lr=lr, gamma=decay_rate,
+                            iter_steps=iter_steps)
+
                     else:
-                        lr_scheduler = LRS.__dict__[class_name](init_lr=lr, max_iter=max_iter)
+                        lr_scheduler = LRS.__dict__[class_name](
+                            init_lr=lr, max_iter=max_iter)
+
                 args['lr_scheduler'] = lr_scheduler
                 optimizer[name] = Optimizer(**args)
             except ModuleNotFoundError:
