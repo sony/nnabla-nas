@@ -31,15 +31,20 @@ class Configuration(object):
 
     def __init__(self, conf):
         # check validity of global, local and mini batch sizes
+        
         # global batch size must be divisible by number of GPUs
-        assert conf['hparams']['batch_size_train'] % conf['hparams']['comm'].n_procs == 0
-        assert conf['hparams']['batch_size_valid'] % conf['hparams']['comm'].n_procs == 0
+        assert conf['hparams']['batch_size_train'] \
+            % conf['hparams']['comm'].n_procs == 0
+        assert conf['hparams']['batch_size_valid'] \
+            % conf['hparams']['comm'].n_procs == 0
 
         # local (per GPU) batch size must be divisible by minibatch size
-        assert (conf['hparams']['batch_size_train']/conf['hparams']['comm'].n_procs) \
-               % conf['hparams']['mini_batch_train'] == 0
-        assert (conf['hparams']['batch_size_valid']/conf['hparams']['comm'].n_procs) \
-               % conf['hparams']['mini_batch_valid'] == 0
+        assert (conf['hparams']['batch_size_train']
+                / conf['hparams']['comm'].n_procs
+                ) % conf['hparams']['mini_batch_train'] == 0
+        assert (conf['hparams']['batch_size_valid']
+                / conf['hparams']['comm'].n_procs
+                ) % conf['hparams']['mini_batch_valid'] == 0
 
         self.dataloader = self.get_dataloader(conf)
         self.optimizer = self.get_optimizer(conf)
