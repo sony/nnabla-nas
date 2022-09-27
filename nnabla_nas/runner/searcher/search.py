@@ -27,7 +27,7 @@ class Searcher(Runner):
             # do not run warmup if start from checkpoint
             self._start_warmup()
 
-        for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
+        for self.cur_epoch in range(self.cur_epoch, self.hparams['epoch']):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
             self.monitor.info(f'Running epoch={self.cur_epoch}\tlr={lr:.5f}\n')
@@ -47,7 +47,7 @@ class Searcher(Runner):
 
     def _start_warmup(self):
         r"""Performs warmup for the model on training."""
-        for cur_epoch in range(self.args['warmup']):
+        for cur_epoch in range(self.hparams['warmup']):
             self.monitor.reset()
 
             lr = self.optimizer['warmup'].get_learning_rate()

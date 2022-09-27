@@ -33,8 +33,8 @@ from ...contrib.common.ofa.elastic_nn.utils import set_running_statistics
 class OFASearcher(Searcher):
     r"""An implementation of OFA."""
 
-    def __init__(self, model, optimizer, regularizer, dataloader, args):
-        super().__init__(model, optimizer, regularizer, dataloader, args)
+    def __init__(self, model, optimizer, regularizer, dataloader, hparams, args):
+        super().__init__(model, optimizer, regularizer, dataloader, hparams, args)
 
         manual_seed = 0
         nn.seed(manual_seed)
@@ -46,14 +46,15 @@ class OFASearcher(Searcher):
         self.accum_test = self.bs_test // self.mbs_test
         self.one_epoch_test = len(self.dataloader['test']) // self.bs_test
 
-        self.image_size_list = self.args['train_image_size_list']
+        self.image_size_list = self.hparams['train_image_size_list']
         OFAResize.IMAGE_SIZE_LIST = self.image_size_list
         OFAResize.ACTIVE_SIZE = max(self.image_size_list)
-        OFAResize.IMAGE_SIZE_SEG = 4 if 'image_size_seg' not in self.args else self.args['image_size_seg']
-        OFAResize.CONTINUOUS = True if "image_size_continuous" not in self.args else self.args['image_size_continuous']
+        OFAResize.IMAGE_SIZE_SEG = 4 if 'image_size_seg' not in self.hparams else self.hparams['image_size_seg']
+        OFAResize.CONTINUOUS = True if "image_size_continuous" not in self.hparams \
+            else self.hparams['image_size_continuous']
 
-        if self.args['lambda_kd'] > 0:  # knowledge distillation
-            name, attributes = list(self.args['teacher_network'].items())[0]
+        if self.hparams['lambda_kd'] > 0:  # knowledge distillation
+            name, attributes = list(self.hparams['teacher_network'].items())[0]
             self.teacher_model = contrib.__dict__[name].TrainNet(**attributes)
 
         self.update_graph('valid')
@@ -69,11 +70,11 @@ class OFASearcher(Searcher):
         self.callback_on_start()
 
         # Test for init parameters
-        if self.args['task'] != 'fullnet':
+        if self.hparams['task'] != 'fullnet':
             self.valid_genotypes(mode='test')
 
         # training
-        for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
+        for self.cur_epoch in range(self.cur_epoch, self.hparams['epoch']):
             self.monitor.reset()
             OFAResize.IS_TRAINING = True
 
@@ -88,13 +89,13 @@ class OFASearcher(Searcher):
                                   if 'train' in m.name]
                     self.monitor.display(i, key=train_keys)
                 clear_memory_cache()
-            if self.cur_epoch % self.args["validation_frequency"] == 0:
+            if self.cur_epoch % self.hparams["validation_frequency"] == 0:
                 self.valid_genotypes(mode='valid')
 
         return self
 
     def callback_on_start(self):
-        keys = self.args['no_decay_keys']
+        keys = self.hparams['no_decay_keys']
         net_params = [
             self.get_net_parameters_with_keys(keys, mode='exclude', grad_only=True),  # parameters with weight decay
             self.get_net_parameters_with_keys(keys, mode='include', grad_only=True),  # parameters without weight decay
@@ -176,14 +177,14 @@ class OFASearcher(Searcher):
         is_test = True if mode == 'test' else False
 
         OFAResize.IS_TRAINING = False
-        for genotype in self.args['valid_genotypes']:
-            for img_size in self.args['valid_image_size_list']:
+        for genotype in self.hparams['valid_genotypes']:
+            for img_size in self.hparams['valid_image_size_list']:
                 self.monitor.reset()
                 OFAResize.ACTIVE_SIZE = img_size
                 self.model.set_valid_arch(genotype)
                 self.reset_running_statistics()
                 for _ in tqdm(range(self.one_epoch_valid if mode == 'valid' else self.one_epoch_test),
-                              desc=f'{mode} [{self.cur_epoch}/{self.args["epoch"]}]'):
+                              desc=f'{mode} [{self.cur_epoch}/{self.hparams["epoch"]}]'):
                     self.update_graph(mode)
                     self.valid_on_batch(is_test=is_test)
                     clear_memory_cache()
@@ -234,7 +235,7 @@ class OFASearcher(Searcher):
         """
         assert key in ('train', 'valid', 'test')
         self.model.apply(training=key not in ['valid', 'test'])
-        if self.args['lambda_kd'] > 0:
+        if self.hparams['lambda_kd'] > 0:
             self.teacher_model.apply(training='train')
 
         fake_key = 'train' if key == 'train' else 'valid'
@@ -249,24 +250,24 @@ class OFASearcher(Searcher):
         outputs = outputs if isinstance(outputs, (tuple, list)) else (outputs,)
         p['outputs'] = [x.apply(persistent=True) for x in outputs]
 
-        if fake_key == 'valid' and self.args['valid_ce_loss']:
+        if fake_key == 'valid' and self.hparams['valid_ce_loss']:
             # cross entropy loss
             p['loss'] = F.mean(F.softmax_cross_entropy(p['outputs'][0], p['targets'][0])) / accum
         else:
-            if self.args['lambda_kd'] > 0:
+            if self.hparams['lambda_kd'] > 0:
                 with nn.no_grad():
                     soft_logits = self.teacher_model(*inputs)
                     soft_logits = soft_logits if isinstance(soft_logits, (tuple, list)) else (soft_logits,)
                     p['soft_logits'] = [x.apply(need_grad=False) for x in soft_logits]
                 kd_loss = self.model.kd_loss(
-                    p['outputs'], p['soft_logits'], p['targets'], self.args['loss_weights'])
+                    p['outputs'], p['soft_logits'], p['targets'], self.hparams['loss_weights'])
 
             # loss function
-            if self.args['lambda_kd'] > 0:
-                p['loss'] = (self.model.loss(p['outputs'], p['targets'], self.args['loss_weights'])
-                             + self.args['lambda_kd'] * kd_loss) / accum
+            if self.hparams['lambda_kd'] > 0:
+                p['loss'] = (self.model.loss(p['outputs'], p['targets'], self.hparams['loss_weights'])
+                             + self.hparams['lambda_kd'] * kd_loss) / accum
             else:
-                p['loss'] = self.model.loss(p['outputs'], p['targets'], self.args['loss_weights']) / accum
+                p['loss'] = self.model.loss(p['outputs'], p['targets'], self.hparams['loss_weights']) / accum
         p['loss'].apply(persistent=True)
 
         # metrics to monitor during training
@@ -317,7 +318,7 @@ class OFASearcher(Searcher):
             subset_train_dataloader = self.dataloader['train']
             dataloader_batch_size = self.mbs_train
         if inp_shape is None:
-            inp_shape = self.args['input_shapes']
+            inp_shape = self.hparams['input_shapes']
         set_running_statistics(net, subset_train_dataloader, dataloader_batch_size,
                                subset_size, subset_batch_size, inp_shape)
 
