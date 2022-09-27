@@ -71,23 +71,7 @@ class OFASearcher(Searcher):
 
         # Test for init parameters
         if self.hparams['task'] != 'fullnet':
-            OFAResize.IS_TRAINING = False
-            for genotype in self.hparams['valid_genotypes']:
-                for img_size in self.hparams['valid_image_size_list']:
-                    self.monitor.reset()
-                    OFAResize.ACTIVE_SIZE = img_size
-                    self.model.set_valid_arch(genotype)
-                    self.reset_running_statistics()
-                    for i in tqdm(range(self.one_epoch_test), desc='Test for init parameters'):
-                        self.update_graph('test')
-                        self.valid_on_batch(is_test=True)
-                        clear_memory_cache()
-                    self.monitor.info(f'img_size={img_size}, genotype={genotype} \n')
-                    self.callback_on_epoch_end(is_test=True)
-
-                    self.loss.zero()
-                    for k in self.metrics:
-                        self.metrics[k].zero()
+            self.valid_genotypes(mode='test')
 
         # training
         for self.cur_epoch in range(self.cur_epoch, self.hparams['epoch']):
@@ -106,25 +90,8 @@ class OFASearcher(Searcher):
                     self.monitor.display(i, key=train_keys)
                 clear_memory_cache()
             if self.cur_epoch % self.hparams["validation_frequency"] == 0:
-                OFAResize.IS_TRAINING = False
-                for genotype in self.hparams['valid_genotypes']:
-                    for img_size in self.hparams['valid_image_size_list']:
-                        self.monitor.reset()
-                        OFAResize.ACTIVE_SIZE = img_size
-                        self.model.set_valid_arch(genotype)
-                        self.reset_running_statistics()
-                        for i in tqdm(range(self.one_epoch_valid),
-                                      desc=f'Valid [{self.cur_epoch}/{self.hparams["epoch"]}]'):
-                            self.update_graph('valid')
-                            self.valid_on_batch(is_test=False)
-                            clear_memory_cache()
-                        self.monitor.info(f'img_size={img_size}, genotype={genotype} \n')
-                        self.callback_on_epoch_end(is_test=False)
-                        self.monitor.write(self.cur_epoch)
+                self.valid_genotypes(mode='valid')
 
-                    self.loss.zero()
-                    for k in self.metrics:
-                        self.metrics[k].zero()
         return self
 
     def callback_on_start(self):
@@ -204,6 +171,30 @@ class OFASearcher(Searcher):
             self.comm.all_reduce(
                 [self.loss] + list(self.metrics.values()), division=True, inplace=False)
         self.event.add_default_stream_event()
+
+    def valid_genotypes(self, mode='valid'):
+        assert mode in ['valid', 'test']
+        is_test = True if mode == 'test' else False
+
+        OFAResize.IS_TRAINING = False
+        for genotype in self.hparams['valid_genotypes']:
+            for img_size in self.hparams['valid_image_size_list']:
+                self.monitor.reset()
+                OFAResize.ACTIVE_SIZE = img_size
+                self.model.set_valid_arch(genotype)
+                self.reset_running_statistics()
+                for _ in tqdm(range(self.one_epoch_valid if mode == 'valid' else self.one_epoch_test),
+                              desc=f'{mode} [{self.cur_epoch}/{self.hparams["epoch"]}]'):
+                    self.update_graph(mode)
+                    self.valid_on_batch(is_test=is_test)
+                    clear_memory_cache()
+                self.monitor.info(f'img_size={img_size}, genotype={genotype} \n')
+                self.callback_on_epoch_end(is_test=is_test)
+                self.monitor.write(self.cur_epoch)
+
+                self.loss.zero()
+                for k in self.metrics:
+                    self.metrics[k].zero()
 
     def callback_on_epoch_end(self, epoch=None, is_test=False, info=None):
         if is_test:
