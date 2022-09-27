@@ -33,18 +33,14 @@ class Configuration(object):
         # check validity of global, local and mini batch sizes
 
         # global batch size must be divisible by number of GPUs
-        assert conf['hparams']['batch_size_train'] \
-            % conf['hparams']['comm'].n_procs == 0
-        assert conf['hparams']['batch_size_valid'] \
-            % conf['hparams']['comm'].n_procs == 0
+        assert conf['hparams']['batch_size_train'] % conf['hparams']['comm'].n_procs == 0
+        assert conf['hparams']['batch_size_valid'] % conf['hparams']['comm'].n_procs == 0
 
         # local (per GPU) batch size must be divisible by minibatch size
-        assert (conf['hparams']['batch_size_train']
-                / conf['hparams']['comm'].n_procs
-                ) % conf['hparams']['mini_batch_train'] == 0
-        assert (conf['hparams']['batch_size_valid']
-                / conf['hparams']['comm'].n_procs
-                ) % conf['hparams']['mini_batch_valid'] == 0
+        assert (conf['hparams']['batch_size_train'] / conf['hparams']['comm'].n_procs) \
+            % conf['hparams']['mini_batch_train'] == 0
+        assert (conf['hparams']['batch_size_valid'] / conf['hparams']['comm'].n_procs) \
+            % conf['hparams']['mini_batch_valid'] == 0
 
         self.dataloader = self.get_dataloader(conf)
         self.optimizer = self.get_optimizer(conf)
@@ -66,20 +62,14 @@ class Configuration(object):
         return {
 
             'train': loader_cls(
-                searching=conf['args']['search'],
-                training=True,
-                batch_size=conf['hparams']['mini_batch_train'],
-                ** args),
+                    searching=conf['args']['search'], training=True,
+                    batch_size=conf['hparams']['mini_batch_train'], ** args),
             'valid': loader_cls(
-                searching=conf['args']['search'],
-                training=False,
-                batch_size=conf['hparams']['mini_batch_valid'],
-                ** args),
+                    searching=conf['args']['search'], training=False,
+                    batch_size=conf['hparams']['mini_batch_valid'], ** args),
             'test': loader_cls(
-                searching=False,
-                training=False,
-                batch_size=conf['hparams']['mini_batch_valid'],
-                ** args)
+                    searching=False, training=False,
+                    batch_size=conf['hparams']['mini_batch_valid'], ** args)
         }
 
     def get_optimizer(self, conf):
@@ -94,51 +84,30 @@ class Configuration(object):
                         lr = args['lr']
                     except KeyError:
                         lr = args['alpha']  # for adam
-                    bz = conf['hparams'][
-                        'batch_size_train'if name != 'valid' else
-                        'batch_size_valid']
-                    epoch = conf['hparams']['epoch'] \
-                        if 'train' in name else conf['hparams']['warmup']
-                    max_iter = epoch * len(
-                        self.dataloader['valid'if name == 'valid' else 'train']
-                        ) // bz
+
+                    bz = conf['hparams']['batch_size_train' if name != 'valid' else 'batch_size_valid']
+                    epoch = conf['hparams']['epoch'] if 'train' in name else conf['hparams']['warmup']
+                    max_iter = epoch * len(self.dataloader['valid'if name == 'valid' else 'train']) // bz
 
                     if class_name == "CosineSchedulerWarmup":
-                        batch_iters = len(
-                            self.dataloader[
-                                'valid' if name == 'valid' else 'train'
-                                ]
-                            ) // bz
-                        warmup_iter = conf['hparams'][
-                                           'cosine_warmup_epoch'] * batch_iters
+                        batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
+                        warmup_iter = conf['hparams']['cosine_warmup_epoch'] * batch_iters
                         if conf['hparams']['warmup_lr'] < 0:
                             warmup_lr = args['lr']
                         else:
                             warmup_lr = conf['hparams']['warmup_lr']
                         lr_scheduler = CosineSchedulerWarmup(
-                            base_lr=lr, max_iter=max_iter,
-                            warmup_iter=warmup_iter, warmup_lr=warmup_lr
-                            )
+                            base_lr=lr, max_iter=max_iter, warmup_iter=warmup_iter, warmup_lr=warmup_lr)
 
                     elif class_name == "StepScheduler":
                         decay_rate = conf['hparams']["step_decay_rate"]
-                        batch_iters = len(
-                            self.dataloader['valid' if name == 'valid'
-                                            else 'train']
-                            ) // bz
-                        # number of epochs before each decay in lr
-                        epoch_steps = conf['hparams']["epoch_steps"]
-                        iter_steps = [ep * batch_iters
-                                      for ep in range(
-                                        epoch_steps, epoch+1, epoch_steps)
-                                      ]
-                        lr_scheduler = LRS.StepScheduler(
-                            init_lr=lr, gamma=decay_rate,
-                            iter_steps=iter_steps)
+                        batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
+                        epoch_steps = conf['hparams']["epoch_steps"]  # number of epochs before each decay in lr
+                        iter_steps = [ep * batch_iters for ep in range(epoch_steps, epoch+1, epoch_steps)]
+                        lr_scheduler = LRS.StepScheduler(init_lr=lr, gamma=decay_rate, iter_steps=iter_steps)
 
                     else:
-                        lr_scheduler = LRS.__dict__[class_name](
-                            init_lr=lr, max_iter=max_iter)
+                        lr_scheduler = LRS.__dict__[class_name](init_lr=lr, max_iter=max_iter)
 
                 args['lr_scheduler'] = lr_scheduler
                 optimizer[name] = Optimizer(**args)

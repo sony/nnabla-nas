@@ -34,8 +34,7 @@ except ModuleNotFoundError:
     sys.exit(-1)
 except ImportError:
     print("ERROR: CUDA extension installed but could not initialized.")
-    print(" Please make sure that your installed nnabla-ext-cuda " +
-          "is appropriate for your environment.")
+    print(" Please make sure that your installed nnabla-ext-cuda is appropriate for your environment.")
     raise
 
 from nnabla_nas.utils.cli.args import Configuration
