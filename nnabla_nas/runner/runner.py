@@ -88,7 +88,8 @@ class Runner(ABC):
         }
 
         # monitor log info
-        output_path = args['output_path']
+        self._root_output_path = get_output_path()
+        output_path = str(Path(self._root_output_path) / self.args['output_path'])
         self.monitor = ProgressMeter(self.one_epoch_train, output_path,
                                      quiet=self.comm.rank > 0)
 
@@ -170,7 +171,7 @@ class Runner(ABC):
 
     def save_checkpoint(self, checkpoint_info={}):
         r"""Save the current states of the runner."""
-        path = Path(self.args['output_path']) / 'checkpoint'
+        path = Path(self._root_output_path) / self.args['output_path'] / 'checkpoint'
         path.mkdir(parents=True, exist_ok=True)
 
         checkpoint_info['epoch'] = self.cur_epoch

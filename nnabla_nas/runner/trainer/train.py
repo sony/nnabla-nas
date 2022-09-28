@@ -50,7 +50,7 @@ class Trainer(Runner):
 
         # calculate the model size
         model_size = helper.count_parameters(params)
-        self.monitor.info('Model size = {:.6f} MB\n'.format(model_size*1e-6))
+        self.monitor.info('Model size = {:.6f} MB\n'.format(model_size * 1e-6))
 
         # store a list of grads that will be synchronized
         if self.comm.n_procs > 1:
@@ -125,7 +125,7 @@ class Trainer(Runner):
     def callback_on_epoch_end(self):
         r"""Calculates the metric and saves the best parameters."""
         if self.comm.n_procs > 1:
-            self.comm.all_reduce([self.loss]+list(self.metrics.values()), division=True, inplace=False)
+            self.comm.all_reduce([self.loss] + list(self.metrics.values()), division=True, inplace=False)
 
         self.loss.data /= len(self.dataloader['valid'])
         for k in self.metrics:
@@ -143,17 +143,17 @@ class Trainer(Runner):
                     self._best_metric[k] = self.metrics[k].data[0]
                 if self.args['save_nnp']:
                     self.model.save_net_nnp(
-                        self.args['output_path'],
+                        os.path.join(self._root_output_path, self.args['output_path']),
                         self.placeholder['valid']['inputs'][0],
                         self.placeholder['valid']['outputs'][0],
                         save_params=self.args.get('save_params'))
                 else:
-                    path = os.path.join(self.args['output_path'], 'weights.h5')
+                    path = os.path.join(self._root_output_path, self.args['output_path'], 'weights.h5')
                     self.model.save_parameters(path)
                 # checkpoint
                 self.save_checkpoint({'best_metric': self._best_metric})
                 if self.args['no_visualize']:  # action:store_false
-                    self.model.visualize(self.args['output_path'])
+                    self.model.visualize(os.path.join(self._root_output_path, self.args['output_path']))
 
         # reset loss and metric
         self.loss.zero()
