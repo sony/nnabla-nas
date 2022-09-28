@@ -25,6 +25,7 @@ import numpy as np
 from pathlib import Path
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf
+from hydra import utils
 
 from .tensorboard import SummaryWriter
 
@@ -188,7 +189,7 @@ def get_output_path():
         output_path = Path(HydraConfig.get().sweep.dir) / Path(HydraConfig.get().sweep.subdir)
     else:
         output_path = HydraConfig.get().run.dir
-    return output_path
+    return os.path.join(utils.get_original_cwd(), output_path)
 
 
 class SearchLogger(object):
