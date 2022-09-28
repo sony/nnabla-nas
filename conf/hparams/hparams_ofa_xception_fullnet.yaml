@@ -16,6 +16,7 @@ lambda_kd: 0
 epoch: 50
 epoch_steps: 2
 step_decay_rate: 0.94
+loss_weights:
 batch_size_train: 128
 batch_size_valid: 200
 mini_batch_train: 64
