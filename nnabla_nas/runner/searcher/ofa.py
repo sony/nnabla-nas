@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import re
-import os
 import random
 import numpy as np
 from tqdm import tqdm
@@ -220,10 +219,6 @@ class OFASearcher(Searcher):
                     self.placeholder['valid']['inputs'][0],
                     self.placeholder['valid']['outputs'][0],
                     save_params=self.args.get('save_params'))
-            else:
-                self.model.save_parameters(
-                    path=os.path.join(self.args['output_path'], 'weights.h5')
-                )
             if not is_test:
                 self.save_checkpoint()
 
