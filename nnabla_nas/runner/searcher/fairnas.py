@@ -33,7 +33,7 @@ class FairNasSearcher(Searcher):
         self.logger = SearchLogger()
         self.search_monitor = ProgressMeter(
             self.search_samples,
-            path=os.path.join(self._root_output_path, args['output_path']),
+            path=os.path.join(self._root_abs_output_path, args['output_path']),
             quiet=self.comm.rank > 0,
             filename='log_search.txt')
         self.mest = MemoryEstimator()
@@ -77,7 +77,7 @@ class FairNasSearcher(Searcher):
             self.search_monitor.reset()
             self.search_arch(sample_id=cur_sample)
 
-        self.logger.save(os.path.join(self._root_output_path, self.args['output_path']))
+        self.logger.save(os.path.join(self._root_abs_output_path, self.args['output_path']))
         self.callback_on_finish()
         self.monitor.close()
         self.search_monitor.close()
@@ -157,18 +157,18 @@ class FairNasSearcher(Searcher):
                 self.monitor.info(f'{k}/valid {self.metrics[k].data[0]:.4f}\n')
             if self.args['save_nnp']:
                 self.model.save_net_nnp(
-                    os.path.join(self._root_output_path, self.args['output_path']),
+                    os.path.join(self._root_abs_output_path, self.args['output_path']),
                     self.placeholder['valid']['inputs'][0],
                     self.placeholder['valid']['outputs'][0],
                     save_params=self.args.get('save_params'))
             else:
                 self.model.save_parameters(
-                    path=os.path.join(self._root_output_path, self.args['output_path'], 'weights.h5')
+                    path=os.path.join(self._root_abs_output_path, self.args['output_path'], 'weights.h5')
                 )
             # checkpoint
             self.save_checkpoint()
             if self.args['no_visualize']:  # action:store_false
-                self.model.visualize(os.path.join(self._root_output_path, self.args['output_path']))
+                self.model.visualize(os.path.join(self._root_abs_output_path, self.args['output_path']))
 
         # reset loss and metric
         self.loss.zero()
@@ -217,7 +217,7 @@ class FairNasSearcher(Searcher):
             self.logger.add_entry(sample_id,
                                   self.model.get_arch(),
                                   self.search_monitor.meters)
-            self.logger.save(os.path.join(self._root_output_path, self.args['output_path']))
+            self.logger.save(os.path.join(self._root_abs_output_path, self.args['output_path']))
             self.search_monitor.write(sample_id)
             self.search_monitor.display(sample_id)
 
