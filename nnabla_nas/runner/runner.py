@@ -88,11 +88,9 @@ class Runner(ABC):
         }
 
         # monitor log info
-        self._root_abs_output_path = get_output_path(is_abspath=True)
-        self._root_rel_output_path = get_output_path(is_abspath=False)
-
-        output_path = str(Path(self._root_abs_output_path) / self.args['output_path'])
-        self.monitor = ProgressMeter(self.one_epoch_train, output_path,
+        self._abs_output_path = str(Path(get_output_path(is_abspath=True)) / self.args['output_path'])
+        self._rel_output_path = str(Path(get_output_path(is_abspath=False)) / self.args['output_path'])
+        self.monitor = ProgressMeter(self.one_epoch_train, self._abs_output_path,
                                      quiet=self.comm.rank > 0)
 
         # Check if we should run in fast mode where all computation graph is
@@ -173,9 +171,9 @@ class Runner(ABC):
 
     def save_checkpoint(self, checkpoint_info={}):
         r"""Save the current states of the runner."""
-        path = Path(self._root_abs_output_path) / self.args['output_path'] / 'checkpoint'
+        path = Path(self._abs_output_path) / 'checkpoint'
         path.mkdir(parents=True, exist_ok=True)
-        relpath = Path(self._root_rel_output_path) / self.args['output_path'] / 'checkpoint'
+        relpath = Path(self._rel_output_path) / 'checkpoint'
 
         checkpoint_info['epoch'] = self.cur_epoch
 

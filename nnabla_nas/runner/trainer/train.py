@@ -143,17 +143,17 @@ class Trainer(Runner):
                     self._best_metric[k] = self.metrics[k].data[0]
                 if self.args['save_nnp']:
                     self.model.save_net_nnp(
-                        os.path.join(self._root_abs_output_path, self.args['output_path']),
+                        self._abs_output_path,
                         self.placeholder['valid']['inputs'][0],
                         self.placeholder['valid']['outputs'][0],
                         save_params=self.args.get('save_params'))
                 else:
-                    path = os.path.join(self._root_abs_output_path, self.args['output_path'], 'weights.h5')
+                    path = os.path.join(self._abs_output_path, 'weights.h5')
                     self.model.save_parameters(path)
                 # checkpoint
                 self.save_checkpoint({'best_metric': self._best_metric})
                 if self.args['no_visualize']:  # action:store_false
-                    self.model.visualize(os.path.join(self._root_abs_output_path, self.args['output_path']))
+                    self.model.visualize(self._abs_output_path)
 
         # reset loss and metric
         self.loss.zero()

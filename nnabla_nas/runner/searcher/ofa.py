@@ -216,13 +216,13 @@ class OFASearcher(Searcher):
                 self.monitor.info(f'{info}\n')
             if self.args['save_nnp']:
                 self.model.save_net_nnp(
-                    os.path.join(self._root_abs_output_path, self.args['output_path']),
+                    self._abs_output_path,
                     self.placeholder['valid']['inputs'][0],
                     self.placeholder['valid']['outputs'][0],
                     save_params=self.args.get('save_params'))
             else:
                 self.model.save_parameters(
-                    path=os.path.join(self._root_abs_output_path, self.args['output_path'], 'weights.h5')
+                    path=os.path.join(self._abs_output_path, 'weights.h5')
                 )
             if not is_test:
                 self.save_checkpoint()
