@@ -63,9 +63,9 @@ class Runner(ABC):
         # self.bs_XX is the LOCAL batch size (the batch size for each used GPU)
         # self.mbs_XX is the MINIBATCH size, the nr. of samples used at once
         # for forward pass of the network
-        self.bs_train = hp['batch_size_train'] / n_procs
+        self.bs_train = hp['batch_size_train'] // n_procs
         self.mbs_train = hp['mini_batch_train']
-        self.bs_valid = hp['batch_size_valid'] / n_procs
+        self.bs_valid = hp['batch_size_valid'] // n_procs
         self.mbs_valid = hp['mini_batch_valid']
         self.accum_train = self.bs_train // self.mbs_train
         self.accum_valid = self.bs_valid // self.mbs_valid
