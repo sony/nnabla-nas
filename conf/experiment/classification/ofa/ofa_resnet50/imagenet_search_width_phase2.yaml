@@ -18,7 +18,7 @@ network:
     depth_list: [0, 1, 2]
     expand_ratio_list: [0.2, 0.25, 0.35]
     width_mult_list: [0.65, 0.8, 1.0]
-    weights: log/classification/ofa/ofa_resnet50/imagenet/search/D012_E0.20.250.35_W0.81.0/weights.h5
+    weights: log/classification/ofa/ofa_resnet50/imagenet/search/D012_E0.20.250.35_W0.81.0/checkpoint/weights.h5
 
 optimizer:
   train:

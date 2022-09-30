@@ -17,7 +17,7 @@ network:
   ofa_mbv3:
     op_candidates: ["MB6 7x7", "MB6 5x5", "MB6 3x3"]
     depth_candidates: [2, 3, 4]
-    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D34/weights.h5
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D34/checkpoint/weights.h5
 
 optimizer:
   train:
