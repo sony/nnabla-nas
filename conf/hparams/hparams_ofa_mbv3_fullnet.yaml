@@ -16,6 +16,7 @@ lambda_kd: 0
 epoch: 185
 cosine_warmup_epoch: 5
 warmup_lr: 0.08125
+loss_weights:
 batch_size_train: 512
 batch_size_valid: 1600
 mini_batch_train: 32

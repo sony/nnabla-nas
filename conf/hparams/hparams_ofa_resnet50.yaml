@@ -27,6 +27,7 @@ teacher_network:
 epoch: 25
 cosine_warmup_epoch: 0
 warmup_lr: 0.0025
+loss_weights:
 batch_size_train: 1024
 batch_size_valid: 1600
 mini_batch_train: 32
