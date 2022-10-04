@@ -23,8 +23,8 @@ network:
 
 hparams:
   epoch: 600
-  batch_size_train: 96
-  batch_size_valid: 100
+  batch_size_train: 384
+  batch_size_valid: 400
   mini_batch_train: 48
   mini_batch_valid: 50
   loss_weights: [1, 0.4]

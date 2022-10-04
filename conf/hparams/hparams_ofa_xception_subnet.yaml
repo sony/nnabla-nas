@@ -12,8 +12,8 @@ epoch: 5
 epoch_steps: 2
 step_decay_rate: 0.94
 loss_weights:
-batch_size_train: 128
-batch_size_valid: 200
+batch_size_train: 512
+batch_size_valid: 800
 mini_batch_train: 32
 mini_batch_valid: 200
 validation_frequency: 1

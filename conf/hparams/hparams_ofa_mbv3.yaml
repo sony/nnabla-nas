@@ -28,8 +28,8 @@ epoch: 25
 cosine_warmup_epoch: 0
 warmup_lr: 0.0025
 loss_weights:
-batch_size_train: 128
-batch_size_valid: 200
+batch_size_train: 1024
+batch_size_valid: 1600
 mini_batch_train: 32
 mini_batch_valid: 200
 validation_frequency: 1
