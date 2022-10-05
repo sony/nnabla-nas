@@ -185,13 +185,13 @@ def count_parameters(params):
 
 
 def get_output_path(is_abspath=True):
-    r"""Get the path to the current working directory.
+    r"""Get the path to the original working directory.
 
     Args:
         is_abspath (bool, optional): Return absolute path or not. Defaults to True.
 
     Returns:
-        str: The absolute path or the relative path to the current working directory.
+        str: The absolute path or the relative path to the original working directory.
     """
     if 'hydra.mode=MULTIRUN' in OmegaConf.to_object(HydraConfig.get().overrides.hydra):
         output_path = Path(HydraConfig.get().sweep.dir) / Path(HydraConfig.get().sweep.subdir)
