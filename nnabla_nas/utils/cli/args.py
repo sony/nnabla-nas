@@ -33,13 +33,13 @@ class Configuration(object):
         # check validity of global, local and mini batch sizes
 
         # global batch size must be divisible by number of GPUs
-        assert conf['hparams']['batch_size_train'] % conf['hparams']['comm'].n_procs == 0
-        assert conf['hparams']['batch_size_valid'] % conf['hparams']['comm'].n_procs == 0
+        assert conf['hparams']['batch_size_train'] % conf['args']['comm'].n_procs == 0
+        assert conf['hparams']['batch_size_valid'] % conf['args']['comm'].n_procs == 0
 
         # local (per GPU) batch size must be divisible by minibatch size
-        assert (conf['hparams']['batch_size_train'] / conf['hparams']['comm'].n_procs) \
+        assert (conf['hparams']['batch_size_train'] / conf['args']['comm'].n_procs) \
             % conf['hparams']['mini_batch_train'] == 0
-        assert (conf['hparams']['batch_size_valid'] / conf['hparams']['comm'].n_procs) \
+        assert (conf['hparams']['batch_size_valid'] / conf['args']['comm'].n_procs) \
             % conf['hparams']['mini_batch_valid'] == 0
 
         self.dataloader = self.get_dataloader(conf)
@@ -103,7 +103,7 @@ class Configuration(object):
                         decay_rate = conf['hparams']["step_decay_rate"]
                         batch_iters = len(self.dataloader['valid' if name == 'valid' else 'train']) // bz
                         epoch_steps = conf['hparams']["epoch_steps"]  # number of epochs before each decay in lr
-                        iter_steps = [ep * batch_iters for ep in range(epoch_steps, epoch+1, epoch_steps)]
+                        iter_steps = [ep * batch_iters for ep in range(epoch_steps, epoch + 1, epoch_steps)]
                         lr_scheduler = LRS.StepScheduler(init_lr=lr, gamma=decay_rate, iter_steps=iter_steps)
 
                     else:
