@@ -26,6 +26,7 @@ class Module(object):
     Your models should also subclass this class. Modules can also contain
     other Modules, allowing to nest them in a tree structure.
     """
+
     def __init__(self, name=''):
         self._name = name
         if os.environ.get('NNABLA_NAS_MIXEDOP_FAST_MODE') is not None:
@@ -243,13 +244,14 @@ class Module(object):
         r"""Loads parameters from a file with the specified format.
 
         Args:
-            path (str): The path to file.
+            path (str): Relative path to the parameter file (based on the original working directory).
             raise_if_missing (bool, optional): Raise exception if some
                 parameters are missing. Defaults to `False`.
         """
         with nn.parameter_scope('', OrderedDict()):
-            load_path = os.path.realpath(os.path.join(utils.get_original_cwd(), path))  # because hydra changes
-            nn.load_parameters(load_path)                                               # the working directory
+            # adjust path because hydra changes the working directory
+            load_path = utils.to_absolute_path(path)
+            nn.load_parameters(load_path)
             params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
 

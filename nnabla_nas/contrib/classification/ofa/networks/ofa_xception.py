@@ -371,14 +371,6 @@ class OFAXceptionNet(ClassificationModel):
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
 
-    def load_parameters(self, path, raise_if_missing=False):
-        with nn.parameter_scope('', OrderedDict()):
-            # adjust path because hydra changes the working directory
-            load_path = os.path.realpath(os.path.join(utils.get_original_cwd(), path))
-            nn.load_parameters(load_path)
-            params = nn.get_parameters(grad_only=False)
-        self.set_parameters(params, raise_if_missing=raise_if_missing)
-
     def set_parameters(self, params, raise_if_missing=False):
         for prefix, module in self.get_modules():
             for name, p in module.parameters.items():
