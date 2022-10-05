@@ -124,7 +124,7 @@ class Optimizer(object):
 
         # save solver states
         states_path = os.path.join(path, 'optim_' + optimizer_name + '.h5')
-        self._solver.save_states(states_path)
+        self._solver.save_states(utils.to_absolute_path(states_path))
         checkpoint_info["states_path"] = states_path
 
         # get registered parameters' name.
