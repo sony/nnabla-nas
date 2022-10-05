@@ -199,7 +199,7 @@ def get_output_path(is_abspath=True):
         output_path = HydraConfig.get().run.dir
 
     if is_abspath:
-        return os.path.join(utils.get_original_cwd(), output_path)
+        return utils.to_absolute_path(output_path)
     else:
         return output_path
 
