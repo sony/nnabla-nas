@@ -142,5 +142,4 @@ class Optimizer(object):
         r"""Load the last states of the optimizer."""
         self._iter = int(checkpoint_info['current_iter'])
         # adjust path because hydra changes the working directory
-        load_path = utils.to_absolute_path(checkpoint_info["states_path"])
-        self._solver.load_states(load_path)
+        self._solver.load_states(utils.to_absolute_path(checkpoint_info["states_path"]))
