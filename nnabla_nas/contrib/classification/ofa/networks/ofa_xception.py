@@ -395,9 +395,6 @@ class OFAXceptionNet(ClassificationModel):
         repr += ')'
         return repr
 
-    def save_parameters(self, path=None, params=None, grad_only=False):
-        super().save_parameters(path, params=params, grad_only=grad_only)
-
 
 class SearchNet(OFAXceptionNet):
 
