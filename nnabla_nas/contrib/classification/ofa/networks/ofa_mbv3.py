@@ -14,7 +14,6 @@
 
 from collections import OrderedDict
 import random
-import os
 
 import numpy as np
 
@@ -31,7 +30,6 @@ from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_targe
 from ....common.ofa.utils.common_tools import init_models
 from ....common.ofa.elastic_nn.modules.dynamic_layers import DynamicMBConvLayer
 from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
-from hydra import utils
 
 
 CANDIDATES = {
