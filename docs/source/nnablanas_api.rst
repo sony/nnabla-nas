@@ -168,6 +168,13 @@ FairNasSearcher
    :undoc-members:
    :show-inheritance:
 
+OFASearcher
+...............
+.. automodule:: nnabla_nas.runner.searcher.ofa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Trainer
 .......
 
@@ -251,6 +258,30 @@ FairNas
 .......
 
 .. automodule:: nnabla_nas.contrib.classification.fairnas
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+OFAMobileNetV3
+.......................
+
+.. automodule:: nnabla_nas.contrib.classification.ofa.networks.ofa_mbv3
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+OFAXception
+.......................
+
+.. automodule:: nnabla_nas.contrib.classification.ofa.networks.ofa_xception
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+OFAResnet50
+.......................
+
+.. automodule:: nnabla_nas.contrib.classification.ofa.networks.ofa_resnet50
    :members:
    :undoc-members:
    :show-inheritance:
