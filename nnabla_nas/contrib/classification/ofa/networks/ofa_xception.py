@@ -354,6 +354,7 @@ class OFAXceptionNet(ClassificationModel):
         Args:
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
+
         Returns:
             OrderedDict: A dictionary containing parameters.
         """
@@ -362,9 +363,11 @@ class OFAXceptionNet(ClassificationModel):
 
     def get_arch_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing architecture parameters.
+
         Args:
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
+
         Returns:
             OrderedDict: A dictionary containing parameters.
         """
