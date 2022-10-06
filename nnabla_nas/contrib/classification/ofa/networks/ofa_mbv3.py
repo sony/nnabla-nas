@@ -87,29 +87,25 @@ def genotype2subnetlist(op_candidates, genotype):
 
 
 class OFAMbv3Net(ClassificationModel):
-    r""" MobileNet V3 Search Net
-    This implementation is based on the PyTorch implementation.
+    r"""MobileNet V3 Search Net.
 
     Args:
-        num_classes (int): Number of classes
-        bn_param (tuple, optional): BatchNormalization decay rate and eps.
+        num_classes (int, optional): Number of classes. Defaults to 1000.
+        bn_param (tuple, optional): BatchNormalization decay rate and eps. Defaults to (0.9, 1e-5).
         drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.1.
-        base_stage_width (list of int, optional): A list of base stage
-            channel size. Defaults to None.
-        width_mult (float, optional): Multiplier value to base stage channel size.
-            Defaults to 1.0.
-        op_candidates (str or list of str, optional): Operator choices.
-            Defaults to MB6 3x3.
-        depth_candidates (int or list of int, optional): Depth choices.
-            Defaults to 4.
-        weight (str, optional): The path to weight file. Defaults to
-            None.
+        base_stage_width (list of int, optional): A list of base stage channel size. Defaults to None.
+        width_mult (float, optional): Multiplier value to base stage channel size. Defaults to 1.0.
+        op_candidates (str or list of str, optional): Operator choices. Defaults to "MB6 3x3".
+        depth_candidates (int or list of int, optional): Depth choices. Defaults to 4.
+        compound (bool, optional): Use CompOFA or not. Defaults to False.
+        fixed_kernel (bool, optional): Fix kernel or not. Defaults to False.
+        weight_init (str, optional): Weight initializer. Defaults to 'he_fout'.
+        weights (str, optional): The relative path to weight file. Defaults to None.
 
     References:
-    [1] Cai, Han, et al. "Once-for-all: Train one network and specialize it for
-        efficient deployment." arXiv preprint arXiv:1908.09791 (2019).
+        [1] Cai, Han, et al. "Once-for-all: Train one network and specialize it for
+            efficient deployment." arXiv preprint arXiv:1908.09791 (2019).
     """
-
     CHANNEL_DIVISIBLE = 8
 
     def __init__(self,
@@ -500,21 +496,18 @@ class SearchNet(OFAMbv3Net):
 
 
 class TrainNet(OFAMbv3Net):
-    r""" MobileNet V3 Train Net.
+    r"""MobileNet V3 Train Net.
+
     Args:
-        num_classes (int): Number of classes
-        bn_param (tuple, optional): BatchNormalization decay rate and eps.
+        num_classes (int, optional): Number of classes. Defaults to 1000.
+        bn_param (tuple, optional): BatchNormalization decay rate and eps. Defaults to (0.9, 1e-5).
         drop_rate (float, optional): Drop rate used in Dropout. Defaults to 0.1.
-        base_stage_width (list of int, optional): A list of base stage
-            channel size. Defaults to None.
-        width_mult (float, optional): Multiplier value to base stage channel size.
-            Defaults to 1.0.
-        op_candidates (str or list of str, optional): Operator choices.
-            Defaults to MB6 3x3.
-        depth_candidates (int or list of int, optional): Depth choices.
-            Defaults to 4.
-        weight (str, optional): The path to weight file. Defaults to None.
-        genotype (list of int, optional): A list to operators, Defaults to None.
+        base_stage_width (list of int, optional): A list of base stage channel size. Defaults to None.
+        width_mult (float, optional): Multiplier value to base stage channel size. Defaults to 1.0.
+        op_candidates (str or list of str, optional): Operator choices. Defaults to None.
+        depth_candidates (int or list of int, optional): Depth choices. Defaults to None.
+        genotype (list of int, optional): A list to operators. Defaults to None.
+        weights (str, optional): Relative path to the weights file. Defaults to None.
     """
 
     def __init__(self, num_classes=1000, bn_param=(0.9, 1e-5), drop_rate=0.1,

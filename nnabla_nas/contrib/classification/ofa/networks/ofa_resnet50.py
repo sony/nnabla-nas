@@ -34,7 +34,7 @@ from hydra import utils
 
 
 class OFAResNet50(ClassificationModel):
-    r"""OFAResNet50 Base Class
+    r"""OFAResNet50 Base Class.
 
     This is the Base Class used for both TrainNet and SearchNet.
     This implementation is based on the PyTorch implementation given in References.
