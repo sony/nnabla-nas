@@ -15,6 +15,7 @@
 import os
 
 from collections import OrderedDict
+from hydra import utils
 
 import nnabla.solvers as S
 
@@ -123,7 +124,7 @@ class Optimizer(object):
 
         # save solver states
         states_path = os.path.join(path, 'optim_' + optimizer_name + '.h5')
-        self._solver.save_states(states_path)
+        self._solver.save_states(utils.to_absolute_path(states_path))
         checkpoint_info["states_path"] = states_path
 
         # get registered parameters' name.
@@ -140,4 +141,5 @@ class Optimizer(object):
     def load_checkpoint(self, checkpoint_info):
         r"""Load the last states of the optimizer."""
         self._iter = int(checkpoint_info['current_iter'])
-        self._solver.load_states(checkpoint_info["states_path"])
+        # adjust path because hydra changes the working directory
+        self._solver.load_states(utils.to_absolute_path(checkpoint_info["states_path"]))

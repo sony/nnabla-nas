@@ -8,6 +8,7 @@ defaults:
 
 args:
   algorithm: Trainer
+  print_frequency: 20
 
 name: classification/pnas/cifar10/constrained/train
 
@@ -17,9 +18,8 @@ network:
 
 hparams:
   epoch: 600
-  batch_size_train: 256
-  batch_size_valid: 100
+  batch_size_train: 1024
+  batch_size_valid: 400
   mini_batch_train: 32
   mini_batch_valid: 50
-  print_frequency: 20
   loss_weights: [1, 0.4]

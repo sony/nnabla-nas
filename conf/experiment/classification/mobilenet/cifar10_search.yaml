@@ -10,7 +10,8 @@ defaults:
 args:
   search: true
   algorithm: ProxylessNasSearcher
-
+  print_frequency: 25
+  
 name: classification/mobilenet/cifar10/search
 
 dataloader:
@@ -19,11 +20,10 @@ dataloader:
 
 hparams:
   epoch: 200
-  batch_size_train: 128
-  batch_size_valid: 256
+  batch_size_train: 512
+  batch_size_valid: 1024
   mini_batch_train: 128
   mini_batch_valid: 256
-  print_frequency: 25
   warmup: 100
 
 optimizer:

@@ -22,7 +22,7 @@ network:
       ]
     depth_candidates: [2, 3, 4]
     compound: true
-    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/phase1/weights.h5
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E346_D234/phase1/checkpoint/weights.h5
 
 optimizer:
   train:
@@ -49,4 +49,4 @@ hparams:
   epoch: 125
   cosine_warmup_epoch: 5
   warmup_lr: 0.0075
-  batch_size_train: 256
+  batch_size_train: 2048

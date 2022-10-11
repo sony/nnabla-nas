@@ -27,7 +27,7 @@ class Searcher(Runner):
             # do not run warmup if start from checkpoint
             self._start_warmup()
 
-        for self.cur_epoch in range(self.cur_epoch, self.args['epoch']):
+        for self.cur_epoch in range(self.cur_epoch, self.hparams['epoch']):
             self.monitor.reset()
             lr = self.optimizer['train'].get_learning_rate()
             self.monitor.info(f'Running epoch={self.cur_epoch}\tlr={lr:.5f}\n')
@@ -47,7 +47,7 @@ class Searcher(Runner):
 
     def _start_warmup(self):
         r"""Performs warmup for the model on training."""
-        for cur_epoch in range(self.args['warmup']):
+        for cur_epoch in range(self.hparams['warmup']):
             self.monitor.reset()
 
             lr = self.optimizer['warmup'].get_learning_rate()
@@ -63,19 +63,19 @@ class Searcher(Runner):
         if self.comm.rank == 0:
             if self.args['save_nnp']:
                 self.model.save_net_nnp(
-                    self.args['output_path'],
+                    self._abs_output_path,
                     self.placeholder['valid']['inputs'][0],
                     self.placeholder['valid']['outputs'][0],
                     save_params=self.args.get('save_params'))
             else:
                 self.model.save_parameters(
-                    path=os.path.join(self.args['output_path'], 'arch.h5'),
+                    path=os.path.join(self._abs_output_path, 'arch.h5'),
                     params=self.model.get_arch_parameters()
                 )
             # checkpoint
             self.save_checkpoint()
             if self.args['no_visualize']:  # action:store_false
-                self.model.visualize(self.args['output_path'])
+                self.model.visualize(self._abs_output_path)
 
         self.monitor.info(self.model.summary() + '\n')
 
@@ -84,17 +84,17 @@ class Searcher(Runner):
         if self.comm.rank == 0:
             if self.args['save_nnp']:
                 self.model.save_net_nnp(
-                    self.args['output_path'],
+                    self._abs_output_path,
                     self.placeholder['valid']['inputs'][0],
                     self.placeholder['valid']['outputs'][0],
                     save_params=self.args.get('save_params'))
             else:
                 self.model.save_parameters(
-                    path=os.path.join(self.args['output_path'], 'weights.h5'),
+                    path=os.path.join(self._abs_output_path, 'weights.h5'),
                     params=self.model.get_net_parameters()
                 )
             if self.args['no_visualize']:  # action:store_false
-                self.model.visualize(self.args['output_path'])
+                self.model.visualize(self._abs_output_path)
 
     def callback_on_start(self):
         r"""Calls this on starting the training."""

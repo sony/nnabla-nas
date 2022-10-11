@@ -38,30 +38,39 @@ class Runner(ABC):
             estimators
         dataloader (dict): This stores dataloaders for both `train` and `valid`
             graphs.
-        args (Configuration): This stores all hyperparmeters used during
-            training.
+        hparams  (Configuration): This stores all hyperparmeters used during training.
+        args (Configuration): This stores other variables used during for training:
+             event, communicator, output_path...
     """
 
-    def __init__(self, model, optimizer, regularizer, dataloader, args):
+    def __init__(self, model, optimizer, regularizer, dataloader, hparams, args):
 
         self.model = model
         self.dataloader = dataloader
         self.optimizer = optimizer
         self.regularizer = regularizer
+        self.hparams = hparams
         self.args = args
 
         # aditional argurments
-        hp = self.args
-        self.bs_train = hp['batch_size_train']
+        hp = self.hparams
+        self.comm = args['comm']
+        self.event = args['event']
+        n_procs = self.comm.n_procs
+
+        # hp['batch_size_XX'] is the GLOBAL batch size used for train / val
+        #     which is independent on the number of GPUs
+        # self.bs_XX is the LOCAL batch size (the batch size for each used GPU)
+        # self.mbs_XX is the MINIBATCH size, the nr. of samples used at once
+        # for forward pass of the network
+        self.bs_train = hp['batch_size_train'] // n_procs
         self.mbs_train = hp['mini_batch_train']
-        self.bs_valid = hp['batch_size_valid']
+        self.bs_valid = hp['batch_size_valid'] // n_procs
         self.mbs_valid = hp['mini_batch_valid']
         self.accum_train = self.bs_train // self.mbs_train
         self.accum_valid = self.bs_valid // self.mbs_valid
         self.one_epoch_train = len(self.dataloader['train']) // self.bs_train
         self.one_epoch_valid = len(self.dataloader['valid']) // self.bs_valid
-        self.comm = hp['comm']
-        self.event = hp['event']
         self.cur_epoch = 0
 
         # setup placeholder
@@ -70,17 +79,18 @@ class Runner(ABC):
 
         self.placeholder = {}
         self.placeholder['train'] = {
-            'inputs': create_variables(self.mbs_train, args['input_shapes']),
-            'targets': create_variables(self.mbs_train, args['target_shapes'])
+            'inputs': create_variables(self.mbs_train, hparams['input_shapes']),
+            'targets': create_variables(self.mbs_train, hparams['target_shapes'])
         }
         self.placeholder['valid'] = {
-            'inputs': create_variables(self.mbs_valid, args['input_shapes']),
-            'targets': create_variables(self.mbs_valid, args['target_shapes'])
+            'inputs': create_variables(self.mbs_valid, hparams['input_shapes']),
+            'targets': create_variables(self.mbs_valid, hparams['target_shapes'])
         }
 
         # monitor log info
-        output_path = args['output_path']
-        self.monitor = ProgressMeter(self.one_epoch_train, output_path,
+        self._abs_output_path = str(Path(get_output_path(is_abspath=True)) / self.args['output_path'])
+        self._rel_output_path = str(Path(get_output_path(is_abspath=False)) / self.args['output_path'])
+        self.monitor = ProgressMeter(self.one_epoch_train, self._abs_output_path,
                                      quiet=self.comm.rank > 0)
 
         # Check if we should run in fast mode where all computation graph is
@@ -136,7 +146,7 @@ class Runner(ABC):
         # add the model's loss function
         if not self.fast_mode or 'loss' not in placeholder:
             targets = placeholder['targets']
-            loss_weights = self.args['loss_weights']
+            loss_weights = self.hparams['loss_weights']
             accum = self.accum_train if training else self.accum_valid
             loss = model.loss(outputs, targets, loss_weights) / accum
             placeholder['loss'] = loss.apply(persistent=True)
@@ -161,22 +171,23 @@ class Runner(ABC):
 
     def save_checkpoint(self, checkpoint_info={}):
         r"""Save the current states of the runner."""
-        path = Path(self.args['output_path']) / 'checkpoint'
+        path = Path(self._abs_output_path) / 'checkpoint'
         path.mkdir(parents=True, exist_ok=True)
+        relpath = Path(self._rel_output_path) / 'checkpoint'
 
         checkpoint_info['epoch'] = self.cur_epoch
 
         # save optimizers state
         checkpoint_info['optimizers'] = dict()
         for name, optimizer in self.optimizer.items():
-            checkpoint_info['optimizers'][name] = optimizer.save_checkpoint(str(path), name)
+            checkpoint_info['optimizers'][name] = optimizer.save_checkpoint(str(relpath), name)
 
         if ("best_metric" in checkpoint_info.keys() and "error" in checkpoint_info["best_metric"].keys()):
             checkpoint_info["best_metric"]["error"] = float(checkpoint_info["best_metric"]["error"])
 
         # save parameters
         self.model.save_parameters(str(path / 'weights.h5'))
-        checkpoint_info['params_path'] = str(path / 'weights.h5')
+        checkpoint_info['params_path'] = str(relpath / 'weights.h5')
 
         with path.joinpath('checkpoint.json').open('w') as f:
             json.dump(checkpoint_info, f)

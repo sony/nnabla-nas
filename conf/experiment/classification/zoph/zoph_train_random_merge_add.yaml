@@ -9,6 +9,7 @@ defaults:
 
 args:
   algorithm: Trainer
+  print_frequency: 50
 
 name: classification/zoph/train_random_merge_add
 
@@ -19,8 +20,7 @@ network:
 
 hparams:
   epoch: 600
-  batch_size_train: 64
-  batch_size_valid: 20
+  batch_size_train: 256
+  batch_size_valid: 80
   mini_batch_train: 64
   mini_batch_valid: 20
-  print_frequency: 50

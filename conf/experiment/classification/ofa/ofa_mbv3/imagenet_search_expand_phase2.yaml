@@ -21,7 +21,7 @@ network:
       "MB6 3x3", "MB6 5x5", "MB6 7x7"
       ]
     depth_candidates: [2, 3, 4]
-    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E46_D234/weights.h5
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E46_D234/checkpoint/weights.h5
 
 optimizer:
   train:
@@ -48,4 +48,4 @@ hparams:
   epoch: 125
   cosine_warmup_epoch: 5
   warmup_lr: 0.0075
-  batch_size_train: 256
+  batch_size_train: 2048

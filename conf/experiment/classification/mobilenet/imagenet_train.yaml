@@ -9,6 +9,7 @@ defaults:
 
 args:
   algorithm: Trainer
+  print_frequency: 100
 
 name: classification/mobilenet/imagenet/train
 
@@ -17,11 +18,10 @@ hparams:
   input_shapes: [
     [3, 224, 224]
   ]
-  batch_size_train: 64
-  batch_size_valid: 64
+  batch_size_train: 256
+  batch_size_valid: 256
   mini_batch_train: 32
   mini_batch_valid: 64
-  print_frequency: 100
 
 optimizer:
   train:

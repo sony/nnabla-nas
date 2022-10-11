@@ -10,6 +10,7 @@ defaults:
 args:
   search: true
   algorithm: ProxylessNasSearcher
+  print_frequency: 100
 
 name: classification/mobilenet/imagenet/search
 
@@ -22,11 +23,10 @@ hparams:
   input_shapes: [
     [3, 224, 224]
   ]
-  batch_size_train: 64
-  batch_size_valid: 64
+  batch_size_train: 256
+  batch_size_valid: 256
   mini_batch_train: 32
   mini_batch_valid: 32
-  print_frequency: 100
   warmup: 50
 
 optimizer:
