@@ -88,8 +88,9 @@ class Runner(ABC):
         }
 
         # monitor log info
-        output_path = args['output_path']
-        self.monitor = ProgressMeter(self.one_epoch_train, output_path,
+        self._abs_output_path = str(Path(get_output_path(is_abspath=True)) / self.args['output_path'])
+        self._rel_output_path = str(Path(get_output_path(is_abspath=False)) / self.args['output_path'])
+        self.monitor = ProgressMeter(self.one_epoch_train, self._abs_output_path,
                                      quiet=self.comm.rank > 0)
 
         # Check if we should run in fast mode where all computation graph is
@@ -170,22 +171,23 @@ class Runner(ABC):
 
     def save_checkpoint(self, checkpoint_info={}):
         r"""Save the current states of the runner."""
-        path = Path(self.args['output_path']) / 'checkpoint'
+        path = Path(self._abs_output_path) / 'checkpoint'
         path.mkdir(parents=True, exist_ok=True)
+        relpath = Path(self._rel_output_path) / 'checkpoint'
 
         checkpoint_info['epoch'] = self.cur_epoch
 
         # save optimizers state
         checkpoint_info['optimizers'] = dict()
         for name, optimizer in self.optimizer.items():
-            checkpoint_info['optimizers'][name] = optimizer.save_checkpoint(str(path), name)
+            checkpoint_info['optimizers'][name] = optimizer.save_checkpoint(str(relpath), name)
 
         if ("best_metric" in checkpoint_info.keys() and "error" in checkpoint_info["best_metric"].keys()):
             checkpoint_info["best_metric"]["error"] = float(checkpoint_info["best_metric"]["error"])
 
         # save parameters
         self.model.save_parameters(str(path / 'weights.h5'))
-        checkpoint_info['params_path'] = str(path / 'weights.h5')
+        checkpoint_info['params_path'] = str(relpath / 'weights.h5')
 
         with path.joinpath('checkpoint.json').open('w') as f:
             json.dump(checkpoint_info, f)

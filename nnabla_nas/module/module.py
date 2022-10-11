@@ -26,6 +26,7 @@ class Module(object):
     Your models should also subclass this class. Modules can also contain
     other Modules, allowing to nest them in a tree structure.
     """
+
     def __init__(self, name=''):
         self._name = name
         if os.environ.get('NNABLA_NAS_MIXEDOP_FAST_MODE') is not None:
@@ -229,7 +230,7 @@ class Module(object):
         r"""Saves the parameters to a file.
 
         Args:
-            path (str): Path to file.
+            path (str): Absolute path to file.
             params (OrderedDict, optional): An `OrderedDict` containing
                 parameters. If params is `None`, then the current parameters
                 will be saved.
@@ -243,13 +244,14 @@ class Module(object):
         r"""Loads parameters from a file with the specified format.
 
         Args:
-            path (str): The path to file.
+            path (str): Relative path to the parameter file (based on the original working directory).
             raise_if_missing (bool, optional): Raise exception if some
                 parameters are missing. Defaults to `False`.
         """
         with nn.parameter_scope('', OrderedDict()):
-            load_path = os.path.realpath(os.path.join(utils.get_original_cwd(), path))  # because hydra changes
-            nn.load_parameters(load_path)                                               # the working directory
+            # adjust path because hydra changes the working directory
+            load_path = utils.to_absolute_path(path)
+            nn.load_parameters(load_path)
             params = nn.get_parameters(grad_only=False)
         self.set_parameters(params, raise_if_missing=raise_if_missing)
 
@@ -276,7 +278,7 @@ class Module(object):
         latencies = {}
         for mi in self.get_net_modules(active_only=active_only):
             if type(mi) in self.modules_to_profile:
-                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                inp = [nn.Variable((1,) + si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
                 latencies[mi.name] = estimator.predict(out)
                 accum_lat += latencies[mi.name]
@@ -313,7 +315,7 @@ class Module(object):
         [LatencyGraphEstimator])
 
         Args:
-            path
+            path: absolute path
             inp: input of the created network
             out: output of the created network
             calc_latency: flag for calc latency
@@ -388,7 +390,7 @@ class Module(object):
                     continue
                 pass
 
-                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                inp = [nn.Variable((1,) + si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
 
                 filename = path + mi.name + '.nnp'
@@ -455,7 +457,7 @@ class Module(object):
                     continue
                 pass
 
-                inp = [nn.Variable((1,)+si[1:]) for si in mi.input_shapes]
+                inp = [nn.Variable((1,) + si[1:]) for si in mi.input_shapes]
                 out = mi.call(*inp)
 
                 filename = path + mi.name + '.nnp'
@@ -620,7 +622,7 @@ class Module(object):
             m_repr = str(module).split('\n')
             head = [self.extra_format().format(key) + ': ' + m_repr.pop(0)]
             tail = [m_repr.pop()] if len(m_repr) else []
-            m_repr = [' '*2 + line for line in (head + m_repr + tail)]
+            m_repr = [' ' * 2 + line for line in (head + m_repr + tail)]
             sub_str += '\n' + '\n'.join(m_repr)
         main_str += sub_str + ('\n' if sub_str else '') + ')'
         return main_str

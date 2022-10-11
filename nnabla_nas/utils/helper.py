@@ -25,6 +25,7 @@ import numpy as np
 from pathlib import Path
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import OmegaConf
+from hydra import utils
 
 from .tensorboard import SummaryWriter
 
@@ -183,12 +184,24 @@ def count_parameters(params):
     return np.sum(np.prod(p.shape) for p in params.values())
 
 
-def get_output_path():
+def get_output_path(is_abspath=True):
+    r"""Get the path to the original working directory.
+
+    Args:
+        is_abspath (bool, optional): Return absolute path or not. Defaults to True.
+
+    Returns:
+        str: The absolute path or the relative path to the original working directory.
+    """
     if 'hydra.mode=MULTIRUN' in OmegaConf.to_object(HydraConfig.get().overrides.hydra):
         output_path = Path(HydraConfig.get().sweep.dir) / Path(HydraConfig.get().sweep.subdir)
     else:
         output_path = HydraConfig.get().run.dir
-    return output_path
+
+    if is_abspath:
+        return utils.to_absolute_path(output_path)
+    else:
+        return output_path
 
 
 class SearchLogger(object):

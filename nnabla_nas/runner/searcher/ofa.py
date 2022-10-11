@@ -215,7 +215,7 @@ class OFASearcher(Searcher):
                 self.monitor.info(f'{info}\n')
             if self.args['save_nnp']:
                 self.model.save_net_nnp(
-                    self.args['output_path'],
+                    self._abs_output_path,
                     self.placeholder['valid']['inputs'][0],
                     self.placeholder['valid']['outputs'][0],
                     save_params=self.args.get('save_params'))
