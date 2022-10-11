@@ -22,7 +22,7 @@ network:
       ]
     depth_candidates: [2, 3, 4]
     compound: true
-    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K7_E6_D4/weights.h5
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K7_E6_D4/checkpoint/weights.h5
 
 hparams:
   task: expand

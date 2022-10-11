@@ -23,7 +23,7 @@ teacher_network:
     depth_list: [2]
     expand_ratio_list: [0.35]
     width_mult_list: [1.0]
-    weights: "log/classification/ofa/ofa_resnet50/imagenet/search/D2_E0.35_W1.0/weights.h5"
+    weights: "log/classification/ofa/ofa_resnet50/imagenet/search/D2_E0.35_W1.0/checkpoint/weights.h5"
 epoch: 25
 cosine_warmup_epoch: 0
 warmup_lr: 0.0025
