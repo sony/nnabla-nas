@@ -20,7 +20,7 @@ network:
       "MB6 3x3", "MB6 5x5", "MB6 7x7"
       ]
     depth_candidates: [2, 3, 4]
-    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D234/weights.h5
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D234/checkpoint/weights.h5
 
 hparams:
   task: expand
