@@ -39,15 +39,12 @@ class ProcessGenotype:
     to process the genotypes and op_candidates to get the subnet
     architecture or the search space.
 
-    Operator candidates: "XP{E} {K}x{K} {D}"
-                         E=expand_ratio
-                         K=kernel_size
-                         D=depth_of_block
+    Operator candidates: "XP{E} {K}x{K} {D}", E=expand_ratio, K=kernel_size, D=depth_of_block
 
     Note: If depth of a block==1, expand_ratio will be ignored since we
-          just need in_channels and out_channels for a block with a single
-          layer. So blocks: ["XP0.6 KxK 1", "XP0.8 KxK 1", "XP1 KxK 1"]
-          are equivalent in this architecture design.
+    just need in_channels and out_channels for a block with a single
+    layer. So blocks: ["XP0.6 KxK 1", "XP0.8 KxK 1", "XP1 KxK 1"]
+    are equivalent in this architecture design.
     """
 
     CANDIDATES = {}
