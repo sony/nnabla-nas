@@ -31,6 +31,21 @@ from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_targe
 from hydra import utils
 
 
+def _build_candidates_table():
+    kernel_search_space = [3, 5, 7]
+    depth_search_space = [1, 2, 3]
+    expand_ratio_search_space = [0.6, 0.8, 1]
+    candidates_table = {}
+    for cur_kernel in kernel_search_space:
+        for cur_depth in depth_search_space:
+            for cur_expand_ratio in expand_ratio_search_space:
+                key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
+                value = {'ks': cur_kernel, 'depth': cur_depth,
+                         'expand_ratio': cur_expand_ratio}
+                candidates_table[key] = value
+    return candidates_table
+
+
 class ProcessGenotype:
 
     r""" ProcessGenotype
@@ -47,18 +62,7 @@ class ProcessGenotype:
     are equivalent in this architecture design.
     """
 
-    CANDIDATES = {}
-    KERNEL_SEARCH_SPACE = [3, 5, 7]
-    DEPTH_SEARCH_SPACE = [1, 2, 3]
-    EXPAND_RATIO_SEARCH_SPACE = [0.6, 0.8, 1]
-
-    for cur_kernel in KERNEL_SEARCH_SPACE:
-        for cur_depth in DEPTH_SEARCH_SPACE:
-            for cur_expand_ratio in EXPAND_RATIO_SEARCH_SPACE:
-                key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
-                value = {'ks': cur_kernel, 'depth': cur_depth,
-                         'expand_ratio': cur_expand_ratio}
-                CANDIDATES[key] = value
+    CANDIDATES = _build_candidates_table()
 
     @classmethod
     def get_search_space(cls, candidates):
