@@ -32,7 +32,7 @@ from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
 
 
 class OFAResNet50(ClassificationModel):
-    r"""OFAResNet50 Base Class
+    r"""OFAResNet50 Base Class.
 
     This is the Base Class used for both TrainNet and SearchNet.
     This implementation is based on the PyTorch implementation given in References.
@@ -280,6 +280,7 @@ class OFAResNet50(ClassificationModel):
 
     def loss(self, outputs, targets, loss_weights=None):
         r"""Return loss computed from a list of outputs and list of targets.
+
         Args:
             outputs (list of nn.Variable):
                 A list of output variables computed from the model.
@@ -290,6 +291,7 @@ class OFAResNet50(ClassificationModel):
                 contributions of different model outputs.
                 It is expected to have a 1:1 mapping to model outputs.
                 Defaults to None.
+
         Returns:
             nn.Variable: A scalar NNabla Variable represents the loss.
         """
@@ -303,9 +305,11 @@ class OFAResNet50(ClassificationModel):
 
     def get_net_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing architecture parameters.
+
         Args:
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
+
         Returns:
             OrderedDict: A dictionary containing parameters.
         """
