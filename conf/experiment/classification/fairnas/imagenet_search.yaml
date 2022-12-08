@@ -10,6 +10,7 @@ defaults:
 args:
   search: true
   algorithm: FairNasSearcher
+  print_frequency: 100
 
 name: classification/fairnas/imagenet/search
 
@@ -19,13 +20,12 @@ dataloader:
 
 hparams:
   epoch: 150
-  batch_size_train: 64
-  batch_size_valid: 128
+  batch_size_train: 256
+  batch_size_valid: 512
   mini_batch_train: 32
   mini_batch_valid: 128
   num_sampled_iter: 6
   num_search_samples: 10000
-  print_frequency: 100
   input_shapes: [
     [3, 224, 224]
   ]

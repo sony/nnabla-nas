@@ -32,7 +32,7 @@ from ....common.ofa.elastic_nn.modules.dynamic_op import DynamicBatchNorm
 
 
 class OFAResNet50(ClassificationModel):
-    r"""OFAResNet50 Base Class
+    r"""OFAResNet50 Base Class.
 
     This is the Base Class used for both TrainNet and SearchNet.
     This implementation is based on the PyTorch implementation given in References.
@@ -270,9 +270,6 @@ class OFAResNet50(ClassificationModel):
         repr += ')'
         return repr
 
-    def save_parameters(self, path=None, params=None, grad_only=False):
-        super().save_parameters(path, params=params, grad_only=grad_only)
-
     def set_bn_param(self, decay_rate, eps, **kwargs):
         r"""Sets decay_rate and eps to batchnormalization layers.
         Args:
@@ -283,6 +280,7 @@ class OFAResNet50(ClassificationModel):
 
     def loss(self, outputs, targets, loss_weights=None):
         r"""Return loss computed from a list of outputs and list of targets.
+
         Args:
             outputs (list of nn.Variable):
                 A list of output variables computed from the model.
@@ -293,6 +291,7 @@ class OFAResNet50(ClassificationModel):
                 contributions of different model outputs.
                 It is expected to have a 1:1 mapping to model outputs.
                 Defaults to None.
+
         Returns:
             nn.Variable: A scalar NNabla Variable represents the loss.
         """
@@ -306,20 +305,16 @@ class OFAResNet50(ClassificationModel):
 
     def get_net_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing architecture parameters.
+
         Args:
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
+
         Returns:
             OrderedDict: A dictionary containing parameters.
         """
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items()])
-
-    def load_parameters(self, path, raise_if_missing=False):
-        with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
-            params = nn.get_parameters(grad_only=False)
-        self.set_parameters(params, raise_if_missing=raise_if_missing)
 
     def set_parameters(self, params, raise_if_missing=False):
         for prefix, module in self.get_modules():

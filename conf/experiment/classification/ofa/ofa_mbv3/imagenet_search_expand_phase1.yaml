@@ -20,7 +20,7 @@ network:
       "MB6 3x3", "MB6 5x5", "MB6 7x7"
       ]
     depth_candidates: [2, 3, 4]
-    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D234/weights.h5
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K357_E6_D234/checkpoint/weights.h5
 
 hparams:
   task: expand
@@ -34,5 +34,5 @@ hparams:
     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
     [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
     ]
-  batch_size_train: 256
+  batch_size_train: 2048
   mini_batch_train: 16

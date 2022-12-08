@@ -10,6 +10,7 @@ defaults:
 args:
   search: true
   algorithm: FairNasSearcher
+  print_frequency: 10
 
 name: classification/fairnas/cifar10/search
 
@@ -19,13 +20,12 @@ dataloader:
 
 hparams:
   epoch: 1000
-  batch_size_train: 128
-  batch_size_valid: 256
+  batch_size_train: 512
+  batch_size_valid: 1024
   mini_batch_train: 128
   mini_batch_valid: 256
   num_sampled_iter: 6
   num_search_samples: 100000
-  print_frequency: 10
 
 optimizer:
   train:

@@ -23,13 +23,13 @@ teacher_network:
     drop_rate: 0
     op_candidates: ["MB6 7x7"]
     depth_candidates: [4]
-    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K7_E6_D4/weights.h5
+    weights: log/classification/ofa/ofa_mbv3/imagenet/search/K7_E6_D4/checkpoint/weights.h5
 epoch: 25
 cosine_warmup_epoch: 0
 warmup_lr: 0.0025
-batch_size_train: 128
-batch_size_valid: 200
+loss_weights:
+batch_size_train: 1024
+batch_size_valid: 1600
 mini_batch_train: 32
 mini_batch_valid: 200
-print_frequency: 100
 validation_frequency: 1

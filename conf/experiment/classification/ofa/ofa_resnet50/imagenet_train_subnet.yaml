@@ -25,7 +25,7 @@ network:
                       0.35, 0.2, 0.2, 0.2]},             
       "w": {"input_stem1": 0.65, "input_stem2": 0.65, "block": [1.0, 0.65, 0.8, 1.0]}
     }
-    weights: log/classification/ofa/ofa_resnet50/imagenet/search/D012_E0.20.250.35_W0.650.81.0/weights.h5
+    weights: log/classification/ofa/ofa_resnet50/imagenet/search/D012_E0.20.250.35_W0.650.81.0/checkpoint/weights.h5
 
 optimizer:
   train:

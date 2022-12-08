@@ -29,6 +29,21 @@ from ....common.ofa.utils.common_tools import cross_entropy_loss_with_label_smoo
 from ....common.ofa.utils.common_tools import cross_entropy_loss_with_soft_target
 
 
+def _build_candidates_table():
+    kernel_search_space = [3, 5, 7]
+    depth_search_space = [1, 2, 3]
+    expand_ratio_search_space = [0.6, 0.8, 1]
+    candidates_table = {}
+    for cur_kernel in kernel_search_space:
+        for cur_depth in depth_search_space:
+            for cur_expand_ratio in expand_ratio_search_space:
+                key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
+                value = {'ks': cur_kernel, 'depth': cur_depth,
+                         'expand_ratio': cur_expand_ratio}
+                candidates_table[key] = value
+    return candidates_table
+
+
 class ProcessGenotype:
 
     r""" ProcessGenotype
@@ -37,29 +52,15 @@ class ProcessGenotype:
     to process the genotypes and op_candidates to get the subnet
     architecture or the search space.
 
-    Operator candidates: "XP{E} {K}x{K} {D}"
-                         E=expand_ratio
-                         K=kernel_size
-                         D=depth_of_block
+    Operator candidates: "XP{E} {K}x{K} {D}", E=expand_ratio, K=kernel_size, D=depth_of_block
 
     Note: If depth of a block==1, expand_ratio will be ignored since we
-          just need in_channels and out_channels for a block with a single
-          layer. So blocks: ["XP0.6 KxK 1", "XP0.8 KxK 1", "XP1 KxK 1"]
-          are equivalent in this architecture design.
+    just need in_channels and out_channels for a block with a single
+    layer. So blocks: ["XP0.6 KxK 1", "XP0.8 KxK 1", "XP1 KxK 1"]
+    are equivalent in this architecture design.
     """
 
-    CANDIDATES = {}
-    KERNEL_SEARCH_SPACE = [3, 5, 7]
-    DEPTH_SEARCH_SPACE = [1, 2, 3]
-    EXPAND_RATIO_SEARCH_SPACE = [0.6, 0.8, 1]
-
-    for cur_kernel in KERNEL_SEARCH_SPACE:
-        for cur_depth in DEPTH_SEARCH_SPACE:
-            for cur_expand_ratio in EXPAND_RATIO_SEARCH_SPACE:
-                key = f'XP{cur_expand_ratio} {cur_kernel}x{cur_kernel} {cur_depth}'
-                value = {'ks': cur_kernel, 'depth': cur_depth,
-                         'expand_ratio': cur_expand_ratio}
-                CANDIDATES[key] = value
+    CANDIDATES = _build_candidates_table()
 
     @classmethod
     def get_search_space(cls, candidates):
@@ -352,6 +353,7 @@ class OFAXceptionNet(ClassificationModel):
         Args:
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
+
         Returns:
             OrderedDict: A dictionary containing parameters.
         """
@@ -360,20 +362,16 @@ class OFAXceptionNet(ClassificationModel):
 
     def get_arch_parameters(self, grad_only=False):
         r"""Returns an `OrderedDict` containing architecture parameters.
+
         Args:
             grad_only (bool, optional): If sets to `True`, then only parameters
                 with `need_grad=True` are returned. Defaults to False.
+
         Returns:
             OrderedDict: A dictionary containing parameters.
         """
         p = self.get_parameters(grad_only)
         return OrderedDict([(k, v) for k, v in p.items() if 'alpha' in k])
-
-    def load_parameters(self, path, raise_if_missing=False):
-        with nn.parameter_scope('', OrderedDict()):
-            nn.load_parameters(path)
-            params = nn.get_parameters(grad_only=False)
-        self.set_parameters(params, raise_if_missing=raise_if_missing)
 
     def set_parameters(self, params, raise_if_missing=False):
         for prefix, module in self.get_modules():
@@ -400,9 +398,6 @@ class OFAXceptionNet(ClassificationModel):
 
         repr += ')'
         return repr
-
-    def save_parameters(self, path=None, params=None, grad_only=False):
-        super().save_parameters(path, params=params, grad_only=grad_only)
 
 
 class SearchNet(OFAXceptionNet):
