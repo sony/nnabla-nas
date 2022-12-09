@@ -3,7 +3,7 @@ sphinx_rtd_theme
 sphinxcontrib-bibtex
 nnabla
 hydra-core
-sklearn
+scikit-learn
 more-itertools
 networkx
 tensorboard
