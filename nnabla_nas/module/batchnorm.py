@@ -113,6 +113,10 @@ class BatchNormalization(Module):
 
     def call(self, input):
         if self.set_running_statistics:
+            """
+            Note: this code block is verified with only
+            once-for-all algorithm so far.
+            """
             batch_mean = F.mean(input, axis=(0, 2, 3), keepdims=True)
             batch_var = F.mean(input ** 2, axis=(0, 2, 3),
                                keepdims=True) - batch_mean ** 2
