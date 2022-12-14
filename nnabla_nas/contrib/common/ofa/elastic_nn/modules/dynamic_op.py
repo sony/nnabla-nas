@@ -153,33 +153,65 @@ class DynamicBatchNorm(Mo.Module):
         self._scope_name = f'<dynamicbatchnorm2d at {hex(id(self))}>'
 
         self._max_feature_dim = max_feature_dim
-        self.bn = Mo.BatchNormalization(self._max_feature_dim, n_dims)
+        self._n_dims = n_dims
+
+        self.bn = Mo.BatchNormalization(max_feature_dim, n_dims)
         self.use_static_bn = True
         self.set_running_statistics = False
+        self._prev_running_stats = None
 
-    @staticmethod
-    def bn_forward(x, bn: Mo.BatchNormalization, max_feature_dim, feature_dim, training,
-                   use_static_bn, set_running_statistics):
-        if use_static_bn or set_running_statistics:
-            return bn(x)
+    def _update_running_stats(self):
+        """
+        Note: This implementation is a workaround to avoid undesireble network
+        graph construction in static mode that causes inefficient memory use.
+
+        This method is called before the forward graph construction of each DynamicBN.
+        However, this leads to a missing update in some cases of using the model
+        before the next forward graph construction (e.g., saving parameters) unless
+        this method is callsed after the last iteration.
+
+        We decided to leave this issue remained since ignoring the last update
+        shouldn't affect the performance much.
+        Probably this implementation can be improved by replacing this part by
+        F.assign and replace after F.batch_normalization(...)
+        """
+        if self._prev_running_stats is None:
+            return
+        bn = self.bn
+        smean, svar, feature_dim = self._prev_running_stats
+        self._prev_running_stats = None
+        channel_axis = 1
+        if feature_dim < bn._mean.shape[channel_axis]:
+            bn._mean.data.copy_from(F.concatenate(smean.data, bn._mean.data[:, feature_dim:, :, :], axis=1))
+            bn._var.data.copy_from(F.concatenate(svar.data, bn._var.data[:, feature_dim:, :, :], axis=1))
         else:
+            bn._mean.data.copy_from(smean.data)
+            bn._var.data.copy_from(svar.data)
+
+    def call(self, input):
+        if self.use_static_bn or self.set_running_statistics:
+            return self.bn(input)
+        else:
+            assert not nn.get_auto_forward(), "This code block is verified with static mode only so far."
+            if self.training:
+                """
+                Note: We decided to call self._update_running_stats() only for the training mode.
+                For OFA, running this part at the validation mode induces larger loss because
+                reset_running_statistics() runs before this; running this part overwrites the
+                re-calculated BN mean/var statistics.
+                """
+                self._update_running_stats()
+            feature_dim = input.shape[1]
+            bn = self.bn
             sbeta, sgamma = bn._beta[:, :feature_dim, :, :], bn._gamma[:, :feature_dim, :, :]
             smean = nn.Variable(sbeta.shape)
             svar = nn.Variable(sbeta.shape)
             smean.data = bn._mean.data[:, :feature_dim, :, :]
             svar.data = bn._var.data[:, :feature_dim, :, :]
-            y = F.batch_normalization(x, sbeta, sgamma, smean, svar, batch_stat=training,)
-            if training:
-                bn._mean = F.concatenate(smean, bn._mean[:, feature_dim:, :, :], axis=1)
-                bn._var = F.concatenate(svar, bn._var[:, feature_dim:, :, :], axis=1)
+            y = F.batch_normalization(input, sbeta, sgamma, smean, svar, batch_stat=self.training)
+            if self.training:
+                self._prev_running_stats = (smean, svar, feature_dim)
             return y
-
-    def call(self, input):
-        feature_dim = input.shape[1]
-        y = self.bn_forward(
-            input, self.bn, self._max_feature_dim, feature_dim, self.training,
-            self.use_static_bn, self.set_running_statistics)
-        return y
 
 
 class DynamicDepthwiseConv(Mo.Module):

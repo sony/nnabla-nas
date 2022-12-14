@@ -20,7 +20,6 @@ from collections import OrderedDict
 
 import nnabla as nn
 import nnabla.functions as F
-from nnabla_ext.cuda import clear_memory_cache
 
 from ... import contrib
 from .search import Searcher
@@ -87,7 +86,6 @@ class OFASearcher(Searcher):
                     train_keys = [m.name for m in self.monitor.meters.values()
                                   if 'train' in m.name]
                     self.monitor.display(i, key=train_keys)
-                clear_memory_cache()
             if self.cur_epoch % self.hparams["validation_frequency"] == 0:
                 self.valid_genotypes(mode='valid')
 
@@ -186,7 +184,6 @@ class OFASearcher(Searcher):
                               desc=f'{mode} [{self.cur_epoch}/{self.hparams["epoch"]}]'):
                     self.update_graph(mode)
                     self.valid_on_batch(is_test=is_test)
-                    clear_memory_cache()
                 self.monitor.info(f'img_size={img_size}, genotype={genotype} \n')
                 self.callback_on_epoch_end(is_test=is_test)
                 self.monitor.write(self.cur_epoch)

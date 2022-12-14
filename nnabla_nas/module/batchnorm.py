@@ -113,6 +113,10 @@ class BatchNormalization(Module):
 
     def call(self, input):
         if self.set_running_statistics:
+            """
+            Note: this code block is verified with only
+            once-for-all algorithm so far.
+            """
             batch_mean = F.mean(input, axis=(0, 2, 3), keepdims=True)
             batch_var = F.mean(input ** 2, axis=(0, 2, 3),
                                keepdims=True) - batch_mean ** 2
@@ -122,8 +126,7 @@ class BatchNormalization(Module):
 
             _feature_dim = batch_mean.shape[1]
             return F.batch_normalization(
-                input, self._beta[:, :_feature_dim, :,
-                                  :], self._gamma[:, :_feature_dim, :, :],
+                input, self._beta[:, :_feature_dim, :, :], self._gamma[:, :_feature_dim, :, :],
                 batch_mean, batch_var, decay_rate=self._decay_rate, eps=self._eps, batch_stat=False
             )
         else:
