@@ -15,7 +15,7 @@
 from abc import ABC
 from abc import abstractmethod
 
-from ..utils.data.transforms import Compose
+# from ..utils.data.transforms import Compose
 
 
 class BaseDataLoader(ABC):
@@ -42,12 +42,12 @@ class BaseDataLoader(ABC):
     def __len__(self):
         raise NotImplementedError
 
-    def transform(self, key='train'):
-        r"""Return a transform.
+    # def transform(self, key='train'):
+    #     r"""Return a transform.
 
-        Args:
-            key (str, optional): Type of transform. Defaults to 'train'.
-        """
-        assert key in ('train', 'valid')
+    #     Args:
+    #         key (str, optional): Type of transform. Defaults to 'train'.
+    #     """
+    #     assert key in ('train', 'valid')
 
-        return Compose([])
+    #     return Compose([])

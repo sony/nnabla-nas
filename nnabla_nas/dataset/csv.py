@@ -62,8 +62,9 @@ class DataLoader(BaseDataLoader):
                  train_file=None, valid_file=None,
                  train_cache_dir=None, valid_cache_dir=None,
                  train_portion=1.0, rng=None, augmentation=None,
-                 communicator=None):
+                 communicator=None, transform=None):
         self.rng = rng or random.prng
+        self.transform = transform
         self.augmentation = augmentation
 
         if searching:
@@ -98,57 +99,57 @@ class DataLoader(BaseDataLoader):
         x, y = self._data.next()
         return {"inputs": [x], "targets": [y]}
 
-    def transform(self, key='train'):
-        r"""Return a transform applied to data augmentation."""
-        assert key in ('train', 'valid')
+    # def transform(self, key='train'):
+    #     r"""Return a transform applied to data augmentation."""
+    #     assert key in ('train', 'valid')
 
-        if self.augmentation:
-            type = self.augmentation.get('type')
-            norm = self.augmentation.get('normalize')
-        else:
-            type = None
-            norm = None
+    #     if self.augmentation:
+    #         type = self.augmentation.get('type')
+    #         norm = self.augmentation.get('normalize')
+    #     else:
+    #         type = None
+    #         norm = None
 
-        if type == 'cifar10':
-            mean = (0.49139968, 0.48215827, 0.44653124)
-            std = (0.24703233, 0.24348505, 0.26158768)
-            scale = 1./255.0
-        elif type == 'imagenet':
-            mean = (0.485, 0.456, 0.406)
-            std = (0.229, 0.224, 0.225)
-            scale = 1./255.0
-        else:
-            mean = (0.0, 0.0, 0.0)
-            std = (1.0, 1.0, 1.0)
-            scale = 1./255.0
+    #     if type == 'cifar10':
+    #         mean = (0.49139968, 0.48215827, 0.44653124)
+    #         std = (0.24703233, 0.24348505, 0.26158768)
+    #         scale = 1./255.0
+    #     elif type == 'imagenet':
+    #         mean = (0.485, 0.456, 0.406)
+    #         std = (0.229, 0.224, 0.225)
+    #         scale = 1./255.0
+    #     else:
+    #         mean = (0.0, 0.0, 0.0)
+    #         std = (1.0, 1.0, 1.0)
+    #         scale = 1./255.0
 
-        if key == 'train':
-            if type == 'cifar10':
-                pad_width = (4, 4, 4, 4)
-                return transforms.Compose([
-                    transforms.Cutout(8, prob=1, seed=123),
-                    transforms.Normalize(mean=mean, std=std, scale=scale),
-                    transforms.RandomCrop((3, 32, 32), pad_width=pad_width),
-                    transforms.RandomHorizontalFlip()
-                ])
-            elif type == 'imagenet':
-                return transforms.Compose([
-                    transforms.Normalize(mean=mean, std=std, scale=scale),
-                    transforms.RandomResizedCrop((3, 224, 224),
-                                                 scale=(1.0, 2.3), ratio=1.33),
-                    transforms.RandomHorizontalFlip()
-                ])
-            else:
-                pass  # same as valid
+    #     if key == 'train':
+    #         if type == 'cifar10':
+    #             pad_width = (4, 4, 4, 4)
+    #             return transforms.Compose([
+    #                 transforms.Cutout(8, prob=1, seed=123),
+    #                 transforms.Normalize(mean=mean, std=std, scale=scale),
+    #                 transforms.RandomCrop((3, 32, 32), pad_width=pad_width),
+    #                 transforms.RandomHorizontalFlip()
+    #             ])
+    #         elif type == 'imagenet':
+    #             return transforms.Compose([
+    #                 transforms.Normalize(mean=mean, std=std, scale=scale),
+    #                 transforms.RandomResizedCrop((3, 224, 224),
+    #                                              scale=(1.0, 2.3), ratio=1.33),
+    #                 transforms.RandomHorizontalFlip()
+    #             ])
+    #         else:
+    #             pass  # same as valid
 
-        if type == 'cifar10' or norm:
-            return transforms.Compose([
-                transforms.Normalize(mean=mean, std=std, scale=scale)
-            ])
-        elif type == 'imagenet':
-            return transforms.Compose([
-                transforms.Resize(size=(224, 224)),
-                transforms.Normalize(mean=mean, std=std, scale=scale)
-            ])
-        else:
-            return transforms.Compose([])
+    #     if type == 'cifar10' or norm:
+    #         return transforms.Compose([
+    #             transforms.Normalize(mean=mean, std=std, scale=scale)
+    #         ])
+    #     elif type == 'imagenet':
+    #         return transforms.Compose([
+    #             transforms.Resize(size=(224, 224)),
+    #             transforms.Normalize(mean=mean, std=std, scale=scale)
+    #         ])
+    #     else:
+    #         return transforms.Compose([])

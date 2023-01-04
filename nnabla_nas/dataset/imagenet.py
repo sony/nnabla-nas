@@ -25,6 +25,7 @@ from nvidia.dali import pipeline_def
 import nvidia.dali.fn as fn
 import nvidia.dali.types as types
 
+from ..utils.data import transforms
 
 _pixel_mean = [255 * x for x in (0.485, 0.456, 0.406)]
 _pixel_std = [255 * x for x in (0.229, 0.224, 0.225)]
@@ -154,7 +155,8 @@ class DataLoader(BaseDataLoader):
     def __init__(self, batch_size=1, searching=False, training=False, datapath=None,
                  train_path=None, train_file=None, valid_path=None, valid_file=None,
                  train_portion=1.0, *, augment_valid=True, colortwist=False,
-                 rng=None, communicator=None, type_config=float, channel_last=False):
+                 rng=None, communicator=None, type_config=float, channel_last=False,
+                 transform=None):
         r"""Dataloader for ImageNet.
 
         Args:
@@ -182,6 +184,7 @@ class DataLoader(BaseDataLoader):
                 considered as channel dimension, a.k.a NHWC order. Defaults to`False`.
         """
         self.rng = rng or random.prng  # np.random.RandomState(313) #
+        self.transform = transform
 
         train_path = os.path.join(datapath, train_path)
         train_file = os.path.join(datapath, train_file)

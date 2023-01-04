@@ -27,6 +27,8 @@ from .search import Searcher
 from ...contrib.common.ofa.utils.random_resize_crop import OFAResize
 from ...contrib.common.ofa.elastic_nn.utils import set_running_statistics
 
+from ...utils.data import transforms
+
 
 class OFASearcher(Searcher):
     r"""An implementation of OFA."""
@@ -233,7 +235,13 @@ class OFASearcher(Searcher):
         fake_key = 'train' if key == 'train' else 'valid'
         p = self.placeholder[fake_key]
         resize = OFAResize()
-        transform = self.dataloader[fake_key].transform(fake_key)
+
+        if self.dataloader[fake_key].transform is None:
+            transform = transforms.Compose([])
+        else:
+            transform = eval(
+                    'transforms.' + self.dataloader[fake_key].transform + '(\'' + fake_key + '\')'
+                    )
         accum = self.accum_test if key == 'test' else (self.accum_valid if key == 'valid' else self.accum_train)
 
         # outputs
