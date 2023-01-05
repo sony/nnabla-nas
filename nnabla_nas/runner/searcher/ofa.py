@@ -240,13 +240,14 @@ class OFASearcher(Searcher):
             self.dataloader[fake_key].transform = 'none_transform'
         try:
             func = getattr(transforms, self.dataloader[fake_key].transform)
-            transform = func(key)
+            transform = func(fake_key)
         except AttributeError:
             print(
                 'ERROR: Transformation function \'' +
                 self.dataloader[fake_key].transform +
                 '\' NOT defined in ' + transforms.__name__
                 )
+            raise AttributeError
 
         accum = self.accum_test if key == 'test' else (self.accum_valid if key == 'valid' else self.accum_train)
 
