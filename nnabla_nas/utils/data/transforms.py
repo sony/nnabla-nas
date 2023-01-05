@@ -306,8 +306,9 @@ def ImageNet_transform(key='train'):
     ])
 
 
-def zeromean_1std_transform(key='train'):
-    r"""Return a zero mean, std=1 transform applied to data augmentation."""
+def normalize_0mean_1std_8bitscaling_transform(key='train'):
+    r"""Return a zero mean, one std normalization, 8 bit scaling transform
+    applied to data augmentation."""
     assert key in ('train', 'valid')
 
     mean = (0.0, 0.0, 0.0)
@@ -320,7 +321,7 @@ def zeromean_1std_transform(key='train'):
 
 
 def none_transform(key='train'):
-    r"""Return a null transform (passthrough, no transformation done) 
+    r"""Return a null transform (passthrough, no transformation done)
     applied to data augmentation."""
     assert key in ('train', 'valid')
 

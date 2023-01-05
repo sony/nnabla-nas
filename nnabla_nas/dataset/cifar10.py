@@ -24,6 +24,7 @@ from sklearn.model_selection import train_test_split
 
 from .dataloader import BaseDataLoader
 
+
 def download_data(train=True):
     data_uri = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
     logger.info('Getting labeled data from {}.'.format(data_uri))
