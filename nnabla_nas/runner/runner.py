@@ -135,7 +135,6 @@ class Runner(ABC):
                 self.dataloader[key].transform +
                 '\' NOT defined in ' + transforms.__name__
                 )
-            raise
 
         training = key == 'train'
         model = self.model

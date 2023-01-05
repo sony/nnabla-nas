@@ -247,7 +247,6 @@ class OFASearcher(Searcher):
                 self.dataloader[fake_key].transform +
                 '\' NOT defined in ' + transforms.__name__
                 )
-            raise
 
         accum = self.accum_test if key == 'test' else (self.accum_valid if key == 'valid' else self.accum_train)
 
