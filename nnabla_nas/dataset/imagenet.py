@@ -25,8 +25,6 @@ from nvidia.dali import pipeline_def
 import nvidia.dali.fn as fn
 import nvidia.dali.types as types
 
-from ..utils.data import transforms
-
 _pixel_mean = [255 * x for x in (0.485, 0.456, 0.406)]
 _pixel_std = [255 * x for x in (0.229, 0.224, 0.225)]
 

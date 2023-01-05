@@ -18,6 +18,7 @@ from nnabla.utils.load import _create_dataset
 
 from .dataloader import BaseDataLoader
 
+
 def get_sliced_data_iterator(dataset, comm, training, portion):
     it = dataset.data_iterator()
 
