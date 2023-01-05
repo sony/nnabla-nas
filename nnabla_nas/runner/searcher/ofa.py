@@ -237,11 +237,18 @@ class OFASearcher(Searcher):
         resize = OFAResize()
 
         if self.dataloader[fake_key].transform is None:
-            transform = transforms.Compose([])
-        else:
-            transform = eval(
-                    'transforms.' + self.dataloader[fake_key].transform + '(\'' + fake_key + '\')'
-                    )
+            self.dataloader[fake_key].transform = 'none_transform'
+        try:
+            func = getattr(transforms, self.dataloader[fake_key].transform)
+            transform = func(key)
+        except AttributeError:
+            print(
+                'ERROR: Transformation function \'' +
+                self.dataloader[fake_key].transform +
+                '\' NOT defined in ' + transforms.__name__
+                )
+            raise
+
         accum = self.accum_test if key == 'test' else (self.accum_valid if key == 'valid' else self.accum_train)
 
         # outputs

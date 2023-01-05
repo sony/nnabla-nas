@@ -23,8 +23,6 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from .dataloader import BaseDataLoader
-from ..utils.data import transforms
-
 
 def download_data(train=True):
     data_uri = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
@@ -160,24 +158,3 @@ class DataLoader(BaseDataLoader):
     def next(self):
         x, y = self._data.next()
         return {"inputs": [x], "targets": [y]}
-
-    # def transform(self, key='train'):
-    #     r"""Return a transform applied to data augmentation."""
-    #     assert key in ('train', 'valid')
-
-    #     mean = (0.49139968, 0.48215827, 0.44653124)
-    #     std = (0.24703233, 0.24348505, 0.26158768)
-    #     scale = 1./255.0
-    #     pad_width = (4, 4, 4, 4)
-
-    #     if key == 'train':
-    #         return transforms.Compose([
-    #             transforms.Cutout(8, prob=1, seed=123),
-    #             transforms.Normalize(mean=mean, std=std, scale=scale),
-    #             transforms.RandomCrop((3, 32, 32), pad_width=pad_width),
-    #             transforms.RandomHorizontalFlip()
-    #         ])
-
-    #     return transforms.Compose([
-    #         transforms.Normalize(mean=mean, std=std, scale=scale)
-    #     ])

@@ -285,57 +285,43 @@ def CIFAR10_transform(key='train'):
     ])
 
 
-def CSV_transform(key='train', type=None, norm=None):
-    # NOTE: we need to modify this one to be used!
-    r"""Return a transform applied to data augmentation."""
+def ImageNet_transform(key='train'):
+    r"""Return a transform applied to data augmentation for ImageNet."""
     assert key in ('train', 'valid')
 
-    # if self.augmentation:
-    #     type = self.augmentation.get('type')
-    #     norm = self.augmentation.get('normalize')
-    # else:
-    #     type = None
-    #     norm = None
-
-    if type == 'cifar10':
-        mean = (0.49139968, 0.48215827, 0.44653124)
-        std = (0.24703233, 0.24348505, 0.26158768)
-        scale = 1./255.0
-    elif type == 'imagenet':
-        mean = (0.485, 0.456, 0.406)
-        std = (0.229, 0.224, 0.225)
-        scale = 1./255.0
-    else:
-        mean = (0.0, 0.0, 0.0)
-        std = (1.0, 1.0, 1.0)
-        scale = 1./255.0
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
+    scale = 1./255.0
 
     if key == 'train':
-        if type == 'cifar10':
-            pad_width = (4, 4, 4, 4)
-            return Compose([
-                Cutout(8, prob=1, seed=123),
-                Normalize(mean=mean, std=std, scale=scale),
-                RandomCrop((3, 32, 32), pad_width=pad_width),
-                RandomHorizontalFlip()
-            ])
-        elif type == 'imagenet':
-            return Compose([
-                Normalize(mean=mean, std=std, scale=scale),
-                RandomResizedCrop((3, 224, 224), scale=(1.0, 2.3), ratio=1.33),
-                RandomHorizontalFlip()
-            ])
-        else:
-            pass  # same as valid
+        return Compose([
+            Normalize(mean=mean, std=std, scale=scale),
+            RandomResizedCrop((3, 224, 224), scale=(1.0, 2.3), ratio=1.33),
+            RandomHorizontalFlip()
+        ])
 
-    if type == 'cifar10' or norm:
-        return Compose([
-            Normalize(mean=mean, std=std, scale=scale)
-        ])
-    elif type == 'imagenet':
-        return Compose([
-            Resize(size=(224, 224)),
-            Normalize(mean=mean, std=std, scale=scale)
-        ])
-    else:
-        return Compose([])
+    return Compose([
+        Resize(size=(224, 224)),
+        Normalize(mean=mean, std=std, scale=scale)
+    ])
+
+
+def zeromean_1std_transform(key='train'):
+    r"""Return a zero mean, std=1 transform applied to data augmentation."""
+    assert key in ('train', 'valid')
+
+    mean = (0.0, 0.0, 0.0)
+    std = (1.0, 1.0, 1.0)
+    scale = 1./255.0
+
+    return Compose([
+        Normalize(mean=mean, std=std, scale=scale)
+    ])
+
+
+def none_transform(key='train'):
+    r"""Return a null transform (passthrough, no transformation done) 
+    applied to data augmentation."""
+    assert key in ('train', 'valid')
+
+    return Compose([])

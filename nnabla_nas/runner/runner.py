@@ -125,11 +125,17 @@ class Runner(ABC):
         placeholder = self.placeholder[key]
 
         if self.dataloader[key].transform is None:
-            transform = transforms.Compose([])
-        else:
-            transform = eval(
-                    'transforms.' + self.dataloader[key].transform + '(\'' + key + '\')'
-                    )
+            self.dataloader[key].transform = 'none_transform'
+        try:
+            func = getattr(transforms, self.dataloader[key].transform)
+            transform = func(key)
+        except AttributeError:
+            print(
+                'ERROR: Transformation function \'' +
+                self.dataloader[key].transform +
+                '\' NOT defined in ' + transforms.__name__
+                )
+            raise
 
         training = key == 'train'
         model = self.model
