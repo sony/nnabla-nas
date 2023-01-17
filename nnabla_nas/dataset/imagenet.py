@@ -180,6 +180,8 @@ class DataLoader(BaseDataLoader):
             type_config (type, optional): Configuration type. Defaults to `float`.
             channel_last(bool, optional): If True, the last dimension is
                 considered as channel dimension, a.k.a NHWC order. Defaults to`False`.
+            transform (str, optional): Name of the tranformation to apply to the loaded data. Available
+                transformations are defined in utils/data/transforms.py
         """
         self.rng = rng or random.prng  # np.random.RandomState(313) #
         self.transform = transform
