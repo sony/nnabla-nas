@@ -127,7 +127,7 @@ class DataLoader(BaseDataLoader):
             Defaults to None.
         communicator (Communicator, optional): The communicator is used to support distributed
             learning. Defaults to None.
-            transform (str, optional): Name of the tranformation to apply to the loaded data. Available
+        transform (str, optional): Name of the tranformation to apply to the loaded data. Available
                 transformations are defined in utils/data/transforms.py
    """
 

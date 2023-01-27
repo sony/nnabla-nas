@@ -126,8 +126,11 @@ class Runner(ABC):
 
         if self.dataloader[key].transform is None:
             self.dataloader[key].transform = 'none_transform'
+
         try:
+            # self.dataloader[key].transform is a str with the name of the tranformation to apply
             func = getattr(transforms, self.dataloader[key].transform)
+            # transform is the corresponding function in utils/data/transforms.py to be used
             transform = func(key)
         except AttributeError:
             print(
