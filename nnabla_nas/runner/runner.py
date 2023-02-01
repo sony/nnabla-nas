@@ -21,6 +21,7 @@ import json
 import nnabla as nn
 
 from ..utils.helper import ProgressMeter, get_output_path
+from ..utils.data import transforms
 
 
 class Runner(ABC):
@@ -122,7 +123,23 @@ class Runner(ABC):
             key = 'train'
 
         placeholder = self.placeholder[key]
-        transform = self.dataloader[key].transform(key)
+
+        if self.dataloader[key].transform is None:
+            self.dataloader[key].transform = 'none_transform'
+
+        try:
+            # self.dataloader[key].transform is a str with the name of the tranformation to apply
+            func = getattr(transforms, self.dataloader[key].transform)
+            # transform is the corresponding function in utils/data/transforms.py to be used
+            transform = func(key)
+        except AttributeError:
+            print(
+                'ERROR: Transformation function \'' +
+                self.dataloader[key].transform +
+                '\' NOT defined in ' + transforms.__name__
+                )
+            raise AttributeError
+
         training = key == 'train'
         model = self.model
 

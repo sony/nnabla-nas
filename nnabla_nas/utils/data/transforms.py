@@ -261,3 +261,68 @@ class Lambda(object):
 
     def __str__(self):
         return self.__class__.__name__ + '()'
+
+
+def CIFAR10_transform(key='train'):
+    r"""Return a transform applied to data augmentation for CIFAR10."""
+    assert key in ('train', 'valid')
+
+    mean = (0.49139968, 0.48215827, 0.44653124)
+    std = (0.24703233, 0.24348505, 0.26158768)
+    scale = 1./255.0
+    pad_width = (4, 4, 4, 4)
+
+    if key == 'train':
+        return Compose([
+            Cutout(8, prob=1, seed=123),
+            Normalize(mean=mean, std=std, scale=scale),
+            RandomCrop((3, 32, 32), pad_width=pad_width),
+            RandomHorizontalFlip()
+        ])
+
+    return Compose([
+        Normalize(mean=mean, std=std, scale=scale)
+    ])
+
+
+def ImageNet_transform(key='train'):
+    r"""Return a transform applied to data augmentation for ImageNet."""
+    assert key in ('train', 'valid')
+
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
+    scale = 1./255.0
+
+    if key == 'train':
+        return Compose([
+            Normalize(mean=mean, std=std, scale=scale),
+            RandomResizedCrop((3, 224, 224), scale=(1.0, 2.3), ratio=1.33),
+            RandomHorizontalFlip()
+        ])
+
+    return Compose([
+        Resize(size=(224, 224)),
+        Normalize(mean=mean, std=std, scale=scale)
+    ])
+
+
+def normalize_0mean_1std_8bitscaling_transform(key='train'):
+    r"""Return a zero mean, one std normalization, 8 bit scaling transform
+    applied to data augmentation."""
+    assert key in ('train', 'valid')
+
+    mean = (0.0, 0.0, 0.0)
+    std = (1.0, 1.0, 1.0)
+    scale = 1./255.0
+
+    return Compose([
+        Normalize(mean=mean, std=std, scale=scale)
+    ])
+
+
+def none_transform(key='train'):
+    r"""Return a null transform (passthrough, no transformation done)
+    applied to data augmentation."""
+    assert key in ('train', 'valid')
+
+    return Compose([])
