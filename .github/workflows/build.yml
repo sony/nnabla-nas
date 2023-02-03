@@ -70,7 +70,7 @@ jobs:
         python setup.py bdist_wheel
 
     - name: Upload Wheel
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: nnabla-nas-wheel
         path: ./dist/*.whl
