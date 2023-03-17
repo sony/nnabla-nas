@@ -20,6 +20,7 @@ import nnabla.functions as F
 
 
 from ..... import module as Mo
+from .....utils.data import transforms
 from .modules.dynamic_op import DynamicBatchNorm
 from ....common.ofa.utils.random_resize_crop import OFAResize
 
@@ -52,7 +53,18 @@ def set_running_statistics(model, dataloader, dataloader_batch_size, data_size, 
 
     with nn.no_grad():
         resize = OFAResize()
-        transform = dataloader.transform('valid')
+        if dataloader.transform is None:
+            dataloader.transform = 'none_transform'
+        try:
+            func = getattr(transforms, dataloader.transform)
+            transform = func('valid')
+        except AttributeError:
+            print(
+                'ERROR: Transformation function \'' +
+                dataloader.transform +
+                '\' NOT defined in ' + transforms.__name__
+                )
+            raise AttributeError
         with nn.auto_forward(True):
             # Note: only support NCHW data format
             x = [nn.Variable([dataloader_batch_size] + shape) for shape in inp_shape]
