@@ -15,6 +15,7 @@
 import os
 from pathlib import Path
 
+from hydra.utils import get_original_cwd
 from nnabla import random
 from nnabla_ext.cuda.experimental import dali_iterator
 from sklearn.model_selection import train_test_split
@@ -224,7 +225,8 @@ class DataLoader(BaseDataLoader):
         train, valid = train_test_split(list_files, stratify=labels,
                                         train_size=train_size,
                                         random_state=self.rng)
-        path = os.path.join('__nnabla_nas__', 'imagenet_{}'.format(portion))
+        path = os.path.join(get_original_cwd(),
+                            '__nnabla_nas__', 'imagenet_{}'.format(portion))
 
         Path(path).mkdir(parents=True, exist_ok=True)
         train_file = os.path.join(path, 'train.txt')
