@@ -1,6 +1,7 @@
 sphinx
-sphinx_rtd_theme
+sphinx_rtd_theme>=1.2
 sphinxcontrib-bibtex
+jinja2>3.1.0
 nnabla
 hydra-core
 scikit-learn
