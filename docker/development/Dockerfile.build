@@ -13,24 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM rockylinux:8
 
-RUN yum install -y epel-release yum-utils \
-    && yum install -y bzip2 curl libffi-devel make openssl-devel zlib-devel \
-    && yum group install -y "Development Tools" \
-    && yum clean all
+ENV PYVERNAME=3.8
 
-RUN mkdir -p /tmp/deps \
-    && cd /tmp/deps \
-    && curl -O https://www.python.org/ftp/python/3.7.10/Python-3.7.10.tgz \
-    && tar xzf Python-3.7.10.tgz \
-    && cd Python-3.7.10 \
-    && ./configure --enable-optimizations \
-    && make altinstall \
-    && ln -sf /usr/local/bin/python3.7 /usr/local/bin/python3 \
-    && ln -sf /usr/local/bin/pip3.7 /usr/local/bin/pip3 \
-    && rm -rf /tmp/deps
+RUN dnf install -y epel-release dnf-plugins-core \
+    && dnf config-manager --set-enabled powertools \
+    && dnf install -y bzip2 curl libffi-devel make openssl-devel zlib-devel \
+    && dnf group install -y "Development Tools" \
+    && dnf clean all
 
-RUN pip3 install -U pip \
-    && pip install setuptools wheel
-
+RUN git clone https://github.com/pyenv/pyenv.git ~/.pyenv \
+    && export PYENV_ROOT="$HOME/.pyenv" \
+    && export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/plugins/python-build/bin:$PATH" \
+    && export PYTHON_CONFIGURE_OPTS=--disable-shared \
+    && eval "$(pyenv init -)" \
+    && python-build `pyenv latest -k ${PYVERNAME}` /usr/local \
+    && pyenv global system \
+    && pip install --no-cache-dir -U \
+       setuptools \
+       wheel \
+    && rm -rf ~/.pyenv/.git /tmp/*
