@@ -35,7 +35,7 @@ def test_zophblock_module():
     assert len(zb) == 11
     cand = zb[2:-1]
     for ci, cri in zip(cand, ZOPH_CANDIDATES):
-        assert type(ci) == cri
+        assert type(ci) is cri
 
 
 if __name__ == '__main__':

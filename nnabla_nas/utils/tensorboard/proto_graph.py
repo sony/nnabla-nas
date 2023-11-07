@@ -56,16 +56,16 @@ def node_proto(name, op='UnSpecified', inputs=None, output_shapes=None,
 
     if info is not None:
         for k, v in info.items():
-            if type(v) == bool:
+            if isinstance(v, bool):
                 value = AttrValue(b=v)
-            elif type(v) == int:
+            elif isinstance(v, int):
                 value = AttrValue(i=v)
-            elif type(v) == float:
+            elif isinstance(v, float):
                 value = AttrValue(f=v)
-            elif type(v) == str:
+            elif isinstance(v, str):
                 value = AttrValue(s=v)
-            elif type(v) == list:
-                if len(v) == 0 or type(v[0]) == int:
+            elif isinstance(v, list):
+                if len(v) == 0 or isinstance(v[0], int):
                     value = AttrValue(list=AttrValue.ListValue(i=v))
                 else:
                     value = AttrValue(list=AttrValue.ListValue(f=v))
