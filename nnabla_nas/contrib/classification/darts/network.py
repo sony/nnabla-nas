@@ -248,7 +248,7 @@ class TrainNet(Model):
 
     def _init_cells(self, num_cells, channel_c, genotype):
         cells = Mo.ModuleList()
-        channel_p_p, channel_p, channel_c = channel_c, channel_c,\
+        channel_p_p, channel_p, channel_c = channel_c, channel_c, \
             self._init_channels
         reduction_p, reduction_c = False, False
 

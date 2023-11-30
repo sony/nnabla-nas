@@ -905,11 +905,11 @@ class Graph(mo.ModuleList, Module):
         if active_only:
             modules = [mi for _, mi in self.get_modules() if
                        isinstance(mi, Module) and
-                       type(mi) != Graph and
+                       type(mi) is not Graph and
                        mi._value is not None]
         else:
             modules = [mi for _, mi in self.get_modules()
-                       if isinstance(mi, Module) and type(mi) != Graph]
+                       if isinstance(mi, Module) and type(mi) is not Graph]
 
         # 2. add these static modules as vertices to the graph
         for mi in modules:
