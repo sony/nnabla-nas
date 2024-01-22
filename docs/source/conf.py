@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sphinx_rtd_theme
 import os
 import sys
 
@@ -23,8 +22,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 project = 'NNablaNAS'
 copyright = '2017, Sony Corporation'
 author = 'Sony Corporation'
-release = '0.9'
-
+with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'nnabla_nas', '__init__.py')) as f:
+    release = f.readlines()[-1].strip().split('\'')[1]
 
 # -- General configuration ---------------------------------------------------
 
@@ -48,7 +47,6 @@ bibtex_bibfiles = ['bibtex/reference.bib']
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['ntemplates']
 
-source_suffix = '.rst'
 # The master toctree document.
 master_doc = 'index'
 
@@ -64,7 +62,6 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 html_theme = "sphinx_rtd_theme"
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
