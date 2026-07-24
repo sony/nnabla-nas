@@ -1,3 +1,6 @@
+> This project has reached end of life on [April 3, 2025].
+> No further development or security support is provided.
+
 [![Build status](https://github.com/nnabla/nnabla-nas/workflows/Build%20nnabla-nas/badge.svg)](https://github.com/nnabla/nnabla-nas/actions)
 
 <img align="center" src="docs/source/logo/logo.png" alt="drawing" width="600"/>
